@@ -4,6 +4,8 @@
 
 当前阶段是重构设计、接口契约和仓库骨架，尚未实现可运行的新版助手。旧应用、业务模块和本机运行数据没有放入这个仓库。
 
+后续 AI 从 [接手指南](docs/handoff/接手指南.md) 开始，运行 `python tools/next_task.py` 查看第一项可开展工作。旧客户端源码按本地只读配置参考，不要求上传到 GitHub。
+
 宿主提供应用生命周期、统一输入、身份与会话绑定、可靠转交、事件展示和通知。接入单位是一整套会话后端：后端自行保留原生历史、上下文、压缩、工具执行和队列，不要求把这些机制拆成独立插件。
 
 OpenCode 是计划中的默认参考后端；Codex 原生会话系统作为后续同级后端接入。普通模型 API 由所属完整后端使用，Agent2API 和 QQ 都不是宿主的必要启动条件。
@@ -19,6 +21,7 @@ OpenCode 是计划中的默认参考后端；Codex 原生会话系统作为后�
 | `portal_adapter/` | 对接现有客户端的通用门面，待实现 |
 | `tests/` | 后续契约和后端隔离测试 |
 | `docs/architecture/` | 完整方案、接入契约、实施清单、Schema 与示例 |
+| `docs/handoff/` | 接手入口、18项实现任务、真实进度、决策及本地参考约定 |
 | `tools/` | 当前设计规范校验工具 |
 
 模块统一放在 `modules/<module-id>/`。压缩器、上下文和工具循环属于完整后端内部实现，不各自占用一个必装模块。测试后端放在 `tests/backend_fixtures/`，不被正式模块发现加载。
@@ -29,6 +32,7 @@ OpenCode 是计划中的默认参考后端；Codex 原生会话系统作为后�
 - [整套后端接入契约](docs/architecture/接口契约.md)
 - [实施阶段与66项待执行验收](docs/architecture/实施与验收.md)
 - [模块目录约定](modules/README.md)
+- [接手指南与当前任务](docs/handoff/接手指南.md)
 
 建设按 P0 契约与测试工具、P1 独立宿主、P2 OpenCode 参考后端、P3 客户端闭环、P4 故障与恢复验收推进。业务模块的拆分、合并、迁移以及生产切换安排在后续阶段。
 
@@ -42,6 +46,10 @@ python tools/validate_design.py
 ```
 
 校验覆盖 JSON Schema、示例、必要能力约束、文档链接和待实施验收项。它不启动后端，不调用模型，不执行66项运行验收。结果写入本机 `.reports/`，不提交到仓库。
+
+实际实现按 `work-plan.json` 的目标文件与测试推进，完成后更新 `progress.json`。运行测试入口为 `python tools/run_runtime_checks.py --task P0-01`；目前没有运行测试文件，这条命令应明确报告尚未实现并返回非成功。
+
+需要参考旧客户端时，复制 `handoff.local.example.json` 为 `handoff.local.json`，填写本地旧项目位置。本机配置和旧源码不会随本仓库提交。
 
 ## 数据边界
 

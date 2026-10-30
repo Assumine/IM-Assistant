@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "implementation_started": false,
+  "runtime_acceptance_completed": [],
+  "tasks": {
+    "P0-01": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P0-02": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P0-03": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P0-04": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P1-01": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P1-02": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P1-03": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P1-04": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P1-05": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P2-01": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P2-02": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P2-03": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P2-04": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P3-01": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P3-02": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P3-03": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P4-01": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    },
+    "P4-02": {
+      "status": "pending",
+      "artifacts": [],
+      "verification": [],
+      "blocked_reason": null
+    }
+  }
+}

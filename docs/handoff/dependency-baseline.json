@@ -1,0 +1,35 @@
+{
+  "kind": "historical_reference_only",
+  "captured_on": "2026-10-30",
+  "python": {
+    "minimum": "3.12",
+    "runtime_implementation": "standard_library_first",
+    "dev_requirements": "requirements-dev.txt"
+  },
+  "opencode": {
+    "install_phase": "P2",
+    "installed_in_this_repository": false,
+    "packages": [
+      {
+        "name": "@opencode/sdk",
+        "version": "2.1.4",
+        "resolved": "https://registry.npmjs.org/@opencode/sdk/-/sdk-2.1.4.tgz",
+        "integrity": "sha512-V2lxqZR0QbHVfyGoeaRtazI78rMOtErjq6UuIlY9Y3mtH3KenBFgI1v2xKyzFER43JDOIMxCEtRuFiWmRxpjRQ=="
+      },
+      {
+        "name": "@opencode/plugin",
+        "version": "2.1.4",
+        "resolved": "https://registry.npmjs.org/@opencode/plugin/-/plugin-2.1.4.tgz",
+        "integrity": "sha512-SGAkdGp0VRxos2BEkRiyRl75G7DtuvP0ywgiEiHz1PbdUwUe2EAURMrzFgLCYCpWEm/zaNrguxPDVL0carrCsA=="
+      },
+      {
+        "name": "@opencode/core",
+        "version": "2.1.4",
+        "resolved": "https://registry.npmjs.org/@opencode/core/-/core-2.1.4.tgz",
+        "integrity": "sha512-0DI8oiOCPgZb1PC20+aF8Ns3Jx7xxa85xf++ZmtdnLp7OpblUaeUnidE8wIDkm5CHT8CgAXdKw6gK4aDm3ta6A=="
+      }
+    ],
+    "node_requirement": "Verify actual supported runtime from pinned package during P2; not established by this design",
+    "notes": "SDK and plugin are direct packages; core is the observed transitive baseline. Create a real backend lockfile in P2, not from assumptions."
+  }
+}

@@ -58,7 +58,9 @@ check('input acceptance without source request rejected',not validates('backend-
 future=copy.deepcopy(native);future['extensions']={'example.optional_future':{'supported':True}}
 check('unknown namespaced optional declaration accepted structurally',validates('backend-descriptor',future))
 
-for p in OUT.rglob('*.md'):
+documents=sorted(set([ROOT/'README.md',ROOT/'AGENTS.md',*ROOT.glob('*/README.md'),
+                      *(ROOT/'docs').rglob('*.md'),*(ROOT/'tests').rglob('*.md')]))
+for p in documents:
     text=p.read_text(encoding='utf-8')
     check(p.name+' readable UTF8 and balanced code fences','\x00' not in text and '\ufffd' not in text and text.count('```')%2==0)
     for link in re.findall(r'\[[^\]]*\]\(([^)]+)\)',text):
@@ -67,7 +69,7 @@ for p in OUT.rglob('*.md'):
         target=(p.parent/relative).resolve()
         if target==OUT/'design-validation.json' and not target.exists():
             generated_links.append(target);continue
-        check(p.name+' local link '+relative,target.is_relative_to(OUT.resolve()) and target.is_file())
+        check(str(p.relative_to(ROOT))+' local link '+relative,target.is_relative_to(ROOT.resolve()) and target.is_file())
 
 scope=load('scope.json')
 check('foundation-only scope explicit',not scope['production_switch'] and not scope['business_module_migration'])
@@ -80,12 +82,63 @@ check('66 unique future runtime acceptance cases enumerated',len(ids)==66 and le
 check('no future runtime acceptance is marked completed','- [x]' not in steps.lower())
 check('SDK baseline is declared as a future reference, not an installed package','2.1.4' in scope['reference_backend'])
 
+plan=json.loads((ROOT/'docs/handoff/work-plan.json').read_text(encoding='utf-8'))
+progress=json.loads((ROOT/'docs/handoff/progress.json').read_text(encoding='utf-8'))
+tasks=plan['tasks'];index={t['id']:t for t in tasks};states=progress['tasks']
+check('18 unique implementation work items defined',len(tasks)==18 and len(index)==18)
+check('handoff keeps whole-backend foundation scope',plan['scope']=='foundation_only' and plan['integration_unit']=='complete_conversation_backend')
+check('progress has exactly one state per work item',set(index)==set(states))
+check('initial implementation starts at P0-01',plan['start_task']=='P0-01' and not index['P0-01']['depends_on'])
+check('all task dependencies refer to existing different tasks',all(d in index and d!=t['id'] for t in tasks for d in t['depends_on']))
+visited=set();visiting=set()
+def visit(ident):
+    if ident in visiting:raise AssertionError('Task dependency cycle: '+ident)
+    if ident in visited:return
+    visiting.add(ident)
+    for dep in index[ident]['depends_on']:visit(dep)
+    visiting.remove(ident);visited.add(ident)
+for ident in index:visit(ident)
+check('work item graph is acyclic',len(visited)==18)
+assigned=[case for t in tasks for case in t['acceptance_ids']]
+check('all 66 acceptance cases have exactly one primary implementation owner',len(assigned)==66 and len(set(assigned))==66 and set(assigned)==set(ids))
+for t in tasks:
+    check(t['id']+' defines outputs tests commands and completion criteria',
+          bool(t['outputs']) and bool(t['test_files']) and len(t['done_when'])>=3 and
+          f"python tools/run_runtime_checks.py --task {t['id']}" in t['verification_commands'])
+    paths=t['outputs']+t['test_files']
+    check(t['id']+' planned targets stay inside repository source areas',
+          all((ROOT/p).resolve().is_relative_to(ROOT.resolve()) and p.split('/')[0] in
+              {'sdk','host','conversation','modules','portal_adapter','tests'} for p in paths))
+check('progress status values recognized',all(s['status'] in {'pending','in_progress','blocked','done'} for s in states.values()))
+recorded=[]
+for ident,s in states.items():
+    if s['status']=='in_progress':check(ident+' active dependencies completed',all(states[d]['status']=='done' for d in index[ident]['depends_on']))
+    if s['status']=='blocked':check(ident+' records a concrete blocker',isinstance(s['blocked_reason'],str) and bool(s['blocked_reason'].strip()))
+    if s['status']!='done':continue
+    check(ident+' dependencies completed',all(states[d]['status']=='done' for d in index[ident]['depends_on']))
+    check(ident+' has actual source/test artifacts',bool(s['artifacts']) and all((ROOT/p).is_file() for p in s['artifacts']) and all((ROOT/p).is_file() for p in index[ident]['test_files']))
+    verified=[v for v in s['verification'] if v.get('kind')=='runtime' and v.get('status')=='passed' and v.get('exit_code')==0 and v.get('tests_run',0)>0]
+    check(ident+' has nonzero runtime verification evidence',bool(verified))
+    cases={case for v in verified for case in v.get('acceptance_ids',[])}
+    check(ident+' evidence covers assigned acceptance cases',set(index[ident]['acceptance_ids'])<=cases)
+    recorded.extend(index[ident]['acceptance_ids'])
+check('global acceptance progress agrees with completed work items',set(progress['runtime_acceptance_completed'])==set(recorded) and len(progress['runtime_acceptance_completed'])==len(set(recorded)))
+if any(s['status'] in {'in_progress','done'} for s in states.values()):
+    check('implementation start flag reflects actual recorded work',progress['implementation_started'] is True)
+check('local-only client configuration is ignored', '/handoff.local.json' in (ROOT/'.gitignore').read_text(encoding='utf-8').splitlines())
+local_example=json.loads((ROOT/'handoff.local.example.json').read_text(encoding='utf-8'))
+check('portable local reference example is read-only and not personal',local_example['schema_version']==1 and local_example['access']=='read_only' and not Path(local_example['legacy_root']).is_absolute())
+baseline=json.loads((ROOT/'docs/handoff/dependency-baseline.json').read_text(encoding='utf-8'))
+check('dependency evidence explicitly remains historical',baseline['kind']=='historical_reference_only' and baseline['opencode']['installed_in_this_repository'] is False)
+check('reference dependency records contain version integrity and public origin',len(baseline['opencode']['packages'])==3 and all(p['version']=='2.1.4' and p['integrity'].startswith('sha512-') and p['resolved'].startswith('https://registry.npmjs.org/') for p in baseline['opencode']['packages']))
+
 REPORT.parent.mkdir(parents=True,exist_ok=True)
 receipt={'status':'design_files_validated','checks':passed,'count':len(passed),
          'planned_runtime_acceptance_count':66,'runtime_acceptance_executed':0,
          'schemas':3,'examples':4,'model_calls':0,'qq_calls':0,'production_deployments':0,
          'write_scope':str(OUT),'whole_backend_integration':True,'business_migration':False,
-         'documents':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in OUT.glob('*.md')}}
+         'implementation_work_items':18,'runtime_acceptance_recorded_completed':len(recorded),
+         'documents':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in documents}}
 REPORT.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 for target in generated_links:check('generated validation receipt link exists',target.is_file())
 receipt['count']=len(passed)

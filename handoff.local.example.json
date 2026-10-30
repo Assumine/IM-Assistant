@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "legacy_root": "../local-legacy-project",
+  "client_relative_root": "management_center",
+  "access": "read_only",
+  "required_reference_files": [
+    "desktop.py",
+    "static/index.html",
+    "static/conversation-controller.js",
+    "static/conversation-history.js"
+  ]
+}
