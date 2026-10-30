@@ -66,8 +66,8 @@ export type TokenUsageInfo = {
     reasoning: boolean
     cacheRead: boolean
     cacheWrite: boolean
-    cost?: "reported" | "catalog" | "unavailable" | "mixed" | null
-  } | null
+    cost?: "reported" | "catalog" | "unavailable" | "mixed"
+  }
 }
 
 export type RelativePath = string
@@ -149,6 +149,19 @@ export type FormExternalField = { key: string; type: "external"; url: string; ti
 
 export type FormValue = string | number | "Infinity" | "-Infinity" | "NaN" | boolean | Array<string>
 
+export type SessionStatsReporting = {
+  records: number
+  complete: number
+  fields: { input: number; output: number; reasoning: number; cacheRead: number; cacheWrite: number }
+  cost: {
+    reported: { records: number; amount: number }
+    catalog: { records: number; amount: number }
+    mixed: { records: number; amount: number }
+    unavailable: { records: number; amount: number }
+    unknown: { records: number; amount: number }
+  }
+}
+
 export type SessionStatsToolTotals = { calls: number; succeeded: number; failed: number; unfinished: number }
 
 export type SessionStatsToolUsage = {
@@ -177,23 +190,6 @@ export type InstructionHash = string
 export type SessionInboxSyntheticPayload1 = { text: string; description?: string; metadata?: { [x: string]: any } }
 
 export type SessionMessageNative1 = { [x: string]: any }
-
-export type TokenUsageInfo1 = {
-  input: number
-  output: number
-  reasoning: number
-  cache: { read: number; write: number }
-  provenance?:
-    | {
-        input: boolean
-        output: boolean
-        reasoning: boolean
-        cacheRead: boolean
-        cacheWrite: boolean
-        cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
-      }
-    | undefined
-}
 
 export type ToolFileContent1 = { type: "file"; uri: string; mime: string; name?: string | undefined }
 
@@ -1011,7 +1007,13 @@ export type SessionMessageCompactionCompleted = {
   tokens?: TokenUsageInfo
 }
 
-export type SessionStatsModelUsage = { model: ModelRef; steps: number; tokens: TokenUsageInfo; cost: MoneyUSD }
+export type SessionStatsModelUsage = {
+  model: ModelRef
+  steps: number
+  tokens: TokenUsageInfo
+  cost: MoneyUSD
+  reporting?: SessionStatsReporting
+}
 
 export type ProviderSettings = {
   timeout?: number | false
@@ -1402,7 +1404,7 @@ export type SessionStepEnded = {
     rawFinish?: string
     native?: SessionMessageNative1
     cost: MoneyUSD
-    tokens: TokenUsageInfo1
+    tokens: TokenUsageInfo
     snapshot?: SnapshotID
     files?: Array<RelativePath>
   }
@@ -1423,7 +1425,7 @@ export type SessionStepFailed = {
     rawFinish?: string
     native?: SessionMessageNative1
     cost?: MoneyUSD
-    tokens?: TokenUsageInfo1
+    tokens?: TokenUsageInfo
     snapshot?: SnapshotID
     files?: Array<RelativePath>
   }
@@ -1558,7 +1560,7 @@ export type SessionCompactionEnded = {
     native?: SessionMessageNative1
     text: string
     cost?: MoneyUSD
-    tokens?: TokenUsageInfo1
+    tokens?: TokenUsageInfo
   }
 }
 
@@ -1575,7 +1577,7 @@ export type SessionCompactionFailed = {
     error: SessionStructuredError
     inputID?: SessionMessageID
     cost?: MoneyUSD
-    tokens?: TokenUsageInfo1
+    tokens?: TokenUsageInfo
   }
 }
 
@@ -1616,7 +1618,7 @@ export type SessionUsageRecorded = {
   type: "session.usage.recorded"
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
-  data: { sessionID: SessionID; source: "title" | "compaction"; cost: MoneyUSD; tokens: TokenUsageInfo1 }
+  data: { sessionID: SessionID; source: "title" | "compaction"; cost: MoneyUSD; tokens: TokenUsageInfo }
 }
 
 export type LocationShutdown = {
@@ -1697,7 +1699,7 @@ export type SessionUsageUpdated = {
   metadata?: { [x: string]: any }
   type: "session.usage.updated"
   location?: LocationRef
-  data: { sessionID: SessionID; cost: MoneyUSD; tokens: TokenUsageInfo1 }
+  data: { sessionID: SessionID; cost: MoneyUSD; tokens: TokenUsageInfo }
 }
 
 export type SessionTextDelta = {
@@ -2207,6 +2209,7 @@ export type SessionStatsInfo = {
   steps: number
   tokens: TokenUsageInfo
   cost: MoneyUSD
+  reporting?: SessionStatsReporting
   tools: SessionStatsTools
   activeDays: number
   streak: number
@@ -3738,8 +3741,8 @@ export type ExperimentalSessionImportInput = {
         readonly reasoning: boolean
         readonly cacheRead: boolean
         readonly cacheWrite: boolean
-        readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | null
-      } | null
+        readonly cost?: "reported" | "catalog" | "unavailable" | "mixed"
+      }
     }
     readonly outcome?: "succeeded" | "failed" | "interrupted"
     readonly time: {

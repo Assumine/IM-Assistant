@@ -34,6 +34,36 @@ const otherSessionID = Session.ID.make("ses_stats_other")
 const encodeMessage = Schema.encodeSync(SessionMessage.Info)
 
 describe("SessionStats", () => {
+  it.effect("keeps reporting coverage and price sources across time ranges and legacy rows", () => Effect.gen(function* () {
+    const db = (yield* Database.Service).db
+    yield* db.insert(ProjectTable).values({ id: projectID, worktree: AbsolutePath.make("/stats"), sandboxes: [] }).run().pipe(Effect.orDie)
+    yield* db.insert(SessionTable).values({ id: sessionID, project_id: projectID, slug: "reporting", directory: "/stats", version: "test" }).run().pipe(Effect.orDie)
+    const start = Date.UTC(2026, 0, 2)
+    const legacy = assistant("msg_reporting_legacy", start - 1, [])
+    const zero = SessionMessage.Assistant.make({ ...assistant("msg_reporting_zero", start, []), cost: Money.USD.zero,
+      tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 },
+        provenance: { input: true, output: true, reasoning: true, cacheRead: true, cacheWrite: true, cost: "reported" } } })
+    const partial = SessionMessage.Assistant.make({ ...assistant("msg_reporting_partial", start + 1, []),
+      tokens: { input: 10, output: 5, reasoning: 0, cache: { read: 20, write: 0 },
+        provenance: { input: true, output: true, reasoning: false, cacheRead: true, cacheWrite: false, cost: "catalog" } } })
+    yield* db.insert(SessionMessageTable).values([messageRow(sessionID, 1, legacy), messageRow(sessionID, 2, zero), messageRow(sessionID, 3, partial)]).run().pipe(Effect.orDie)
+    const current = yield* SessionStats.get({ from: start, to: start + 2, tools: "none" })
+    expect(current.reporting.records).toBe(2)
+    expect(current.reporting.complete).toBe(1)
+    expect(current.reporting.fields).toEqual({ input: 2, output: 2, reasoning: 1, cacheRead: 2, cacheWrite: 1 })
+    expect(current.reporting.cost.reported).toEqual({ records: 1, amount: 0 })
+    expect(current.reporting.cost.catalog).toEqual({ records: 1, amount: 1.5 })
+    expect(current.reporting.cost.unknown.records).toBe(0)
+    expect(current.models[0].reporting).toEqual(current.reporting)
+    const all = yield* SessionStats.get({ to: start + 2, tools: "none" })
+    expect(all.reporting.records).toBe(3)
+    expect(all.reporting.complete).toBe(1)
+    expect(all.reporting.fields).toEqual(current.reporting.fields)
+    expect(all.reporting.cost.unknown).toEqual({ records: 1, amount: 1.5 })
+    const empty = yield* SessionStats.get({ from: start + 2, to: start + 3, tools: "none" })
+    expect(empty.reporting.records).toBe(0)
+    expect(empty.reporting.cost.reported).toEqual({ records: 0, amount: 0 })
+  }))
   it.effect("aggregates activity and tool reliability without reading message payloads outside the range", () =>
     Effect.gen(function* () {
       const db = (yield* Database.Service).db

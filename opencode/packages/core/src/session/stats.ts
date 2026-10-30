@@ -8,7 +8,7 @@ import { Project } from "@opencode/schema/project"
 import { Provider } from "@opencode/schema/provider"
 import { Event } from "@opencode/schema/event"
 import { SessionEvent } from "@opencode/schema/session-event"
-import { ToolMode } from "@opencode/schema/session-stats"
+import { ToolMode, type Reporting } from "@opencode/schema/session-stats"
 import { TokenUsage } from "@opencode/schema/token-usage"
 import { Database } from "../database/database.js"
 import { EventTable } from "../event/sql.js"
@@ -23,6 +23,7 @@ type Input = {
 }
 
 type Tokens = Types.DeepMutable<TokenUsage.Info>
+type Coverage = Types.DeepMutable<Reporting>
 
 type MessageRow = {
   sessionID: string
@@ -38,6 +39,7 @@ type MessageRow = {
   cacheRead: number | null
   cacheWrite: number | null
   cost: number | null
+  provenance: string | null
 }
 
 type ToolRow = {
@@ -58,6 +60,7 @@ type ModelAggregate = {
   steps: number
   tokens: Tokens
   cost: number
+  reporting: Coverage
 }
 
 type ToolAggregate = {
@@ -70,6 +73,7 @@ type ToolAggregate = {
 }
 
 const decodeUsage = Schema.decodeUnknownOption(SessionEvent.UsageRecorded.data)
+const decodeProvenance = Schema.decodeUnknownOption(TokenUsage.Info.fields.provenance)
 const Window = 31 * 24 * 60 * 60 * 1_000
 
 export class InvalidRangeError extends Schema.TaggedError<InvalidRangeError>()("SessionStats.InvalidRangeError", {
@@ -110,6 +114,7 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
     steps: 0,
     tokens: emptyTokens(),
     cost: 0,
+    reporting: emptyReporting(),
   }
   const toolTotals = { calls: 0, succeeded: 0, failed: 0, unfinished: 0 }
   const dateKey = makeDateKey(input.timezone)
@@ -133,7 +138,8 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
             json_extract(message.data, '$.tokens.reasoning') AS reasoning,
             json_extract(message.data, '$.tokens.cache.read') AS cacheRead,
             json_extract(message.data, '$.tokens.cache.write') AS cacheWrite,
-            json_extract(message.data, '$.cost') AS cost
+            json_extract(message.data, '$.cost') AS cost,
+            json_extract(message.data, '$.tokens.provenance') AS provenance
           FROM ${SessionMessageTable} AS message
           JOIN ${SessionTable} AS session ON session.id = message.session_id
           WHERE message.type IN ('user', 'assistant')
@@ -158,6 +164,7 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
                 totals.steps++
                 const tokens = rowTokens(row)
                 addTokens(totals.tokens, tokens)
+                addReporting(totals.reporting, tokens, row.cost ?? 0)
                 totals.cost += row.cost ?? 0
                 const day = dateKey(row.timeCreated)
                 activity.set(day, (activity.get(day) ?? 0) + 1)
@@ -172,11 +179,13 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
                   steps: 0,
                   tokens: emptyTokens(),
                   cost: 0,
+                  reporting: emptyReporting(),
                 }
                 models.set(key, model)
                 model.steps++
                 model.cost += row.cost ?? 0
                 addTokens(model.tokens, tokens)
+                addReporting(model.reporting, tokens, row.cost ?? 0)
               })
             }),
           ),
@@ -337,6 +346,7 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
     const decoded = decodeUsage(row.data)
     if (Option.isNone(decoded)) return
     addTokens(totals.tokens, decoded.value.tokens)
+    addReporting(totals.reporting, decoded.value.tokens, decoded.value.cost)
     totals.cost += decoded.value.cost
   })
 
@@ -349,6 +359,7 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
     steps: totals.steps,
     tokens: totals.tokens,
     cost: Money.USD.make(totals.cost),
+    reporting: totals.reporting,
     tools:
       toolMode === "none"
         ? { mode: toolMode }
@@ -389,12 +400,31 @@ function batches(ids: string[]) {
 }
 
 function rowTokens(row: MessageRow): Tokens {
+  const provenance = decodeProvenance(row.provenance === null ? undefined : JSON.parse(row.provenance))
   return {
     input: row.input ?? 0,
     output: row.output ?? 0,
     reasoning: row.reasoning ?? 0,
     cache: { read: row.cacheRead ?? 0, write: row.cacheWrite ?? 0 },
+    provenance: Option.isSome(provenance) ? provenance.value : undefined,
   }
+}
+
+function emptyReporting(): Coverage {
+  return { records: 0, complete: 0, fields: { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0 },
+    cost: { reported: { records: 0, amount: 0 }, catalog: { records: 0, amount: 0 },
+      mixed: { records: 0, amount: 0 }, unavailable: { records: 0, amount: 0 }, unknown: { records: 0, amount: 0 } } }
+}
+
+function addReporting(target: Coverage, tokens: TokenUsage.Info, cost: number) {
+  target.records++
+  if (tokens.provenance && [tokens.provenance.input, tokens.provenance.output, tokens.provenance.reasoning,
+    tokens.provenance.cacheRead, tokens.provenance.cacheWrite].every(Boolean)) target.complete++
+  for (const field of ["input", "output", "reasoning", "cacheRead", "cacheWrite"] as const)
+    if (tokens.provenance?.[field]) target.fields[field]++
+  const source = tokens.provenance?.cost ?? "unknown"
+  target.cost[source].records++
+  target.cost[source].amount += cost
 }
 
 function emptyTokens(): Tokens {

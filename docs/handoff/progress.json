@@ -165,7 +165,10 @@
         "opencode/packages/im-assistant/src/providers.test.ts",
         "tools/provider_discovery_smoke.py",
         "docs/handoff/API与用量接入进展.md",
-        "upstream/provider-checkpoint.json"
+        "upstream/provider-checkpoint.json",
+        "opencode/packages/core/src/session/stats.ts",
+        "opencode/packages/schema/src/session-stats.ts",
+        "opencode/packages/app/src/settings/usage/usage.tsx"
       ],
       "verification": [],
       "blocked_reason": null

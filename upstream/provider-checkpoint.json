@@ -10,14 +10,16 @@
     "generation_verified_separately": true,
     "native_reported_usage_persisted": true,
     "usage_provenance_survives_restart": true,
+    "native_stats_reporting_survives_restart": true,
     "discovery_changes_default_or_queue": false,
     "external_model_requests": 0,
     "R2_02_complete": false
   },
   "limits": [
-    "Desktop API configuration and credential integration remain pending.",
-    "Today/7-day/all-time statistics and UI have not yet integrated provenance.",
-    "No production account or application switch."
+    "Desktop custom API configuration and native credential integration remain pending.",
+    "Native statistics count stored assistant steps and available durable compaction records; some auxiliary model calls are missing. This is disclosed in the UI.",
+    "Full typecheck:e2e still has 14 legacy diagnostics; not counted as passed.",
+    "No production account, old database migration, installed-client switch or installer release."
   ],
   "native_provenance_core_regressions": 98,
   "native_client_regressions": 41,
@@ -25,6 +27,29 @@
     "new_records": "normalized field reporting and cost source",
     "old_records": "unknown",
     "native_client_generated": true,
-    "statistics_and_ui_integrated": false
+    "statistics_and_ui_integrated": true
+  },
+  "usage_page_checkpoint": {
+    "verified_at": "2026-10-30T16:11:51.183662+00:00",
+    "checks": {
+      "stats-core": 99,
+      "stats-client": 41,
+      "settings-unit": 19,
+      "settings-web": 54,
+      "usage-repeat": 20
+    },
+    "canonical_check": "36 workspace tasks passed",
+    "extra_e2e_types": "14 existing diagnostics; check still fails",
+    "settings_route": "/settings?tab=usage",
+    "periods": [
+      "today",
+      "7 calendar days including today",
+      "all time"
+    ],
+    "background_polling": false,
+    "late_responses_ignored": true,
+    "reporting_preserved_after_restart": true,
+    "desktop_browser_visual_review": "1280x720 production browser screenshot reviewed; not a desktop installer test",
+    "fees": "Upstream-reported, catalog estimate, and unclassified amounts shown separately; not a subscription invoice"
   }
 }

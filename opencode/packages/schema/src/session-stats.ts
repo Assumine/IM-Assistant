@@ -12,11 +12,24 @@ export const Activity = Schema.Struct({
 }).annotate({ identifier: "SessionStats.Activity" })
 export type Activity = typeof Activity.Type
 
+const CostSource = Schema.Struct({ records: NonNegativeInt, amount: Schema.Finite })
+export const Reporting = Schema.Struct({
+  records: NonNegativeInt,
+  complete: NonNegativeInt,
+  fields: Schema.Struct({ input: NonNegativeInt, output: NonNegativeInt, reasoning: NonNegativeInt,
+    cacheRead: NonNegativeInt, cacheWrite: NonNegativeInt }),
+  // Amounts are USD grouped by their recorded source, not proof of a subscription invoice.
+  cost: Schema.Struct({ reported: CostSource, catalog: CostSource, mixed: CostSource,
+    unavailable: CostSource, unknown: CostSource }),
+}).annotate({ identifier: "SessionStats.Reporting" })
+export type Reporting = typeof Reporting.Type
+
 export const ModelUsage = Schema.Struct({
   model: Model.Ref,
   steps: NonNegativeInt,
   tokens: TokenUsage.Info,
   cost: Money.USD,
+  reporting: Reporting.pipe(optional),
 }).annotate({ identifier: "SessionStats.ModelUsage" })
 export type ModelUsage = typeof ModelUsage.Type
 
@@ -59,6 +72,7 @@ export const Info = Schema.Struct({
   steps: NonNegativeInt,
   tokens: TokenUsage.Info,
   cost: Money.USD,
+  reporting: Reporting.pipe(optional),
   tools: Tools,
   activeDays: NonNegativeInt,
   streak: NonNegativeInt,

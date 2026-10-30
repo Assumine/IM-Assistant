@@ -17,6 +17,7 @@ import { SettingsKeybinds } from "./keybinds/keybinds"
 import { SettingsNotifications } from "./notifications/notifications"
 import { SettingsProviders } from "./providers/providers"
 import { SettingsModels } from "./models/models"
+import { SettingsUsage } from "./usage/usage"
 import { SettingsServerGeneral, SettingsServerList } from "./servers/servers"
 import { SettingsServerSwitcher } from "./servers/switcher"
 import { SettingsServerUnavailable } from "./servers/unavailable"
@@ -47,6 +48,7 @@ const rootClientTabs = [
 const serverTabs = [
   { value: "providers", icon: pageIcons.providers, label: "settings.providers.title" },
   { value: "models", icon: pageIcons.models, label: "settings.models.title" },
+  { value: "usage", icon: pageIcons.usage, label: "settings.usage.title" },
   { value: "extensions", icon: pageIcons.extensions, label: "settings.tab.extensions" },
   { value: "projects", icon: pageIcons.projects, label: "settings.tab.projects" },
   { value: "workspaces", icon: pageIcons.workspaces, label: "settings.tab.workspaces" },
@@ -56,6 +58,7 @@ const serverTabs = [
 const serverPages = {
   providers: { title: "settings.providers.title", description: "settings.providers.description" },
   models: { title: "settings.models.title", description: "settings.models.description" },
+  usage: { title: "settings.usage.title", description: "settings.usage.description" },
   extensions: { title: "settings.tab.extensions", description: "settings.extensions.description" },
   projects: { title: "settings.projects.title", description: "settings.projects.description" },
   workspaces: { title: "settings.tab.workspaces", description: "settings.workspaces.description" },
@@ -351,6 +354,9 @@ function RootSettings() {
       >
         {(server) => (
           <SettingsServerDataScope server={server}>
+            <Tabs.Content value="usage" class="settings-panel">
+              <SettingsUsage active={surface.view().tab === "usage"} headerAction={<SettingsServerSwitcher />} />
+            </Tabs.Content>
             <Tabs.Content value="providers" class="settings-panel">
               <SettingsProviders
                 directory={undefined}

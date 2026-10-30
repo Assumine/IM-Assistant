@@ -43,12 +43,19 @@ def smoke():
                 "reasoning": False, "cacheRead": False, "cacheWrite": False, "cost": "unavailable"}
             assert answer["content"] == [{"type": "text", "text": "Native baseline reply"}]
             assert len(generated) == 1
+            stats_endpoint = "/api/experimental/session/stats?tools=none&to=" + str(answer["time"]["completed"] + 1)
+            stats = request("GET", stats_endpoint)["data"]
+            assert stats["reporting"]["records"] == 1 and stats["reporting"]["complete"] == 0
+            assert stats["reporting"]["fields"] == {"input": 1, "output": 1, "reasoning": 0, "cacheRead": 0, "cacheWrite": 0}
+            assert stats["reporting"]["cost"]["unavailable"] == {"records": 1, "amount": 0}
         with native_server(home, config, managed=True) as (request, _):
             restored = request("GET", endpoint + "/message?limit=20&order=asc")["data"]
             assert restored == messages, "Restart lost usage provenance or changed native history"
             assert len(generated) == 1, "Reading restored usage repeated model generation"
+            assert request("GET", stats_endpoint)["data"] == stats
         return {"catalog_cli_real_http": True, "generation_verified_separately": True,
             "native_reported_usage_persisted": True, "usage_provenance_survives_restart": True,
+            "native_stats_reporting_survives_restart": True,
             "discovery_changes_default_or_queue": False,
             "external_model_requests": 0, "R2_02_complete": False}
 

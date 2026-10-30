@@ -142,6 +142,7 @@ export interface MockServerConfig {
   // Paths become directory entries.
   findFiles?: (input: { query: string; dirs?: string; limit?: number; directory: string }) => unknown[]
   sessionStatus?: Resolvable<Record<string, { type: string }>>
+  sessionStats?: (query: Record<string, string | undefined>) => unknown | Promise<unknown>
   inbox?: unknown[] | (() => unknown[])
   onPrompt?: (input: { sessionID: string; body: Schema.JsonObject }) => void
   onCompact?: (input: { sessionID: string; body: Schema.JsonObject }) => void
@@ -1347,6 +1348,7 @@ function mockHandlers(
               },
             })),
           ),
+        sessionStats: (ctx) => Effect.promise(async () => ({ data: await config.sessionStats?.(ctx.query) })),
         sessionList: (ctx) => {
           const sessions = config.sessions
             .filter(

@@ -509,6 +509,26 @@ export type ExperimentalSessionStatsOutput = {
       | undefined
   }
   readonly cost: Money.USD
+  readonly reporting?:
+    | {
+        readonly records: number
+        readonly complete: number
+        readonly fields: {
+          readonly input: number
+          readonly output: number
+          readonly reasoning: number
+          readonly cacheRead: number
+          readonly cacheWrite: number
+        }
+        readonly cost: {
+          readonly reported: { readonly records: number; readonly amount: number }
+          readonly catalog: { readonly records: number; readonly amount: number }
+          readonly mixed: { readonly records: number; readonly amount: number }
+          readonly unavailable: { readonly records: number; readonly amount: number }
+          readonly unknown: { readonly records: number; readonly amount: number }
+        }
+      }
+    | undefined
   readonly tools:
     | { readonly mode: "none" }
     | {
@@ -560,6 +580,26 @@ export type ExperimentalSessionStatsOutput = {
         | undefined
     }
     readonly cost: Money.USD
+    readonly reporting?:
+      | {
+          readonly records: number
+          readonly complete: number
+          readonly fields: {
+            readonly input: number
+            readonly output: number
+            readonly reasoning: number
+            readonly cacheRead: number
+            readonly cacheWrite: number
+          }
+          readonly cost: {
+            readonly reported: { readonly records: number; readonly amount: number }
+            readonly catalog: { readonly records: number; readonly amount: number }
+            readonly mixed: { readonly records: number; readonly amount: number }
+            readonly unavailable: { readonly records: number; readonly amount: number }
+            readonly unknown: { readonly records: number; readonly amount: number }
+          }
+        }
+      | undefined
   }>
 }
 export type ExperimentalSessionStatsOperation<E = never> = (

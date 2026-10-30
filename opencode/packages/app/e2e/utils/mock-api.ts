@@ -375,6 +375,10 @@ const Group = HttpApiGroup.make("mock")
   )
   .add(HttpApiEndpoint.post("sessionCreate", "/api/session", { payload: JsonPayload, success: Json }))
   .add(HttpApiEndpoint.get("sessionActive", "/api/session/active", { success: Json }))
+  .add(HttpApiEndpoint.get("sessionStats", "/api/experimental/session/stats", {
+    query: Schema.Struct({ from: Schema.optional(Schema.String), to: Schema.optional(Schema.String),
+      tools: Schema.optional(Schema.String), timezone: Schema.optional(Schema.String) }), success: Json,
+  }))
   .add(
     HttpApiEndpoint.post("rpcCall", "/api/rpc/:rpcID/:method", {
       params: { rpcID: Schema.String, method: Schema.String },

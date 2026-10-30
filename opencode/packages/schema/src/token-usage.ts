@@ -1,6 +1,7 @@
 export * as TokenUsage from "./token-usage.js"
 
 import { Schema } from "effect"
+import { optional } from "./schema.js"
 
 export interface Info extends Schema.Schema.Type<typeof Info> {}
 export const Info = Schema.Struct({
@@ -12,14 +13,14 @@ export const Info = Schema.Struct({
     write: Schema.Finite,
   }),
   // Optional for older transcripts. Absence means unknown, never an inferred reported zero.
-  provenance: Schema.optional(Schema.Struct({
+  provenance: Schema.Struct({
     input: Schema.Boolean,
     output: Schema.Boolean,
     reasoning: Schema.Boolean,
     cacheRead: Schema.Boolean,
     cacheWrite: Schema.Boolean,
-    cost: Schema.optional(Schema.Literals(["reported", "catalog", "unavailable", "mixed"])),
-  })),
+    cost: Schema.Literals(["reported", "catalog", "unavailable", "mixed"]).pipe(optional),
+  }).pipe(optional),
 }).annotate({ identifier: "TokenUsage.Info" })
 
 export function total(tokens: Pick<Info, "input" | "output" | "reasoning" | "cache">) {

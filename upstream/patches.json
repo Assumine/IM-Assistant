@@ -105,11 +105,6 @@
           "sha256": "2b05f16c4cf260aea3b17c039fb4594e8832c224f0aae76f82c7fc8a737185c0"
         },
         {
-          "path": "packages/app/e2e/utils/mock-server.ts",
-          "action": "modified",
-          "sha256": "22b0ad9157b11463069dc4435cdd67690befdfcf078da16c616022eecdd216e0"
-        },
-        {
           "path": "packages/app/src/composer/attachments/attachments.ts",
           "action": "modified",
           "sha256": "ea0a4ebfa18d37e39009fa0ed153352a72368d4d41e389b21e85abea2fabfdd2"
@@ -173,11 +168,6 @@
           "path": "packages/app/src/settings/servers/servers.tsx",
           "action": "modified",
           "sha256": "9e5a43c8acbaad6c9195c04dc5ce50490e7930dc73a2200823de1990ed7c2a8f"
-        },
-        {
-          "path": "packages/app/src/settings/shell.tsx",
-          "action": "modified",
-          "sha256": "a5a12694c984cde1a23e7357d1e1f96a77ba6959962d80923e25e4d794f8eb1e"
         },
         {
           "path": "packages/app/src/shell/titlebar/titlebar.tsx",
@@ -429,11 +419,6 @@
       ],
       "files": [
         {
-          "path": "packages/schema/src/token-usage.ts",
-          "action": "modified",
-          "sha256": "233db9dfb065eafecbe717bd7c598c005b5a974b7f92e04f000ba826b68a0b13"
-        },
-        {
           "path": "packages/core/src/session/usage.ts",
           "action": "modified",
           "sha256": "aa269803fab8d104f56be7d2a7a7cc8634d019138d74c03df90ce5292b6d8c00"
@@ -442,16 +427,92 @@
           "path": "packages/core/test/session-usage.test.ts",
           "action": "modified",
           "sha256": "3a8874b942fbb3c7d2f3cc691127563fd8b3594f2def01d9bff579cd6d4dd101"
+        }
+      ]
+    },
+    {
+      "id": "R2-02-statistics-ui",
+      "reason": "复用原生统计查询保留报告完整性和费用来源；新增按需的今天/7天/累计设置页；采用原生 optional 编码修复来源字段客户端类型分歧。",
+      "verification_commands": [
+        "python -m tools.provider_discovery_smoke",
+        "python tools/native_baseline.py --cwd packages/app --label r2-02-settings-web -- run test:e2e:built -- e2e/regression/settings.spec.ts --project chromium --workers=2 --retries=0",
+        "python tools/native_baseline.py --cwd . --label r2-02-stats-check -- run check"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/regression/settings.spec.ts",
+          "action": "modified",
+          "sha256": "f39095ad060d9a118513b5087f8cac0899999e0215a6c2389289a32b2cf0a441"
+        },
+        {
+          "path": "packages/app/e2e/utils/mock-api.ts",
+          "action": "modified",
+          "sha256": "fc1067d71b36008f7b4f69221c7d4771621511179bbfabf0ba2f39759d488363"
+        },
+        {
+          "path": "packages/app/e2e/utils/mock-server.ts",
+          "action": "modified",
+          "sha256": "bc7a99264c6ff0c6a5bd79e6bf2a6d0f4a8e7c46217a7a0385e044d28fc872e5"
+        },
+        {
+          "path": "packages/app/src/runtime/i18n/en.ts",
+          "action": "modified",
+          "sha256": "18f1278cbc678cf071b54b9158c1f17bbd6aa436f549e94bea5b6f09e59fe89b"
+        },
+        {
+          "path": "packages/app/src/settings/pages.ts",
+          "action": "modified",
+          "sha256": "7f2b9e1f7a9444a1bc6bd384044276e0d2616ec170f7c91a2bdbcec8e4ba09b9"
+        },
+        {
+          "path": "packages/app/src/settings/route.ts",
+          "action": "modified",
+          "sha256": "5f820f4072cea1a6d1c5828404344b394c74a0a827ab2ef94dacee7e0742ddad"
+        },
+        {
+          "path": "packages/app/src/settings/search-catalog.ts",
+          "action": "modified",
+          "sha256": "fb529e5ac7dc9b49f64a6d658f807afe38ed969a8cfdf9d27ca5b79669bcd488"
+        },
+        {
+          "path": "packages/app/src/settings/shell.tsx",
+          "action": "modified",
+          "sha256": "f7b6a70e7a703b1f148651f455168f406ef8a885896ee7fcbcea0ec95c893032"
+        },
+        {
+          "path": "packages/app/src/settings/usage/usage.tsx",
+          "action": "added",
+          "sha256": "a88e813924dbbe3ce4066d888a787258716e0a2ce5c8400fc3f877e122241faa"
         },
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "ab533efe353d3a20c0b6e19afa8d381081738f9271085b88f6f225b1104b59d7"
+          "sha256": "a1576b686336d966699bcc8feec568057c2cbe1cc8c6430bc4313f132956b245"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "b7544c252100379337c15e513f133cc6f6f5f0b70494714ff40e2ca3b89d9d80"
+          "sha256": "f79a59a6803152f2eafe0d621776897967697b8a86c139392ed269389e48abcb"
+        },
+        {
+          "path": "packages/core/src/session/stats.ts",
+          "action": "modified",
+          "sha256": "8573b657a38f11a7011af24763f9c41db35d6093e2e44b439ea1b9e75a741453"
+        },
+        {
+          "path": "packages/core/test/session-stats.test.ts",
+          "action": "modified",
+          "sha256": "a07d68c696789681d26341b0eeb38f9f0cd80121369d91ab9c15cbbc1567f450"
+        },
+        {
+          "path": "packages/schema/src/session-stats.ts",
+          "action": "modified",
+          "sha256": "6ce980ee7670646bc737fbc7d62e612c335d8524e3006bf6e456930c270045a6"
+        },
+        {
+          "path": "packages/schema/src/token-usage.ts",
+          "action": "modified",
+          "sha256": "04f84626792c741bd7a4c597303250295b151e186f20ccb53c96406fbf2be376"
         }
       ]
     }

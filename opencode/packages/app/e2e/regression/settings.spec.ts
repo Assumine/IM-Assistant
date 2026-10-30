@@ -19,6 +19,79 @@ const contributors = "https://api.github.com/repos/anomalyco/opencode/contributo
 
 test.use({ serviceWorkers: "block" })
 
+test("usage shows honest reporting by period and only refreshes on demand", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-10-30T12:00:00Z") })
+  const queries: Record<string, string | undefined>[] = []
+  const value = {
+    range: { from: 1, to: 2 }, sessions: 1, subagents: 0, prompts: 1, steps: 1,
+    tokens: { input: 10, output: 5, reasoning: 0, cache: { read: 30, write: 0 } }, cost: 100,
+    tools: { mode: "none" }, activeDays: 1, streak: 1, activity: [], models: [],
+    reporting: { records: 1, complete: 1, fields: { input: 1, output: 1, reasoning: 1, cacheRead: 1, cacheWrite: 1 },
+      cost: { reported: { records: 1, amount: 0 }, catalog: { records: 0, amount: 0 }, mixed: { records: 0, amount: 0 },
+        unavailable: { records: 0, amount: 0 }, unknown: { records: 0, amount: 0 } } },
+  }
+  const { settings } = await openSettings(page, { name: "Usage periods", workspace: false, sessionStats: query => {
+    queries.push(query)
+    if (!query.from) return { ...value, reporting: undefined }
+    if (queries.length === 1) return value
+    return { ...value, reporting: { ...value.reporting, complete: 0, fields: { ...value.reporting.fields, cacheWrite: 0 } } }
+  } })
+  const control = (title: string) => settings.locator("dl > div").filter({ has: page.getByText(title, { exact: true }) }).getByRole("definition")
+  expect(queries).toEqual([])
+  await settings.getByRole("tab", { name: "Usage", exact: true }).click()
+  await expect(control("Recorded tokens")).toHaveText("45")
+  await expect(control("Cache hit rate")).toHaveText("75%")
+  await expect(control("Reporting coverage")).toHaveText("1 / 1 record")
+  await expect(control("Upstream-reported amount")).toContainText("$0")
+  await expect(control("Catalog estimate")).toHaveText("Unknown")
+  if (test.info().repeatEachIndex === 0) await page.screenshot({ path: test.info().outputPath("usage-today.png"), fullPage: true })
+  expect(queries).toHaveLength(1)
+  expect(queries[0].tools).toBe("none")
+  const today = Number(queries[0].from)
+  expect(today).toBe(await page.evaluate(() => { const date = new Date(); date.setHours(0, 0, 0, 0); return date.getTime() }))
+  await page.clock.fastForward(15_000)
+  expect(queries).toHaveLength(1)
+  await settings.getByRole("button", { name: "Last 7 days", exact: true }).click()
+  await expect(control("Reporting coverage")).toHaveText("0 / 1 record")
+  await expect(control("Cache hit rate")).toHaveText("Unknown")
+  expect(Number(queries[1].from)).toBe(await page.evaluate(() => { const date = new Date(); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - 6); return date.getTime() }))
+  await settings.getByRole("button", { name: "All time", exact: true }).click()
+  await expect(control("Reporting coverage")).toHaveText("Unknown")
+  await expect(control("Fresh input")).toHaveText("Unknown")
+  await expect(control("Upstream-reported amount")).toHaveText("Unknown")
+  expect(queries[2].from).toBeUndefined()
+  await settings.getByRole("button", { name: "Refresh usage", exact: true }).click()
+  await expect.poll(() => queries.length).toBe(4)
+  await expect(settings.getByRole("button", { name: "Refresh usage", exact: true })).toBeEnabled()
+  await settings.getByRole("tab", { name: "Preferences", exact: true }).click()
+  await page.clock.fastForward(90_000)
+  expect(queries).toHaveLength(4)
+})
+
+test("usage ignores a late response after selecting another period", async ({ page }) => {
+  const delayed = Promise.withResolvers<void>()
+  let requests = 0
+  const { settings } = await openSettings(page, { name: "Usage race", workspace: false, sessionStats: async query => {
+    requests++
+    if (query.from) await delayed.promise
+    return { range: { from: 1, to: 2 }, sessions: 0, subagents: 0, prompts: 0, steps: 0,
+      tokens: { input: query.from ? 9999 : 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0,
+      tools: { mode: "none" }, activeDays: 0, streak: 0, activity: [], models: [] }
+  } })
+  try {
+    await settings.getByRole("tab", { name: "Usage", exact: true }).click()
+    await expect.poll(() => requests).toBe(1)
+    await settings.getByRole("button", { name: "All time", exact: true }).click()
+    const total = settings.locator("dl > div").filter({ has: page.getByText("Recorded tokens", { exact: true }) }).getByRole("definition")
+    await expect(total).toHaveText("0")
+    const finished = page.waitForResponse(response => response.url().includes("/api/experimental/session/stats?") && new URL(response.url()).searchParams.has("from"))
+    delayed.resolve()
+    await finished
+    await expect(total).toHaveText("0")
+    await expect(settings.getByRole("button", { name: "All time", exact: true })).toHaveAttribute("aria-pressed", "true")
+  } finally { delayed.resolve() }
+})
+
 // One project with 12 worktrees, each with one session, and a configured zsh shell.
 function open(page: Page, input: Partial<WorkspaceInput> = {}) {
   return openSettings(page, {
