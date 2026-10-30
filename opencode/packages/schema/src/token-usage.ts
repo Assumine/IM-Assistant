@@ -11,8 +11,17 @@ export const Info = Schema.Struct({
     read: Schema.Finite,
     write: Schema.Finite,
   }),
+  // Optional for older transcripts. Absence means unknown, never an inferred reported zero.
+  provenance: Schema.optional(Schema.Struct({
+    input: Schema.Boolean,
+    output: Schema.Boolean,
+    reasoning: Schema.Boolean,
+    cacheRead: Schema.Boolean,
+    cacheWrite: Schema.Boolean,
+    cost: Schema.optional(Schema.Literals(["reported", "catalog", "unavailable", "mixed"])),
+  })),
 }).annotate({ identifier: "TokenUsage.Info" })
 
-export function total(tokens: Info) {
+export function total(tokens: Pick<Info, "input" | "output" | "reasoning" | "cache">) {
   return tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
 }

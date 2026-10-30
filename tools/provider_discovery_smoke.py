@@ -39,10 +39,17 @@ def smoke():
             messages = request("GET", endpoint + "/message?limit=20&order=asc")["data"]
             answer = next(item for item in messages if item["type"] == "assistant")
             assert answer["tokens"]["input"] == 10 and answer["tokens"]["output"] == 4
+            assert answer["tokens"]["provenance"] == {"input": True, "output": True,
+                "reasoning": False, "cacheRead": False, "cacheWrite": False, "cost": "unavailable"}
             assert answer["content"] == [{"type": "text", "text": "Native baseline reply"}]
             assert len(generated) == 1
+        with native_server(home, config, managed=True) as (request, _):
+            restored = request("GET", endpoint + "/message?limit=20&order=asc")["data"]
+            assert restored == messages, "Restart lost usage provenance or changed native history"
+            assert len(generated) == 1, "Reading restored usage repeated model generation"
         return {"catalog_cli_real_http": True, "generation_verified_separately": True,
-            "native_reported_usage_persisted": True, "discovery_changes_default_or_queue": False,
+            "native_reported_usage_persisted": True, "usage_provenance_survives_restart": True,
+            "discovery_changes_default_or_queue": False,
             "external_model_requests": 0, "R2_02_complete": False}
 
 

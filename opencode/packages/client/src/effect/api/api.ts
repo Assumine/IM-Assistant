@@ -497,6 +497,16 @@ export type ExperimentalSessionStatsOutput = {
     readonly output: number
     readonly reasoning: number
     readonly cache: { readonly read: number; readonly write: number }
+    readonly provenance?:
+      | {
+          readonly input: boolean
+          readonly output: boolean
+          readonly reasoning: boolean
+          readonly cacheRead: boolean
+          readonly cacheWrite: boolean
+          readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+        }
+      | undefined
   }
   readonly cost: Money.USD
   readonly tools:
@@ -538,6 +548,16 @@ export type ExperimentalSessionStatsOutput = {
       readonly output: number
       readonly reasoning: number
       readonly cache: { readonly read: number; readonly write: number }
+      readonly provenance?:
+        | {
+            readonly input: boolean
+            readonly output: boolean
+            readonly reasoning: boolean
+            readonly cacheRead: boolean
+            readonly cacheWrite: boolean
+            readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+          }
+        | undefined
     }
     readonly cost: Money.USD
   }>
@@ -1013,6 +1033,16 @@ export type ExperimentalSessionLogOutput =
               readonly output: number
               readonly reasoning: number
               readonly cache: { readonly read: number; readonly write: number }
+              readonly provenance?:
+                | {
+                    readonly input: boolean
+                    readonly output: boolean
+                    readonly reasoning: boolean
+                    readonly cacheRead: boolean
+                    readonly cacheWrite: boolean
+                    readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+                  }
+                | undefined
             }
             readonly snapshot?: Snapshot.ID | undefined
             readonly files?: ReadonlyArray<RelativePath> | undefined
@@ -1047,6 +1077,16 @@ export type ExperimentalSessionLogOutput =
                   readonly output: number
                   readonly reasoning: number
                   readonly cache: { readonly read: number; readonly write: number }
+                  readonly provenance?:
+                    | {
+                        readonly input: boolean
+                        readonly output: boolean
+                        readonly reasoning: boolean
+                        readonly cacheRead: boolean
+                        readonly cacheWrite: boolean
+                        readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+                      }
+                    | undefined
                 }
               | undefined
             readonly snapshot?: Snapshot.ID | undefined
@@ -1313,6 +1353,16 @@ export type ExperimentalSessionLogOutput =
                   readonly output: number
                   readonly reasoning: number
                   readonly cache: { readonly read: number; readonly write: number }
+                  readonly provenance?:
+                    | {
+                        readonly input: boolean
+                        readonly output: boolean
+                        readonly reasoning: boolean
+                        readonly cacheRead: boolean
+                        readonly cacheWrite: boolean
+                        readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+                      }
+                    | undefined
                 }
               | undefined
           }
@@ -1344,6 +1394,16 @@ export type ExperimentalSessionLogOutput =
                   readonly output: number
                   readonly reasoning: number
                   readonly cache: { readonly read: number; readonly write: number }
+                  readonly provenance?:
+                    | {
+                        readonly input: boolean
+                        readonly output: boolean
+                        readonly reasoning: boolean
+                        readonly cacheRead: boolean
+                        readonly cacheWrite: boolean
+                        readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+                      }
+                    | undefined
                 }
               | undefined
           }
@@ -1399,6 +1459,16 @@ export type ExperimentalSessionLogOutput =
               readonly output: number
               readonly reasoning: number
               readonly cache: { readonly read: number; readonly write: number }
+              readonly provenance?:
+                | {
+                    readonly input: boolean
+                    readonly output: boolean
+                    readonly reasoning: boolean
+                    readonly cacheRead: boolean
+                    readonly cacheWrite: boolean
+                    readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+                  }
+                | undefined
             }
           }
         }

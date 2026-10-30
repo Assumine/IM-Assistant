@@ -60,6 +60,14 @@ export type TokenUsageInfo = {
   output: number
   reasoning: number
   cache: { read: number; write: number }
+  provenance?: {
+    input: boolean
+    output: boolean
+    reasoning: boolean
+    cacheRead: boolean
+    cacheWrite: boolean
+    cost?: "reported" | "catalog" | "unavailable" | "mixed" | null
+  } | null
 }
 
 export type RelativePath = string
@@ -169,6 +177,23 @@ export type InstructionHash = string
 export type SessionInboxSyntheticPayload1 = { text: string; description?: string; metadata?: { [x: string]: any } }
 
 export type SessionMessageNative1 = { [x: string]: any }
+
+export type TokenUsageInfo1 = {
+  input: number
+  output: number
+  reasoning: number
+  cache: { read: number; write: number }
+  provenance?:
+    | {
+        input: boolean
+        output: boolean
+        reasoning: boolean
+        cacheRead: boolean
+        cacheWrite: boolean
+        cost?: "reported" | "catalog" | "unavailable" | "mixed" | undefined
+      }
+    | undefined
+}
 
 export type ToolFileContent1 = { type: "file"; uri: string; mime: string; name?: string | undefined }
 
@@ -1377,7 +1402,7 @@ export type SessionStepEnded = {
     rawFinish?: string
     native?: SessionMessageNative1
     cost: MoneyUSD
-    tokens: TokenUsageInfo
+    tokens: TokenUsageInfo1
     snapshot?: SnapshotID
     files?: Array<RelativePath>
   }
@@ -1398,7 +1423,7 @@ export type SessionStepFailed = {
     rawFinish?: string
     native?: SessionMessageNative1
     cost?: MoneyUSD
-    tokens?: TokenUsageInfo
+    tokens?: TokenUsageInfo1
     snapshot?: SnapshotID
     files?: Array<RelativePath>
   }
@@ -1533,7 +1558,7 @@ export type SessionCompactionEnded = {
     native?: SessionMessageNative1
     text: string
     cost?: MoneyUSD
-    tokens?: TokenUsageInfo
+    tokens?: TokenUsageInfo1
   }
 }
 
@@ -1550,7 +1575,7 @@ export type SessionCompactionFailed = {
     error: SessionStructuredError
     inputID?: SessionMessageID
     cost?: MoneyUSD
-    tokens?: TokenUsageInfo
+    tokens?: TokenUsageInfo1
   }
 }
 
@@ -1591,7 +1616,7 @@ export type SessionUsageRecorded = {
   type: "session.usage.recorded"
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
-  data: { sessionID: SessionID; source: "title" | "compaction"; cost: MoneyUSD; tokens: TokenUsageInfo }
+  data: { sessionID: SessionID; source: "title" | "compaction"; cost: MoneyUSD; tokens: TokenUsageInfo1 }
 }
 
 export type LocationShutdown = {
@@ -1672,7 +1697,7 @@ export type SessionUsageUpdated = {
   metadata?: { [x: string]: any }
   type: "session.usage.updated"
   location?: LocationRef
-  data: { sessionID: SessionID; cost: MoneyUSD; tokens: TokenUsageInfo }
+  data: { sessionID: SessionID; cost: MoneyUSD; tokens: TokenUsageInfo1 }
 }
 
 export type SessionTextDelta = {
@@ -3707,6 +3732,14 @@ export type ExperimentalSessionImportInput = {
       readonly output: number
       readonly reasoning: number
       readonly cache: { readonly read: number; readonly write: number }
+      readonly provenance?: {
+        readonly input: boolean
+        readonly output: boolean
+        readonly reasoning: boolean
+        readonly cacheRead: boolean
+        readonly cacheWrite: boolean
+        readonly cost?: "reported" | "catalog" | "unavailable" | "mixed" | null
+      } | null
     }
     readonly outcome?: "succeeded" | "failed" | "interrupted"
     readonly time: {

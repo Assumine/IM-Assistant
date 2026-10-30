@@ -3,19 +3,28 @@
   "status": "in_progress",
   "acceptance_ids_completed": [],
   "native_discovery_and_storage_tests": 7,
-  "native_usage_review_tests": 4,
+  "native_usage_review_tests": 6,
   "canonical_check": "36 workspace tasks passed",
   "smoke": {
     "catalog_cli_real_http": true,
     "generation_verified_separately": true,
     "native_reported_usage_persisted": true,
+    "usage_provenance_survives_restart": true,
     "discovery_changes_default_or_queue": false,
     "external_model_requests": 0,
     "R2_02_complete": false
   },
   "limits": [
-    "Only CLI discovery is integrated; desktop API configuration and credential storage still pending.",
-    "Usage reporting provenance and today/7-day/all-time presentation still pending.",
-    "No real account or production switch."
-  ]
+    "Desktop API configuration and credential integration remain pending.",
+    "Today/7-day/all-time statistics and UI have not yet integrated provenance.",
+    "No production account or application switch."
+  ],
+  "native_provenance_core_regressions": 98,
+  "native_client_regressions": 41,
+  "usage_provenance": {
+    "new_records": "normalized field reporting and cost source",
+    "old_records": "unknown",
+    "native_client_generated": true,
+    "statistics_and_ui_integrated": false
+  }
 }

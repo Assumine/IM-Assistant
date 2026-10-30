@@ -205,16 +205,6 @@
           "sha256": "62bc207d6a11775364744708e717cf79092f561378f165adcf97c3cccef58061"
         },
         {
-          "path": "packages/client/src/effect/api/api.ts",
-          "action": "modified",
-          "sha256": "7cb6bb07efcab8eafc11d92540a76a54c340b837ab157a26a66f602ff802264d"
-        },
-        {
-          "path": "packages/client/src/promise/generated/types.ts",
-          "action": "modified",
-          "sha256": "c3478c8da1d772c1f14753a7e4cec307d17066def6d5673a6eb4cb3d9698ee2c"
-        },
-        {
           "path": "packages/core/src/command.ts",
           "action": "modified",
           "sha256": "efc16e401473a98793f5edda50bb0ea510322398f0724d61910faa697391a05a"
@@ -427,6 +417,41 @@
           "path": "packages/im-assistant/src/providers.test.ts",
           "action": "added",
           "sha256": "b46e142daf280d5c78e3b122e87336391252154fc044f2b4e8f91db66a6ab158"
+        }
+      ]
+    },
+    {
+      "id": "R2-02-usage-provenance",
+      "reason": "原生用量归零前保存字段报告状态及费用来源，旧数据缺省保持未知；原生生成客户端，不新增账本。",
+      "verification_commands": [
+        "python -m tools.provider_discovery_smoke",
+        "python tools/native_baseline.py --cwd . --label r2-02-provenance-check -- run check"
+      ],
+      "files": [
+        {
+          "path": "packages/schema/src/token-usage.ts",
+          "action": "modified",
+          "sha256": "233db9dfb065eafecbe717bd7c598c005b5a974b7f92e04f000ba826b68a0b13"
+        },
+        {
+          "path": "packages/core/src/session/usage.ts",
+          "action": "modified",
+          "sha256": "aa269803fab8d104f56be7d2a7a7cc8634d019138d74c03df90ce5292b6d8c00"
+        },
+        {
+          "path": "packages/core/test/session-usage.test.ts",
+          "action": "modified",
+          "sha256": "3a8874b942fbb3c7d2f3cc691127563fd8b3594f2def01d9bff579cd6d4dd101"
+        },
+        {
+          "path": "packages/client/src/effect/api/api.ts",
+          "action": "modified",
+          "sha256": "ab533efe353d3a20c0b6e19afa8d381081738f9271085b88f6f225b1104b59d7"
+        },
+        {
+          "path": "packages/client/src/promise/generated/types.ts",
+          "action": "modified",
+          "sha256": "b7544c252100379337c15e513f133cc6f6f5f0b70494714ff40e2ca3b89d9d80"
         }
       ]
     }
