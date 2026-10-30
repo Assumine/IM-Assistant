@@ -159,8 +159,14 @@
       "blocked_reason": null
     },
     "R2-02": {
-      "status": "pending",
-      "artifacts": [],
+      "status": "in_progress",
+      "artifacts": [
+        "opencode/packages/im-assistant/src/providers.ts",
+        "opencode/packages/im-assistant/src/providers.test.ts",
+        "tools/provider_discovery_smoke.py",
+        "docs/handoff/API与用量接入进展.md",
+        "upstream/provider-checkpoint.json"
+      ],
       "verification": [],
       "blocked_reason": null
     },
