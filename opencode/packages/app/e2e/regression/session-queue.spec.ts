@@ -168,9 +168,12 @@ async function openQueue(
   revert?: string,
   status: "idle" | "running" = "running",
   model = { id: "queue-model", name: "Queue Model" },
+  workspace = true,
+  extraSessions: { id: string; title: string }[] = [],
 ) {
   const options: Parameters<typeof openSession>[1] = {
     name: "SessionQueueRegression",
+    workspace,
     sessions: [
       {
         id: sessionID,
@@ -178,9 +181,10 @@ async function openQueue(
         model: { id: model.id, providerID: "opencode" },
         revert: revert ? { messageID: revert } : undefined,
       },
+      ...extraSessions,
     ],
     provider: provider(model),
-    pageMessages: () => ({ items: mock.messages }),
+    pageMessages: (id) => ({ items: id === sessionID ? mock.messages : [] }),
     sessionStatus: () => ({ [sessionID]: { type: status } }),
     inbox: () => [...mock.rows.map((row) => ({ ...row, payload: { ...row.payload } })), ...mock.compactions],
     onPrompt: mock.onPrompt,
@@ -229,6 +233,74 @@ test("follow-up preference controls Enter while Mod+Enter uses the alternate del
   await view.input.press("ControlOrMeta+Enter")
   await expect.poll(() => mock.prompts.map((prompt) => prompt.delivery)).toEqual(["queue", "steer"])
   await expect(view.input).toHaveText("")
+})
+
+test("conversation host keeps an unacknowledged queued input in its own session across switching and reload", async ({ page }) => {
+  const mock = createQueueMock([], [
+    { id: "msg_conversation_running", type: "user", text: "A request with no reply yet", time: { created: 1 } },
+  ])
+  const view = await openQueue(page, mock, "queue", undefined, "running", undefined, false,
+    [{ id: "ses_conversation_other", title: "Another conversation" }])
+  const held = await holdRoute(page, new RegExp(`/api/session/${sessionID}/prompt(\\?|$)`), { method: "POST" })
+  try {
+    await expect(userRow(page, "msg_conversation_running")).toBeVisible()
+    await expect(view.rows).toHaveCount(0)
+    await view.input.fill("Follow-up belongs to the first conversation")
+    await view.input.press("Enter")
+    await held.arrived
+    await expect(view.input).toHaveText("")
+    await expect(view.rows).toHaveCount(1)
+    await expect(view.rows).toContainText("Follow-up belongs to the first conversation")
+    // A queued submission never first masquerades as delivered transcript content.
+    await expect(page.locator('[data-timeline-row="UserMessage"]', { hasText: "Follow-up belongs to" })).toHaveCount(0)
+    expect(mock.prompts).toEqual([])
+
+    await page.locator("[data-titlebar-tab-title]", { hasText: "Another conversation" }).click()
+    await expect(view.input).toBeEditable()
+    await expect(view.rows).toHaveCount(0)
+    await view.input.fill("Unsent draft in the other conversation")
+    held.release()
+    await expect.poll(() => mock.prompts.map(prompt => prompt.text)).toEqual(["Follow-up belongs to the first conversation"])
+    await expect(view.input).toHaveText("Unsent draft in the other conversation")
+    await expect(view.rows).toHaveCount(0)
+
+    await page.locator("[data-titlebar-tab-title]", { hasText: "Session queue regression" }).click()
+    await expect(view.input).toHaveText("")
+    await expect(view.rows).toHaveCount(1)
+    await expect(view.rows).toContainText("Follow-up belongs to the first conversation")
+    await page.reload()
+    await expect(view.input).toBeEditable()
+    await expect(view.rows).toHaveCount(1)
+    await expect(view.rows).toContainText("Follow-up belongs to the first conversation")
+    expect(mock.prompts).toHaveLength(1)
+    expect(mock.changes).toEqual([])
+  } finally {
+    held.release()
+  }
+})
+
+test("conversation host shows an idle submission before admission without a phantom queue", async ({ page }) => {
+  const mock = createQueueMock([])
+  const view = await openQueue(page, mock, "queue", undefined, "idle", undefined, false)
+  const held = await holdRoute(page, new RegExp(`/api/session/${sessionID}/prompt(\\?|$)`), { method: "POST" })
+  try {
+    await view.input.fill("Start a fresh conversation turn")
+    await view.input.press("Enter")
+    await held.arrived
+    await expect(view.input).toHaveText("")
+    const row = page.locator('[data-timeline-row="UserMessage"]', { hasText: "Start a fresh conversation turn" })
+    await expect(row).toBeVisible()
+    await expect(view.rows).toHaveCount(0)
+    await expect(page.locator('[data-component="session-queue-panel"]')).toHaveCount(0)
+    expect(mock.prompts).toEqual([])
+    held.release()
+    await expect.poll(() => mock.prompts.length).toBe(1)
+    expect(mock.prompts[0].delivery).toBe("steer")
+    await expect(row).toHaveCount(1)
+    await expect(view.rows).toHaveCount(0)
+  } finally {
+    held.release()
+  }
 })
 
 test("a steer shows as pending in the timeline as the composer clears, before the server admits it", async ({

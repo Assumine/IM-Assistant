@@ -705,11 +705,12 @@ story("keeps live elements and selection when a stream completes and later chang
   const markdown = harness.locator('[data-component="markdown"]')
   const paragraph = markdown.locator("p")
   await expect(markdown.locator("[data-markdown-word]")).toHaveCount(2)
+  await expect(markdown.locator("[data-markdown-enter]")).toHaveCount(0)
   await paragraph.evaluate((element) => element.setAttribute("data-retained", "true"))
   await harness.getByLabel("Markdown text").fill("Hello **world** again")
   await expect(markdown.locator("[data-markdown-word]")).toHaveCount(3)
   await expect(paragraph).toHaveAttribute("data-retained", "true")
-  await expect(markdown.locator("[data-markdown-enter]")).not.toHaveCount(0)
+  await expect(markdown.locator("[data-markdown-enter]")).toHaveText(["again"])
   await paragraph.evaluate((element) => {
     const range = document.createRange()
     range.selectNodeContents(element.querySelector("strong")!)
@@ -731,6 +732,9 @@ story("keeps live elements and selection when a stream completes and later chang
   await expect(markdown.locator("[data-markdown-word]")).toHaveCount(0)
   await harness.getByRole("button", { name: "Toggle Markdown" }).click()
   await expect(markdown).toHaveCount(0)
+  await harness.getByRole("button", { name: "Toggle Markdown" }).click()
+  await expect(markdown.locator("p")).toHaveText("Changed content in new/file.ts and new/file.ts")
+  await expect(markdown.locator("[data-markdown-enter]")).toHaveCount(0)
 })
 
 story("replaces completed DOM before live rendering and retains streamed code copy actions", async ({ page }) => {

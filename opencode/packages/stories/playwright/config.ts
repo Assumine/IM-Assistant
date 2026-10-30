@@ -17,7 +17,7 @@ export function componentConfig(directory: string) {
     webServer: {
       // Vite runs on Node: Bun 1.4.2's node:http crashes the server with an uncaught "write after end" when a browser
       // abandons pipelined requests (oven-sh/bun#40350, fixed in Bun 1.4.3).
-      command: `bun run --cwd ${directory}/../stories dev --port ${port} --strictPort`,
+      command: `bun run --cwd "${directory}/../stories" dev --port ${port} --strictPort`,
       url: baseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

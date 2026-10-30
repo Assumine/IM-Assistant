@@ -113,7 +113,10 @@
         "R1-02"
       ],
       "outputs": [
-        "opencode/packages/im-assistant/src/conversation-profile.ts"
+        "opencode/packages/app/e2e/regression/session-queue.spec.ts",
+        "opencode/packages/app/e2e/regression/timeline-history.spec.ts",
+        "opencode/packages/session-ui/component-tests/markdown.spec.ts",
+        "upstream/conversation-verification.json"
       ],
       "test_files": [
         "tests/rebase/test_r2_01.py"

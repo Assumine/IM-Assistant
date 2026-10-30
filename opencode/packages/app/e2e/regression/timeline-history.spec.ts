@@ -21,7 +21,7 @@ import { openSession } from "../utils/workspace"
 test.use({ serviceWorkers: "block" })
 
 test.describe("timeline history", () => {
-  test("restoring a paged transcript waits for another upward scroll before loading history", async ({ page }) => {
+  test("restoring a paged transcript in a conversation host waits for another upward scroll before loading history", async ({ page }) => {
     const id = "ses_history_restore"
     const other = "ses_history_other"
     const text = Array.from({ length: 40 }, (_, index) => `Paragraph ${index}.`).join("\n\n")
@@ -41,6 +41,7 @@ test.describe("timeline history", () => {
     await page.clock.install()
     await openSession(page, {
       name: "HistoryRestore",
+      workspace: false,
       sessions: [{ id }, { id: other, directory: "C:/OpenCode/HistoryOther" }],
       pageMessages: (session, _limit, before) => {
         if (session === other)
@@ -56,6 +57,7 @@ test.describe("timeline history", () => {
     })
     const scroller = timelineScroller(page)
     await expect(page.locator("[data-timeline-virtual-content]")).toHaveCSS("visibility", "visible")
+    await expect(page.locator("[data-markdown-enter]")).toHaveCount(0)
     // One upward gesture, without wheel momentum carrying across the page prepend.
     await scroller.evaluate((element) => {
       element.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: -1 }))
@@ -68,6 +70,7 @@ test.describe("timeline history", () => {
     await expect(page.getByText("Other session", { exact: true })).toBeVisible()
     await page.locator(`[data-slot="titlebar-tabs"] a[href="${sessionHref(id)}"]`).click()
     await expect(page.locator("[data-timeline-virtual-content]")).toHaveCSS("visibility", "visible")
+    await expect(page.locator("[data-markdown-enter]")).toHaveCount(0)
     // Exhaust the delayed leading-turn enrichment without a real-time sleep.
     await page.clock.runFor(1_000)
     expect(requests).toEqual([undefined, "older"])

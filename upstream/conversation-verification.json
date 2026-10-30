@@ -1,0 +1,91 @@
+{
+  "task": "R2-01",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "verified_at": "2026-10-30T13:36:21.742090+00:00",
+  "upstream_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "acceptance_ids": [
+    "A11",
+    "A12",
+    "A13",
+    "A14",
+    "A15",
+    "A16"
+  ],
+  "harness_checks": 7,
+  "declared_product_files": 76,
+  "native_state_owner_tests": 95,
+  "production_browser_keeper_cases": 47,
+  "new_browser_cases": 2,
+  "new_browser_case_repetitions": {
+    "per_case": 10,
+    "workers": 5,
+    "passed": 20,
+    "retries": 0
+  },
+  "markdown_keeper_repetitions": {
+    "cases": 1,
+    "per_case": 10,
+    "workers": 2,
+    "passed": 10,
+    "retries": 0
+  },
+  "canonical_lint_and_typecheck": "bun run check: 36 workspace tasks successful",
+  "real_backend": {
+    "real_native_http_and_sqlite": true,
+    "model_requests": 4,
+    "external_model_requests": 0,
+    "admission_before_first_token": true,
+    "same_id_first_admission_wins": true,
+    "steer_before_queue_at_safe_step": true,
+    "withdrawal_not_executed": true,
+    "final_step_then_next_delivery_then_drain_idle": true,
+    "idle_input_starts_without_notification": true,
+    "session_selection_does_not_own_execution": true,
+    "restart_preserves_order_without_reexecution": true
+  },
+  "separate_e2e_typecheck": {
+    "check": "bun run typecheck:e2e",
+    "status": "failed_existing",
+    "diagnostics_before": 14,
+    "diagnostics_after": 14,
+    "same_as_previous_commit": true,
+    "new_diagnostics": 0
+  },
+  "composer_production_sample": {
+    "before": {
+      "elapsedMs": 103.75510000000031,
+      "scriptMs": 23.222,
+      "taskMs": 63.943,
+      "nodes": 1492,
+      "characters": 65
+    },
+    "after": {
+      "elapsedMs": 119.16919999999982,
+      "scriptMs": 24.401,
+      "taskMs": 66.401,
+      "nodes": 1492,
+      "characters": 65
+    },
+    "samples_per_variant": 1,
+    "statistical_speedup_claim": false,
+    "product_runtime_controller_modified": false
+  },
+  "runtime_report_sha256": "0e7cb8b43c356c669c2d20475cf4364430a7b15d91286f52cd2d8f1d790a24c1",
+  "implementation": {
+    "native_conversation_controllers_modified": false,
+    "new_scheduler": false,
+    "planned_profile_wrapper_omitted": "R1 already integrates native conversation; no new state owner is necessary",
+    "windows_story_test_command_quoted": true
+  },
+  "limits": [
+    "Browser keepers use HTTP/SSE fixtures; real native HTTP/SQLite uses a controlled local model separately.",
+    "All model calls are synthetic and local, not production account validation.",
+    "Separate typecheck:e2e still has the same 14 diagnostics as the preceding commit; not counted as passed.",
+    "Assistant message entrance theme and full visual verification belong to R4-02; no installer or production switch."
+  ],
+  "production_switched": false,
+  "old_private_data_imported": false,
+  "packaged_installer": false,
+  "next_task": "R2-02"
+}

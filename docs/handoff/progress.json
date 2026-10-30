@@ -12,7 +12,13 @@
     "A07",
     "A08",
     "A09",
-    "A10"
+    "A10",
+    "A11",
+    "A12",
+    "A13",
+    "A14",
+    "A15",
+    "A16"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -118,9 +124,38 @@
       "blocked_reason": null
     },
     "R2-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "docs/handoff/原生会话交互契约.md",
+        "tools/native_conversation_smoke.py",
+        "tests/rebase/test_r2_01.py",
+        "opencode/packages/app/e2e/regression/session-queue.spec.ts",
+        "opencode/packages/app/e2e/regression/timeline-history.spec.ts",
+        "opencode/packages/session-ui/component-tests/markdown.spec.ts",
+        "opencode/packages/stories/playwright/config.ts",
+        "upstream/conversation-verification.json",
+        "upstream/patches.json"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 7,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A11",
+            "A12",
+            "A13",
+            "A14",
+            "A15",
+            "A16"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R2-01",
+          "evidence": "upstream/conversation-verification.json"
+        }
+      ],
       "blocked_reason": null
     },
     "R2-02": {

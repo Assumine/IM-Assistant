@@ -41,9 +41,10 @@ class NativeBaselineTests(unittest.TestCase):
 
     def test_05_original_web_build_and_browser_regressions(self):
         # Upstream browser fixtures mock HTTP; real HTTP/SQLite is covered separately below.
+        # The keeper files now include the 45 original cases plus 2 R2-01 conversation-host regressions.
         self.assert_native_suite(run_command("packages/app", ["run", "test:e2e:built", "--",
             "e2e/regression/session-queue.spec.ts", "e2e/regression/timeline-history.spec.ts", "--workers=2", "--retries=0"],
-            "native-web-e2e", extra_env={"PLAYWRIGHT_PORT": "4380"}), 45)
+            "native-web-e2e", extra_env={"PLAYWRIGHT_PORT": "4380"}), 47)
 
     def test_06_original_desktop_bundle_build(self):
         self.assertEqual(run_command("packages/desktop", ["x", "electron-vite", "build"], "desktop-build")["exit_code"], 0)

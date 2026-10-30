@@ -380,6 +380,35 @@
           "sha256": "ee1f392ceab084e54220039b2b3fc2c01de7beb048d87a678e171899be543a13"
         }
       ]
+    },
+    {
+      "id": "R2-01-conversation-contracts",
+      "reason": "原生会话控制器保持不变；队列、历史及流式文字 keeper 验证助手交互与历史无重播；修复 Windows 带空格目录的组件测试启动命令。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R2-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/regression/session-queue.spec.ts",
+          "action": "modified",
+          "sha256": "9cd4200780c3d997c07c4e90fd1090e3d89343b53f7aa89a9b28bed2985f2b0c"
+        },
+        {
+          "path": "packages/app/e2e/regression/timeline-history.spec.ts",
+          "action": "modified",
+          "sha256": "d0e721694d362d12ebbb5db2b5f19d56ef3c12cf39c1245a4725dae614e3293e"
+        },
+        {
+          "path": "packages/session-ui/component-tests/markdown.spec.ts",
+          "action": "modified",
+          "sha256": "d1b8e096051e0abac0d14dc4e5f1ad588ce56f7c9c7f45698126165abc4bae50"
+        },
+        {
+          "path": "packages/stories/playwright/config.ts",
+          "action": "modified",
+          "sha256": "969243bb041dc350b05c116c105cae744256cd96deba6ad7a3e7f3d6dd731b07"
+        }
+      ]
     }
   ]
 }
