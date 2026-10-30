@@ -24,5 +24,9 @@
   "implementation_status_source": "../handoff/progress.json",
   "capability_package_directory": "modules/<module-id>",
   "source_directory": "opencode/",
-  "historical_python_sdk_status": "reference_and_regression_examples_only"
+  "historical_python_sdk_status": "reference_and_regression_examples_only",
+  "composition": "core_framework_plus_plugins",
+  "core_base": "OpenCode native application and session mechanisms",
+  "business_capabilities": "complete plugins via public extension interfaces",
+  "dependencies_are_not_feature_plugins": true
 }
