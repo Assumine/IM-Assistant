@@ -1,0 +1,54 @@
+{
+  "protocol_version": 1,
+  "backend_id": "example.native-system",
+  "backend_version": "0.1.0",
+  "display_name": "另一套保留原生机制的后端示例",
+  "ownership": {
+    "history": "backend",
+    "context": "backend",
+    "queue": "backend",
+    "tools": "backend",
+    "compaction": "backend"
+  },
+  "methods": [
+    "backend.describe",
+    "connections.list",
+    "conversations.list",
+    "conversations.open",
+    "history.read",
+    "inputs.submit",
+    "inputs.lookup",
+    "events.subscribe",
+    "state.snapshot",
+    "queue.snapshot",
+    "context.inspect",
+    "context.compact",
+    "usage.read"
+  ],
+  "capabilities": {
+    "queue_inspect": true,
+    "queue_reorder": false,
+    "queue_withdraw": false,
+    "input_adjust": false,
+    "cancel_run": false,
+    "pause_run": false,
+    "resume_run": false,
+    "context_inspect": true,
+    "compact": true,
+    "usage": true,
+    "session_export": false,
+    "human_interaction": false,
+    "connection_setup": false,
+    "attachments": false
+  },
+  "delivery_guarantees": {
+    "durable_request_identity": true,
+    "query_after_disconnect": true,
+    "ordered_resumable_events": true,
+    "stable_history_cursor": true
+  },
+  "annotations": {
+    "design_only": true,
+    "capability_values_are_not_current_runtime_verification": true
+  }
+}

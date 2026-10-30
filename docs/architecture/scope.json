@@ -1,0 +1,53 @@
+{
+  "kind": "design_only",
+  "date": "2026-10-30",
+  "timezone": "Asia/Shanghai",
+  "scope": "host foundation and whole conversation backend integration",
+  "unit_of_integration": "complete_conversation_backend",
+  "separate_context_or_compactor_plugins_required": false,
+  "queue_authority": "owning_conversation_backend",
+  "host_ledger": "ingress_delivery_and_notifications_only",
+  "native_context_and_compaction_owner": "owning_conversation_backend",
+  "reference_backend": "OpenCode @opencode/sdk and @opencode/plugin locked 2.1.4",
+  "codex": "future peer whole backend; no migration this phase",
+  "production_switch": false,
+  "business_module_migration": false,
+  "implementation_phases": [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4"
+  ],
+  "deferred": [
+    "Codex production migration",
+    "QQ migration",
+    "research restructuring",
+    "downloads restructuring",
+    "personal companion migration",
+    "media and music data migration",
+    "external cinema migration",
+    "online module marketplace"
+  ],
+  "source_evidence": [
+    "assistant_runtime/control/task_channels.py",
+    "assistant_runtime/control/task_coordinator.py",
+    "assistant_runtime/control/task_store.py",
+    "assistant_host.py",
+    "opencode_core/package.json",
+    "opencode_core/package-lock.json",
+    "opencode_core/service.mjs",
+    "opencode_core/bridge.py",
+    "data/plugins/astrbot_plugin_assistant_control/main.py",
+    "management_center/module_catalog.py",
+    "management_center/module_control.py",
+    "management_center/server.py",
+    "performance_monitor/README.md"
+  ],
+  "official_references": [
+    "https://opencode.ai/v2/docs/build/sdk/",
+    "https://opencode.ai/v2/docs/build/plugins/"
+  ],
+  "module_directory": "modules/<module-id>",
+  "source_evidence_scope": "legacy_workspace_reference_only"
+}

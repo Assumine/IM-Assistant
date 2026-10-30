@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "example.opencode",
+  "version": "0.1.0",
+  "display_name": "整套 OpenCode 会话后端示例",
+  "kind": "conversation_backend",
+  "host_protocol": 1,
+  "runtime": {
+    "mode": "managed_process",
+    "transport": "stdio_jsonrpc",
+    "start": "on_demand",
+    "command": [
+      "${runtime:node}",
+      "./backend.mjs"
+    ]
+  },
+  "backend_descriptor": "opencode-backend.json",
+  "data_version": "1",
+  "dependencies": [
+    {
+      "capability": "host.identity",
+      "required": true,
+      "protocol": 1
+    }
+  ],
+  "permissions": [
+    "network.configured_api",
+    "data.own_instance"
+  ],
+  "contributions": {},
+  "annotations": {
+    "design_only": true,
+    "not_installed": true
+  }
+}

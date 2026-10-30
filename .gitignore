@@ -1,0 +1,42 @@
+# Local runtime, credentials and user data
+/runtime/
+/.reports/
+/data/
+**/.env
+**/.env.*
+!**/.env.example
+**/auth.json
+**/accounts.json
+**/secrets.json
+**/credentials.json
+*.pem
+*.key
+*.pfx
+*.p12
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.log
+
+# Local environments and generated dependencies
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

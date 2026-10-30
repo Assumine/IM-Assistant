@@ -1,0 +1,589 @@
+{
+  "type": "object",
+  "properties": {
+    "protocol_version": {
+      "const": 1
+    },
+    "backend_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+    },
+    "backend_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$"
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "ownership": {
+      "type": "object",
+      "properties": {
+        "history": {
+          "const": "backend"
+        },
+        "context": {
+          "const": "backend"
+        },
+        "queue": {
+          "const": "backend"
+        },
+        "tools": {
+          "const": "backend"
+        },
+        "compaction": {
+          "const": "backend"
+        }
+      },
+      "required": [
+        "history",
+        "context",
+        "queue",
+        "tools",
+        "compaction"
+      ],
+      "additionalProperties": false
+    },
+    "methods": {
+      "type": "array",
+      "minItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$"
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "queue_inspect": {
+          "type": "boolean"
+        },
+        "queue_reorder": {
+          "type": "boolean"
+        },
+        "queue_withdraw": {
+          "type": "boolean"
+        },
+        "input_adjust": {
+          "type": "boolean"
+        },
+        "cancel_run": {
+          "type": "boolean"
+        },
+        "pause_run": {
+          "type": "boolean"
+        },
+        "resume_run": {
+          "type": "boolean"
+        },
+        "context_inspect": {
+          "type": "boolean"
+        },
+        "compact": {
+          "type": "boolean"
+        },
+        "usage": {
+          "type": "boolean"
+        },
+        "session_export": {
+          "type": "boolean"
+        },
+        "human_interaction": {
+          "type": "boolean"
+        },
+        "connection_setup": {
+          "type": "boolean"
+        },
+        "attachments": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "queue_inspect",
+        "queue_reorder",
+        "queue_withdraw",
+        "input_adjust",
+        "cancel_run",
+        "pause_run",
+        "resume_run",
+        "context_inspect",
+        "compact",
+        "usage",
+        "session_export",
+        "human_interaction",
+        "connection_setup",
+        "attachments"
+      ],
+      "additionalProperties": false
+    },
+    "delivery_guarantees": {
+      "type": "object",
+      "properties": {
+        "durable_request_identity": {
+          "const": true
+        },
+        "query_after_disconnect": {
+          "const": true
+        },
+        "ordered_resumable_events": {
+          "const": true
+        },
+        "stable_history_cursor": {
+          "const": true
+        }
+      },
+      "required": [
+        "durable_request_identity",
+        "query_after_disconnect",
+        "ordered_resumable_events",
+        "stable_history_cursor"
+      ],
+      "additionalProperties": false
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_.-]*$"
+      },
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "annotations": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "protocol_version",
+    "backend_id",
+    "backend_version",
+    "display_name",
+    "ownership",
+    "methods",
+    "capabilities",
+    "delivery_guarantees"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:im-assistant:design:backend-descriptor:1",
+  "title": "完整会话后端公开描述",
+  "allOf": [
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "backend.describe"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "connections.list"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "conversations.list"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "conversations.open"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "history.read"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "inputs.submit"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "inputs.lookup"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "events.subscribe"
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "methods": {
+          "contains": {
+            "const": "state.snapshot"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_inspect": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "queue.snapshot"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_reorder": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "queue.reorder"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_withdraw": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "queue.withdraw"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "input_adjust": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "inputs.adjust"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "cancel_run": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "runs.cancel"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "pause_run": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "runs.pause"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "resume_run": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "runs.resume"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "context_inspect": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "context.inspect"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "compact": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "context.compact"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "usage": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "usage.read"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "session_export": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "conversations.export"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "human_interaction": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "interactions.respond"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "connection_setup": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "connections.configure"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_reorder": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_inspect": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_withdraw": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "queue_inspect": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

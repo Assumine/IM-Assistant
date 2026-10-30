@@ -1,0 +1,300 @@
+{
+  "type": "object",
+  "properties": {
+    "protocol_version": {
+      "const": 1
+    },
+    "backend_instance_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+    },
+    "stream_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+    },
+    "runtime_generation": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$"
+    },
+    "conversation_ref": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "conversation_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+            },
+            "backend_instance_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+            },
+            "native_conversation_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "required": [
+            "conversation_id",
+            "backend_instance_id",
+            "native_conversation_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "request_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "native_input_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "native_run_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "protocol_version",
+    "backend_instance_id",
+    "stream_id",
+    "sequence",
+    "event_id",
+    "runtime_generation",
+    "occurred_at",
+    "type",
+    "conversation_ref",
+    "request_id",
+    "native_input_id",
+    "native_run_id",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:im-assistant:design:backend-event:1",
+  "title": "后端公开持久事件信封",
+  "description": "source identity=(backend_instance_id,stream_id,event_id); sequence orders this stream; runtime_generation is NOT event dedupe identity.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "pattern": "^run\\."
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "native_run_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+          },
+          "conversation_ref": {
+            "type": "object",
+            "properties": {
+              "conversation_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+              },
+              "backend_instance_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+              },
+              "native_conversation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "conversation_id",
+              "backend_instance_id",
+              "native_conversation_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "input.accepted",
+              "input.applied"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+          },
+          "native_input_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+          },
+          "conversation_ref": {
+            "type": "object",
+            "properties": {
+              "conversation_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+              },
+              "backend_instance_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+              },
+              "native_conversation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "conversation_id",
+              "backend_instance_id",
+              "native_conversation_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "message.upsert",
+              "message.committed"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "conversation_ref": {
+            "type": "object",
+            "properties": {
+              "conversation_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+              },
+              "backend_instance_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+              },
+              "native_conversation_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "conversation_id",
+              "backend_instance_id",
+              "native_conversation_id"
+            ],
+            "additionalProperties": false
+          },
+          "payload": {
+            "required": [
+              "message"
+            ],
+            "properties": {
+              "message": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "role": {
+                    "enum": [
+                      "user",
+                      "assistant",
+                      "tool",
+                      "system"
+                    ]
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "phase": {
+                    "enum": [
+                      "pending",
+                      "commentary",
+                      "final"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "revision",
+                  "role",
+                  "text",
+                  "phase"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

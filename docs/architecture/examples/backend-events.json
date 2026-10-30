@@ -1,0 +1,192 @@
+[
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": null,
+    "sequence": 1,
+    "event_id": "event-1",
+    "type": "input.accepted",
+    "payload": {
+      "execution_state": "queued",
+      "durable": true,
+      "receipt_id": "receipt-01"
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": null,
+    "sequence": 2,
+    "event_id": "event-2",
+    "type": "queue.changed",
+    "payload": {
+      "revision": "queue-9"
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": "native-run-01",
+    "sequence": 3,
+    "event_id": "event-3",
+    "type": "run.started",
+    "payload": {
+      "execution_state": "running"
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": "native-run-01",
+    "sequence": 4,
+    "event_id": "event-4",
+    "type": "input.applied",
+    "payload": {
+      "execution_state": "running"
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": "native-run-01",
+    "sequence": 5,
+    "event_id": "event-5",
+    "type": "message.upsert",
+    "payload": {
+      "message": {
+        "id": "message-01",
+        "revision": 1,
+        "role": "assistant",
+        "text": "正在整理资料",
+        "phase": "commentary"
+      }
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": "native-run-01",
+    "sequence": 6,
+    "event_id": "event-6",
+    "type": "message.committed",
+    "payload": {
+      "message": {
+        "id": "message-02",
+        "revision": 1,
+        "role": "assistant",
+        "text": "整理结果已保存。",
+        "phase": "final"
+      }
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": "native-run-01",
+    "sequence": 7,
+    "event_id": "event-7",
+    "type": "usage.reported",
+    "payload": {
+      "generation_id": "generation-01",
+      "source": "backend_reported",
+      "input_tokens": 120,
+      "output_tokens": 20,
+      "cache_read_tokens": null,
+      "cost": null
+    }
+  },
+  {
+    "protocol_version": 1,
+    "backend_instance_id": "backend-01",
+    "stream_id": "stream-01",
+    "runtime_generation": "boot-03",
+    "occurred_at": "2026-10-30T15:00:00+08:00",
+    "conversation_ref": {
+      "conversation_id": "conversation-01",
+      "backend_instance_id": "backend-01",
+      "native_conversation_id": "native-session-01"
+    },
+    "request_id": "input-01",
+    "native_input_id": "native-input-01",
+    "native_run_id": "native-run-01",
+    "sequence": 8,
+    "event_id": "event-8",
+    "type": "run.completed",
+    "payload": {
+      "result_message_ids": [
+        "message-02"
+      ],
+      "execution_state": "completed"
+    }
+  }
+]
