@@ -2,7 +2,7 @@
 
 个人助手的宿主地基与整套会话后端接入框架。
 
-当前阶段是重构设计、接口契约和仓库骨架，尚未实现可运行的新版助手。旧应用、业务模块和本机运行数据没有放入这个仓库。
+P0 契约与接入测试工具已实现：静态包验证、有界 JSON-RPC、两套内部结构不同的测试后端和统一行为验收驱动。独立宿主、OpenCode 正式后端和客户端迁移仍待后续阶段实现。旧应用、业务模块和本机运行数据没有放入这个仓库。
 
 后续 AI 从 [接手指南](docs/handoff/接手指南.md) 开始，运行 `python tools/next_task.py` 查看第一项可开展工作。旧客户端源码按本地只读配置参考，不要求上传到 GitHub。
 
@@ -16,10 +16,10 @@ OpenCode 是计划中的默认参考后端；Codex 原生会话系统作为后�
 | --- | --- |
 | `host/` | 宿主生命周期、身份、配置、输入账本、事件与通知，待实现 |
 | `conversation/` | 完整后端目录、会话映射与统一访问门面，待实现 |
-| `sdk/` | 后端接入类型、协议与测试工具，待实现 |
+| `sdk/` | 已实现后端接入类型、静态验证、有界协议和接入行为测试驱动 |
 | `modules/` | 完整会话后端和未来业务模块，每个完整包占一个子目录 |
 | `portal_adapter/` | 对接现有客户端的通用门面，待实现 |
-| `tests/` | 后续契约和后端隔离测试 |
+| `tests/` | 已实现 P0 契约、子进程隔离与接入验收测试；其他阶段待实现 |
 | `docs/architecture/` | 完整方案、接入契约、实施清单、Schema 与示例 |
 | `docs/handoff/` | 接手入口、18项实现任务、真实进度、决策及本地参考约定 |
 | `tools/` | 当前设计规范校验工具 |
@@ -30,7 +30,7 @@ OpenCode 是计划中的默认参考后端；Codex 原生会话系统作为后�
 
 - [完整重构方案](docs/architecture/重构方案.md)
 - [整套后端接入契约](docs/architecture/接口契约.md)
-- [实施阶段与66项待执行验收](docs/architecture/实施与验收.md)
+- [实施阶段与66项验收定义](docs/architecture/实施与验收.md)
 - [模块目录约定](modules/README.md)
 - [接手指南与当前任务](docs/handoff/接手指南.md)
 
@@ -47,7 +47,17 @@ python tools/validate_design.py
 
 校验覆盖 JSON Schema、示例、必要能力约束、文档链接和待实施验收项。它不启动后端，不调用模型，不执行66项运行验收。结果写入本机 `.reports/`，不提交到仓库。
 
-实际实现按 `work-plan.json` 的目标文件与测试推进，完成后更新 `progress.json`。运行测试入口为 `python tools/run_runtime_checks.py --task P0-01`；目前没有运行测试文件，这条命令应明确报告尚未实现并返回非成功。
+实际实现按 `work-plan.json` 的目标文件与测试推进，完成后更新 `progress.json`。P0 的四项测试可以逐项运行；测试会创建隔离子进程，不连接模型或 QQ，也不使用旧应用数据：
+
+```sh
+python tools/run_runtime_checks.py --task P0-01
+python tools/run_runtime_checks.py --task P0-02
+python tools/run_runtime_checks.py --task P0-03
+python tools/run_runtime_checks.py --task P0-04
+python -m unittest discover -s tests -t . -v
+```
+
+尚未实现的后续任务仍应返回非成功，不能以空测试通过。P0 通过证明测试后端的接入闭环；不代表 OpenCode、Codex 或旧客户端已完成生产接入。
 
 需要参考旧客户端时，复制 `handoff.local.example.json` 为 `handoff.local.json`，填写本地旧项目位置。本机配置和旧源码不会随本仓库提交。
 

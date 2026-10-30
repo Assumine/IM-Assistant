@@ -108,7 +108,11 @@
         "revision": 1,
         "role": "assistant",
         "text": "正在整理资料",
-        "phase": "commentary"
+        "phase": "commentary",
+        "order": 1,
+        "request_id": "input-01",
+        "native_input_id": "native-input-01",
+        "native_run_id": "native-run-01"
       }
     }
   },
@@ -135,7 +139,11 @@
         "revision": 1,
         "role": "assistant",
         "text": "整理结果已保存。",
-        "phase": "final"
+        "phase": "final",
+        "order": 2,
+        "request_id": "input-01",
+        "native_input_id": "native-input-01",
+        "native_run_id": "native-run-01"
       }
     }
   },

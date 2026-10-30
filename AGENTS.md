@@ -1,7 +1,7 @@
 # 开发约定
 
 - 新接手先读 `docs/handoff/接手指南.md`，运行 `python tools/next_task.py` 确定当前工作；不要根据聊天历史猜进度。
-- `docs/handoff/work-plan.json` 定义任务，`progress.json` 是完成状态的唯一记录；初始交付没有运行实现，后续以进度文件为准。
+- `docs/handoff/work-plan.json` 定义任务，`progress.json` 是完成状态的唯一记录；P0 已有行为实现，后续以进度文件为准。
 - 旧客户端只读参考位置来自不提交的 `handoff.local.json`；不要求把旧源码上传 GitHub，不得修改或接管旧系统。
 - 默认使用 Python 处理文件、自动化与校验；非必要不使用 PowerShell。
 - 当前阶段只建设宿主地基和整套会话后端接入能力，业务模块另立范围。

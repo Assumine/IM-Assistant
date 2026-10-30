@@ -1,5 +1,5 @@
 {
-  "kind": "design_only",
+  "kind": "architecture_scope",
   "date": "2026-10-30",
   "timezone": "Asia/Shanghai",
   "scope": "host foundation and whole conversation backend integration",
@@ -49,5 +49,6 @@
     "https://opencode.ai/v2/docs/build/plugins/"
   ],
   "module_directory": "modules/<module-id>",
-  "source_evidence_scope": "legacy_workspace_reference_only"
+  "source_evidence_scope": "legacy_workspace_reference_only",
+  "implementation_status_source": "../handoff/progress.json"
 }

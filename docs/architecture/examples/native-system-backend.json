@@ -39,7 +39,8 @@
     "session_export": false,
     "human_interaction": false,
     "connection_setup": false,
-    "attachments": false
+    "attachments": false,
+    "resources": false
   },
   "delivery_guarantees": {
     "durable_request_identity": true,

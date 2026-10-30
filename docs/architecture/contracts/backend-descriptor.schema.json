@@ -6,11 +6,11 @@
     },
     "backend_id": {
       "type": "string",
-      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$"
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,159}$(?![\\s\\S])"
     },
     "backend_version": {
       "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$"
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$(?![\\s\\S])"
     },
     "display_name": {
       "type": "string",
@@ -51,7 +51,7 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$"
+        "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$(?![\\s\\S])"
       }
     },
     "capabilities": {
@@ -98,6 +98,9 @@
         },
         "attachments": {
           "type": "boolean"
+        },
+        "resources": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -114,7 +117,8 @@
         "session_export",
         "human_interaction",
         "connection_setup",
-        "attachments"
+        "attachments",
+        "resources"
       ],
       "additionalProperties": false
     },
@@ -145,7 +149,7 @@
     "extensions": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_.-]*$"
+        "pattern": "^[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_.-]*$(?![\\s\\S])"
       },
       "additionalProperties": {
         "type": "object"
@@ -578,6 +582,52 @@
           "capabilities": {
             "properties": {
               "queue_inspect": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "resources": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "methods": {
+            "contains": {
+              "const": "resources.read"
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "attachments": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "capabilities": {
+            "properties": {
+              "resources": {
                 "const": true
               }
             }

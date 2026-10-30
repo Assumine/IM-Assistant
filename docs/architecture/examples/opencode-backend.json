@@ -26,7 +26,8 @@
     "runs.cancel",
     "context.inspect",
     "context.compact",
-    "usage.read"
+    "usage.read",
+    "resources.read"
   ],
   "capabilities": {
     "queue_inspect": true,
@@ -42,7 +43,8 @@
     "session_export": false,
     "human_interaction": false,
     "connection_setup": false,
-    "attachments": true
+    "attachments": true,
+    "resources": true
   },
   "delivery_guarantees": {
     "durable_request_identity": true,
