@@ -1,0 +1,68 @@
+{
+  "task": "R1-01",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "acceptance_ids": [
+    "A04",
+    "A05",
+    "A06"
+  ],
+  "verified_at": "2026-10-30T11:39:20.141582+00:00",
+  "upstream_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "product_patch": "R1-01-profile",
+  "declared_product_files": 22,
+  "harness_checks": 7,
+  "profile_unit_cases": 3,
+  "profile_unit_repeats": 10,
+  "upstream_project_regressions": 29,
+  "canonical_lint_and_typecheck": "bun run check (36 tasks successful)",
+  "frozen_lock_install": true,
+  "native_desktop_bundle_build": true,
+  "product_smoke": {
+    "product_entry": "packages/im-assistant/script/desktop.ts",
+    "boots": [
+      {
+        "ready": true,
+        "url": "oc://renderer/index.html",
+        "profile_isolated": true,
+        "screenshot_verified": false,
+        "packaged_installer": false
+      },
+      {
+        "ready": true,
+        "url": "oc://renderer/index.html",
+        "profile_isolated": true,
+        "screenshot_verified": false,
+        "packaged_installer": false
+      }
+    ],
+    "managed_location_composer_ready": true,
+    "independent_native_service": true,
+    "parent_checkout_not_discovered": true,
+    "unrelated_profile_unchanged": true,
+    "native_session_and_inbox_preserved": true,
+    "service_credential_preserved": true,
+    "requires_qq_or_model_login": false,
+    "external_model_calls": 0
+  },
+  "original_mode_regression": {
+    "harness_checks": 9,
+    "native_unit_tests": 141,
+    "browser_e2e_tests": 45,
+    "status": "passed"
+  },
+  "runtime_report_sha256": {
+    "R0-01": "ac46ed75c0c2df0df22e98d779961d385ea82d08ed40ef494ebbf3439167d81a",
+    "R1-01": "40fd872974087dd9dd47dbe70530781d9df39fd48c8a50f1719379e445e0de58"
+  },
+  "production_switched": false,
+  "old_private_data_imported": false,
+  "packaged_installer": false,
+  "pending": [
+    "R1-02 file/tool/API capability removal",
+    "R2 real API configuration",
+    "R3 Codex and QQ",
+    "R4 plugin UI and theme",
+    "R5 cutover"
+  ]
+}

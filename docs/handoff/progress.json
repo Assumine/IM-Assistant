@@ -5,7 +5,10 @@
   "runtime_acceptance_completed": [
     "A01",
     "A02",
-    "A03"
+    "A03",
+    "A04",
+    "A05",
+    "A06"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -47,9 +50,34 @@
       "blocked_reason": null
     },
     "R1-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "opencode/packages/im-assistant/package.json",
+        "opencode/packages/im-assistant/src/profile.ts",
+        "opencode/packages/im-assistant/src/storage.ts",
+        "opencode/packages/im-assistant/src/cli.ts",
+        "opencode/packages/im-assistant/script/desktop.ts",
+        "tools/assistant_profile_smoke.py",
+        "upstream/patches.json",
+        "upstream/profile-verification.json"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 7,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A04",
+            "A05",
+            "A06"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R1-01",
+          "evidence": "upstream/profile-verification.json"
+        }
+      ],
       "blocked_reason": null
     },
     "R1-02": {

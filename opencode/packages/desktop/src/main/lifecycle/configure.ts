@@ -4,6 +4,8 @@ import { enableCompileCache } from "node:module"
 import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
+import { Profile } from "@im-assistant/profile/profile"
+import { Storage } from "@im-assistant/profile/storage"
 import { debugBuild, memoryLogInterval } from "@opencode/gui-plugins/debug/options"
 import { APP_ID, APP_NAME, CHANNEL } from "../constants"
 import { remoteDebuggingPort } from "../diagnostics/options"
@@ -16,8 +18,9 @@ const jsCallStackFeature = "DocumentPolicyIncludeJSCallStacksInCrashReports"
 // take effect before ready, the single-instance lock is scoped to userData, and the early window
 // needs userData to find the persisted window list and state.
 export function configureApplication() {
+  const assistant = Profile.active() ? Storage.prepare(app.getPath("appData")) : undefined
   try {
-    process.chdir(homedir())
+    process.chdir(assistant?.location ?? homedir())
   } catch {}
 
   process.env.OPENCODE_DISABLE_EMBEDDED_WEB_UI = "true"
@@ -43,8 +46,9 @@ export function configureApplication() {
   if (debugBuild(build) && memoryLogInterval(process.env.OPENCODE_DESKTOP_MEMORY_LOG) !== undefined)
     app.commandLine.appendSwitch("enable-precise-memory-info")
 
-  const testRoot = createTestRoot()
-  app.setPath("userData", testRoot ? path.join(testRoot, "desktop") : path.join(app.getPath("appData"), APP_ID))
+  const testRoot = assistant ? undefined : createTestRoot()
+  app.setPath("userData", assistant?.desktop ?? (testRoot ? path.join(testRoot, "desktop") : path.join(app.getPath("appData"), APP_ID)))
+  if (assistant) app.setPath("sessionData", assistant.session)
 
   if (testRoot) {
     app.setPath("sessionData", path.join(testRoot, "session"))

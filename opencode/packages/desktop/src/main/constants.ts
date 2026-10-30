@@ -1,4 +1,5 @@
 import { app } from "electron"
+import { Profile } from "@im-assistant/profile/profile"
 
 type Channel = "local" | "dev" | "beta" | "prod"
 
@@ -21,6 +22,6 @@ const appIDs: Record<string, string> = {
 }
 
 // Local renderer/server mode keeps the dev application identity.
-export const APP_NAME = app.isPackaged ? appNames[CHANNEL] : "OpenCode Dev"
+export const APP_NAME = Profile.active() ? Profile.name : app.isPackaged ? appNames[CHANNEL] : "OpenCode Dev"
 
-export const APP_ID = app.isPackaged ? appIDs[CHANNEL] : "ai.opencode.desktop.dev"
+export const APP_ID = Profile.active() ? Profile.id : app.isPackaged ? appIDs[CHANNEL] : "ai.opencode.desktop.dev"

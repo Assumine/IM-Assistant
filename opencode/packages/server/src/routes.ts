@@ -125,10 +125,14 @@ function makeRoutes<AuthError, AuthServices>(
     Bus.node.replace(Bus.configured({ persist: options.events?.persist })),
     App.node.replace(App.configured(options.app)),
     ModelsDev.node.replace(ModelsDev.configured(options.models)),
+    Project.node.replace(Project.configured(options.project)),
     Watcher.node.replace(Watcher.configured({ enabled: options.fs?.filewatcher })),
     FileWatch.node.replace(FileWatch.configured({ enabled: options.fs?.filewatcher })),
     FileSystemSearch.node.replace(FileSystemSearch.configured({ fff: options.fs?.fff })),
-    Global.node.replace(Global.layerWith(options.config?.directory ? { config: options.config.directory } : {})),
+    Global.node.replace(Global.layerWith({
+      ...(options.config?.directory ? { config: options.config.directory } : {}),
+      ...(options.config?.home ? { home: options.config.home } : {}),
+    })),
     Config.node.replace(
       Config.configured({
         project: options.config?.project,

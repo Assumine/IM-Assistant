@@ -1,6 +1,8 @@
 export * as ServerProcess from "./server-process"
 
 import { NodeServices } from "@effect/platform-node"
+import { Profile } from "@im-assistant/profile/profile"
+import { Storage } from "@im-assistant/profile/storage"
 import { Service } from "@opencode/client/effect/service"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { Global } from "@opencode/util/global"
@@ -36,7 +38,10 @@ export const run = Effect.fnUntraced(function* (options: Options) {
       LayerNode.compile(LayerNode.group([Global.node, AppProcess.node]), {
         replacements: [
           Global.node.replace(
-            Global.layerWith(process.env.OPENCODE_CONFIG_DIR ? { config: process.env.OPENCODE_CONFIG_DIR } : {}),
+            Global.layerWith({
+              ...(process.env.OPENCODE_CONFIG_DIR ? { config: process.env.OPENCODE_CONFIG_DIR } : {}),
+              ...(Profile.active() ? { home: Storage.paths(Storage.root()).location } : {}),
+            }),
           ),
         ],
       }),
@@ -101,11 +106,12 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
       const launch = start(
         {
           app: {
-            name: process.env.OPENCODE_CLIENT ?? OPENCODE_ARTIFACT,
+            name: Profile.active() ? Profile.name : process.env.OPENCODE_CLIENT ?? OPENCODE_ARTIFACT,
             version: OPENCODE_VERSION,
             channel: OPENCODE_CHANNEL,
           },
           hostname,
+          project: Profile.active() ? { discover: false } : undefined,
           port,
           cors: options.cors ?? config.cors,
           password,
@@ -120,6 +126,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             fetch: !truthy(process.env.OPENCODE_DISABLE_MODELS_FETCH),
           },
           config: {
+            home: Profile.active() ? Storage.paths(Storage.root()).location : undefined,
             directory: process.env.OPENCODE_CONFIG_DIR,
             project: !truthy(
               process.env.OPENCODE_CONFIG_PROJECT_DISABLE ?? process.env.OPENCODE_DISABLE_PROJECT_CONFIG,

@@ -27,7 +27,7 @@ def environment(profile="build"):
     if not bun.is_file() or not node.is_file():
         raise RuntimeError("Install the pinned local toolchain before running the baseline")
     home = ROOT / "runtime/baseline" / profile
-    for part in ("tmp", "config", "data", "cache", "state", "Documents", "Desktop", "Downloads"):
+    for part in ("tmp", "config", "data", "cache", "state", "Documents", "Desktop", "Downloads", "AppData/Roaming", "AppData/Local"):
         (home / part).mkdir(parents=True, exist_ok=True)
     allowed = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PROCESSOR_ARCHITECTURE",
                "NUMBER_OF_PROCESSORS", "PATH", "HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"}

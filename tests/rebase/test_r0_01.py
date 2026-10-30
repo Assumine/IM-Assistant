@@ -19,13 +19,14 @@ class NativeBaselineTests(unittest.TestCase):
     def test_01_locked_source_and_toolchain(self):
         checked = verify()
         self.assertGreater(checked["source_files"], 9000)
-        self.assertTrue(checked["unchanged"])
+        self.assertTrue(checked["verified"])
         record = provenance()
         for runtime, version in (("bun", record["package_manager"].split("@", 1)[1]), ("node", record["runtime"]["node_version"])):
             result = subprocess.run([str(ROOT / record["runtime"][runtime]), "--version"],
                 env=environment(), capture_output=True, text=True, check=True)
             self.assertEqual(result.stdout.strip(), version)
-        self.assertEqual(json.loads((ROOT / "upstream/patches.json").read_text())["patches"], [])
+        patches = json.loads((ROOT / "upstream/patches.json").read_text(encoding="utf-8"))["patches"]
+        self.assertEqual(bool(patches), record["source_modified"])
 
     def test_02_native_session_core(self):
         files = ["session-prompt", "session-store", "session-run-coordinator", "session-compact", "session-native-compaction", "session-view"]

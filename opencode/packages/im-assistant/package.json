@@ -1,0 +1,22 @@
+{
+  "name": "@im-assistant/profile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./profile": "./src/profile.ts",
+    "./storage": "./src/storage.ts"
+  },
+  "scripts": {
+    "desktop": "bun run script/desktop.ts",
+    "cli": "bun run src/cli.ts",
+    "test": "bun test --timeout 30000",
+    "typecheck": "bun check --no-script",
+    "typecheck:tsc": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:"
+  }
+}

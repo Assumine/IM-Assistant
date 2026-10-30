@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 
 import { ensurePluginRuntime } from "@opencode/plugin/runtime"
+import { Profile } from "@im-assistant/profile/profile"
+import { Storage } from "@im-assistant/profile/storage"
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
 import { Cause, Effect } from "effect"
 import { getErrorReported } from "effect/Runtime"
@@ -123,7 +125,10 @@ Effect.gen(function* () {
     LayerNode.compile(LayerNode.group([Global.node, AppProcess.node, Npm.node, EffectFlock.node]), {
       replacements: [
         Global.node.replace(
-          Global.layerWith(process.env.OPENCODE_CONFIG_DIR ? { config: process.env.OPENCODE_CONFIG_DIR } : {}),
+          Global.layerWith({
+            ...(process.env.OPENCODE_CONFIG_DIR ? { config: process.env.OPENCODE_CONFIG_DIR } : {}),
+            ...(Profile.active() ? { home: Storage.paths(Storage.root()).location } : {}),
+          }),
         ),
       ],
     }),

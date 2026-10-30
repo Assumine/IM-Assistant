@@ -76,6 +76,8 @@ export interface ResolveOptions {
   readonly persist?: boolean
 }
 
+export const Options = Schema.Struct({ discover: Schema.optional(Schema.Boolean) })
+
 export interface Interface {
   readonly list: (input?: ListInput) => Effect.Effect<ReadonlyArray<Info>>
   readonly update: (input: UpdateInput) => Effect.Effect<Info, NotFoundError>
@@ -115,7 +117,7 @@ function fromRow(row: typeof ProjectTable.$inferSelect): Info {
   }
 }
 
-const layer = Layer.effect(
+const layer = (settings: typeof Options.Type = {}) => Layer.effect(
   Service,
   Effect.gen(function* () {
     const fs = yield* FSUtil.Service
@@ -408,6 +410,8 @@ const layer = Layer.effect(
     const resolve = Effect.fn("Project.resolve")(function* (input: AbsolutePath, options?: ResolveOptions) {
       const save = (project: Resolved) => (options?.persist === false ? Effect.succeed(project) : persist(project))
       const directory = AbsolutePath.make(yield* fs.resolve(input))
+      if (settings.discover === false)
+        return yield* save({ id: ID.make(Hash.fast(`directory:${directory}`)), directory, canonical: directory })
       const native = yield* fs.up({ targets: [".git", ".hg"], start: directory, mode: "first" }).pipe(
         Effect.map((matches) => matches[0]),
         Effect.orElseSucceed(() => undefined),
@@ -490,11 +494,15 @@ const layer = Layer.effect(
   }),
 )
 
-export const node = makeGlobalNode({
-  service: Service,
-  layer: layer,
-  deps: [Bus.node, Database.node, FSUtil.node, Git.node, AppProcess.node],
-})
+export function configured(options?: typeof Options.Type) {
+  return makeGlobalNode({
+    service: Service,
+    layer: layer(options),
+    deps: [Bus.node, Database.node, FSUtil.node, Git.node, AppProcess.node],
+  })
+}
+
+export const node = configured()
 
 export const sweepNode = makeGlobalNode({
   name: "project-archive-sweep",

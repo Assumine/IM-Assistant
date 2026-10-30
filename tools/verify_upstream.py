@@ -32,11 +32,24 @@ def verify():
     inventory = json.loads((ROOT / "upstream/source-files.json").read_text(encoding="utf-8"))
     assert inventory["upstream_commit"] == provenance()["commit"]
     source = (ROOT / "opencode").resolve()
+    ledger = json.loads((ROOT / "upstream/patches.json").read_text(encoding="utf-8"))
+    assert ledger["upstream_commit"] == inventory["upstream_commit"]
+    patches = {}
+    for patch in ledger["patches"]:
+        assert patch["reason"] and patch["verification_commands"], patch["id"]
+        for entry in patch["files"]:
+            relative = PurePosixPath(entry["path"])
+            assert not relative.is_absolute() and ".." not in relative.parts
+            assert not {"node_modules", ".turbo", ".reports"}.intersection(relative.parts), entry["path"]
+            assert relative.parts[0] != "runtime", entry["path"]
+            assert relative.suffix not in {".log", ".db", ".sqlite", ".sqlite3"}, entry["path"]
+            assert entry["path"] not in patches, "Consolidate the final hash for each patched file"
+            patches[entry["path"]] = entry
     links = {link["path"]: link for link in provenance()["platform_symlinks"]}
     for relative, entry in inventory["files"].items():
         target = source / relative
         assert target.resolve().is_relative_to(source), relative
-        expected = entry["sha256"]
+        expected = patches.get(relative, entry)["sha256"]
         if "symlink" in entry:
             assert links[relative]["target"] == entry["symlink"]
             original = (target.parent / entry["symlink"]).resolve()
@@ -44,7 +57,14 @@ def verify():
             expected = hashlib.sha256(original.read_bytes()).hexdigest()
         assert target.is_file(), f"Missing upstream source: {relative}"
         assert hashlib.sha256(target.read_bytes()).hexdigest() == expected, f"Changed upstream source: {relative}"
-    return {"source_files": len(inventory["files"]), "unchanged": True,
+    for relative, entry in patches.items():
+        target = source / relative
+        assert target.resolve().is_relative_to(source), relative
+        assert entry["action"] in {"modified", "added"}
+        assert (relative in inventory["files"]) == (entry["action"] == "modified"), relative
+        assert target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == entry["sha256"], relative
+    return {"source_files": len(inventory["files"]), "verified": True, "unchanged": not bool(patches),
+            "declared_product_files": len(patches),
             "materialized_windows_symlinks": sum(x["materialized"] for x in links.values())}
 
 

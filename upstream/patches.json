@@ -1,4 +1,125 @@
 {
   "upstream_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-  "patches": []
+  "patches": [
+    {
+      "id": "R1-01-profile",
+      "reason": "助手身份、原生存储/服务隔离与原生桌面启动；通用配置关闭项目发现并设置管理位置；会话和Inbox所有权不变。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R1-01",
+        "python tools/run_runtime_checks.py --task R0-01"
+      ],
+      "files": [
+        {
+          "path": "bun.lock",
+          "action": "modified",
+          "sha256": "912c1200a7719c88e1ea9ad6f7e149e4678fb9d27657e11ab35827bcc1b52a89"
+        },
+        {
+          "path": "packages/cli/package.json",
+          "action": "modified",
+          "sha256": "5f08f3e390b7002c8d18305268b5efc97a7e11a6dc7e2db7a79204af745b025d"
+        },
+        {
+          "path": "packages/cli/src/index.ts",
+          "action": "modified",
+          "sha256": "250f3b095efd057bcb3052d227b6ed23c15f157c383acd05164a4a5f4ce07d9a"
+        },
+        {
+          "path": "packages/cli/src/server-process.ts",
+          "action": "modified",
+          "sha256": "61356a397a69ff48e456a3c49ef632307bff475bfd0f296ddc89056d9ec7c3e3"
+        },
+        {
+          "path": "packages/cli/src/services/service-config.ts",
+          "action": "modified",
+          "sha256": "b319a6763718a489e843ebeca5ce8308d4cd3e816ece21550a3379fb89bfff81"
+        },
+        {
+          "path": "packages/core/src/project.ts",
+          "action": "modified",
+          "sha256": "4d97b5371b94b51f3614a55c5067121de462edf32355f310e98ff76c27a82ca5"
+        },
+        {
+          "path": "packages/desktop/package.json",
+          "action": "modified",
+          "sha256": "c2567c0691e9577cf2abf969c89d1d7e511530f7c6313655230b9c5d733fe4ad"
+        },
+        {
+          "path": "packages/desktop/src/main/constants.ts",
+          "action": "modified",
+          "sha256": "4cc685bba77338d278b68ee61548f5b125e2fa4d0b8042705331e6b722656472"
+        },
+        {
+          "path": "packages/desktop/src/main/lifecycle/configure.ts",
+          "action": "modified",
+          "sha256": "69cdffb96205520b03b7e2b29c4fd21b7bfc6cca0e73f1799447d6b6a4c9a0ff"
+        },
+        {
+          "path": "packages/desktop/src/main/lifecycle/environment.ts",
+          "action": "modified",
+          "sha256": "4a96d441d981c8e785ff13ef3653d7d0e3837369ce1435687af45266a3a4e9bd"
+        },
+        {
+          "path": "packages/desktop/src/main/lifecycle/onboarding.ts",
+          "action": "modified",
+          "sha256": "e4548616613378569e02bf472bfba8fb554c655171dc04f20ee9c6c274fe9fad"
+        },
+        {
+          "path": "packages/desktop/src/main/service/background-service.ts",
+          "action": "modified",
+          "sha256": "5a4861c21d509ac645f4139aeb27a8c84229daa2bc23a61c658496adff7a54b8"
+        },
+        {
+          "path": "packages/desktop/src/main/service/sidecar-probe.ts",
+          "action": "modified",
+          "sha256": "915b419f2116396217c30e885d6938250a271366c5b6b76bfc71131a152092b6"
+        },
+        {
+          "path": "packages/im-assistant/package.json",
+          "action": "added",
+          "sha256": "931125370c9a282ad0d963fc6f826558dc3a814114107af243bd8ffb1779d46e"
+        },
+        {
+          "path": "packages/im-assistant/script/desktop.ts",
+          "action": "added",
+          "sha256": "c6514891f1acf28c65fcf70c785b6fc409d8662fd4cec139bdef73292e80c2b3"
+        },
+        {
+          "path": "packages/im-assistant/src/cli.ts",
+          "action": "added",
+          "sha256": "f631f352705795e852feb46d8dcf57d70bb20fb291241c0168b2af8e077d6139"
+        },
+        {
+          "path": "packages/im-assistant/src/profile.ts",
+          "action": "added",
+          "sha256": "443cd2a5d769ceaf1417719748d3aeba9d2c68431fab182381b3c1ec870e7aec"
+        },
+        {
+          "path": "packages/im-assistant/src/storage.test.ts",
+          "action": "added",
+          "sha256": "8c165efa308377b9130562803fcc3c786710a948c402766ce5552e9bb810ec1c"
+        },
+        {
+          "path": "packages/im-assistant/src/storage.ts",
+          "action": "added",
+          "sha256": "787b856cd25478301a651b157950892e2106383cb49d3fb5f39e1a97c507adf0"
+        },
+        {
+          "path": "packages/im-assistant/tsconfig.json",
+          "action": "added",
+          "sha256": "458384a3f74a6500c10db65362153e8f348e7edac821b0de4a546c7a3272e9c1"
+        },
+        {
+          "path": "packages/server/src/options.ts",
+          "action": "modified",
+          "sha256": "5871de727a02d67209f1a171b7eab1b6ac89783a9122dfcfb72577c084f788a4"
+        },
+        {
+          "path": "packages/server/src/routes.ts",
+          "action": "modified",
+          "sha256": "9a9a011e8e027ec22f19bc22878f9b4f59f850079ea42b1a345a3bf121723ef6"
+        }
+      ]
+    }
+  ]
 }

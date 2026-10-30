@@ -19,7 +19,7 @@
     "node_archive_sha256": "ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2",
     "node_origin": "https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip"
   },
-  "source_modified": false,
+  "source_modified": true,
   "platform_symlinks": [
     {
       "path": "packages/app/public/apple-touch-icon-v3.png",
@@ -238,5 +238,7 @@
     }
   ],
   "native_build_verified": true,
-  "native_verification": "upstream/baseline-verification.json"
+  "native_verification": "upstream/baseline-verification.json",
+  "product_lock_sha256": "912c1200a7719c88e1ea9ad6f7e149e4678fb9d27657e11ab35827bcc1b52a89",
+  "product_verification": "upstream/profile-verification.json"
 }

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { app } from "electron"
+import { Profile } from "@im-assistant/profile/profile"
+import { Storage } from "@im-assistant/profile/storage"
 import type { Endpoint } from "@opencode/client/service"
 import { CHANNEL } from "../constants"
 
@@ -17,7 +19,8 @@ export function startSidecarProbe() {
 
   if (version === "") return
   probe = import("@opencode/client/service")
-    .then(({ Service }) => Service.discover({ version }))
+    .then(({ Service }) => Service.discover({ version,
+      ...(Profile.active() ? { file: Storage.paths(Storage.root(app.getPath("appData"))).registration } : {}) }))
     .catch(() => undefined)
 }
 

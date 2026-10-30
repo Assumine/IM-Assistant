@@ -50,7 +50,8 @@
     "picocolors": "1.1.1",
     "solid-js": "catalog:",
     "web-tree-sitter": "0.25.10",
-    "ws": "8.21.0"
+    "ws": "8.21.0",
+    "@im-assistant/profile": "workspace:*"
   },
   "devDependencies": {
     "@opencode/script": "workspace:*",

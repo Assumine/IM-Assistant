@@ -1,4 +1,6 @@
 import { app } from "electron"
+import { Profile } from "@im-assistant/profile/profile"
+import { Storage } from "@im-assistant/profile/storage"
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import { CHANNEL } from "../constants"
 import { BackgroundServiceState } from "./background-service-state"
@@ -41,13 +43,15 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   const runFork = Effect.runForkWith(yield* Effect.context<FileSystem.FileSystem | Path.Path>())
   const isolated = !app.isPackaged && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1"
   const cli = yield* desktopCli.resolve
-  const version = serviceVersion({ channel: CHANNEL, isolated, mode, version: cli.version })
+  const version = Profile.active() ? cli.version : serviceVersion({ channel: CHANNEL, isolated, mode, version: cli.version })
 
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
 
   const file =
-    process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
+    Profile.active()
+      ? Storage.paths(Storage.root(app.getPath("appData"))).registration
+      : process.env.OPENCODE_DESKTOP_SERVER_CHANNEL === "local"
       ? path.join(
           process.env.XDG_STATE_HOME ?? path.join(app.getPath("home"), ".local", "state"),
           "opencode",
@@ -65,7 +69,7 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
         ...cli.command,
         "serve",
         "--service",
-        ...(isolated ? ["--hostname", "0.0.0.0", "--port", String(0x0c0c)] : []),
+        ...(Profile.active() ? ["--hostname", "127.0.0.1"] : isolated ? ["--hostname", "0.0.0.0", "--port", String(0x0c0c)] : []),
       ],
       onStart: (reason, previousVersion) =>
         runFork(Effect.logInfo("v2 CLI background service starting", { reason, previousVersion })),

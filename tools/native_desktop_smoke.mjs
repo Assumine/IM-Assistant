@@ -4,7 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 
 const root = path.resolve(import.meta.dirname, '..')
-const expected = process.env.OPENCODE_DESKTOP_TEST_ROOT
+const expected = process.env.BASELINE_PRODUCT_ROOT ?? process.env.OPENCODE_DESKTOP_TEST_ROOT
 if (!expected?.startsWith(path.join(root, 'runtime', 'baseline') + path.sep))
   throw new Error('A private desktop baseline profile is required')
 const port = fs.readFileSync(path.join(expected, 'session/DevToolsActivePort'), 'utf8').split('\n')[0]
@@ -14,7 +14,10 @@ try {
   if (!page) throw new Error('Original renderer did not open')
   // No screenshot/visibility assertion: Chromium stops painting occluded desktop windows.
   const deadline = Date.now() + 45000
-  while (!await page.evaluate(() => !!document.querySelector('[data-action="home-new-session"], [data-component="composer-editor"][contenteditable="true"]'))) {
+  const selector = process.env.BASELINE_PRODUCT_ROOT
+    ? '[data-component="composer-editor"][contenteditable="true"]'
+    : '[data-action="home-new-session"], [data-component="composer-editor"][contenteditable="true"]'
+  while (!await page.evaluate(selector => !!document.querySelector(selector), selector)) {
     if (Date.now() > deadline) throw new Error('Renderer not ready: ' + await page.locator('body').innerText())
     await new Promise(resolve => setTimeout(resolve, 100))
   }

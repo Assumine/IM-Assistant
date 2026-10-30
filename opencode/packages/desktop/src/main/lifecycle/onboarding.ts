@@ -1,4 +1,6 @@
 import { app } from "electron"
+import { Profile } from "@im-assistant/profile/profile"
+import { Storage } from "@im-assistant/profile/storage"
 import { Effect, FileSystem, Option, Path } from "effect"
 import { scoped } from "../native/logging"
 import { hasExistingAppState } from "../storage/install-state"
@@ -50,7 +52,9 @@ export const finishFirstLaunchOnboarding = Effect.fn("Onboarding.finish")(functi
   const path = yield* Path.Path
 
   const defaultProject = createDefaultProject
-    ? path.join(app.getPath("documents"), nativeT("desktop.onboarding.defaultProject"))
+    ? Profile.active()
+      ? Storage.paths(Storage.root(app.getPath("appData"))).location
+      : path.join(app.getPath("documents"), nativeT("desktop.onboarding.defaultProject"))
     : null
 
   if (defaultProject) yield* fs.makeDirectory(defaultProject, { recursive: true })

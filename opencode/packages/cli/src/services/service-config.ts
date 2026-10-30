@@ -1,4 +1,5 @@
 import { Global } from "@opencode/util/global"
+import { Profile } from "@im-assistant/profile/profile"
 import { OPENCODE_CHANNEL, OPENCODE_VERSION } from "../version"
 import { Hash } from "@opencode/util/hash"
 import { Service } from "@opencode/client/effect/service"
@@ -39,6 +40,7 @@ const decodeLegacy = Schema.decodeUnknownOption(
 const decodeRegistration = Schema.decodeUnknownEffect(Schema.fromJsonString(Service.Info))
 
 export function filename(channel = OPENCODE_CHANNEL) {
+  if (Profile.active()) return Profile.serviceFile
   if (channel === "latest" || channel === "dev" || channel === "beta" || channel === "next") return "service.json"
   return `service-${channel.replace(/[^a-zA-Z0-9._-]/g, "-")}.json`
 }

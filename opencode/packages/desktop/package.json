@@ -54,7 +54,8 @@
     "magic-string": "0.30.21",
     "solid-js": "catalog:",
     "typescript": "catalog:",
-    "vite": "8.2.4"
+    "vite": "8.2.4",
+    "@im-assistant/profile": "workspace:*"
   },
   "optionalDependencies": {
     "@lydell/node-pty-darwin-arm64": "1.2.0-beta.12",
