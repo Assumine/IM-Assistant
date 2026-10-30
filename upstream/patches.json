@@ -200,11 +200,6 @@
           "sha256": "efc16e401473a98793f5edda50bb0ea510322398f0724d61910faa697391a05a"
         },
         {
-          "path": "packages/core/src/config.ts",
-          "action": "modified",
-          "sha256": "617e27bdd1410a66290cd5b819774b11d644050dfc0b8057daddc8c7c1c1fb8f"
-        },
-        {
           "path": "packages/core/src/config/variable.ts",
           "action": "modified",
           "sha256": "b0630ff713fe6d5aa1e4e44534fd9595bad5aa7ddb80e41d158dc8e370b27297"
@@ -340,11 +335,6 @@
           "sha256": "ab3032ebec36680e78395934251578ab8685cff4fe49c78141f500fec3d55bd3"
         },
         {
-          "path": "packages/server/src/middleware/runtime-policy.ts",
-          "action": "added",
-          "sha256": "b36eec3ff446536f70375a778dde3633d0c2be823a7ff1324e41a67b14775d16"
-        },
-        {
           "path": "packages/server/src/options.ts",
           "action": "modified",
           "sha256": "c4e1d7f815e4749c5e45b194689db2da67ecc3fd62f70d42ddaef2b9bcd52a19"
@@ -440,26 +430,6 @@
       ],
       "files": [
         {
-          "path": "packages/app/e2e/regression/settings.spec.ts",
-          "action": "modified",
-          "sha256": "f39095ad060d9a118513b5087f8cac0899999e0215a6c2389289a32b2cf0a441"
-        },
-        {
-          "path": "packages/app/e2e/utils/mock-api.ts",
-          "action": "modified",
-          "sha256": "fc1067d71b36008f7b4f69221c7d4771621511179bbfabf0ba2f39759d488363"
-        },
-        {
-          "path": "packages/app/e2e/utils/mock-server.ts",
-          "action": "modified",
-          "sha256": "bc7a99264c6ff0c6a5bd79e6bf2a6d0f4a8e7c46217a7a0385e044d28fc872e5"
-        },
-        {
-          "path": "packages/app/src/runtime/i18n/en.ts",
-          "action": "modified",
-          "sha256": "18f1278cbc678cf071b54b9158c1f17bbd6aa436f549e94bea5b6f09e59fe89b"
-        },
-        {
           "path": "packages/app/src/settings/pages.ts",
           "action": "modified",
           "sha256": "7f2b9e1f7a9444a1bc6bd384044276e0d2616ec170f7c91a2bdbcec8e4ba09b9"
@@ -485,16 +455,6 @@
           "sha256": "a88e813924dbbe3ce4066d888a787258716e0a2ce5c8400fc3f877e122241faa"
         },
         {
-          "path": "packages/client/src/effect/api/api.ts",
-          "action": "modified",
-          "sha256": "a1576b686336d966699bcc8feec568057c2cbe1cc8c6430bc4313f132956b245"
-        },
-        {
-          "path": "packages/client/src/promise/generated/types.ts",
-          "action": "modified",
-          "sha256": "f79a59a6803152f2eafe0d621776897967697b8a86c139392ed269389e48abcb"
-        },
-        {
           "path": "packages/core/src/session/stats.ts",
           "action": "modified",
           "sha256": "8573b657a38f11a7011af24763f9c41db35d6093e2e44b439ea1b9e75a741453"
@@ -513,6 +473,98 @@
           "path": "packages/schema/src/token-usage.ts",
           "action": "modified",
           "sha256": "04f84626792c741bd7a4c597303250295b151e186f20ccb53c96406fbf2be376"
+        }
+      ]
+    },
+    {
+      "id": "R2-02-api-configuration",
+      "reason": "原生Config受限新增兼容API，既有连接ID冲突保护；设置页复用原生凭据连接弹窗，不新增会话、队列或凭据库。",
+      "verification_commands": [
+        "python -m tools.provider_configuration_smoke",
+        "python tools/native_baseline.py --cwd packages/app --label r2-02-custom-api-browser-final -- run test:e2e:built -- e2e/regression/settings.spec.ts --project chromium --workers=2 --retries=0",
+        "python tools/native_baseline.py --cwd packages/client --label r2-02-config-client-contracts -- run test test/promise.test.ts test/effect.test.ts test/deprecated-aliases.test.ts test/contract-identity.test.ts test/import-boundaries.test.ts",
+        "python tools/native_baseline.py --cwd . --label r2-02-config-close-check -- run check"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/regression/settings.spec.ts",
+          "action": "modified",
+          "sha256": "95658a7cbaa11e36aa371044392eed2773712289afde86a8d2958eda2d82d22f"
+        },
+        {
+          "path": "packages/app/e2e/utils/mock-api.ts",
+          "action": "modified",
+          "sha256": "6387c2bc149570fd0fa7fd625249dd61217d288f0dced96011819977b66b2a5b"
+        },
+        {
+          "path": "packages/app/e2e/utils/mock-server.ts",
+          "action": "modified",
+          "sha256": "b58a20c4bf46e5d3303504faa06aeb2f81c2e15fb0358be993b688cac0ed83c4"
+        },
+        {
+          "path": "packages/app/src/runtime/i18n/en.ts",
+          "action": "modified",
+          "sha256": "36cea6cd5ede016934193068fe17a4fe616b6b04d8ff214a8f245adbe78dbd1e"
+        },
+        {
+          "path": "packages/app/src/settings/providers/providers.tsx",
+          "action": "modified",
+          "sha256": "83a39dfbd4c149e5336785e4b6f2c7a058588ce2f37c0e4635ac1fc775fb9c37"
+        },
+        {
+          "path": "packages/client/src/effect/api/api.ts",
+          "action": "modified",
+          "sha256": "bac2f1c74b728d6e47d5b34b6a99f7d9dd343322bd049fa9aacd38da55e242bc"
+        },
+        {
+          "path": "packages/client/src/effect/generated/client.ts",
+          "action": "modified",
+          "sha256": "7047e6bb3ea5c765578b271042653a7fefef2f19f6d740d10665387754dd0437"
+        },
+        {
+          "path": "packages/client/src/promise/generated/client.ts",
+          "action": "modified",
+          "sha256": "936a30ba93631e013570184de957c07fa52c84ed440aba204b8dcaf706537a8d"
+        },
+        {
+          "path": "packages/client/src/promise/generated/types.ts",
+          "action": "modified",
+          "sha256": "a2ae5b73b8f10c4239599be255b8c24102c2d6d624f5efe8b5c3298c4a7aa615"
+        },
+        {
+          "path": "packages/client/test/promise.test.ts",
+          "action": "modified",
+          "sha256": "e70c6389dc2801cb795308793d17868a7f3885456a37b409ba9d52e175a04c4f"
+        },
+        {
+          "path": "packages/core/src/config.ts",
+          "action": "modified",
+          "sha256": "94d22d586c4cc69f1c5c76c0b396b3bc3db05695070cf2d4dbf1bdee4c439ac1"
+        },
+        {
+          "path": "packages/protocol/src/groups/config.ts",
+          "action": "modified",
+          "sha256": "9dbb68d0303124986ab220a130dd7baa9ed83b4dbc7f931b5a8c5b6e210c5941"
+        },
+        {
+          "path": "packages/schema/src/config.ts",
+          "action": "modified",
+          "sha256": "dc405c8133741a8a8337da19fcf3efad28d629a62b38099097b4968ddbdffb2d"
+        },
+        {
+          "path": "packages/server/src/handlers/config.ts",
+          "action": "modified",
+          "sha256": "3518627652fd90dc2cee5d47a23cc45311469ec0b030bffd0217cff76de5d489"
+        },
+        {
+          "path": "packages/server/src/middleware/runtime-policy.ts",
+          "action": "added",
+          "sha256": "bf315206a948c4018f7c0dbef48dcc56ede2b2300fa741f593c4e459d5479891"
+        },
+        {
+          "path": "packages/app/src/settings/providers/connection-form.tsx",
+          "action": "added",
+          "sha256": "a1c0f98e375a8341cbf07f69335992f9fd42bf210d2f916aec9074fa3ca54209"
         }
       ]
     }

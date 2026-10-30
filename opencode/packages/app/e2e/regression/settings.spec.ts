@@ -19,6 +19,67 @@ const contributors = "https://api.github.com/repos/anomalyco/opencode/contributo
 
 test.use({ serviceWorkers: "block" })
 
+test("providers: custom API metadata connects through the native key dialog", async ({ page }) => {
+  const created: unknown[] = []
+  const keys: unknown[] = []
+  const state = { created: false, connected: false }
+  const entry = { id: "test-api", name: "My API", models: { test: { id: "test", name: "test" } } }
+  const { settings } = await openSettings(page, {
+    name: "Custom API",
+    workspace: false,
+    provider: () => ({ all: state.created ? [entry] : [], connected: state.connected ? [entry.id] : [], default: {} }),
+    integrations: () =>
+      state.created
+        ? [
+            {
+              id: entry.id,
+              name: entry.name,
+              methods: [{ type: "key", label: "API key" }],
+              connections: state.connected
+                ? [{ type: "credential", id: "cred_custom", label: "My API key", method: "key" }]
+                : [],
+            },
+          ]
+        : [],
+    onConfigProviderCreate: (input) => {
+      created.push(input)
+      state.created = true
+    },
+    onConnectKey: (input) => {
+      keys.push(input)
+      state.connected = true
+    },
+  })
+  await settings.getByRole("tab", { name: "Providers", exact: true }).click()
+  await settings.getByRole("button", { name: "Add compatible API", exact: true }).click()
+  await settings.getByLabel("Connection ID", { exact: true }).fill("test-api")
+  await settings.getByLabel("Display name", { exact: true }).fill("My API")
+  await settings.getByLabel("API base URL", { exact: true }).fill("https://api.example.test/v1")
+  await settings.getByLabel("Model ID", { exact: true }).fill("test")
+  await settings.getByLabel("Context limit (tokens)", { exact: true }).fill("32000")
+  await settings.getByLabel("Output limit (tokens)", { exact: true }).fill("1024")
+  if (test.info().repeatEachIndex === 0)
+    await page.screenshot({ path: test.info().outputPath("custom-api-form.png"), fullPage: true })
+  await settings.getByRole("button", { name: "Save and connect key", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "Connect My API", exact: true })
+  await expect(dialog.getByPlaceholder("API key", { exact: true })).toBeVisible()
+  expect(created).toEqual([
+    {
+      id: "test-api",
+      name: "My API",
+      baseURL: "https://api.example.test/v1",
+      models: [{ id: "test", context: 32000, output: 1024 }],
+    },
+  ])
+  await dialog.getByPlaceholder("API key", { exact: true }).fill("fixture-only-key")
+  await dialog.getByRole("button", { name: "Continue", exact: true }).click()
+  await expect(dialog).toBeHidden()
+  await expect(
+    settings.locator('[data-component="connected-providers-section"]').getByText("My API", { exact: true }),
+  ).toBeVisible()
+  expect(keys).toEqual([{ integrationID: "test-api", body: { key: "fixture-only-key" } }])
+})
+
 test("usage shows honest reporting by period and only refreshes on demand", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-10-30T12:00:00Z") })
   const queries: Record<string, string | undefined>[] = []

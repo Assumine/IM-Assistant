@@ -21,6 +21,7 @@ import { SettingsList } from "@/settings/list"
 import { activeProviderAccount, providerAccounts, type ProviderAccount } from "./accounts"
 import { AccountNameInput } from "./account-name"
 import { useProviderAccountActions } from "./account-actions"
+import { ProviderConnectionForm } from "./connection-form"
 import "@/settings/settings.css"
 
 type ProviderSource = "env" | "api" | "account" | "config" | "custom"
@@ -54,12 +55,14 @@ export const SettingsProviders: Component<{
   const [state, setState] = createStore<{
     disconnecting: Record<string, "removing" | "removed" | "absent" | undefined>
     consoleExpanded: boolean
+    addingConnection: boolean
     credentialID?: string
     renaming?: string
     held?: ProviderItem[]
   }>({
     disconnecting: {},
     consoleExpanded: false,
+    addingConnection: false,
   })
 
   const updateDisconnecting = (ids: string[], status: "removing" | "removed" | "absent" | undefined) =>
@@ -404,6 +407,32 @@ export const SettingsProviders: Component<{
       </div>
 
       <div class="settings-tab-body settings-tab-body--sectioned settings-providers">
+        <Show
+          when={state.addingConnection}
+          fallback={
+            <div>
+              <Button size="normal" variant="neutral" icon="plus" onClick={() => setState("addingConnection", true)}>
+                {language.t("settings.providers.connection.add")}
+              </Button>
+            </div>
+          }
+        >
+          <ProviderConnectionForm
+            onCancel={() => setState("addingConnection", false)}
+            onCreated={(id) => {
+              setState("addingConnection", false)
+              void accountActions
+                .refresh()
+                .then(() => connect(id))
+                .catch(() =>
+                  showToast({
+                    title: language.t("settings.providers.connection.saved"),
+                    description: language.t("settings.providers.connection.reconnect"),
+                  }),
+                )
+            }}
+          />
+        </Show>
         <div class="settings-section" data-component="connected-providers-section">
           <h3 class="settings-section-title">{language.t("settings.providers.section.connected")}</h3>
           <SettingsList variant="catalog">

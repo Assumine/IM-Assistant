@@ -299,11 +299,13 @@ import type {
   WebsearchQueryOutput,
   ExperimentalUsageLimitsInput,
   ExperimentalUsageLimitsOutput,
+  ExperimentalConfigProviderCreateInput,
+  ExperimentalConfigProviderCreateOutput,
+  ExperimentalConfigUpdateInput,
+  ExperimentalConfigUpdateOutput,
   ConfigGetInput,
   ConfigGetOutput,
   ConfigShellsOutput,
-  ExperimentalConfigUpdateInput,
-  ExperimentalConfigUpdateOutput,
 } from "./types.js"
 import { ClientError } from "./client-error.js"
 
@@ -1597,6 +1599,20 @@ export function make(options: ClientOptions) {
           ),
       },
       config: {
+        provider: {
+          create: (input: ExperimentalConfigProviderCreateInput, requestOptions?: RequestOptions) =>
+            request<ExperimentalConfigProviderCreateOutput>(
+              {
+                method: "POST",
+                path: `/api/experimental/config/provider`,
+                body: { id: input["id"], name: input["name"], baseURL: input["baseURL"], models: input["models"] },
+                successStatus: 204,
+                declaredStatuses: [400, 401, 404, 409],
+                empty: true,
+              },
+              requestOptions,
+            ),
+        },
         update: (input: ExperimentalConfigUpdateInput, requestOptions?: RequestOptions) =>
           request<ExperimentalConfigUpdateOutput>(
             {
@@ -2647,6 +2663,11 @@ export function make(options: ClientOptions) {
     },
     config: {
       ...client.config,
+      /** @deprecated Use `client.experimental.config.provider`. Removed in the next minor. */
+      provider: {
+        /** @deprecated Use `client.experimental.config.provider.create`. Removed in the next minor. */
+        create: client.experimental.config.provider.create,
+      },
       /** @deprecated Use `client.experimental.config.update`. Removed in the next minor. */
       update: client.experimental.config.update,
     },

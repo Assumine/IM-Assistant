@@ -1,6 +1,20 @@
 import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
+  "settings.providers.connection.add": "Add compatible API",
+  "settings.providers.connection.description":
+    "Add an OpenAI-compatible endpoint and one model. Enter its documented limits; an API key is connected separately. Existing connections and sessions stay unchanged.",
+  "settings.providers.connection.id": "Connection ID",
+  "settings.providers.connection.name": "Display name",
+  "settings.providers.connection.url": "API base URL",
+  "settings.providers.connection.model": "Model ID",
+  "settings.providers.connection.context": "Context limit (tokens)",
+  "settings.providers.connection.output": "Output limit (tokens)",
+  "settings.providers.connection.save": "Save and connect key",
+  "settings.providers.connection.failed":
+    "Could not create the connection. Check the address, model limits and whether the connection ID is already in use. If the connection was saved, reconnect it from the provider list.",
+  "settings.providers.connection.saved": "Connection saved",
+  "settings.providers.connection.reconnect": "Refresh the provider list and connect its API key.",
   "settings.usage.title": "Usage",
   "settings.usage.description": "Recorded conversation usage. Some auxiliary model calls may not be included.",
   "settings.usage.today": "Today",

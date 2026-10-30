@@ -2783,6 +2783,28 @@ export interface ExperimentalUsageApi<E = never> {
   readonly limits: ExperimentalUsageLimitsOperation<E>
 }
 
+export type ExperimentalConfigProviderCreateInput = {
+  readonly id: string
+  readonly name: string
+  readonly baseURL: string
+  readonly models: ReadonlyArray<{ readonly id: string; readonly context: number; readonly output: number }>
+}
+export type ExperimentalConfigProviderCreateOutput = void
+export type ExperimentalConfigProviderCreateOperation<E = never> = (
+  input: ExperimentalConfigProviderCreateInput,
+) => Effect.Effect<ExperimentalConfigProviderCreateOutput, E>
+
+export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
+export type ExperimentalConfigUpdateOutput = void
+export type ExperimentalConfigUpdateOperation<E = never> = (
+  input: ExperimentalConfigUpdateInput,
+) => Effect.Effect<ExperimentalConfigUpdateOutput, E>
+
+export interface ExperimentalConfigApi<E = never> {
+  readonly provider: { readonly create: ExperimentalConfigProviderCreateOperation<E> }
+  readonly update: ExperimentalConfigUpdateOperation<E>
+}
+
 export type ConfigGetInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 export type ConfigGetOutput = ReadonlyArray<Config.Entry>
 export type ConfigGetOperation<E = never> = (input?: ConfigGetInput) => Effect.Effect<ConfigGetOutput, E>
@@ -2798,17 +2820,13 @@ export interface ConfigApi<E = never> {
   readonly get: ConfigGetOperation<E>
   readonly shells: ConfigShellsOperation<E>
 
+  /** @deprecated Use `client.experimental.config.provider`. Removed in the next minor. */
+  readonly provider: {
+    /** @deprecated Use `client.experimental.config.provider.create`. Removed in the next minor. */
+    readonly create: ExperimentalConfigProviderCreateOperation<E>
+  }
+
   /** @deprecated Use `client.experimental.config.update`. Removed in the next minor. */
-  readonly update: ExperimentalConfigUpdateOperation<E>
-}
-
-export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
-export type ExperimentalConfigUpdateOutput = void
-export type ExperimentalConfigUpdateOperation<E = never> = (
-  input: ExperimentalConfigUpdateInput,
-) => Effect.Effect<ExperimentalConfigUpdateOutput, E>
-
-export interface ExperimentalConfigApi<E = never> {
   readonly update: ExperimentalConfigUpdateOperation<E>
 }
 
@@ -3021,6 +3039,15 @@ export type UsageLimitsOutput = ExperimentalUsageLimitsOutput
 
 /** @deprecated Use `ExperimentalUsageLimitsOperation`. Removed in the next minor. */
 export type UsageLimitsOperation<E = never> = ExperimentalUsageLimitsOperation<E>
+
+/** @deprecated Use `ExperimentalConfigProviderCreateInput`. Removed in the next minor. */
+export type ConfigProviderCreateInput = ExperimentalConfigProviderCreateInput
+
+/** @deprecated Use `ExperimentalConfigProviderCreateOutput`. Removed in the next minor. */
+export type ConfigProviderCreateOutput = ExperimentalConfigProviderCreateOutput
+
+/** @deprecated Use `ExperimentalConfigProviderCreateOperation`. Removed in the next minor. */
+export type ConfigProviderCreateOperation<E = never> = ExperimentalConfigProviderCreateOperation<E>
 
 /** @deprecated Use `ExperimentalConfigUpdateInput`. Removed in the next minor. */
 export type ConfigUpdateInput = ExperimentalConfigUpdateInput

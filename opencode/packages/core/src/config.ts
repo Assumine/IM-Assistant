@@ -5,7 +5,7 @@ import path from "path"
 import { isDeepStrictEqual } from "node:util"
 import { applyEdits, modify, type ParseError, parse } from "jsonc-parser"
 import { Context, Effect, FiberMap, Layer, Option, PubSub, Ref, Schema, Semaphore, Stream } from "effect"
-import { Directory, Document, Info, type Patch, type Entry, Event } from "@opencode/schema/config"
+import { Directory, Document, Info, type Patch, type Entry, type ProviderConnection, Event } from "@opencode/schema/config"
 import { Credential } from "./credential.js"
 import { Bus } from "./bus.js"
 import { Watcher } from "./filesystem/watcher.js"
@@ -46,6 +46,7 @@ export interface Interface {
   readonly changes: () => Stream.Stream<Watcher.Update>
   /** Updates supported global config fields while preserving unrelated JSONC content. */
   readonly update?: (patch: Patch) => Effect.Effect<void, FSUtil.Error>
+  readonly addProvider?: (input: ProviderConnection) => Effect.Effect<void, FSUtil.Error | ProviderConnectionError>
   /**
    * Replaces, or clears with `undefined`, the document an integration connection contributes. It loads right after
    * managed policies: its settings layer below remote, user, and project config, while its policies outrank theirs.
@@ -72,6 +73,14 @@ export const Options = Schema.Struct({
 export type Options = typeof Options.Type
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Config") {}
+
+export class ProviderConnectionError extends Schema.TaggedError<ProviderConnectionError>()(
+  "Config.ProviderConnectionError",
+  {
+    id: Schema.String,
+    reason: Schema.Literals(["exists", "url", "models", "document"]),
+  },
+) {}
 
 export interface TestInterface extends Interface {
   /** Replaces the entries returned by subsequent entries() calls. */
@@ -489,6 +498,61 @@ export const layer = (options?: Options) =>
         (effect) => updateLock.withPermit(effect),
       )
 
+      const addProvider = Effect.fn("Config.addProvider")(
+        function* (input: ProviderConnection) {
+          const url = yield* Effect.try({
+            try: () => new URL(input.baseURL),
+            catch: () => new ProviderConnectionError({ id: input.id, reason: "url" }),
+          })
+          if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash)
+            return yield* new ProviderConnectionError({ id: input.id, reason: "url" })
+          if (
+            new Set(input.models.map((model) => model.id)).size !== input.models.length ||
+            input.models.some((model) => model.output > model.context)
+          )
+            return yield* new ProviderConnectionError({ id: input.id, reason: "models" })
+          const directory = initial.global ?? AbsolutePath.make(globalService.config)
+          const candidates = ConfigDiscovery.names.map((name) => path.join(directory, name))
+          // A managed host reads only its explicit private document, not global JSONC discovery.
+          const filepath =
+            options?.global === false && initial.explicit
+              ? initial.explicit
+              : ((yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "opencode.jsonc"))
+          const text = (yield* fs.readFileStringSafe(filepath)) ?? "{}\n"
+          const errors: ParseError[] = []
+          const parsed: unknown = parse(text, errors, { allowTrailingComma: true })
+          const document = decodeInfo(parsed)
+          if (errors.length || Option.isNone(document))
+            return yield* new ProviderConnectionError({ id: input.id, reason: "document" })
+          if (
+            document.value.providers?.[input.id] ||
+            configs.some((entry) => entry.type === "document" && entry.info.providers?.[input.id])
+          )
+            return yield* new ProviderConnectionError({ id: input.id, reason: "exists" })
+          const definition = {
+            name: input.name,
+            package: "@opencode/ai/providers/openai-compatible",
+            settings: { baseURL: url.toString().replace(/\/$/, "") },
+            models: Object.fromEntries(
+              input.models.map((model) => [model.id, { limit: { context: model.context, output: model.output } }]),
+            ),
+          }
+          const updated = yield* Effect.try({
+            try: () =>
+              applyEdits(
+                text,
+                modify(text, ["providers", input.id], definition, {
+                  formattingOptions: { tabSize: 2, insertSpaces: true },
+                }),
+              ),
+            catch: (cause) => new FSUtil.FileSystemError({ method: "config.addProvider", cause }),
+          })
+          yield* fs.writeWithDirs(filepath, updated.endsWith("\n") ? updated : `${updated}\n`)
+          yield* reload().pipe(Effect.provide(context))
+        },
+        (effect) => updateLock.withPermit(effect),
+      )
+
       return Service.of({
         entries: Effect.fnUntraced(function* () {
           return configs
@@ -500,6 +564,7 @@ export const layer = (options?: Options) =>
           }),
         changes: () => Stream.fromPubSub(updates),
         update,
+        addProvider,
         integration: Effect.fn("Config.integration")(function* (integrationID, document) {
           if (isDeepStrictEqual(integrations.get(integrationID), document)) return
           integrations.delete(integrationID)

@@ -168,7 +168,12 @@
         "upstream/provider-checkpoint.json",
         "opencode/packages/core/src/session/stats.ts",
         "opencode/packages/schema/src/session-stats.ts",
-        "opencode/packages/app/src/settings/usage/usage.tsx"
+        "opencode/packages/app/src/settings/usage/usage.tsx",
+        "tools/provider_configuration_smoke.py",
+        "opencode/packages/core/src/config.ts",
+        "opencode/packages/schema/src/config.ts",
+        "opencode/packages/server/src/handlers/config.ts",
+        "opencode/packages/app/src/settings/providers/connection-form.tsx"
       ],
       "verification": [],
       "blocked_reason": null

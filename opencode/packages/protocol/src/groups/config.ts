@@ -3,8 +3,23 @@ import { ConfigShell } from "@opencode/schema/config/shell"
 import { Schema } from "effect"
 import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema, OpenApi } from "effect/http-api"
 import { LocationQuery, locationQueryOpenApi } from "./location.js"
+import { ConflictError, InvalidRequestError } from "../errors.js"
 
 export const ConfigGroup = HttpApiGroup.make("server.config")
+  .add(
+    HttpApiEndpoint.post("config.provider.create", "/api/experimental/config/provider", {
+      payload: Config.ProviderConnection,
+      success: HttpApiSchema.NoContent,
+      error: [ConflictError, InvalidRequestError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.config.provider.create",
+        summary: "Add an OpenAI-compatible API connection",
+        description:
+          "Experimental: may change without compatibility guarantees. Create a new connection without secrets or changing existing provider IDs and session selections.",
+      }),
+    ),
+  )
   .add(
     HttpApiEndpoint.get("config.get", "/api/config", {
       query: LocationQuery,

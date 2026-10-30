@@ -121,6 +121,21 @@ export const Patch = Schema.Struct({
 }).annotate({ identifier: "Config.Patch" })
 export interface Patch extends Schema.Schema.Type<typeof Patch> {}
 
+/** A plain OpenAI-compatible connection; never accepts executable packages or secrets. */
+export const ProviderConnection = Schema.Struct({
+  id: Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{0,63}$/)),
+  name: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100)),
+  baseURL: Schema.String,
+  models: Schema.Array(
+    Schema.Struct({
+      id: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(256)),
+      context: Schema.Int.check(Schema.isGreaterThan(0)),
+      output: Schema.Int.check(Schema.isGreaterThan(0)),
+    }),
+  ).check(Schema.isMinLength(1), Schema.isMaxLength(1000)),
+}).annotate({ identifier: "Config.ProviderConnection" })
+export type ProviderConnection = typeof ProviderConnection.Type
+
 export class Document extends Schema.Class<Document>("Config.Document")({
   type: Schema.Literal("document"),
   path: AbsolutePath.pipe(optional),

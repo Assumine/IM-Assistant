@@ -3,6 +3,7 @@ import { HttpApi, HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from "effect/ht
 import { PersistentPty } from "@opencode/schema/persistent-pty"
 import { Pty } from "@opencode/schema/pty"
 import { Worktree } from "@opencode/schema/worktree"
+import { Config } from "@opencode/schema/config"
 
 // Handlers answer plain fixture data: undefined properties are dropped, and other non-JSON values become null.
 const Json = Schema.Json.pipe(
@@ -196,6 +197,13 @@ const Group = HttpApiGroup.make("mock")
     }),
   )
   .add(HttpApiEndpoint.get("configShells", "/api/config/shell", { success: Json }))
+  .add(
+    HttpApiEndpoint.post("configProviderCreate", "/api/experimental/config/provider", {
+      payload: Config.ProviderConnection,
+      success: HttpApiSchema.NoContent,
+      error: Unsupported,
+    }),
+  )
   .add(
     HttpApiEndpoint.patch("configUpdate", "/api/experimental/config", {
       payload: Schema.Struct({ shell: Schema.NullOr(Schema.String) }),

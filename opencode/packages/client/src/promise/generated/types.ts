@@ -4703,15 +4703,24 @@ export type ExperimentalUsageLimitsInput = {
 
 export type ExperimentalUsageLimitsOutput = { location: LocationPublicRef; data: UsageLimitsInfo | null }
 
+export type ExperimentalConfigProviderCreateInput = {
+  readonly id: string
+  readonly name: string
+  readonly baseURL: string
+  readonly models: ReadonlyArray<{ readonly id: string; readonly context: number; readonly output: number }>
+}
+
+export type ExperimentalConfigProviderCreateOutput = void
+
+export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
+
+export type ExperimentalConfigUpdateOutput = void
+
 export type ConfigGetInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
 export type ConfigGetOutput = Array<ConfigEntry>
 
 export type ConfigShellsOutput = Array<ConfigShellOption>
-
-export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
-
-export type ExperimentalConfigUpdateOutput = void
 
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput
@@ -4856,6 +4865,12 @@ export type UsageLimitsInput = ExperimentalUsageLimitsInput
 
 /** @deprecated Use `ExperimentalUsageLimitsOutput`. Removed in the next minor. */
 export type UsageLimitsOutput = ExperimentalUsageLimitsOutput
+
+/** @deprecated Use `ExperimentalConfigProviderCreateInput`. Removed in the next minor. */
+export type ConfigProviderCreateInput = ExperimentalConfigProviderCreateInput
+
+/** @deprecated Use `ExperimentalConfigProviderCreateOutput`. Removed in the next minor. */
+export type ConfigProviderCreateOutput = ExperimentalConfigProviderCreateOutput
 
 /** @deprecated Use `ExperimentalConfigUpdateInput`. Removed in the next minor. */
 export type ConfigUpdateInput = ExperimentalConfigUpdateInput

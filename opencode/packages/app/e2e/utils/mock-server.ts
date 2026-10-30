@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test"
 import type { OpenCodeEvent, SessionMessageInfo } from "@opencode/client/promise"
 import { Permission } from "@opencode/schema/permission"
 import { Model } from "@opencode/schema/model"
+import type { Config } from "@opencode/schema/config"
 import { Worktree } from "@opencode/schema/worktree"
 import { Duration, Effect, Layer, Option, Predicate, Schema } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/http"
@@ -57,6 +58,7 @@ export interface MockServerConfig {
   // Runs on PATCH /api/credential/:id with the request body; the fixture applies the new label.
   onCredentialUpdate?: (credentialID: string, body: { label?: string }) => void
   onConnectKey?: (input: { integrationID: string; body: unknown }) => void
+  onConfigProviderCreate?: (input: Config.ProviderConnection) => void
   // Terminal shells the settings offer (`/api/config/shell`).
   shells?: unknown[]
   // Background shell commands (`GET /api/shell`).
@@ -1057,6 +1059,10 @@ function mockHandlers(
           }),
         configShells: () => Effect.succeed(config.shells ?? []),
         configUpdate: () => noContent,
+        configProviderCreate: (ctx) => {
+          if (!config.onConfigProviderCreate) return unsupported("create API connections", "onConfigProviderCreate")
+          return Effect.sync(() => config.onConfigProviderCreate?.(ctx.payload)).pipe(Effect.andThen(noContent))
+        },
         websearchProviders: () => Effect.succeed({ location: location(config), data: [] }),
         // No scenario signs in to an OpenCode Console workspace, so none has usage limits.
         usageLimits: () => Effect.succeed({ location: location(config), data: null }),

@@ -299,11 +299,13 @@ import type {
   WebsearchQueryOutput,
   ExperimentalUsageLimitsInput,
   ExperimentalUsageLimitsOutput,
+  ExperimentalConfigProviderCreateInput,
+  ExperimentalConfigProviderCreateOutput,
+  ExperimentalConfigUpdateInput,
+  ExperimentalConfigUpdateOutput,
   ConfigGetInput,
   ConfigGetOutput,
   ConfigShellsOutput,
-  ExperimentalConfigUpdateInput,
-  ExperimentalConfigUpdateOutput,
 } from "../api/api.js"
 import { ClientError } from "./client-error.js"
 
@@ -1844,6 +1846,24 @@ const adaptGroupExperimentalUsage = (raw: RawClient["server.usage"]) => ({
   limits: EndpointExperimentalUsageLimits(raw),
 })
 
+const EndpointExperimentalConfigProviderCreate =
+  (raw: RawClient["server.config"]) => (input: ExperimentalConfigProviderCreateInput) =>
+    preserveEffect<ExperimentalConfigProviderCreateOutput>()(
+      raw["config.provider.create"]({
+        payload: { id: input["id"], name: input["name"], baseURL: input["baseURL"], models: input["models"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointExperimentalConfigUpdate = (raw: RawClient["server.config"]) => (input: ExperimentalConfigUpdateInput) =>
+  preserveEffect<ExperimentalConfigUpdateOutput>()(
+    raw["config.update"]({ payload: { shell: input["shell"] } }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const adaptGroupExperimentalConfig = (raw: RawClient["server.config"]) => ({
+  provider: { create: EndpointExperimentalConfigProviderCreate(raw) },
+  update: EndpointExperimentalConfigUpdate(raw),
+})
+
 const EndpointConfigGet = (raw: RawClient["server.config"]) => (input?: ConfigGetInput) =>
   preserveEffect<ConfigGetOutput>()(
     raw["config.get"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
@@ -1855,15 +1875,6 @@ const EndpointConfigShells = (raw: RawClient["server.config"]) => () =>
 const adaptGroupConfig = (raw: RawClient["server.config"]) => ({
   get: EndpointConfigGet(raw),
   shells: EndpointConfigShells(raw),
-})
-
-const EndpointExperimentalConfigUpdate = (raw: RawClient["server.config"]) => (input: ExperimentalConfigUpdateInput) =>
-  preserveEffect<ExperimentalConfigUpdateOutput>()(
-    raw["config.update"]({ payload: { shell: input["shell"] } }).pipe(Effect.mapError(mapClientError)),
-  )
-
-const adaptGroupExperimentalConfig = (raw: RawClient["server.config"]) => ({
-  update: EndpointExperimentalConfigUpdate(raw),
 })
 
 const adaptClient = (raw: RawClient) => {
@@ -1999,6 +2010,11 @@ const adaptClient = (raw: RawClient) => {
     },
     config: {
       ...client.config,
+      /** @deprecated Use `client.experimental.config.provider`. Removed in the next minor. */
+      provider: {
+        /** @deprecated Use `client.experimental.config.provider.create`. Removed in the next minor. */
+        create: client.experimental.config.provider.create,
+      },
       /** @deprecated Use `client.experimental.config.update`. Removed in the next minor. */
       update: client.experimental.config.update,
     },

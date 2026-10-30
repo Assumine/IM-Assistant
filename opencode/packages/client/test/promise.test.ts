@@ -48,7 +48,8 @@ test("exposes every standard HTTP API group", () => {
   expect(Object.keys(client.websearch)).toEqual(["providers", "query"])
   expect(Object.keys(client.file)).toEqual(["read", "list", "find", "write", "watch", "unwatch"])
   expect(Object.keys(client.mcp)).toEqual(["list", "resource", "add", "remove", "connect", "disconnect", "client"])
-  expect(Object.keys(client.config)).toEqual(["get", "shells", "update"])
+  expect(Object.keys(client.config)).toEqual(["get", "shells", "provider", "update"])
+  expect(Object.keys(client.experimental.config.provider)).toEqual(["create"])
   expect(Object.keys(client.vcs)).toEqual(["init", "get", "base", "status", "branch", "diff"])
   expect(Object.keys(client.pty)).toEqual(["list", "create", "get", "update", "remove", "connect"])
   expect(Object.keys(client.pty.connect)).toEqual(["token"])
@@ -139,6 +140,7 @@ test("nests a method under client.experimental exactly when its route is experim
   ).toEqual([])
   // Pre-experimental paths kept as deprecated aliases until the next minor.
   expect(deprecated.toSorted()).toEqual([
+    "config.provider.create",
     "config.update",
     "file.unwatch",
     "file.watch",

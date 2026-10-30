@@ -16,10 +16,10 @@
     "R2_02_complete": false
   },
   "limits": [
-    "Desktop custom API configuration and native credential integration remain pending.",
-    "Native statistics count stored assistant steps and available durable compaction records; some auxiliary model calls are missing. This is disclosed in the UI.",
-    "Full typecheck:e2e still has 14 legacy diagnostics; not counted as passed.",
-    "No production account, old database migration, installed-client switch or installer release."
+    "API settings currently add one initial model manually; GUI model discovery, connection editing/removal and live production accounts are not verified.",
+    "Native statistics count stored assistant steps and available durable compaction records; some auxiliary model calls are missing, disclosed in UI. R2-02 and A17-A19 remain incomplete.",
+    "Full typecheck:e2e has 14 existing diagnostics; full client service timing tests also failed this run. Neither is counted as passed.",
+    "No old private database migration, production account request, installed-client/autostart switch or installer release."
   ],
   "native_provenance_core_regressions": 98,
   "native_client_regressions": 41,
@@ -51,5 +51,51 @@
     "reporting_preserved_after_restart": true,
     "desktop_browser_visual_review": "1280x720 production browser screenshot reviewed; not a desktop installer test",
     "fees": "Upstream-reported, catalog estimate, and unclassified amounts shown separately; not a subscription invoice"
+  },
+  "api_configuration_checkpoint": {
+    "verified_at": "2026-10-30T16:43:58.924333+00:00",
+    "checks": {
+      "config-regression": {
+        "passed": 102,
+        "skipped": 1
+      },
+      "config-client-contracts": {
+        "passed": 56,
+        "skipped": 0
+      },
+      "api-config-protocol": {
+        "passed": 10,
+        "skipped": 0
+      },
+      "custom-api-browser-final": {
+        "passed": 55,
+        "skipped": 0
+      },
+      "custom-api-browser-repeat": {
+        "passed": 10,
+        "skipped": 0
+      }
+    },
+    "smoke": {
+      "native_configuration_http": true,
+      "native_credentials_sqlite": true,
+      "restart_preserves_connections_and_credentials": true,
+      "pending_input_and_model_unchanged": true,
+      "generation_uses_saved_key": true,
+      "duplicate_and_builtin_id_conflict": true,
+      "unsafe_configuration_rejected": true,
+      "generic_config_remains_denied": true,
+      "external_model_requests": 0,
+      "R2_02_complete": false
+    },
+    "canonical_check": "36 workspace tasks passed",
+    "settings": "/settings?tab=providers -> Add compatible API -> native key connection dialog",
+    "model_entry": "One initial model with explicitly supplied documented context/output limits; /models discovery remains in the existing CLI.",
+    "storage": "Native private Config document and Credential SQLite only; no second state owner.",
+    "visual_review": "1280x720 production browser form screenshot inspected, not an installed desktop test.",
+    "remaining_test_failures": [
+      "Full typecheck:e2e still reports 14 existing diagnostics.",
+      "Full client suite after contract corrections: 252 passed, 4 Windows skips, 3 service handoff/contender timing failures and 1 teardown error. Unmodified service tests were not changed or retried to claim a pass. Focused client contract suite passes 56/56."
+    ]
   }
 }

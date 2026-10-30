@@ -153,7 +153,9 @@
         "opencode/packages/im-assistant/src/providers.ts",
         "opencode/packages/core/src/session/usage.ts",
         "opencode/packages/core/src/session/stats.ts",
-        "opencode/packages/app/src/settings/usage/usage.tsx"
+        "opencode/packages/app/src/settings/usage/usage.tsx",
+        "opencode/packages/core/src/config.ts",
+        "opencode/packages/app/src/settings/providers/connection-form.tsx"
       ],
       "test_files": [
         "tests/rebase/test_r2_02.py"
