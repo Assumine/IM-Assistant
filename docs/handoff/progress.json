@@ -8,7 +8,11 @@
     "A03",
     "A04",
     "A05",
-    "A06"
+    "A06",
+    "A07",
+    "A08",
+    "A09",
+    "A10"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -81,9 +85,36 @@
       "blocked_reason": null
     },
     "R1-02": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "opencode/packages/im-assistant/src/policy.ts",
+        "opencode/packages/im-assistant/src/non-project-location.ts",
+        "opencode/packages/core/src/runtime-policy.ts",
+        "opencode/packages/server/src/middleware/runtime-policy.ts",
+        "tools/assistant_policy_smoke.py",
+        "tests/rebase/test_r1_02.py",
+        "docs/handoff/会话模式能力边界.md",
+        "upstream/policy-verification.json",
+        "upstream/patches.json"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 7,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A07",
+            "A08",
+            "A09",
+            "A10"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R1-02",
+          "evidence": "upstream/policy-verification.json"
+        }
+      ],
       "blocked_reason": null
     },
     "R2-01": {

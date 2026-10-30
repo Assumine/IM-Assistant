@@ -9,6 +9,7 @@ import { Context, Effect, Scope } from "effect"
 import { HttpClient } from "effect/http"
 import { Agent } from "../agent.js"
 import { Model } from "../model.js"
+import { RuntimePolicy } from "../runtime-policy.js"
 import { Provider } from "../provider.js"
 import { Command } from "../command.js"
 import { Config } from "../config.js"
@@ -112,6 +113,7 @@ import { WarmingPlugin } from "./warming.js"
 import { WellKnownPlugin } from "../wellknown/plugin.js"
 
 const services = [
+  RuntimePolicy.Service,
   Agent.Service,
   AppProcess.Service,
   Provider.Service,
@@ -167,6 +169,7 @@ const services = [
 export type Requirements = Context.Service.Identifier<(typeof services)[number]>
 
 export const requirements = LayerNode.group([
+  RuntimePolicy.node,
   Agent.node,
   AppProcess.node,
   Provider.node,
@@ -283,11 +286,19 @@ const post = [
   ConfigPolicyPlugin.Plugin,
 ] as const satisfies readonly InternalPlugin[]
 
+// The managed conversation preset keeps native model/config/context behavior, without file/process integrations.
+const conversationPre = [ToolInputRepairPlugin.Plugin, AgentPlugin.Plugin, ModelsDevPlugin,
+  ...ProviderPlugins, ...WebSearchPlugins, IdentityPlugin.Plugin, VerbosityPlugin.Plugin] as const
+const conversationPost = [ConfigAgentPlugin.Plugin, ConfigCompactionPlugin.Plugin, ConfigImagePlugin.Plugin,
+  ConfigToolOutputPlugin.Plugin, ConfigCompatibilityPlugin.Plugin, ConfigProviderPlugin.Plugin,
+  DynamicProviderPlugin, ConfigWebSearchPlugin.Plugin, ConfigPolicyPlugin.Plugin] as const
+
 // Repository config must not switch off policy enforcement or the Console connection that delivers
 // organization statements, so plugin remove operations skip these IDs.
 export const guarded: ReadonlySet<string> = new Set([OpencodePlugin.id, ConfigPolicyPlugin.Plugin.id])
 
 export const list = Effect.fn("PluginInternal.list")(function* () {
+  const policy = yield* RuntimePolicy.Service
   // Capture only services; activation supplies the child Scope and batching context.
   const context = Context.pick(...services)(yield* Effect.context<Requirements>())
   const resolve = (plugins: readonly InternalPlugin[]) =>
@@ -298,7 +309,7 @@ export const list = Effect.fn("PluginInternal.list")(function* () {
       }),
     )
   return {
-    pre: resolve(pre),
-    post: resolve(post),
+    pre: resolve(policy.managed ? conversationPre : pre),
+    post: resolve(policy.managed ? conversationPost : post),
   }
 })

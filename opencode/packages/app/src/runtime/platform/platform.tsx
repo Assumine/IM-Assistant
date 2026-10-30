@@ -34,6 +34,8 @@ export type FatalRendererErrorLog = {
 }
 
 type PlatformBase = {
+  /** A conversation-only host disables project and process integrations before plugins mount. */
+  workspace?: boolean
   requestMicrophone?(): Promise<boolean>
   setVoiceCallActive?(active: boolean): Promise<void>
   /** App version */

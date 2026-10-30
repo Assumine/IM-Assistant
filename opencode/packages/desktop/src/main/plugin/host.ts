@@ -1,5 +1,7 @@
 import { app, BrowserWindow } from "electron"
 import { builtins } from "@opencode/gui-plugins/main"
+import { conversation } from "@opencode/gui-plugins/conversation"
+import { Profile } from "@im-assistant/profile/profile"
 import {
   pluginIdAvailable,
   runsOn,
@@ -176,7 +178,7 @@ export function createHost(input: {
     data: Data,
   ) => void
 }) {
-  const definitions: readonly Entry[] = builtins
+  const definitions: readonly Entry[] = Profile.active() ? conversation(builtins) : builtins
   const local = definitions.filter((definition) => runsOn(definition, os))
 
   const manager = createManager(
@@ -878,8 +880,10 @@ export function createHost(input: {
      * its first window is up.
      */
     async start() {
-      inventory.stop ??= SidecarCredentials.onChange(follow)
-      follow()
+      if (!Profile.active()) {
+        inventory.stop ??= SidecarCredentials.onChange(follow)
+        follow()
+      }
       await Promise.all(local.map((definition) => lifecycle.activate(definition.id)))
     },
     /** Activates the plugin whose id the Ipc's id names, ahead of `start`. */

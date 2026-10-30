@@ -15,6 +15,8 @@ type PromptTarget = {
 }
 
 export type ComposerAttachmentConfig = {
+  /** A conversation host carries user-selected attachment bytes, never a server-side file path. */
+  inlineOnly?: boolean
   picker?: (
     options: { defaultPath?: string; multiple?: boolean; accept?: string[] },
     onFile: (file: File) => Promise<boolean>,
@@ -65,6 +67,10 @@ export function createComposerAttachments(
     if (!target) return false
     const mime = await attachmentMime(file)
     const destination = input.destination()
+    if (input.inlineOnly) {
+      if (file.size > MAX_INLINE_BYTES) throw new Error(`Attachment exceeds ${MAX_INLINE_BYTES} bytes`)
+      return addInline(file, mime, target, clipboard)
+    }
 
     if (native(mime, destination.input) && file.size <= MAX_INLINE_BYTES) return addInline(file, mime, target, clipboard)
     const sourcePath = input.getPathForFile?.(file) || undefined
@@ -215,7 +221,7 @@ export function createComposerAttachments(
     clearDrag()
     const plainText = event.dataTransfer?.getData("text/plain")
 
-    if (plainText?.startsWith("file:")) {
+    if (!input.inlineOnly && plainText?.startsWith("file:")) {
       const path = plainText.slice("file:".length)
       input.focusEditor()
       input.addPart({ type: "file", path, content: `@${path}`, start: 0, end: 0 })

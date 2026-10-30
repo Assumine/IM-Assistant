@@ -6,6 +6,7 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSessionLayout } from "@/session/session-layout"
+import { usePlatform } from "@/runtime/platform/platform"
 
 /** The review toggle's pane fill, scaled from the panel's edge to `open` of its width. */
 export const reviewGlyphFill = (open: number) => `matrix(${open} 0 0 1 ${2.917 * (1 - open)} 0)`
@@ -40,9 +41,10 @@ export type SessionHeaderActionsState = {
 }
 
 export function SessionHeaderActions(props: { state: SessionHeaderActionsState }) {
+  const platform = usePlatform()
   return (
     <div class="flex items-center gap-2">
-      <Show when={props.state.reviewVisible}>
+      <Show when={platform.workspace !== false && props.state.reviewVisible}>
         <Tooltip
           class="shrink-0"
           placement="bottom"

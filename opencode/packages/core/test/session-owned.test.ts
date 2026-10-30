@@ -37,6 +37,7 @@ import { SessionStore } from "../src/session/store.js"
 import { Shell } from "../src/shell.js"
 import { Skill } from "../src/skill.js"
 import { Snapshot } from "../src/snapshot.js"
+import { RuntimePolicy } from "../src/runtime-policy.js"
 import { tempGlobalLayer } from "./fixture/global"
 import { location } from "./fixture/location"
 import { testEffect } from "./lib/effect"
@@ -50,6 +51,7 @@ const it = testEffect(
       SessionStore.node,
       SessionInbox.node,
       FSUtil.node,
+      RuntimePolicy.node,
     ]),
     {
       replacements: [Bus.node.replace(Bus.configured({ persist: true })), Global.node.replace(tempGlobalLayer)],
@@ -158,6 +160,7 @@ const setup = Effect.fnUntraced(function* (options?: {
       | SessionExecution.Service
       | SessionInbox.Service
       | Scope.Scope
+      | RuntimePolicy.Service
     >(),
     Effect.provideService(Instance.Service, instances),
     Effect.provideService(SessionExecution.Service, options?.execution ?? execution),
@@ -752,7 +755,7 @@ describe("SessionPrompt preparation", () => {
       }
       const items = yield* Effect.forEach([0, 1], () => SessionPrompt.prepare(request)).pipe(
         fixture.instances.provide(request.session),
-        Effect.satisfiesServicesType<FSUtil.Service | Database.Service>(),
+        Effect.satisfiesServicesType<FSUtil.Service | Database.Service | RuntimePolicy.Service>(),
       )
 
       expect(items[0]).toEqual(items[1])

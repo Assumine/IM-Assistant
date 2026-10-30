@@ -6,6 +6,7 @@ import type { Model } from "@opencode/schema/model"
 import type { Permission } from "@opencode/schema/permission"
 import { Event } from "@opencode/schema/event"
 import { FSUtil } from "@opencode/util/fs-util"
+import { RuntimePolicy } from "../runtime-policy.js"
 import { Bus } from "../bus.js"
 import { Database } from "../database/database.js"
 import { Instance } from "../instance/service.js"
@@ -47,6 +48,7 @@ export const make = Effect.fn("Session.make")(function* () {
   const execution = yield* SessionExecution.Service
   const admission = yield* SessionInbox.Service
   const fs = yield* FSUtil.Service
+  const policy = yield* RuntimePolicy.Service
   const scope = yield* Scope.Scope
 
   const get = Effect.fn("Session.get")(function* (sessionID: SessionSchema.ID) {
@@ -180,6 +182,7 @@ export const make = Effect.fn("Session.make")(function* () {
             instances.provide(session),
             Effect.provideService(Database.Service, database),
             Effect.provideService(FSUtil.Service, fs),
+            Effect.provideService(RuntimePolicy.Service, policy),
           )
         }).pipe(
           Effect.catchTag("SessionInbox.LifecycleConflict", () => new PromptConflictError({ sessionID, messageID })),
@@ -198,6 +201,7 @@ export const make = Effect.fn("Session.make")(function* () {
     const running = yield* Effect.gen(function* () {
       const started = yield* SessionShell.start({ session, command: input.command }).pipe(
         Effect.provideService(Instance.Service, instances),
+        Effect.provideService(RuntimePolicy.Service, policy),
         Effect.tapError((error) =>
           synthetic(sessionID, {
             text: `User shell command failed to start:\n${input.command}\n\n${error.message}`,

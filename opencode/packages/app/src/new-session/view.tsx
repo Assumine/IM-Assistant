@@ -33,6 +33,7 @@ import { NEW_SESSION_CONTENT_WIDTH } from "@/new-session/layout"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import { useSettings } from "@/settings/model"
+import { usePlatform } from "@/runtime/platform/platform"
 import type { NewSessionWorkspaceController } from "./workspace/controller"
 import { NewSessionBranch } from "./workspace/selector"
 import { NewSessionBrickBreaker } from "./brick-breaker"
@@ -73,6 +74,7 @@ export function NewSessionView(props: {
   )
 
   const settings = useSettings()
+  const platform = usePlatform()
 
   const [wordmark, setWordmark] = createStore<WordmarkState>({ mode: "flat", game: false })
 
@@ -117,7 +119,7 @@ export function NewSessionView(props: {
                 <div class="relative z-10">
                   <Composer model={props.composer} />
                 </div>
-                <Show when={props.project.selected()}>
+                <Show when={platform.workspace !== false && props.project.selected()}>
                   {(project) => (
                     <NewSessionLocation
                       project={project()}
@@ -131,7 +133,7 @@ export function NewSessionView(props: {
                   )}
                 </Show>
               </div>
-              <Show when={props.project.empty()}>
+              <Show when={platform.workspace !== false && props.project.empty()}>
                 <PromptProjectAddButton controller={props.project} />
               </Show>
             </div>

@@ -18,6 +18,7 @@ type ParseSource =
     }
 
 type SubstituteInput = ParseSource & {
+  files?: boolean
   text: string
   env?: Record<string, string>
 }
@@ -38,6 +39,7 @@ export const substitute = Effect.fn("ConfigVariable.substitute")(function* (inpu
 })
 
 const substituteFiles = Effect.fnUntraced(function* (input: SubstituteInput, text: string) {
+  if (input.files === false) return text.replace(/\{file:[^}]+\}/g, "")
   const fs = yield* FSUtil.Service
   const configDir = input.type === "path" ? path.dirname(input.path) : input.dir
   const configSource = input.type === "path" ? input.path : input.source

@@ -7,6 +7,7 @@ import { load, type AssetMap, type BrotliMap } from "../app-assets"
 export const handler = Effect.fn("cli.web-ui.handler")(function* (options?: {
   readonly assets?: AssetMap
   readonly brotli?: BrotliMap
+  readonly workspace?: boolean
 }) {
   const fileSystem = yield* FileSystem.FileSystem
   const assets = options?.assets
@@ -26,7 +27,7 @@ export const handler = Effect.fn("cli.web-ui.handler")(function* (options?: {
         return yield* api.pipe(
           Effect.catchIf(isRouteNotFound, () => Effect.succeed(HttpServerResponse.empty({ status: 404 }))),
         )
-      return yield* assets.pipe(Effect.flatMap((loaded) => serveUI(request, url, loaded.files, loaded.brotli)))
+      return yield* assets.pipe(Effect.flatMap((loaded) => serveUI(request, url, loaded.files, loaded.brotli, options?.workspace)))
     })
 })
 
@@ -35,6 +36,7 @@ function serveUI(
   url: URL,
   assets: AssetMap,
   brotli: BrotliMap | undefined,
+  workspace: boolean | undefined,
 ) {
   const key = url.pathname.replace(/^\//, "")
   // A browser that takes brotli gets the embedded bytes as they are, so the server decompresses nothing. The HTML stays
@@ -49,12 +51,14 @@ function serveUI(
   if (request.method !== "GET" && request.method !== "HEAD")
     return Effect.succeed(HttpServerResponse.empty({ status: 405 }))
   const html = name === "index.html"
+  const content = html && workspace === false
+    ? (typeof file === "string" ? file : Buffer.from(file).toString()).replace("</head>", '<meta name="opencode-workspace" content="disabled"></head>') : file
   const revalidate = html || name === "sw.js" || name === "registerSW.js"
   const headers = {
     "content-type": FSUtil.mimeType(name),
     "cache-control": revalidate ? "no-cache" : "public, max-age=31536000, immutable",
     "content-security-policy": html
-      ? cspForHtml(typeof file === "string" ? file : Buffer.from(file).toString())
+      ? cspForHtml(typeof content === "string" ? content : Buffer.from(content).toString())
       : csp(),
     "x-content-type-options": "nosniff",
     ...(!html && brotli?.[name] !== undefined ? { vary: "accept-encoding" } : {}),
@@ -63,7 +67,7 @@ function serveUI(
   return Effect.succeed(
     request.method === "HEAD"
       ? HttpServerResponse.empty({ status: 200, headers })
-      : HttpServerResponse.raw(file, { headers, contentType: headers["content-type"] }),
+      : HttpServerResponse.raw(content, { headers, contentType: headers["content-type"] }),
   )
 }
 

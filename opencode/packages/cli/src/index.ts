@@ -3,6 +3,7 @@
 import { ensurePluginRuntime } from "@opencode/plugin/runtime"
 import { Profile } from "@im-assistant/profile/profile"
 import { Storage } from "@im-assistant/profile/storage"
+import { Policy } from "@im-assistant/profile/policy"
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
 import { Cause, Effect } from "effect"
 import { getErrorReported } from "effect/Runtime"
@@ -22,6 +23,8 @@ import { CpuProfile } from "./cpu-profile"
 import { ShutdownDeadline } from "./shutdown-deadline"
 
 ensurePluginRuntime()
+if (Profile.active() && !Policy.allowsCLI(process.argv.slice(2)))
+  throw new Error("This entry supports the managed conversation service only")
 
 if (process.env.OPENCODE_SSH_ASKPASS_PORT) {
   const { askpass } = await import("./ssh-askpass")

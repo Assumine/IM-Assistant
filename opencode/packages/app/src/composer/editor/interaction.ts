@@ -65,6 +65,7 @@ export function createComposerEditorState(mode: "normal" | "shell" = "normal") {
 export function createComposerEditor(input: {
   store: ComposerStateStoreInput
   state?: ReturnType<typeof createComposerEditorState>
+  shellEnabled?: boolean
   history?: ComposerHistory
   commands: Accessor<ComposerSuggestion[]>
   context: Accessor<ComposerSuggestion[]>
@@ -352,7 +353,7 @@ export function createComposerEditor(input: {
     }
 
     const mode = state.mode
-    const result = transitionComposer(state, event, draft.state)
+    const result = transitionComposer(state, event, draft.state, { shell: input.shellEnabled })
     const action = event.type === "popover.select" ? input.onSuggestionSelect?.(event.item) : undefined
 
     if (event.type === "popover.select") {

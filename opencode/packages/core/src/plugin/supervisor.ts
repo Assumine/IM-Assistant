@@ -14,6 +14,7 @@ import { PluginModule } from "./module.js"
 import { SdkPlugins } from "./sdk.js"
 import { PluginUpdate } from "./update.js"
 import { Watcher } from "../filesystem/watcher.js"
+import { RuntimePolicy } from "../runtime-policy.js"
 
 const resolve = Effect.fn("PluginSupervisor.resolve")(function* (
   modules: Effect.Success<ReturnType<typeof PluginModule.make>>,
@@ -123,6 +124,7 @@ const resolve = Effect.fn("PluginSupervisor.resolve")(function* (
 export const layer = Layer.effectDiscard(
   Effect.gen(function* () {
     const registry = yield* Plugin.Service
+    const policy = yield* RuntimePolicy.Service
     const sdk = yield* SdkPlugins.Service
     const instance = yield* InstancePlugins.Service
     const sources = yield* ConfigPluginSource.Service
@@ -149,15 +151,15 @@ export const layer = Layer.effectDiscard(
       // container writes, so the instance's explicit choices win over globals.
       const pre = [
         ...internal.pre.map((plugin) => ({ ...plugin, revision: "internal", source: { type: "builtin" as const } })),
-        ...sdk.all(),
-        ...instance.all(),
+        ...(policy.managed ? [] : sdk.all()),
+        ...(policy.managed ? [] : instance.all()),
       ]
       const post = internal.post.map((plugin) => ({
         ...plugin,
         revision: "internal",
         source: { type: "builtin" as const },
       }))
-      const operations = yield* sources.operations()
+      const operations = policy.managed ? [] : yield* sources.operations()
       // Activate everything available locally before waiting on missing package installs.
       const immediate = yield* resolve(modules, pre, post, operations, false, running)
       const source = (source: Plugin.Source) =>
@@ -255,6 +257,7 @@ const nodeDeps = [
   Npm.node,
   Watcher.node,
   PluginInternal.requirements,
+  RuntimePolicy.node,
 ] as const
 
 function pluginSource(target: string): Plugin.Source {

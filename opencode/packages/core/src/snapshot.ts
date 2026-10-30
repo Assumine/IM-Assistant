@@ -1,4 +1,5 @@
 export * as Snapshot from "./snapshot.js"
+import { RuntimePolicy } from "./runtime-policy.js"
 
 import { makeLocationNode } from "@opencode/util/effect/app-node"
 import path from "path"
@@ -72,6 +73,7 @@ export class Service extends Context.Service<Service, Interface>()("@opencode/Sn
 const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
+    const policy = yield* RuntimePolicy.Service
     const fs = yield* FSUtil.Service
     const git = yield* Git.Service
     const global = yield* Global.Service
@@ -111,7 +113,7 @@ const layer = Layer.effect(
       return RelativePath.make(path.relative(worktree, location.directory).replaceAll("\\", "/") || ".")
     })
 
-    const enabled = () => location.vcs?.type === "git" && state.get().enabled
+    const enabled = () => !policy.managed && location.vcs?.type === "git" && state.get().enabled
 
     // `objects.pack` takes a cross-process lock, so a run that outlasts the interval never overlaps the next.
     let lastPackCheck = Number.NEGATIVE_INFINITY
@@ -143,6 +145,7 @@ const layer = Layer.effect(
     })
 
     const comparison = Effect.fnUntraced(function* (operation: "files" | "diff", input: CompareInput) {
+      if (policy.managed) return yield* new Error({ operation, message: "Project snapshots are disabled in this runtime" })
       const repo = yield* repository.pipe(Effect.mapError((cause) => failure(operation, cause)))
       return {
         source: repo.source,
@@ -218,7 +221,7 @@ const layer = Layer.effect(
 export const node = makeLocationNode({
   service: Service,
   layer,
-  deps: [FSUtil.node, Git.node, Global.node, Location.node],
+  deps: [FSUtil.node, Git.node, Global.node, Location.node, RuntimePolicy.node],
 })
 
 export const noopLayer = Layer.succeed(

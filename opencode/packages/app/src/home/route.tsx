@@ -9,8 +9,10 @@ import { createHomeScrollController } from "./scroll"
 import { createHomeSessionSearchController } from "./sessions/search"
 import { createHomeSessionsController } from "./sessions/controller"
 import { HomeSessions } from "./sessions/region"
+import { usePlatform } from "@/runtime/platform/platform"
 
 export function Home() {
+  const platform = usePlatform()
   const mobile = createMediaQuery("(max-width: 767px)")
   const home = createHomeController()
   const projects = createHomeProjectsController(home)
@@ -26,7 +28,7 @@ export function Home() {
         bg-v2-background-bg-base shadow-[var(--v2-elevation-raised)]
       `}
     >
-      <Show when={mobile()}>
+      <Show when={platform.workspace !== false && mobile()}>
         <div class="relative z-40 -mb-3 shrink-0 px-3 pt-3">
           <HomeProjects projects={projects} scroll={scroll} dropdown />
         </div>
@@ -41,16 +43,16 @@ export function Home() {
         <div
           class={`
             mx-auto grid min-h-full w-full max-w-[1080px] grid-rows-[auto_minmax(0,1fr)] gap-4 px-3
-            max-md:grid-rows-[minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,720px)] lg:grid-rows-1 lg:gap-8 lg:px-6
+            max-md:grid-rows-[minmax(0,1fr)] ${platform.workspace === false ? "lg:grid-cols-1" : "lg:grid-cols-[280px_minmax(0,720px)]"} lg:grid-rows-1 lg:gap-8 lg:px-6
           `}
         >
-          <Show when={!mobile()}>
+          <Show when={platform.workspace !== false && !mobile()}>
             <HomeProjects projects={projects} scroll={scroll} />
           </Show>
           <HomeSessions sessions={sessions} search={search} scroll={scroll} />
         </div>
       </ScrollView>
-      <div class="hidden shrink-0 px-3 py-2 md:block lg:hidden">
+      <div class={platform.workspace === false ? "shrink-0 px-3 py-2" : "hidden shrink-0 px-3 py-2 md:block lg:hidden"}>
         <HomeUtilityNav
           class="flex"
           onOpenSettings={projects.utility.settings}

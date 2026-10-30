@@ -3,6 +3,7 @@ export * as ServerProcess from "./server-process"
 import { NodeServices } from "@effect/platform-node"
 import { Profile } from "@im-assistant/profile/profile"
 import { Storage } from "@im-assistant/profile/storage"
+import { Policy } from "@im-assistant/profile/policy"
 import { Service } from "@opencode/client/effect/service"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { Global } from "@opencode/util/global"
@@ -65,7 +66,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
         )
   const global = yield* Global.Service
   // A sandbox may deny $HOME; the service then keeps the cwd it was launched from.
-  if (options.mode === "service")
+  if (options.mode === "service" || Profile.active())
     yield* Effect.try(() => process.chdir(global.home)).pipe(
       Effect.catch((cause) => Effect.logWarning("failed to change service directory to home", { cause })),
     )
@@ -101,7 +102,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             : randomBytes(32).toString("base64url")
       if (!password) return yield* Effect.fail(new Error("Missing server password"))
       const instanceID = randomUUID()
-      const transform = yield* WebUi.handler()
+      const transform = yield* WebUi.handler({ workspace: !Profile.active() })
       const remote = { urls: [] as ReadonlyArray<string> }
       const launch = start(
         {
@@ -112,6 +113,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
           },
           hostname,
           project: Profile.active() ? { discover: false } : undefined,
+          runtime: Profile.active() ? Policy.runtime() : undefined,
           port,
           cors: options.cors ?? config.cors,
           password,
@@ -143,7 +145,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             gitbash: process.env.OPENCODE_GIT_BASH_PATH,
           },
           fs: {
-            filewatcher: !truthy(process.env.OPENCODE_FILEWATCHER_DISABLE ?? process.env.OPENCODE_DISABLE_FILEWATCHER),
+            filewatcher: !Profile.active() && !truthy(process.env.OPENCODE_FILEWATCHER_DISABLE ?? process.env.OPENCODE_DISABLE_FILEWATCHER),
             fff:
               process.env.OPENCODE_DISABLE_FFF === undefined
                 ? process.platform !== "win32"

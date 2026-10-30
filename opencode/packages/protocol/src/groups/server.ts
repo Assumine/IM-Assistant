@@ -16,6 +16,7 @@ export const ServerInfo = Schema.Struct({
   capabilities: Schema.optional(
     Schema.Struct({
       persistentPty: Schema.optional(Schema.Boolean),
+      experimental: Schema.optional(Schema.Struct({ projectWorkspace: Schema.optional(Schema.Boolean) })),
     }),
   ),
 }).annotate({ identifier: "ServerInfo" })

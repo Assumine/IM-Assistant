@@ -3,6 +3,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { createEffect, createMemo, For, on, onCleanup, onMount, Show, Switch, Match, type Accessor } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePlatform } from "@/runtime/platform/platform"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useGlobal, useServerCtx } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
@@ -222,6 +223,7 @@ function insideScroller(target: Element, root: Element) {
 }
 
 function RootSettings() {
+  const platform = usePlatform()
   const language = useLanguage()
   const dialog = useDialog()
   const surface = useSettingsSurface()
@@ -248,6 +250,7 @@ function RootSettings() {
     const view = surface.view()
 
     if (view.type !== "root") return
+    if (platform.workspace === false && ["projects", "workspaces", "extensions"].includes(view.tab)) surface.open("general")
 
     if (view.tab === "experimental" && !experimentalSettingsAvailable) surface.open("general")
   })
@@ -264,7 +267,7 @@ function RootSettings() {
 
   const groups = createMemo<SettingsNavGroup[]>(() => [
     {
-      items: serverTabs.map((item) => ({
+      items: serverTabs.filter(item => platform.workspace !== false || !["projects", "workspaces", "extensions"].includes(item.value)).map((item) => ({
         ...item,
         label: language.t(item.label),
         onPrefetch: item.value === "workspaces" ? prefetchWorkspaces : undefined,

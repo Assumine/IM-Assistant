@@ -11,6 +11,7 @@ import { Plugin } from "@opencode/core/plugin"
 import { PluginHost } from "@opencode/core/plugin/host"
 import { DynamicProviderPlugin } from "@opencode/core/plugin/provider/dynamic"
 import { Provider } from "@opencode/core/provider"
+import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { testEffect } from "../lib/effect"
 import { PluginTestLayer } from "./fixture"
 
@@ -50,6 +51,23 @@ function tempPackage(source: string) {
 }
 
 describe("DynamicProviderPlugin", () => {
+  it.effect("conversation policy rejects a file-backed provider before loading it", () =>
+    Effect.gen(function* () {
+      const plugin = yield* Plugin.Service
+      const host = yield* PluginHost.make(plugin)
+      yield* DynamicProviderPlugin.effect(host).pipe(Effect.provideService(RuntimePolicy.Service, {
+        managed: true, allowsDirectory: () => false,
+      }))
+      const aisdk = yield* AISDK.Service
+      const exit = yield* aisdk.runSDK({ model: Model.Info.make({
+          ...Model.Info.default(Provider.ID.make("custom"), Model.ID.make("test-model")),
+          package: Provider.aisdk(fixtureProvider),
+        }), package: fixtureProvider, options: { name: "custom" },
+      }).pipe(Effect.exit)
+      expect(exit._tag).toBe("Failure")
+      if (exit._tag === "Failure") expect(Cause.prettyErrors(exit.cause).join("\n")).toContain("External provider packages are disabled")
+    }),
+  )
   it.effect("creates an SDK from a provider factory export", () =>
     Effect.gen(function* () {
       const aisdk = yield* AISDK.Service

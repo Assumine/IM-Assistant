@@ -15,6 +15,27 @@ const root = await mkdtemp(path.join(tmpdir(), "opencode-web-ui-"))
 afterAll(() => rm(root, { recursive: true, force: true }))
 
 describe("web UI", () => {
+  it.live("embeds conversation capabilities in the shell without changing assets or requiring API startup", () =>
+    Effect.gen(function* () {
+      const html = '<html><head><script id="oc-theme-preload-script">window.theme = "dark"</script></head><body>shell</body></html>'
+      const original = yield* WebUi.handler({ assets: { "index.html": html, "_assets/app.js": "native" } })
+      const managed = yield* WebUi.handler({ assets: { "index.html": html, "_assets/app.js": "native" }, workspace: false })
+      const app = Effect.die("API must not run to render the shell")
+      const serve = (transform: typeof original) => Effect.gen(function* () {
+        const http = yield* NodeHttpServer.make(createServer, { host: "127.0.0.1", port: 0 })
+        yield* http.serve(transform(app))
+        return HttpServer.formatAddress(http.address)
+      })
+      const origins = yield* Effect.all([serve(original), serve(managed)])
+      const plain = yield* Effect.promise(() => fetch(origins[0]!))
+      const conversation = yield* Effect.promise(() => fetch(origins[1]! + "/new-session"))
+      expect(yield* Effect.promise(() => plain.text())).toBe(html)
+      expect(yield* Effect.promise(() => conversation.text())).toContain('<meta name="opencode-workspace" content="disabled">')
+      expect(conversation.headers.get("content-security-policy")).toBe(plain.headers.get("content-security-policy"))
+      const asset = yield* Effect.promise(() => fetch(origins[1]! + "/_assets/app.js"))
+      expect(yield* Effect.promise(() => asset.text())).toBe("native")
+    }).pipe(Effect.provide(NodeFileSystem.layer)),
+  )
   it.live("serves the web shell and assets before server authentication", () =>
     Effect.gen(function* () {
       const transform = yield* WebUi.handler({

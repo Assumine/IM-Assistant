@@ -18,6 +18,7 @@ import { Skill } from "../skill.js"
 import { SessionBlob } from "./blob.js"
 import { AttachmentError, SkillNotFoundError } from "./error.js"
 import { SessionStored } from "./stored.js"
+import { RuntimePolicy } from "../runtime-policy.js"
 
 // Image types the resizer can decode; others such as HEIC and AVIF go to the provider unchanged.
 const RESIZABLE_IMAGE_MIMES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"])
@@ -52,6 +53,9 @@ export const prepare = Effect.fn("SessionPrompt.prepare")(function* (request: {
     delivery: request.input.delivery ?? "steer",
   })
   const input = event.prompt
+  const policy = yield* RuntimePolicy.Service
+  if (policy.managed && input.skills?.length)
+    return yield* new SkillNotFoundError({ skill: input.skills[0].id })
   const files = input.files
     ? yield* Effect.forEach(input.files, materializeAttachment, { concurrency: 8 })
     : undefined
@@ -92,6 +96,9 @@ export const prepare = Effect.fn("SessionPrompt.prepare")(function* (request: {
 const materializeAttachment = Effect.fn("SessionPrompt.materializeAttachment")(function* (
   input: PromptInput.FileAttachment,
 ) {
+  const policy = yield* RuntimePolicy.Service
+  if (policy.managed && !input.uri.startsWith("data:") && !input.uri.startsWith("media:"))
+    return yield* new AttachmentError({ uri: attachmentLabel(input), message: "Local attachment paths are disabled; upload the attachment bytes instead" })
   // Stored blob bytes were normalized when first admitted, so a `media:` ref re-admits them unchanged.
   const ref = Schema.decodeUnknownOption(SessionStored.Ref)(input.uri)
   if (Option.isSome(ref)) {

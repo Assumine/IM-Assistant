@@ -46,6 +46,7 @@ export type MockFileContent =
   | undefined
 
 export interface MockServerConfig {
+  workspace?: boolean
   server?: string
   // The machine name `/api/info` reports; omitted like a server that predates it.
   hostname?: string
@@ -216,6 +217,19 @@ type MockStreamWindow = Window & {
 
 export async function mockOpenCodeServer(page: Page, config: MockServerConfig) {
   const server = config.server ?? SERVER
+  if (config.workspace === false) await page.addInitScript(() => {
+    const attach = () => {
+      if (!document.documentElement) return false
+      const meta = document.createElement("meta")
+      meta.name = "opencode-workspace"
+      meta.content = "disabled"
+      document.documentElement.append(meta)
+      return true
+    }
+    if (attach()) return
+    const observer = new MutationObserver(() => { if (attach()) observer.disconnect() })
+    observer.observe(document, { childList: true, subtree: true })
+  })
 
   mockedOrigins(page).add(server)
 
@@ -919,10 +933,8 @@ function mockHandlers(
             hostname: config.hostname,
             urls: config.server ? [config.server] : [],
             paths: { tmp: "/tmp/opencode" },
-            capabilities:
-              state.persistentPty.capability === undefined
-                ? undefined
-                : { persistentPty: state.persistentPty.capability },
+            capabilities: { persistentPty: state.persistentPty.capability,
+              experimental: { projectWorkspace: config.workspace } },
           }),
         config: () => Effect.succeed(configEntries),
         reference: () => Effect.succeed({ location: location(config), data: [] }),

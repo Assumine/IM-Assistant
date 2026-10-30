@@ -75,11 +75,12 @@ export function SessionHeaderLayout(
   }>,
 ) {
   const fit = createSessionHeaderFit()
+  const platform = usePlatform()
 
   return (
     <SessionHeaderCollapse.Provider value={() => fit.collapse}>
       <div ref={fit.ref} class="session-header-layout" data-location-collapse={fit.collapse}>
-        <div class="session-header-location">{props.location}</div>
+        <Show when={platform.workspace !== false}><div class="session-header-location">{props.location}</div></Show>
         <div class="session-header-title">
           <span class="session-header-title-measure" aria-hidden="true">
             <span>{props.title}</span>

@@ -23,6 +23,12 @@ try {
   }
   const body = await page.locator('body').innerText({timeout: 10000})
   if (body.includes('出了点问题') || body.includes('Something went wrong')) throw new Error('Fatal error screen')
+  if (process.env.BASELINE_PRODUCT_ROOT) {
+    const projectControls = await page.evaluate(() => document.querySelectorAll(
+      '[data-action="prompt-project"], [data-action="prompt-worktree"], [data-slot="session-location-trigger"]'
+    ).length)
+    if (projectControls) throw new Error('Project controls remain in the conversation profile')
+  }
   console.log(JSON.stringify({ready: true, url: page.url(), profile_isolated: true,
     screenshot_verified: false, packaged_installer: false}))
 } finally {

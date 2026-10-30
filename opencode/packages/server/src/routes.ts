@@ -14,6 +14,9 @@ import { PermissionSaved } from "@opencode/core/permission/saved"
 import { PtyTicket } from "@opencode/core/pty/ticket"
 import { PersistentPty } from "@opencode/core/persistent-pty"
 import { Project } from "@opencode/core/project"
+import { RuntimePolicy } from "@opencode/core/runtime-policy"
+import path from "node:path"
+import { ConfigPluginSource } from "@opencode/core/config/plugin/source"
 import { Worktree } from "@opencode/core/worktree"
 import { Session } from "@opencode/core/session"
 import { Instance } from "@opencode/core/instance/service"
@@ -45,6 +48,7 @@ import { CorsConfig } from "./cors"
 import { handlers } from "./handlers"
 import { authorizationLayer } from "./middleware/authorization"
 import { schemaErrorLayer } from "./middleware/schema-error"
+import { middleware } from "./middleware/runtime-policy"
 import { ServerPairing } from "./pairing"
 import { layer } from "./location"
 import { formLocationLayer } from "./middleware/form-location"
@@ -53,6 +57,7 @@ import { ServerInfo } from "./server-info"
 import type { ServerOptions } from "./options"
 
 const applicationServiceNodes = [
+  RuntimePolicy.node,
   Global.node,
   FSUtil.node,
   Database.node,
@@ -125,9 +130,11 @@ function makeRoutes<AuthError, AuthServices>(
     Bus.node.replace(Bus.configured({ persist: options.events?.persist })),
     App.node.replace(App.configured(options.app)),
     ModelsDev.node.replace(ModelsDev.configured(options.models)),
-    Project.node.replace(Project.configured(options.project)),
-    Watcher.node.replace(Watcher.configured({ enabled: options.fs?.filewatcher })),
-    FileWatch.node.replace(FileWatch.configured({ enabled: options.fs?.filewatcher })),
+    Project.node.replace(Project.configured(options.runtime?.managedDirectory ? { discover: false } : options.project)),
+    RuntimePolicy.node.replace(RuntimePolicy.configured(options.runtime)),
+    ...(options.runtime?.managedDirectory ? [ConfigPluginSource.node.replace(ConfigPluginSource.empty)] : []),
+    Watcher.node.replace(Watcher.configured({ enabled: options.runtime?.managedDirectory ? false : options.fs?.filewatcher })),
+    FileWatch.node.replace(FileWatch.configured({ enabled: options.runtime?.managedDirectory ? false : options.fs?.filewatcher })),
     FileSystemSearch.node.replace(FileSystemSearch.configured({ fff: options.fs?.fff })),
     Global.node.replace(Global.layerWith({
       ...(options.config?.directory ? { config: options.config.directory } : {}),
@@ -135,13 +142,18 @@ function makeRoutes<AuthError, AuthServices>(
     })),
     Config.node.replace(
       Config.configured({
-        project: options.config?.project,
-        claude: options.config?.claude,
-        file: options.config?.file,
+        project: options.runtime?.managedDirectory ? false : options.config?.project,
+        claude: options.runtime?.managedDirectory ? false : options.config?.claude,
+        ...(options.runtime?.managedDirectory ? { global: false, system: false, fileReferences: false } : {}),
+        file: options.runtime?.managedDirectory
+          ? path.join(options.config?.directory ?? Global.Path.config, "opencode.json") : options.config?.file,
         content: options.config?.content,
       }),
     ),
-    InstructionDiscovery.node.replace(InstructionDiscovery.configured({ project: options.config?.project })),
+    InstructionDiscovery.node.replace(InstructionDiscovery.configured({
+      project: options.runtime?.managedDirectory ? false : options.config?.project,
+      global: options.runtime?.managedDirectory ? false : undefined,
+    })),
     ShellSelect.node.replace(ShellSelect.configured({ gitbash: options.windows?.gitbash })),
     Mcp.node.replace(
       Mcp.configured({
@@ -193,6 +205,7 @@ function makeRoutes<AuthError, AuthServices>(
         Layer.provide(layer),
         Layer.provide(authorizationLayer),
         Layer.provide(schemaErrorLayer),
+        Layer.provide(middleware(options.runtime)),
         Layer.provide(auth),
         HttpRouter.provideRequest(requestServices),
         Layer.provideMerge(services),

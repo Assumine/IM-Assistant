@@ -20,24 +20,9 @@
           "sha256": "5f08f3e390b7002c8d18305268b5efc97a7e11a6dc7e2db7a79204af745b025d"
         },
         {
-          "path": "packages/cli/src/index.ts",
-          "action": "modified",
-          "sha256": "250f3b095efd057bcb3052d227b6ed23c15f157c383acd05164a4a5f4ce07d9a"
-        },
-        {
-          "path": "packages/cli/src/server-process.ts",
-          "action": "modified",
-          "sha256": "61356a397a69ff48e456a3c49ef632307bff475bfd0f296ddc89056d9ec7c3e3"
-        },
-        {
           "path": "packages/cli/src/services/service-config.ts",
           "action": "modified",
           "sha256": "b319a6763718a489e843ebeca5ce8308d4cd3e816ece21550a3379fb89bfff81"
-        },
-        {
-          "path": "packages/core/src/project.ts",
-          "action": "modified",
-          "sha256": "4d97b5371b94b51f3614a55c5067121de462edf32355f310e98ff76c27a82ca5"
         },
         {
           "path": "packages/desktop/package.json",
@@ -75,19 +60,9 @@
           "sha256": "915b419f2116396217c30e885d6938250a271366c5b6b76bfc71131a152092b6"
         },
         {
-          "path": "packages/im-assistant/package.json",
-          "action": "added",
-          "sha256": "931125370c9a282ad0d963fc6f826558dc3a814114107af243bd8ffb1779d46e"
-        },
-        {
           "path": "packages/im-assistant/script/desktop.ts",
           "action": "added",
           "sha256": "c6514891f1acf28c65fcf70c785b6fc409d8662fd4cec139bdef73292e80c2b3"
-        },
-        {
-          "path": "packages/im-assistant/src/cli.ts",
-          "action": "added",
-          "sha256": "f631f352705795e852feb46d8dcf57d70bb20fb291241c0168b2af8e077d6139"
         },
         {
           "path": "packages/im-assistant/src/profile.ts",
@@ -108,16 +83,301 @@
           "path": "packages/im-assistant/tsconfig.json",
           "action": "added",
           "sha256": "458384a3f74a6500c10db65362153e8f348e7edac821b0de4a546c7a3272e9c1"
+        }
+      ]
+    },
+    {
+      "id": "R1-02-conversation-runtime",
+      "reason": "通用会话宿主能力边界、非项目环境和原生UI裁剪；会话/Inbox/历史仍归原生核心，内部持久化和受控附件保留。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R1-02",
+        "python tools/run_runtime_checks.py --task R0-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/performance/timeline/conversation-composer-benchmark.spec.ts",
+          "action": "added",
+          "sha256": "914ce7677a4d77ccbf664a3490308630abeef16ab9da57bf7b033d70a1b4b532"
+        },
+        {
+          "path": "packages/app/e2e/regression/composer.spec.ts",
+          "action": "modified",
+          "sha256": "2b05f16c4cf260aea3b17c039fb4594e8832c224f0aae76f82c7fc8a737185c0"
+        },
+        {
+          "path": "packages/app/e2e/utils/mock-server.ts",
+          "action": "modified",
+          "sha256": "22b0ad9157b11463069dc4435cdd67690befdfcf078da16c616022eecdd216e0"
+        },
+        {
+          "path": "packages/app/src/composer/attachments/attachments.ts",
+          "action": "modified",
+          "sha256": "ea0a4ebfa18d37e39009fa0ed153352a72368d4d41e389b21e85abea2fabfdd2"
+        },
+        {
+          "path": "packages/app/src/composer/editor/interaction.ts",
+          "action": "modified",
+          "sha256": "0d2f3c3a68ed449526a56f1bdae2f1f79cbb5c819c259f566062d2cb48bb7bb4"
+        },
+        {
+          "path": "packages/app/src/composer/model.ts",
+          "action": "modified",
+          "sha256": "228c39065567e4058956dcca2af26e13ab62b57feade227838e5f3a9b4dba5ac"
+        },
+        {
+          "path": "packages/app/src/composer/suggestions/machine.ts",
+          "action": "modified",
+          "sha256": "9b07a339f58abab702fe525f4d01ec2ce3cd49485b9294dc48e64bc383da5d91"
+        },
+        {
+          "path": "packages/app/src/entry.tsx",
+          "action": "modified",
+          "sha256": "74e3d59281f48274f8ed747cea17cbc9251478d3e3ddc44c260355a89dc5c6de"
+        },
+        {
+          "path": "packages/app/src/home/route.tsx",
+          "action": "modified",
+          "sha256": "b73ff6bbcaf27cb10b0b9824cc7854dea5b7ac2f848c0abd6cbfb33ecd3a3a7d"
+        },
+        {
+          "path": "packages/app/src/new-session/commands.tsx",
+          "action": "modified",
+          "sha256": "561e9d52e9717a9ac822092be4a42e776ee0ae2bd0e029b8400f3db4fb802b8a"
+        },
+        {
+          "path": "packages/app/src/new-session/view.tsx",
+          "action": "modified",
+          "sha256": "f6c92b417d00683da95f0768acf98e1d4d3b5b810f368ba5629156e4b3f2a3ee"
+        },
+        {
+          "path": "packages/app/src/runtime/platform/platform.tsx",
+          "action": "modified",
+          "sha256": "3350929a1102ae01c8483838620996315987e44b03476ed2d8b9257bf1f1c9ef"
+        },
+        {
+          "path": "packages/app/src/runtime/plugin/root.tsx",
+          "action": "modified",
+          "sha256": "7013f73752062a78bdf5bd2f9481782bf94c7291b80672ab3d6a4b92ef30d6be"
+        },
+        {
+          "path": "packages/app/src/session/header/session-header-actions.tsx",
+          "action": "modified",
+          "sha256": "ad4f116013d17d84d6607306610d91638a1f2b7c857d801ecf85ed01add22a3a"
+        },
+        {
+          "path": "packages/app/src/session/session-identity-header.tsx",
+          "action": "modified",
+          "sha256": "820d1d8d6b6cd8ddafc825687aeaa469275a293415e9342f9a52305661b9fced"
+        },
+        {
+          "path": "packages/app/src/settings/servers/servers.tsx",
+          "action": "modified",
+          "sha256": "9e5a43c8acbaad6c9195c04dc5ce50490e7930dc73a2200823de1990ed7c2a8f"
+        },
+        {
+          "path": "packages/app/src/settings/shell.tsx",
+          "action": "modified",
+          "sha256": "a5a12694c984cde1a23e7357d1e1f96a77ba6959962d80923e25e4d794f8eb1e"
+        },
+        {
+          "path": "packages/app/src/shell/titlebar/titlebar.tsx",
+          "action": "modified",
+          "sha256": "640fc6700d91e1667f3cd3f2bdc5ba04587d3b4680991cc480ea806fb861b456"
+        },
+        {
+          "path": "packages/cli/src/index.ts",
+          "action": "modified",
+          "sha256": "da172ec2ed9e9bb545a08869a24b9b831988a1ed8402ff7c2a69f4942af85e4c"
+        },
+        {
+          "path": "packages/cli/src/server-process.ts",
+          "action": "modified",
+          "sha256": "762abf84d30dee90ae041d3d0eabafec419844aaaf39b68fffacef8bfc45d4e9"
+        },
+        {
+          "path": "packages/cli/src/services/web-ui.ts",
+          "action": "modified",
+          "sha256": "450abb1132db2236d2cd322384e8a2a32206843fb8ad0ff867871c954145bfde"
+        },
+        {
+          "path": "packages/cli/test/web-ui.test.ts",
+          "action": "modified",
+          "sha256": "62bc207d6a11775364744708e717cf79092f561378f165adcf97c3cccef58061"
+        },
+        {
+          "path": "packages/client/src/effect/api/api.ts",
+          "action": "modified",
+          "sha256": "7cb6bb07efcab8eafc11d92540a76a54c340b837ab157a26a66f602ff802264d"
+        },
+        {
+          "path": "packages/client/src/promise/generated/types.ts",
+          "action": "modified",
+          "sha256": "c3478c8da1d772c1f14753a7e4cec307d17066def6d5673a6eb4cb3d9698ee2c"
+        },
+        {
+          "path": "packages/core/src/command.ts",
+          "action": "modified",
+          "sha256": "efc16e401473a98793f5edda50bb0ea510322398f0724d61910faa697391a05a"
+        },
+        {
+          "path": "packages/core/src/config.ts",
+          "action": "modified",
+          "sha256": "617e27bdd1410a66290cd5b819774b11d644050dfc0b8057daddc8c7c1c1fb8f"
+        },
+        {
+          "path": "packages/core/src/config/variable.ts",
+          "action": "modified",
+          "sha256": "b0630ff713fe6d5aa1e4e44534fd9595bad5aa7ddb80e41d158dc8e370b27297"
+        },
+        {
+          "path": "packages/core/src/plugin/internal.ts",
+          "action": "modified",
+          "sha256": "26c03bdf27c40226041ae89ba8356c69f0bc11525b5931f51968e378b02ed461"
+        },
+        {
+          "path": "packages/core/src/plugin/provider/dynamic.ts",
+          "action": "modified",
+          "sha256": "6ec6c10f65119130f057815083ab9beb1a665a7c15badb5394c461ffb4efc647"
+        },
+        {
+          "path": "packages/core/src/plugin/supervisor.ts",
+          "action": "modified",
+          "sha256": "f705100ed4244c39dbd490d4fdf3ebf88a507c725df879b78a6ca61283809438"
+        },
+        {
+          "path": "packages/core/src/project.ts",
+          "action": "modified",
+          "sha256": "12837852a004242de23e9d734ca07d699d548aea89216240d4b40c75716b7adf"
+        },
+        {
+          "path": "packages/core/src/runtime-policy.ts",
+          "action": "added",
+          "sha256": "a881206bee4add0e7c53819c4076ecd1201ab0d5cc17ad0fc790aa52c42eaf7d"
+        },
+        {
+          "path": "packages/core/src/session.ts",
+          "action": "modified",
+          "sha256": "eabc5dea4b90221f964599e9ba7c0c93180d29d0abb4732015d29b83a1337c03"
+        },
+        {
+          "path": "packages/core/src/session/prompt.ts",
+          "action": "modified",
+          "sha256": "e7c006a2a62a4f7adea90b135b2844170f1e58bb309dddc3ce8a73b41bb07dc3"
+        },
+        {
+          "path": "packages/core/src/session/session.ts",
+          "action": "modified",
+          "sha256": "ac6e9897f0a8602bc0255177dec6e19ecc6660cab5e87173dfca003af074fa7d"
+        },
+        {
+          "path": "packages/core/src/session/shell.ts",
+          "action": "modified",
+          "sha256": "c7ec9ef6f9f9a58f7a146ad8a22b552af2cdf47cca99d5dd9d9b38b0937c85a5"
+        },
+        {
+          "path": "packages/core/src/snapshot.ts",
+          "action": "modified",
+          "sha256": "24c8e4c3787c8fd14e377a6a1e96e4a1a74ed82fe43412f49412e87f258ec554"
+        },
+        {
+          "path": "packages/core/src/tool.ts",
+          "action": "modified",
+          "sha256": "4b288fe0adf439d968a6642fbd15344917f3fd7223de341ef9ce33d3428091d9"
+        },
+        {
+          "path": "packages/core/test/plugin/fixture.ts",
+          "action": "modified",
+          "sha256": "e01dbd103f0dfac07a5cf599759b91f658156addbbbdf971d78cce0968321223"
+        },
+        {
+          "path": "packages/core/test/plugin/provider-dynamic.test.ts",
+          "action": "modified",
+          "sha256": "d9c792e14ea8f9c092a1d004ca14ac96501e336fd51fad3efd656d2bbe485da2"
+        },
+        {
+          "path": "packages/core/test/runtime-policy.test.ts",
+          "action": "added",
+          "sha256": "a2ec8f00bcc973e16e4c47fc582a441564bb8be3e9692911930a9eef15ea66ae"
+        },
+        {
+          "path": "packages/core/test/session-owned.test.ts",
+          "action": "modified",
+          "sha256": "e758068772fa82c4554b7fc6031f743e7539c957ac47fec9c5129676203b1f7b"
+        },
+        {
+          "path": "packages/desktop/src/main/plugin/host.ts",
+          "action": "modified",
+          "sha256": "af6211e918f66d1324bac636cd38ed4b5a93ba98b555e40a7736c491bd1904c5"
+        },
+        {
+          "path": "packages/desktop/src/main/windows/bootstrap.ts",
+          "action": "modified",
+          "sha256": "d6f1eb41f37efd66c8fa8f81cb44e25bc37dd1a7307aedcd2c69390ce93eec68"
+        },
+        {
+          "path": "packages/desktop/src/renderer/platform/index.ts",
+          "action": "modified",
+          "sha256": "eb2cc9d383a60ef8ecadb192ec6146a6b69cf5c9dc49303f2c71bdd27fb6bd0f"
+        },
+        {
+          "path": "packages/desktop/src/shared/window-bootstrap.ts",
+          "action": "modified",
+          "sha256": "9010e289b3354179319fbf9012ed0a639601716e6190c0929dc9148c5fc3bc21"
+        },
+        {
+          "path": "packages/gui-plugins/package.json",
+          "action": "modified",
+          "sha256": "fef03632d583a575cea87d93aef8800dd3d04de3cf78267c0d9d30199e946ad8"
+        },
+        {
+          "path": "packages/gui-plugins/src/conversation.ts",
+          "action": "added",
+          "sha256": "68bad33f57ce887b40f373d43a97d69134548c501ce076d234150d3a7000ea7e"
+        },
+        {
+          "path": "packages/im-assistant/package.json",
+          "action": "added",
+          "sha256": "77315ce8ccada7ba371daf1ac655527c8f5e90307309c1c15f8fcb9bfdddea8d"
+        },
+        {
+          "path": "packages/im-assistant/src/cli.ts",
+          "action": "added",
+          "sha256": "2266f0a4743b3c104fec561e24cd8f3bb8cb6beadd79acf4c4b6991fb0e3fd38"
+        },
+        {
+          "path": "packages/im-assistant/src/non-project-location.ts",
+          "action": "added",
+          "sha256": "7bde7f3f4e54639701c2b3d85b5f86160efa3c52281962c194691c892cb476a1"
+        },
+        {
+          "path": "packages/im-assistant/src/policy.ts",
+          "action": "added",
+          "sha256": "aee2d611a3e51df55f040d182dc5293b19cac848ed29f44f87bb1ba39f1203f9"
+        },
+        {
+          "path": "packages/protocol/src/groups/server.ts",
+          "action": "modified",
+          "sha256": "311b75bcf17a65879f155b565cd517dfe32f7d51845804ed761f5f3828d79949"
+        },
+        {
+          "path": "packages/server/src/handlers/server.ts",
+          "action": "modified",
+          "sha256": "ab3032ebec36680e78395934251578ab8685cff4fe49c78141f500fec3d55bd3"
+        },
+        {
+          "path": "packages/server/src/middleware/runtime-policy.ts",
+          "action": "added",
+          "sha256": "b36eec3ff446536f70375a778dde3633d0c2be823a7ff1324e41a67b14775d16"
         },
         {
           "path": "packages/server/src/options.ts",
           "action": "modified",
-          "sha256": "5871de727a02d67209f1a171b7eab1b6ac89783a9122dfcfb72577c084f788a4"
+          "sha256": "c4e1d7f815e4749c5e45b194689db2da67ecc3fd62f70d42ddaef2b9bcd52a19"
         },
         {
           "path": "packages/server/src/routes.ts",
           "action": "modified",
-          "sha256": "9a9a011e8e027ec22f19bc22878f9b4f59f850079ea42b1a345a3bf121723ef6"
+          "sha256": "ee1f392ceab084e54220039b2b3fc2c01de7beb048d87a678e171899be543a13"
         }
       ]
     }

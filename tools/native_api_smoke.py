@@ -18,7 +18,7 @@ from tools.native_baseline import ROOT, environment, provenance
 
 
 @contextmanager
-def native_server(home, config=None):
+def native_server(home, config=None, *, managed=False):
     """Only terminate the foreground child owned by this context, never a shared service."""
     with socket.socket() as reserved:
         reserved.bind(("127.0.0.1", 0))
@@ -34,6 +34,9 @@ def native_server(home, config=None):
         "OPENCODE_CONFIG_CONTENT": json.dumps(config or {"update": "disable", "share": "disabled"}),
         "OPENCODE_DISABLE_FILEWATCHER": "true", "OPENCODE_DISABLE_PROJECT_CONFIG": "true",
     })
+    if managed:
+        (home / "session-location").mkdir(exist_ok=True)
+        env.update({"IM_ASSISTANT_PROFILE": "personal", "IM_ASSISTANT_DATA_ROOT": str(home)})
     log = home / f"server-{port}.log"
     with log.open("wb") as output:
         process = subprocess.Popen(

@@ -1,4 +1,5 @@
 import { app } from "electron"
+import { Profile } from "@im-assistant/profile/profile"
 import { Predicate } from "effect"
 import { windowBootstrapArgument, type WindowBootstrap } from "../../shared/window-bootstrap"
 import { FIRST_LAUNCH_ONBOARDING_COMPLETE_KEY } from "../storage/keys"
@@ -14,6 +15,7 @@ export function windowBootstrap(id: string): WindowBootstrap {
     id,
     firstLaunchPending: Predicate.isBoolean(complete) ? !complete : undefined,
     packaged: app.isPackaged,
+    workspace: !Profile.active(),
   }
 }
 

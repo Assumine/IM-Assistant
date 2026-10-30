@@ -63,8 +63,9 @@ export function transitionComposer(
   state: ComposerInteractionState,
   event: ComposerInteractionEvent,
   persisted: ComposerPersistedState,
+  capabilities: { shell?: boolean } = {},
 ): ComposerEditorTransition {
-  if (event.type === "input.changed") return inputChanged(state, event.value, event.persist !== false, persisted.cursor)
+  if (event.type === "input.changed") return inputChanged(state, event.value, event.persist !== false, persisted.cursor, capabilities.shell !== false)
 
   if (event.type === "commands.open") return openCommands(state, persisted)
 
@@ -87,7 +88,7 @@ export function transitionComposer(
 
   if (event.type === "key.down") return keyDown(state, event)
 
-  if (event.type === "mode.shell") return changed({ ...state, mode: "shell", popover: { type: "closed" } })
+  if (event.type === "mode.shell") return capabilities.shell === false ? unchanged(state) : changed({ ...state, mode: "shell", popover: { type: "closed" } })
 
   if (event.type === "mode.normal") return changed({ ...state, mode: "normal" })
 
@@ -109,10 +110,11 @@ function inputChanged(
   value: string,
   persist: boolean,
   cursor: number | undefined,
+  shell: boolean,
 ): ComposerEditorTransition {
   const setText: ComposerInteractionCommand[] = persist ? [{ type: "draft.setText", value }] : []
 
-  if (state.mode === "normal" && value === "!") {
+  if (shell && state.mode === "normal" && value === "!") {
     return changed({ ...state, mode: "shell", popover: { type: "closed" }, focus: "editor" }, [
       { type: "draft.setText", value: "" },
     ])

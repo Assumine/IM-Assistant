@@ -573,6 +573,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
             command.register(projectSearchCommand.id, () => [
               {
                 ...projectSearchCommand,
+                disabled: platform.workspace === false,
                 title: language.t("session.new.project.search"),
                 category: language.t("command.category.project"),
                 onSelect: () => {

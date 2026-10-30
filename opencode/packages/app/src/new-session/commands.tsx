@@ -3,6 +3,7 @@ import { useSettingsCommand } from "@/settings/command"
 import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { projectSearchCommand } from "@/shell/titlebar/titlebar"
+import { usePlatform } from "@/runtime/platform/platform"
 
 export function useNewSessionCommands(input: {
   restoreFocus: () => void
@@ -18,6 +19,7 @@ export function useNewSessionCommands(input: {
   const command = useCommand()
   const dialog = useDialog()
   const language = useLanguage()
+  const platform = usePlatform()
 
   useSettingsCommand()
   command.register("palette", () => [
@@ -44,7 +46,7 @@ export function useNewSessionCommands(input: {
       title: language.t("command.session.location.cycle"),
       category: language.t("command.category.workspace"),
       keybind: "mod+alt+l",
-      disabled: !input.workspace.enabled(),
+      disabled: platform.workspace === false || !input.workspace.enabled(),
       onSelect: input.workspace.cycle,
     },
   ])
@@ -54,7 +56,7 @@ export function useNewSessionCommands(input: {
       ...projectSearchCommand,
       title: language.t("session.new.project.search"),
       category: language.t("command.category.project"),
-      disabled: input.project.empty(),
+      disabled: platform.workspace === false || input.project.empty(),
       onSelect: input.project.open,
     },
   ])

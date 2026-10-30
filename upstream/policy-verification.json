@@ -1,0 +1,100 @@
+{
+  "task": "R1-02",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "verified_at": "2026-10-30T12:59:41.742861+00:00",
+  "upstream_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "acceptance_ids": [
+    "A07",
+    "A08",
+    "A09",
+    "A10"
+  ],
+  "harness_checks": 7,
+  "declared_product_files": 72,
+  "native_policy_and_registry_tests": 73,
+  "native_web_bootstrap_tests": 4,
+  "product_browser_tests": 2,
+  "canonical_lint_and_typecheck": "bun run check (36 tasks successful)",
+  "native_desktop_bundle_build": true,
+  "policy_smoke": {
+    "denied_direct_apis": 15,
+    "local_attachment_rejected": true,
+    "external_location_rejected": true,
+    "native_queue_withdrawal": true,
+    "byte_attachment_preserved": true,
+    "native_import_export_and_restart": true,
+    "model_tool_catalog_empty": true,
+    "configured_plugin_and_mcp_blocked": true,
+    "ambient_instructions_and_file_substitution_disabled": true,
+    "external_model_calls": 0
+  },
+  "product_smoke": {
+    "product_entry": "packages/im-assistant/script/desktop.ts",
+    "boots": [
+      {
+        "ready": true,
+        "url": "oc://renderer/index.html",
+        "profile_isolated": true,
+        "screenshot_verified": false,
+        "packaged_installer": false
+      },
+      {
+        "ready": true,
+        "url": "oc://renderer/index.html",
+        "profile_isolated": true,
+        "screenshot_verified": false,
+        "packaged_installer": false
+      }
+    ],
+    "managed_location_composer_ready": true,
+    "independent_native_service": true,
+    "parent_checkout_not_discovered": true,
+    "unrelated_profile_unchanged": true,
+    "native_session_and_inbox_preserved": true,
+    "service_credential_preserved": true,
+    "requires_qq_or_model_login": false,
+    "external_model_calls": 0
+  },
+  "original_mode_regression": {
+    "harness_checks": 9,
+    "native_unit_tests": 141,
+    "browser_e2e_tests": 45,
+    "status": "passed"
+  },
+  "composer_production_sample": {
+    "characters": 65,
+    "history": "empty",
+    "samples_per_variant": 1,
+    "measurements": {
+      "before": {
+        "elapsedMs": 114.60570000000007,
+        "scriptMs": 22.884,
+        "taskMs": 66.773,
+        "nodes": 1587,
+        "characters": 65
+      },
+      "after": {
+        "elapsedMs": 88.54359999999997,
+        "scriptMs": 22.519000000000002,
+        "taskMs": 56.348,
+        "nodes": 1492,
+        "characters": 65
+      }
+    },
+    "statistical_speedup_claim": false
+  },
+  "resolved_regression": "An extra web bootstrap API wait changed first-page history timing. Removed that wait and declared host capabilities in HTML; native timeline controller unchanged. Original-mode 45 browser cases pass again.",
+  "diagnostic_limits": [
+    "Upstream stress benchmark preparation / stale persistence assertion failed before UI changes; not counted as passed.",
+    "Desktop readiness is DOM/process/state verification, not a screenshot or installer verification."
+  ],
+  "runtime_report_sha256": {
+    "R0-01": "ac46ed75c0c2df0df22e98d779961d385ea82d08ed40ef494ebbf3439167d81a",
+    "R1-02": "ebbc1f390324c966318b27e6e8da5f2c2d0f01bfcab2f26344fab538aad1b1d8"
+  },
+  "production_switched": false,
+  "old_private_data_imported": false,
+  "packaged_installer": false,
+  "next_task": "R2-01"
+}

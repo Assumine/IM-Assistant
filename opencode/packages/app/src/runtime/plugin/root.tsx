@@ -1,6 +1,7 @@
 import { batch, createMemo, createSignal, lazy, onCleanup, Show, Suspense, type ParentProps } from "solid-js"
 import { pluginEnabled, runsOn, type Bridge, type Entry } from "@opencode/plugin/gui/host"
 import { builtins } from "./builtins"
+import { conversation } from "@opencode/gui-plugins/conversation"
 import { createInstalled } from "./installed"
 import { PluginGuiLoader, type PluginGui } from "./plugins"
 import { createMenubarItems, MenubarItemsProvider } from "./menubar-items"
@@ -52,7 +53,7 @@ export function PluginRoot(props: ParentProps) {
 
   const os = platform.platform === "desktop" ? platform.os : undefined
 
-  const localBuiltins = builtins.filter((definition) => runsOn(definition, os))
+  const localBuiltins = (platform.workspace === false ? conversation(builtins) : builtins).filter((definition) => runsOn(definition, os))
 
   // The GUIs of the plugins on the app's own server, as main sends them.
   const [plugins, setPlugins] = createSignal<readonly PluginGui[]>([])
@@ -94,7 +95,7 @@ export function PluginRoot(props: ParentProps) {
             bridge,
             set: (next, ids) =>
               batch(() => {
-                setPlugins(next)
+                setPlugins(platform.workspace === false ? [] : next)
                 setReserved(ids)
               }),
             reserved,

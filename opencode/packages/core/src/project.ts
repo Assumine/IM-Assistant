@@ -17,6 +17,7 @@ import { ProjectSchema } from "./project/schema.js"
 import { ProjectTable, upsertProject } from "./project/sql.js"
 import { ProjectIcon } from "./project/icon.js"
 import { WorktreeTable } from "./worktree/sql.js"
+import { RuntimePolicy } from "./runtime-policy.js"
 
 export const ID = ProjectSchema.ID
 export type ID = ProjectSchema.ID
@@ -126,6 +127,7 @@ const layer = (settings: typeof Options.Type = {}) => Layer.effect(
     const bus = yield* Bus.Service
     const db = (yield* Database.Service).db
     const scope = yield* Scope.Scope
+    const policy = yield* RuntimePolicy.Service
 
     const announcing = new Set<string>()
     const persist = Effect.fnUntraced(function* (project: Resolved) {
@@ -408,6 +410,7 @@ const layer = (settings: typeof Options.Type = {}) => Layer.effect(
     })
 
     const resolve = Effect.fn("Project.resolve")(function* (input: AbsolutePath, options?: ResolveOptions) {
+      if (!policy.allowsDirectory(input)) return yield* Effect.die(new Error("Location is outside the managed runtime"))
       const save = (project: Resolved) => (options?.persist === false ? Effect.succeed(project) : persist(project))
       const directory = AbsolutePath.make(yield* fs.resolve(input))
       if (settings.discover === false)
@@ -498,7 +501,7 @@ export function configured(options?: typeof Options.Type) {
   return makeGlobalNode({
     service: Service,
     layer: layer(options),
-    deps: [Bus.node, Database.node, FSUtil.node, Git.node, AppProcess.node],
+    deps: [Bus.node, Database.node, FSUtil.node, Git.node, AppProcess.node, RuntimePolicy.node],
   })
 }
 

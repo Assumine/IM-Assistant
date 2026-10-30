@@ -3,6 +3,7 @@ import { Duration, Effect } from "effect"
 import { HttpServerRequest, HttpServerResponse } from "effect/http"
 import { HttpApiBuilder } from "effect/http-api"
 import { PersistentPty } from "@opencode/core/persistent-pty"
+import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { UnauthorizedError } from "@opencode/protocol/errors"
 import { Api } from "../api"
 import { ServerAuth } from "../auth"
@@ -13,6 +14,7 @@ export const ServerHandler = HttpApiBuilder.group(Api, "server.server", (handler
   Effect.gen(function* () {
     const pairing = yield* ServerPairing.Service
     const auth = yield* ServerAuth.Config
+    const policy = yield* RuntimePolicy.Service
 
     return handlers
       .handle("server.info", () =>
@@ -24,7 +26,8 @@ export const ServerHandler = HttpApiBuilder.group(Api, "server.server", (handler
             hostname: hostname() || undefined,
             urls: info.urls(),
             paths: info.paths,
-            capabilities: { persistentPty: PersistentPty.available },
+            capabilities: { persistentPty: !policy.managed && PersistentPty.available,
+              experimental: { projectWorkspace: !policy.managed } },
           }
         }),
       )

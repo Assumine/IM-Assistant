@@ -5,6 +5,43 @@ import { mockPluginsActivating, type MockServerConfig } from "../utils/mock-serv
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] })
 
+test("conversation host uploads selected text as bytes and keeps project and shell controls unavailable", async ({ page }) => {
+  const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
+  const view = await openSession(page, { name: "Conversation only", workspace: false,
+    onPrompt: input => void prompts.push(input.body) })
+  await expect(page.getByRole("button", { name: "Toggle review", exact: true })).toHaveCount(0)
+  await expect(page.locator('[data-slot="session-location-trigger"]')).toHaveCount(0)
+  await view.editor.press("ControlOrMeta+Shift+X")
+  await view.editor.fill("!")
+  await expect(view.editor).toHaveText("!")
+  await view.editor.fill("Read the uploaded note")
+  await page.locator('input[type="file"]').setInputFiles({ name: "note.txt", mimeType: "text/plain", buffer: Buffer.from("A controlled attachment") })
+  await expect(page.getByText("note.txt", { exact: true })).toBeVisible()
+  await view.editor.press("Enter")
+  await expect.poll(() => prompts.length).toBe(1)
+  expect(prompts[0]?.text).toContain("Read the uploaded note")
+  expect(prompts[0]?.files).toMatchObject([{ uri: "data:text/plain;base64," + Buffer.from("A controlled attachment").toString("base64"), name: "note.txt" }])
+})
+
+test("conversation host retains native image preview and byte delivery", async ({ page }) => {
+  const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
+  const view = await openSession(page, { name: "Conversation image", workspace: false,
+    onPrompt: input => void prompts.push(input.body) })
+  const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
+  await page.locator('input[type="file"]').setInputFiles({ name: "pixel.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") })
+  const thumbnail = page.locator('[data-component="composer-attachments"]').getByRole("img", { name: "pixel.png", exact: true })
+  await expect(thumbnail).toHaveJSProperty("naturalWidth", 1)
+  await thumbnail.click()
+  const preview = page.locator('[data-component="image-preview"]')
+  await expect(preview.getByRole("img", { name: "pixel.png", exact: true })).toBeVisible()
+  await preview.getByRole("button", { name: "Close", exact: true }).click()
+  await expect(preview).toHaveCount(0)
+  await view.editor.fill("Review the selected picture")
+  await view.editor.press("Enter")
+  await expect.poll(() => prompts.length).toBe(1)
+  expect(prompts[0]?.files).toMatchObject([{ uri: "data:image/png;base64," + png, name: "pixel.png" }])
+})
+
 test("mention a session by title, send its stable token, and open its own tab", async ({ page }) => {
   const target = "ses_0123456789abcdefghijklmnop"
   const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []

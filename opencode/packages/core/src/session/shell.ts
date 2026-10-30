@@ -6,8 +6,11 @@ import { Instance } from "../instance/service.js"
 import { Plugin } from "../plugin/service.js"
 import { Shell } from "../shell.js"
 import { ShellResult } from "../shell/result.js"
+import { RuntimePolicy } from "../runtime-policy.js"
 
 export const start = Effect.fn("SessionShell.start")(function* (input: { session: Session.Info; command: string }) {
+  const policy = yield* RuntimePolicy.Service
+  if (policy.managed) return yield* Effect.die(new Error("Shell execution is disabled in this runtime"))
   const instances = yield* Instance.Service
   const shell = yield* Plugin.awaitActivation.pipe(Effect.andThen(Shell.Service), instances.provide(input.session))
   const info = yield* shell.create({

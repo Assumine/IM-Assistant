@@ -1,4 +1,5 @@
 import { Agent } from "@opencode/core/agent"
+import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { AISDK } from "@opencode/core/aisdk"
 import { Command } from "@opencode/core/command"
 import { Config } from "@opencode/core/config"
@@ -85,6 +86,7 @@ const permissionLayer = Layer.succeed(
 export const makePluginTestLayer = (permission = permissionLayer, generate = generateLayer) =>
   AppNodeBuilder.build(
     LayerNode.group([
+      RuntimePolicy.node,
       AppProcess.node,
       FileSystem.node,
       FSUtil.node,

@@ -58,6 +58,7 @@ export interface Interface {
 }
 
 export const Options = Schema.Struct({
+  fileReferences: Schema.optional(Schema.Boolean),
   project: Schema.optional(Schema.Boolean),
   // false skips the system and global config dirs, ~/.claude, and ~/.agents;
   // wellknown, file, and content entries still load.
@@ -168,7 +169,7 @@ export const layer = (options?: Options) =>
       const loadFile = Effect.fnUntraced(function* (filepath: string) {
         const text = yield* fs.readFileStringSafe(filepath)
         if (text === undefined) return
-        const substituted = yield* ConfigVariable.substitute({ type: "path", path: filepath, text })
+        const substituted = yield* ConfigVariable.substitute({ type: "path", path: filepath, text, files: options?.fileReferences })
         const info = yield* parseInfo(substituted, filepath)
         if (!info) return
         return new Document({ type: "document", path: AbsolutePath.make(filepath), info })
@@ -191,6 +192,7 @@ export const layer = (options?: Options) =>
         )
         return yield* Effect.forEach(configs, (config) =>
           ConfigVariable.substitute({
+            files: options?.fileReferences,
             type: "virtual",
             source: entry.origin,
             dir: entry.origin,
@@ -254,6 +256,7 @@ export const layer = (options?: Options) =>
           return []
         }
         const text = yield* ConfigVariable.substitute({
+            files: options?.fileReferences,
           type: "virtual",
           source: plist,
           dir: path.dirname(plist),
@@ -287,6 +290,7 @@ export const layer = (options?: Options) =>
         const content =
           options?.content !== undefined
             ? yield* ConfigVariable.substitute({
+            files: options?.fileReferences,
                 type: "virtual",
                 source: "OPENCODE_CONFIG_CONTENT",
                 dir: location.directory,

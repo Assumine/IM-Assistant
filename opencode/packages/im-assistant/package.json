@@ -5,6 +5,8 @@
   "type": "module",
   "exports": {
     "./profile": "./src/profile.ts",
+    "./policy": "./src/policy.ts",
+    "./non-project-location": "./src/non-project-location.ts",
     "./storage": "./src/storage.ts"
   },
   "scripts": {

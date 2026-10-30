@@ -8,6 +8,7 @@ import { makeLocationNode } from "@opencode/util/effect/app-node"
 import { Context, Effect, Layer, Schema } from "effect"
 import { Bus } from "./bus.js"
 import { State } from "./state.js"
+import { RuntimePolicy } from "./runtime-policy.js"
 
 export const Info = Command.Info
 export type Info = Command.Info
@@ -54,6 +55,7 @@ export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const bus = yield* Bus.Service
+    const policy = yield* RuntimePolicy.Service
     const info = (definition: Definition) =>
       Info.make({
         name: definition.name,
@@ -76,13 +78,13 @@ export const layer = Layer.effect(
       transform: state.transform,
       get: Effect.fn("Command.get")((name) =>
         Effect.sync(() => {
-          const definition = state.get().get(name)
+          const definition = policy.managed ? undefined : state.get().get(name)
           return definition ? info(definition) : undefined
         }),
       ),
-      list: Effect.fn("Command.list")(() => Effect.sync(() => Array.from(state.get().values(), info))),
+      list: Effect.fn("Command.list")(() => Effect.sync(() => policy.managed ? [] : Array.from(state.get().values(), info))),
       execute: Effect.fn("Command.execute")(function* (input) {
-        const definition = state.get().get(input.name)
+        const definition = policy.managed ? undefined : state.get().get(input.name)
         if (!definition)
           return yield* new NotFoundError({ command: input.name, message: `Command not found: ${input.name}` })
         return yield* definition.execute(input.invocation).pipe(
@@ -97,7 +99,7 @@ export const layer = Layer.effect(
 export const node = makeLocationNode({
   service: Service,
   layer,
-  deps: [Bus.node],
+  deps: [Bus.node, RuntimePolicy.node],
 })
 
 function errorMessage(error: unknown) {

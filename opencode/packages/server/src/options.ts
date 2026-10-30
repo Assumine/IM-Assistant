@@ -2,6 +2,7 @@ import { Database } from "@opencode/core/database/database"
 import { ModelsDev } from "@opencode/core/models-dev"
 import { PersistentPty } from "@opencode/core/persistent-pty"
 import { Project } from "@opencode/core/project"
+import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { Schema } from "effect"
 
 export const ServerOptions = Schema.Struct({
@@ -18,6 +19,7 @@ export const ServerOptions = Schema.Struct({
   cors: Schema.optional(Schema.Array(Schema.String)),
   simulation: Schema.optional(Schema.Boolean),
   project: Schema.optional(Project.Options),
+  runtime: Schema.optional(RuntimePolicy.Options),
   database: Schema.optional(Database.Options),
   pty: Schema.optional(PersistentPty.Options),
   events: Schema.optional(

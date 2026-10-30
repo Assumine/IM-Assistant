@@ -10,6 +10,7 @@ import { ServerConnection } from "@/runtime/server/registry"
 import { useServerCollectionController } from "@/servers/registry/controller"
 import { DialogServer } from "@/servers/connect/dialog"
 import { SettingsList } from "@/settings/list"
+import { usePlatform } from "@/runtime/platform/platform"
 import { ShellSetting } from "@/settings/general/general"
 import { createServerShellController } from "@/settings/general/controllers"
 import type { SettingsServer } from "./inventory"
@@ -17,6 +18,7 @@ import "@/settings/settings.css"
 
 /** The only server's connection and preferences. */
 export const SettingsServerGeneral: Component<{ entry: SettingsServer; onAddServer: () => void }> = (props) => {
+  const platform = usePlatform()
   const language = useLanguage()
   const controller = useServerCollectionController()
   const health = createMemo(() => controller.collection.health()[props.entry.key])
@@ -33,7 +35,7 @@ export const SettingsServerGeneral: Component<{ entry: SettingsServer; onAddServ
           </SettingsList>
         </section>
 
-        <Show when={props.entry.connection && health()?.healthy !== false ? props.entry.connection : undefined} keyed>
+        <Show when={platform.workspace !== false && props.entry.connection && health()?.healthy !== false ? props.entry.connection : undefined} keyed>
           {(server) => (
             <section class="settings-section">
               <h3 class="settings-section-title">{language.t("settings.tab.preferences")}</h3>
@@ -56,6 +58,7 @@ export const SettingsServerList: Component<{
   onAddServer: () => void
   onServerChange: (server: ServerConnection.Any) => void
 }> = (props) => {
+  const platform = usePlatform()
   const language = useLanguage()
   const controller = useServerCollectionController()
 
@@ -75,7 +78,7 @@ export const SettingsServerList: Component<{
                 <ServerConnectionRow entry={entry} onServerChange={props.onServerChange} />
                 <Show
                   when={
-                    entry.connection && controller.collection.health()[entry.key]?.healthy !== false
+                    platform.workspace !== false && entry.connection && controller.collection.health()[entry.key]?.healthy !== false
                       ? entry.connection
                       : undefined
                   }

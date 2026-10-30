@@ -78,18 +78,18 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     pathImages.forEach((url) => void url.then((value) => value && URL.revokeObjectURL(value)))
   })
 
-  const interaction = createComposerEditorState(prompt.mode.current())
+  const interaction = createComposerEditorState(platform.workspace === false ? "normal" : prompt.mode.current())
   createEffect(
     on(
       () => (adapter.ready() ? prompt.mode.current() : undefined),
       (mode) => {
         if (!mode) return
         // Project external draft changes without another mode write clearing restored retry metadata.
-        interaction[1](mode === "shell" ? { mode, popover: { type: "closed" } } : { mode })
+        interaction[1](platform.workspace === false ? { mode: "normal" } : mode === "shell" ? { mode, popover: { type: "closed" } } : { mode })
       },
     ),
   )
-  const mode = () => interaction[0].mode
+  const mode = () => platform.workspace === false ? "normal" : interaction[0].mode
   const history = createComposerHistory()
 
   const recent = createMemo(() => {
@@ -355,6 +355,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
   })
 
   const controller = createComposerEditor({
+    shellEnabled: platform.workspace !== false,
     store: prompt.store,
     state: interaction,
     history: {
@@ -414,7 +415,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     },
     sessionsPending: (query) => sessionSearched() !== firstWord(query),
     searchContextFiles: async (query, signal) =>
-      (await files.searchFilesAndDirectories(query, { signal })).map((path) => ({
+      (platform.workspace === false ? [] : await files.searchFilesAndDirectories(query, { signal })).map((path) => ({
         id: `file:${path}`,
         kind: "file",
         label: path,
@@ -477,6 +478,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
       return () => command.trigger(selected.id, "slash")
     },
     attachments: {
+      inlineOnly: platform.workspace === false,
       picker: platform.openAttachmentPickerDialog,
       directory: () => sdk().directory,
       destination: useAttachmentDestination(adapter.controls),
@@ -495,7 +497,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
           description: error instanceof Error ? error.message : String(error),
         }),
       readClipboardImage: platform.readClipboardImage,
-      getPathForFile: platform.getPathForFile,
+      getPathForFile: platform.workspace === false ? undefined : platform.getPathForFile,
       onDragCancel: platform.onDragCancel,
       store: platform.draftStore?.putBlob,
     },
@@ -575,7 +577,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
       title: language.t("command.prompt.mode.shell"),
       category: language.t("command.category.session"),
       keybind: "mod+shift+x",
-      disabled: controller.state.mode === "shell",
+      disabled: platform.workspace === false || controller.state.mode === "shell",
       onSelect: () => void controller.dispatch({ type: "mode.shell" }),
     },
     {
