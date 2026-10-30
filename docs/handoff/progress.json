@@ -1,14 +1,49 @@
 {
   "schema_version": 2,
   "plan_id": "opencode-app-base-v2",
-  "implementation_started": false,
-  "runtime_acceptance_completed": [],
+  "implementation_started": true,
+  "runtime_acceptance_completed": [
+    "A01",
+    "A02",
+    "A03"
+  ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
     "R0-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "opencode/package.json",
+        "opencode/bun.lock",
+        "opencode/LICENSE",
+        "upstream/opencode.json",
+        "upstream/source-files.json",
+        "upstream/patches.json",
+        "upstream/baseline-verification.json",
+        "tools/setup_native_baseline.py",
+        "tools/native_baseline.py",
+        "tools/native_api_smoke.py",
+        "tools/native_desktop_smoke.py",
+        "tests/rebase/test_r0_01.py"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 9,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A01",
+            "A02",
+            "A03"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R0-01",
+          "evidence": "upstream/baseline-verification.json",
+          "native_unit_tests": 141,
+          "browser_tests": 45
+        }
+      ],
       "blocked_reason": null
     },
     "R1-01": {

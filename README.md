@@ -2,7 +2,7 @@
 
 基于完整 OpenCode 应用二次开发的个人助手。尽量复用原生前端交互、客户端数据访问、会话服务、Inbox、历史、数据库、上下文和压缩；裁剪项目文件树及文件操作能力，换上助手的视觉样式和有限动效，再逐项接回需要的个人助手能力。
 
-当前是重写后的实施计划，尚未导入上游源码或构建新应用。正式源码版本待选择，下一任务为R0-01。原“独立Python宿主+OpenCode后端”路线已归档；已有P0代码与49项测试仅为历史参考，不代表新版应用已经完成。
+已导入并锁定 OpenCode v2.2.3 完整源码，R0-01 原生基线验收通过：141 项原生单元测试、45 项浏览器回归，以及真实后端入队/撤回/历史/重启和 Windows 桌面启动重开。下一任务 R1-01：助手入口与原生存储隔离。整体保持核心框架＋插件。旧 Python 宿主路线和49项测试仅作历史参考。
 
 - [完整重构方案](docs/architecture/重构方案.md)
 - [接手指南](docs/handoff/接手指南.md)
@@ -20,7 +20,7 @@ OpenCode普通API会话沿用原生执行和队列。Codex整套原生会话作�
 
 ## 当前目录
 
-opencode/为未来源码导入位置，upstream/记录正式来源和补丁，modules/放完整能力包。当前这些实现仍待任务创建。sdk/、host/、conversation/及portal_adapter/是旧路线的参考代码或预留位置，不是新版应用的主运行层。
+opencode/保留原版完整 monorepo，upstream/记录正式来源、源码清单、补丁及验收摘要，modules/放后续完整能力包。sdk/、host/、conversation/及portal_adapter/是旧路线的参考代码或预留位置，不是新版应用的主运行层。
 
 ## 接手检查
 
@@ -28,9 +28,10 @@ opencode/为未来源码导入位置，upstream/记录正式来源和补丁，mo
 python -m pip install -r requirements-dev.txt
 python tools/next_task.py --json
 python tools/validate_design.py
+python -m tools.setup_native_baseline
 python tools/run_runtime_checks.py --task R0-01
 ```
 
-最后一条当前应报告尚未实现。原生构建/运行命令须由R0按选定源码核实，不能把设计校验或旧测试冒充新应用可运行。
+安装工具链和验收均使用隔离数据，不依赖 QQ 或用户模型账号。详见[原生基线运行说明](docs/handoff/原生基线运行.md)。目前只验收未改造基线，文件工具裁剪、业务插件及生产切换尚未进行；桌面构建通过不代表安装包发布完成。
 
 旧客户端源码和handoff.local.json仅本地保存。凭据、会话、数据库、浏览器状态、运行日志、下载和第三方二进制不提交。上游源码导入时保留其LICENSE及版权，IM-Assistant是独立二次开发项目，不代表OpenCode官方产品。

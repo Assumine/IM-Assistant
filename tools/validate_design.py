@@ -100,7 +100,8 @@ def validate(root=ROOT):
         check('historical '+name+' example remains valid',schemas[kind].is_valid(load('docs/architecture/examples/'+name+'.json')))
     check('historical event examples remain valid',all(schemas['backend-event'].is_valid(e) for e in load('docs/architecture/examples/backend-events.json')))
 
-    documents=sorted({root/'README.md',root/'AGENTS.md',*root.glob('*/README.md'),*(root/'docs').rglob('*.md'),*(root/'tests').rglob('*.md')})
+    # Vendored upstream owns its own documentation/link conventions.
+    documents=sorted({root/'README.md',root/'AGENTS.md',*[p for p in root.glob('*/README.md') if p.parent.name!='opencode'],*(root/'docs').rglob('*.md'),*(root/'tests').rglob('*.md')})
     for path in documents:
         content=path.read_text(encoding='utf-8')
         check(str(path.relative_to(root))+' readable UTF8 and balanced fences','\x00' not in content and '\ufffd' not in content and content.count('```')%2==0)

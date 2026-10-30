@@ -1,0 +1,48 @@
+{
+  "task": "R0-01",
+  "plan_id": "opencode-app-base-v2",
+  "verified_at": "2026-10-30T10:53:03.583798+00:00",
+  "source_tag": "v2.2.3",
+  "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "source_files": 9236,
+  "source_logic_modified": false,
+  "toolchain": {
+    "bun": "1.4.4",
+    "node": "24.22.2",
+    "electron": "44.9.1"
+  },
+  "acceptance_ids": [
+    "A01",
+    "A02",
+    "A03"
+  ],
+  "command": "python tools/run_runtime_checks.py --task R0-01",
+  "status": "passed",
+  "harness_tests": 9,
+  "skipped": 0,
+  "original_native_unit_tests": 141,
+  "original_browser_e2e_tests": 45,
+  "browser_e2e_uses_mock_http": true,
+  "real_backend_smoke": {
+    "native_http_sqlite": true,
+    "inbox_admission_withdraw_restart": true,
+    "history_generation_restart": true,
+    "model": "synthetic local HTTP fixture",
+    "external_model_calls": 0
+  },
+  "desktop": {
+    "original_windows_electron_boots": 2,
+    "renderer_ready": true,
+    "screenshot_verified": false,
+    "packaged_installer_verified": false
+  },
+  "production_switched": false,
+  "private_data_imported": false,
+  "raw_logs": ".reports/native (local, ignored)",
+  "runtime_report_sha256": "ac46ed75c0c2df0df22e98d779961d385ea82d08ed40ef494ebbf3439167d81a",
+  "limits": [
+    "Original file/project tools remain until R1-02",
+    "No live model/QQ/Codex business integration yet",
+    "Isolated upstream desktop development server uses 3084; production identity/ports belong to R1-01"
+  ]
+}

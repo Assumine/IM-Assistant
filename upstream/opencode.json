@@ -1,0 +1,242 @@
+{
+  "repository": "https://github.com/anomalyco/opencode",
+  "tag": "v2.2.3",
+  "commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "release_url": "https://github.com/anomalyco/opencode/releases/tag/v2.2.3",
+  "release_published_at": "2026-10-30T09:55:45Z",
+  "archive_url": "https://codeload.github.com/anomalyco/opencode/zip/082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "archive_sha256": "d398e4ba80ac70d62229e789befd25a57fbad7e18da21e789c2cd23fb945f95a",
+  "package_version": "2.2.3",
+  "package_manager": "bun@1.4.4",
+  "lock_sha256": "ec3b88da87f9de17bfe37e3745df2d727e64d8c86510befa0f9403f31765aa89",
+  "license_sha256": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+  "source_import_strategy": "immutable source archive; original monorepo retained",
+  "runtime": {
+    "bun": "runtime\\tools\\bun-1.4.4\\bun-windows-x64-baseline\\bun.exe",
+    "bun_archive_sha256": "0f20ce6674d4f2dbcc8c5d59fdf99f7ba45f8c3b367e0f5781cbfa30a1c78d99",
+    "node": "runtime\\tools\\node-v24.22.2-win-x64\\node.exe",
+    "node_version": "v24.22.2",
+    "node_archive_sha256": "ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2",
+    "node_origin": "https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip"
+  },
+  "source_modified": false,
+  "platform_symlinks": [
+    {
+      "path": "packages/app/public/apple-touch-icon-v3.png",
+      "target": "../../ui/src/assets/favicon/apple-touch-icon-v3.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/apple-touch-icon.png",
+      "target": "../../ui/src/assets/favicon/apple-touch-icon.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/favicon-96x96-v3.png",
+      "target": "../../ui/src/assets/favicon/favicon-96x96-v3.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/favicon-96x96.png",
+      "target": "../../ui/src/assets/favicon/favicon-96x96.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/favicon-v3.ico",
+      "target": "../../ui/src/assets/favicon/favicon-v3.ico",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/favicon-v3.svg",
+      "target": "../../ui/src/assets/favicon/favicon-v3.svg",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/favicon.ico",
+      "target": "../../ui/src/assets/favicon/favicon.ico",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/favicon.svg",
+      "target": "../../ui/src/assets/favicon/favicon.svg",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/social-share-zen.png",
+      "target": "../../ui/src/assets/images/social-share-zen.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/social-share.png",
+      "target": "../../ui/src/assets/images/social-share.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/web-app-manifest-192x192.png",
+      "target": "../../ui/src/assets/favicon/web-app-manifest-192x192.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/public/web-app-manifest-512x512.png",
+      "target": "../../ui/src/assets/favicon/web-app-manifest-512x512.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/app/src/custom-elements.d.ts",
+      "target": "../../ui/src/custom-elements.d.ts",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/apple-touch-icon-v3.png",
+      "target": "../../../ui/src/assets/favicon/apple-touch-icon-v3.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/apple-touch-icon.png",
+      "target": "../../../ui/src/assets/favicon/apple-touch-icon.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/favicon-96x96-v3.png",
+      "target": "../../../ui/src/assets/favicon/favicon-96x96-v3.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/favicon-96x96.png",
+      "target": "../../../ui/src/assets/favicon/favicon-96x96.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/favicon-v3.ico",
+      "target": "../../../ui/src/assets/favicon/favicon-v3.ico",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/favicon-v3.svg",
+      "target": "../../../ui/src/assets/favicon/favicon-v3.svg",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/favicon.ico",
+      "target": "../../../ui/src/assets/favicon/favicon.ico",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/favicon.svg",
+      "target": "../../../ui/src/assets/favicon/favicon.svg",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/site.webmanifest",
+      "target": "../../../ui/src/assets/favicon/site.webmanifest",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/social-share-black.png",
+      "target": "../../../ui/src/assets/images/social-share-black.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/social-share-zen.png",
+      "target": "../../../ui/src/assets/images/social-share-zen.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/social-share.png",
+      "target": "../../../ui/src/assets/images/social-share.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/web-app-manifest-192x192.png",
+      "target": "../../../ui/src/assets/favicon/web-app-manifest-192x192.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/console/app/public/web-app-manifest-512x512.png",
+      "target": "../../../ui/src/assets/favicon/web-app-manifest-512x512.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/apple-touch-icon-v3.png",
+      "target": "../../ui/src/assets/favicon/apple-touch-icon-v3.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/apple-touch-icon.png",
+      "target": "../../ui/src/assets/favicon/apple-touch-icon.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/favicon-96x96-v3.png",
+      "target": "../../ui/src/assets/favicon/favicon-96x96-v3.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/favicon-96x96.png",
+      "target": "../../ui/src/assets/favicon/favicon-96x96.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/favicon-v3.ico",
+      "target": "../../ui/src/assets/favicon/favicon-v3.ico",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/favicon-v3.svg",
+      "target": "../../ui/src/assets/favicon/favicon-v3.svg",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/favicon.ico",
+      "target": "../../ui/src/assets/favicon/favicon.ico",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/favicon.svg",
+      "target": "../../ui/src/assets/favicon/favicon.svg",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/site.webmanifest",
+      "target": "../../ui/src/assets/favicon/site.webmanifest",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/social-share-zen.png",
+      "target": "../../ui/src/assets/images/social-share-zen.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/social-share.png",
+      "target": "../../ui/src/assets/images/social-share.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/web-app-manifest-192x192.png",
+      "target": "../../ui/src/assets/favicon/web-app-manifest-192x192.png",
+      "materialized": true
+    },
+    {
+      "path": "packages/web/public/web-app-manifest-512x512.png",
+      "target": "../../ui/src/assets/favicon/web-app-manifest-512x512.png",
+      "materialized": true
+    },
+    {
+      "path": "sdks/vscode/images/button-dark.svg",
+      "target": "../../../packages/identity/mark.svg",
+      "materialized": true
+    },
+    {
+      "path": "sdks/vscode/images/button-light.svg",
+      "target": "../../../packages/identity/mark-light.svg",
+      "materialized": true
+    },
+    {
+      "path": "sdks/vscode/images/icon.png",
+      "target": "../../../packages/identity/mark-512x512.png",
+      "materialized": true
+    }
+  ],
+  "native_build_verified": true,
+  "native_verification": "upstream/baseline-verification.json"
+}

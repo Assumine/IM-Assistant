@@ -3,3 +3,5 @@
 *.py text eol=lf
 *.json text eol=lf
 *.txt text eol=lf
+# Preserve the imported archive bytes, including upstream fixture line endings.
+opencode/** -text

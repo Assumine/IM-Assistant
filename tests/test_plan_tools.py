@@ -23,6 +23,11 @@ class PlanToolTests(unittest.TestCase):
         self.root=Path(self.temp.name)
         self.plan=json.loads((ROOT/'docs/handoff/work-plan.json').read_text(encoding='utf-8'))
         self.progress=json.loads((ROOT/'docs/handoff/progress.json').read_text(encoding='utf-8'))
+        # A plan-tool fixture must not change meaning as real implementation advances.
+        self.progress['implementation_started']=False
+        self.progress['runtime_acceptance_completed']=[]
+        for state in self.progress['tasks'].values():
+            state.update(status='pending',artifacts=[],verification=[],blocked_reason=None)
         self.write()
 
     def write(self):
@@ -82,7 +87,8 @@ class PlanToolTests(unittest.TestCase):
         path=ROOT/'docs/handoff/progress.json'
         before=hashlib.sha256(path.read_bytes()).hexdigest()
         report=validate_design.validate()
-        self.assertEqual(report['runtime_acceptance_recorded_completed'],0)
+        recorded=json.loads(path.read_text(encoding='utf-8'))['runtime_acceptance_completed']
+        self.assertEqual(report['runtime_acceptance_recorded_completed'],len(recorded))
         self.assertEqual(report['runtime_acceptance_executed'],0)
         self.assertEqual(report['archived_recorded_tests'],49)
         self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),before)

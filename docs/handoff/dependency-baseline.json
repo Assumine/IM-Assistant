@@ -1,16 +1,16 @@
 {
-  "kind": "source_review_not_selected_baseline",
+  "kind": "locked_source_baseline",
   "upstream_repository": "https://github.com/anomalyco/opencode",
   "reviewed_branch": "dev",
   "reviewed_commit": "92b2ca0dd727942e00aba3523ed141d53e78ea28",
   "reviewed_package_version": "2.2.2",
   "reviewed_package_manager": "bun@1.4.4",
   "reviewed_license": "MIT",
-  "selected_tag": null,
-  "selected_commit": null,
-  "source_imported": false,
-  "native_build_verified": false,
+  "selected_tag": "v2.2.3",
+  "selected_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "source_imported": true,
+  "native_build_verified": true,
   "selection_task": "R0-01",
   "historical_sdk_baseline": "docs/archive/python-host-plan/dependency-baseline.json",
-  "notes": "已核对开发分支源码结构，未选定正式交付版本，不把旧 SDK 2.1.4 或该 dev 快照作为自动锁定版本。"
+  "notes": "正式基线已锁定并完整导入：v2.2.3 / 082ac6281fd395c2d0c17fd3c38214db2f89621f。dev快照仅保留为历史调研；当前运行结果见upstream/baseline-verification.json。"
 }
