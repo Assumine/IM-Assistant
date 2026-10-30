@@ -50,5 +50,14 @@
   ],
   "module_directory": "modules/<module-id>",
   "source_evidence_scope": "legacy_workspace_reference_only",
-  "implementation_status_source": "../handoff/progress.json"
+  "implementation_status_source": "../handoff/progress.json",
+  "conversation_frontend_strategy": {
+    "base": "OpenCode actual interaction frontend and native data access",
+    "customization": "assistant shell, visual styles and animations",
+    "parallel_custom_interaction_state_machine": false,
+    "upstream_frontend_baseline": "unverified; resolve E07 in P3-01",
+    "filesystem_removal_scope": "pending user clarification E08",
+    "keep_internal_database_and_controlled_attachment_storage": true,
+    "codex_native_backend_ownership_unchanged": true
+  }
 }

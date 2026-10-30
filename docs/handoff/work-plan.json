@@ -412,13 +412,17 @@
     {
       "id": "P3-01",
       "phase": "P3",
-      "title": "客户端会话列表与历史门面",
+      "title": "OpenCode 前端基线与会话历史接入",
       "depends_on": [
         "P2-04"
       ],
       "outputs": [
         "conversation/history.py",
-        "portal_adapter/history.js"
+        "portal_adapter/history.js",
+        "portal_adapter/opencode/upstream.json",
+        "portal_adapter/opencode/package.json",
+        "portal_adapter/opencode/package-lock.json",
+        "portal_adapter/opencode/README.md"
       ],
       "test_files": [
         "tests/test_portal_history.py"
@@ -429,11 +433,14 @@
         "U07",
         "U11"
       ],
-      "scope": "先做协议和夹具验证；真实旧页面集成受 E01 代码基线影响，不能仿写后声称已保持原 UI。",
+      "scope": "基于 OpenCode 实际前端的会话列表、历史和客户端数据访问机制接入统一门面，保留助手壳与外观。先完成 E07 的上游来源/commit/许可/依赖与兼容性核查；history.js 仅做薄适配，不重写历史状态机或直接操作原生私有数据库。E01 仅提供本地样式及壳参考，E08 决定文件系统裁剪范围。",
       "done_when": [
         "最近10条首显、分页锚点、消息归属与修订稳定。",
         "历史消息不重播动效，新消息按 ID 只一次。",
-        "完成真实页面适配前落实 E01 并记录真实浏览器证据。"
+        "完成真实页面适配前落实 E01 并记录真实浏览器证据。",
+        "upstream.json 记录实际上游仓库、commit、许可、采用文件及最小补丁；前端版本不从后端 SDK 版本推断。",
+        "复用的交互与原生数据访问有源码证据，不以仿制外观或重新自研状态机代替接入。",
+        "按 E08 确认范围裁剪文件系统功能，内部数据库和受控附件持久化仍可正常使用；未确认时不擅自删除工具。"
       ],
       "verification_commands": [
         "python tools/validate_design.py",
@@ -443,7 +450,7 @@
     {
       "id": "P3-02",
       "phase": "P3",
-      "title": "客户端发送与后端队列动作",
+      "title": "OpenCode 发送接收与队列交互适配",
       "depends_on": [
         "P3-01"
       ],
@@ -464,11 +471,13 @@
         "U10",
         "U15"
       ],
-      "scope": "同一通用控制器使用真实回执展示提交、排队、调整、撤回、结束与下一项。",
+      "scope": "复用锁定 OpenCode 前端的输入、发送接收、回执、会话切换和队列交互，conversation.js/queue.js 仅承担通用门面适配；所属后端仍是执行队列唯一权威，不保留旧自研平行状态机。",
       "done_when": [
         "空闲不回弹，排队显示不等 AI 回复。",
         "结束与下一项依来源顺序渲染，切页不暂停。",
-        "不支持的动作不冒充成功，调序带原队列修订。"
+        "不支持的动作不冒充成功，调序带原队列修订。",
+        "发送、排队、撤回及切换交互来自已核对的上游组件/控制器，原控制器退出发送链；不双重提交或双重驱动队列。",
+        "上游与公共后端契约的差异集中在薄适配层，确需修改上游时有最小补丁及对应回归证据。"
       ],
       "verification_commands": [
         "python tools/validate_design.py",
@@ -478,13 +487,15 @@
     {
       "id": "P3-03",
       "phase": "P3",
-      "title": "多后端能力展示与用量",
+      "title": "OpenCode 会话换肤与多后端能力展示",
       "depends_on": [
         "P3-02"
       ],
       "outputs": [
         "portal_adapter/backends.js",
-        "portal_adapter/usage.js"
+        "portal_adapter/usage.js",
+        "portal_adapter/opencode/theme.css",
+        "portal_adapter/opencode/motion.css"
       ],
       "test_files": [
         "tests/test_portal_backends.py"
@@ -494,11 +505,13 @@
         "U13",
         "U14"
       ],
-      "scope": "两种完整后端共用界面；离线、能力差异和今天/7天/累计用量有明确口径。",
+      "scope": "在复用的 OpenCode 会话前端定制助手样式和动效，两种完整后端共用交互；离线、能力差异和今天/7天/累计用量保持原契约，不将视觉修改变成另一套状态流转。",
       "done_when": [
         "界面不按具体后端名称决定发送行为。",
         "一个后端离线不拖慢另一个，未报告用量不置零。",
-        "真实 UI 验收与夹具测试分开，完成需落实 E01。"
+        "真实 UI 验收与夹具测试分开，完成需落实 E01。",
+        "主题与动效修改不改变任务归属、消息顺序、投递语义和队列调度；相同交互回归在换肤前后均通过。",
+        "文件系统裁剪遵守 E08，不通过隐藏按钮代替已确认要求移除的能力，不删除内部数据库或受控附件存储。"
       ],
       "verification_commands": [
         "python tools/validate_design.py",
