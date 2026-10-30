@@ -4,13 +4,15 @@ import argparse, importlib.util, json, sys, unittest
 
 ROOT=Path(__file__).resolve().parents[1]
 
-def run(ident):
-    plan=json.loads((ROOT/'docs/handoff/work-plan.json').read_text(encoding='utf-8'))
+def run(ident, archived=False):
+    directory=ROOT/('docs/archive/python-host-plan' if archived else 'docs/handoff')
+    plan=json.loads((directory/'work-plan.json').read_text(encoding='utf-8'))
     task=next((t for t in plan['tasks'] if t['id']==ident),None)
     if not task:raise ValueError('Unknown task ID')
     files=[(ROOT/p).resolve() for p in task['test_files']]
     if any(not p.is_relative_to((ROOT/'tests').resolve()) for p in files):raise ValueError('Test path escapes tests directory')
-    record={'task':ident,'status':'blocked','tests_run':0,'failures':0,'errors':0,'skipped':0,
+    record={'task':ident,'plan_id':plan.get('plan_id','archived-python-host-plan'),
+            'archived_reference':archived,'status':'blocked','tests_run':0,'failures':0,'errors':0,'skipped':0,
             'acceptance_ids':task['acceptance_ids'],'progress_updated':False}
     missing=[str(p.relative_to(ROOT)) for p in files if not p.is_file()]
     if missing:
@@ -39,7 +41,7 @@ def run(ident):
         except Exception as error:
             record.update(status='failed',reason='Runtime tests failed to import or load',error_type=type(error).__name__)
             code=1
-    out=ROOT/'.reports/runtime';out.mkdir(parents=True,exist_ok=True)
+    out=ROOT/('.reports/runtime/archived-python-host-plan' if archived else '.reports/runtime');out.mkdir(parents=True,exist_ok=True)
     (out/(ident+'.json')).write_text(json.dumps(record,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(record,ensure_ascii=False))
     return code
@@ -47,6 +49,7 @@ def run(ident):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--task',required=True)
+    parser.add_argument('--archived-python-host-plan',action='store_true',help='Explicitly run a historical reference task; does not advance the active plan')
     args=parser.parse_args()
-    try:sys.exit(run(args.task))
+    try:sys.exit(run(args.task,args.archived_python_host_plan))
     except ValueError as error:parser.error(str(error))

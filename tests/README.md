@@ -1,13 +1,18 @@
-# 隔离行为测试
+# 测试说明
 
-P0 契约、RPC、两套完整测试后端和统一接入驱动已经实现。运行：
+当前活动计划是完整OpenCode应用二次开发。test_plan_tools.py只验证计划ID、任务路由、历史计划显式选择及防止错误完成的接手工具；它不证明原生应用已经运行。
 
 ```sh
-python -m unittest discover -s tests -t . -v
+python -m unittest tests.test_plan_tools -v
+python tools/run_runtime_checks.py --task R0-01
 ```
 
-临时数据置于 runtime/tests，退出时清理；不读取旧应用数据库、账号或浏览器资料。测试创建的子进程通过自己的标准输入输出接入，测试管理器只停止自己创建的进程。RPC 分帧/隔离用例另使用临时本机端口，不占用正式服务端口。
+第二条当前应报告新任务尚未实现。未来tests/rebase/入口应驱动锁定源码的原生测试、真实网页和Windows桌面，不能只用静态断言代替。
 
-test_contracts.py 覆盖 F01/F04/F05，test_transport.py 覆盖 F07，test_backend_fixtures.py 覆盖 F02/F03/F06，test_conformance.py 覆盖 F08。实际任务完成记录仍以 progress.json 为准，不由本页单独维护。
+test_contracts.py、test_transport.py、test_backend_fixtures.py和test_conformance.py合计49项测试属于已归档Python宿主P0探索。需要重跑时显式指定归档计划，例如：
 
-P1 至 P4、真实 OpenCode 集成、浏览器及 WebView2 实机验收尚未实现。合成后端成功不能替代这些验收。
+```sh
+python tools/run_runtime_checks.py --task P0-01 --archived-python-host-plan
+```
+
+旧合成后端和SDK保留为幂等、隔离、顺序与恢复经验，不能计入新路线验收。所有测试仅使用合成身份和隔离数据，不读取旧生产库、账号和浏览器资料。

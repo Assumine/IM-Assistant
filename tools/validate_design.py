@@ -1,146 +1,126 @@
-"""Validate only the design package; does not execute any backend or model."""
+"""Validate the active OpenCode application plan; never run native code or models."""
 from pathlib import Path
-import copy, hashlib, json, re
+import hashlib
+import json
+import re
+
 from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'docs/architecture'
-REPORT=ROOT/'.reports/design-validation.json'
-passed=[]
-def check(name, value):
-    if not value:raise AssertionError(name)
-    passed.append(name)
-def load(name):return json.loads((OUT/name).read_text(encoding='utf-8'))
 
-validators={};generated_links=[]
-for name in ['module-manifest','backend-descriptor','backend-event']:
-    value=load('contracts/'+name+'.schema.json')
-    Draft202012Validator.check_schema(value)
-    validators[name]=Draft202012Validator(value,format_checker=FormatChecker())
-    passed.append(name+' Draft202012 schema valid')
 
-def validates(kind, data):return not list(validators[kind].iter_errors(data))
+def validate(root=ROOT):
+    root=Path(root).resolve()
+    passed=[]
+    def check(name,condition):
+        if not condition:raise AssertionError(name)
+        passed.append(name)
+    def load(path):return json.loads((root/path).read_text(encoding='utf-8'))
 
-manifest=load('examples/module-manifest.json')
-backend=load('examples/opencode-backend.json')
-native=load('examples/native-system-backend.json')
-events=load('examples/backend-events.json')
-check('whole-package example validates',validates('module-manifest',manifest))
-check('OpenCode whole-backend example validates',validates('backend-descriptor',backend))
-check('native-system whole-backend example validates',validates('backend-descriptor',native))
-check('all public event examples validate',all(validates('backend-event',e) for e in events))
-check('example final result precedes completion',
-      next(e['sequence'] for e in events if e['type']=='message.committed') < next(e['sequence'] for e in events if e['type']=='run.completed'))
-check('example queue acceptance has no fabricated run ID',events[0]['native_run_id'] is None and events[0]['payload']['execution_state']=='queued')
-check('example source identities unique',len({(e['backend_instance_id'],e['stream_id'],e['event_id']) for e in events})==len(events))
-check('example event order strictly increasing',[e['sequence'] for e in events]==list(range(1,len(events)+1)))
+    plan=load('docs/handoff/work-plan.json')
+    progress=load('docs/handoff/progress.json')
+    scope=load('docs/architecture/scope.json')
+    baseline=load('docs/handoff/dependency-baseline.json')
+    check('active plan is the OpenCode application rebase',
+          plan['schema_version']==2 and plan['plan_id']=='opencode-app-base-v2' and
+          plan['scope']=='opencode_application_rebase' and plan['integration_unit']=='modified_opencode_application')
+    check('progress and scope belong to the active plan',progress['plan_id']==plan['plan_id']==scope['plan_id'])
+    check('no competing host or conversation implementation',
+          scope['base']=='OpenCode full application' and scope['parallel_python_host'] is False and
+          scope['parallel_conversation_state_machine'] is False and scope['parallel_native_history_database'] is False)
+    check('file capability removal preserves internal persistence',
+          scope['filesystem']=={'project_tree':False,'project_file_tools':False,'general_shell_tools':False,
+                               'internal_persistence':True,'controlled_attachments':True,'controlled_business_file_operations':True})
+    check('planning does not switch production or migrate business data',
+          scope['production_switch'] is False and scope['business_module_migration'] is False)
+    check('old source remains a local read-only experience reference',scope['legacy_source_role']=='local_read_only_capability_and_regression_reference')
+    check('source review is distinct from selected and built baseline',baseline['kind'] in {'source_review_not_selected_baseline','locked_source_baseline'})
+    check('review records a concrete public source snapshot',baseline['upstream_repository']=='https://github.com/anomalyco/opencode' and bool(re.fullmatch('[0-9a-f]{40}',baseline['reviewed_commit'])))
+    if baseline['selected_commit'] is not None:
+        check('selected source has immutable commit and provenance',baseline['kind']=='locked_source_baseline' and bool(re.fullmatch('[0-9a-f]{40}',baseline['selected_commit'])) and bool(baseline['selected_tag']) and (root/'upstream/opencode.json').is_file())
 
-bad=copy.deepcopy(backend);bad['ownership']['compaction']='host'
-check('split host-owned compactor rejected',not validates('backend-descriptor',bad))
-bad=copy.deepcopy(backend);bad['ownership']['queue']='host'
-check('competing host queue ownership rejected',not validates('backend-descriptor',bad))
-bad=copy.deepcopy(backend);bad['methods'].remove('context.compact')
-check('advertised compact without implementation method rejected',not validates('backend-descriptor',bad))
-bad=copy.deepcopy(backend);bad['methods'].remove('inputs.lookup')
-check('missing result reconciliation method rejected',not validates('backend-descriptor',bad))
-bad=copy.deepcopy(backend);bad['capabilities']['queue_reorder']=True;bad['capabilities']['queue_inspect']=False;bad['methods'].append('queue.reorder')
-check('reorder without queue snapshot rejected',not validates('backend-descriptor',bad))
-bad=copy.deepcopy(manifest);bad['backend_descriptor']='../outside.json'
-check('relative traversal in manifest reference rejected',not validates('module-manifest',bad))
-bad=copy.deepcopy(manifest);bad['runtime']['endpoint']='http://127.0.0.1:1234/'
-check('managed command and external endpoint mixture rejected',not validates('module-manifest',bad))
-bad=copy.deepcopy(events[-1]);bad['native_run_id']=None
-check('completion without exact native run rejected',not validates('backend-event',bad))
-bad=copy.deepcopy(events[0]);bad['sequence']=0
-check('nonpositive sequence rejected',not validates('backend-event',bad))
-bad=copy.deepcopy(events[0]);bad['request_id']=None
-check('input acceptance without source request rejected',not validates('backend-event',bad))
-future=copy.deepcopy(native);future['extensions']={'example.optional_future':{'supported':True}}
-check('unknown namespaced optional declaration accepted structurally',validates('backend-descriptor',future))
+    tasks=plan['tasks'];index={t['id']:t for t in tasks};states=progress['tasks']
+    check('ten uniquely identified rebase tasks',len(tasks)==len(index)==10 and all(t['id'].startswith('R') for t in tasks))
+    check('one active progress state per task',set(index)==set(states))
+    check('next plan begins with source and unmodified baseline',plan['start_task']=='R0-01' and not index['R0-01']['depends_on'])
+    check('all dependencies are real and non-self',all(d in index and d!=t['id'] for t in tasks for d in t['depends_on']))
+    visited=set();visiting=set()
+    def visit(ident):
+        if ident in visiting:raise AssertionError('Task dependency cycle')
+        if ident in visited:return
+        visiting.add(ident)
+        for dep in index[ident]['depends_on']:visit(dep)
+        visiting.remove(ident);visited.add(ident)
+    for ident in index:visit(ident)
+    check('task dependency graph is acyclic',len(visited)==len(tasks))
+    acceptance=(root/'docs/architecture/实施与验收.md').read_text(encoding='utf-8')
+    ids=re.findall(r'- \[ \] (A\d{2})\b',acceptance)
+    assigned=[case for task in tasks for case in task['acceptance_ids']]
+    check('36 current acceptance requirements defined once',len(ids)==len(set(ids))==36)
+    check('each acceptance requirement has one implementation owner',len(assigned)==len(set(assigned))==36 and set(assigned)==set(ids))
+    check('acceptance document does not hold separate completion state','- [x]' not in acceptance.lower())
+    recorded=[]
+    for task in tasks:
+        ident=task['id'];state=states[ident]
+        check(ident+' defines outputs tests done criteria and real verification',
+              bool(task['outputs']) and bool(task['test_files']) and len(task['done_when'])>=3 and
+              'python tools/run_runtime_checks.py --task '+ident in task['verification_commands'] and bool(task['native_verification']))
+        check(ident+' source targets remain in new implementation areas',all((root/p).resolve().is_relative_to(root) and p.split('/')[0] in {'opencode','modules','upstream','tests'} for p in task['outputs']+task['test_files']))
+        check(ident+' uses a known task status',state['status'] in {'pending','in_progress','blocked','done'})
+        if state['status']=='blocked':check(ident+' has a concrete blocker',bool(state['blocked_reason']))
+        if state['status'] in {'in_progress','done'}:
+            check(ident+' prerequisites completed',all(states[d]['status']=='done' for d in task['depends_on']))
+            check('active work is explicitly recorded as started',progress['implementation_started'] is True)
+        if state['status']=='done':
+            if ident=='R0-01':
+                check('completed native baseline was actually selected imported and built',baseline['selected_commit'] is not None and baseline['source_imported'] is True and baseline['native_build_verified'] is True)
+            check(ident+' has actual source and tests',bool(state['artifacts']) and all((root/p).is_file() for p in state['artifacts']+task['test_files']))
+            evidence=[v for v in state['verification'] if v.get('kind')=='runtime' and v.get('status')=='passed' and v.get('exit_code')==0 and v.get('tests_run',0)>0 and v.get('skipped',0)==0 and v.get('plan_id')==plan['plan_id']]
+            check(ident+' has nonempty runtime evidence for this plan',bool(evidence))
+            check(ident+' evidence covers its acceptance cases',set(task['acceptance_ids'])<={c for v in evidence for c in v.get('acceptance_ids',[])})
+            recorded.extend(task['acceptance_ids'])
+    check('only current task evidence advances current acceptance',set(recorded)==set(progress['runtime_acceptance_completed']) and len(recorded)==len(progress['runtime_acceptance_completed']))
 
-documents=sorted(set([ROOT/'README.md',ROOT/'AGENTS.md',*ROOT.glob('*/README.md'),
-                      *(ROOT/'docs').rglob('*.md'),*(ROOT/'tests').rglob('*.md')]))
-for p in documents:
-    text=p.read_text(encoding='utf-8')
-    check(p.name+' readable UTF8 and balanced code fences','\x00' not in text and '\ufffd' not in text and text.count('```')%2==0)
-    for link in re.findall(r'\[[^\]]*\]\(([^)]+)\)',text):
-        if link.startswith(('http://','https://','#')):continue
-        relative=link.split('#')[0]
-        target=(p.parent/relative).resolve()
-        if target==OUT/'design-validation.json' and not target.exists():
-            generated_links.append(target);continue
-        check(str(p.relative_to(ROOT))+' local link '+relative,target.is_relative_to(ROOT.resolve()) and target.is_file())
+    oldplan=load('docs/archive/python-host-plan/work-plan.json')
+    oldprogress=load('docs/archive/python-host-plan/progress.json')
+    check('superseded plan remains separately archived',len(oldplan['tasks'])==18 and plan['supersedes']=='docs/archive/python-host-plan/work-plan.json')
+    olddone=[v for state in oldprogress['tasks'].values() for v in state['verification'] if state['status']=='done' and v.get('kind')=='runtime' and v.get('status')=='passed']
+    check('old implementation evidence is preserved as historical',len(olddone)==4 and sum(v['tests_run'] for v in olddone)==49 and len(oldprogress['runtime_acceptance_completed'])==8)
+    check('current tasks do not silently inherit historical completion',not any(ident.startswith('P') for ident in states))
 
-scope=load('scope.json')
-check('foundation-only scope explicit',not scope['production_switch'] and not scope['business_module_migration'])
-check('integration unit is the whole backend',scope['unit_of_integration']=='complete_conversation_backend' and not scope['separate_context_or_compactor_plugins_required'])
-check('queue authority stays in whole backend',scope['queue_authority']=='owning_conversation_backend')
-check('legacy evidence references are marked as documentation only',scope['source_evidence_scope']=='legacy_workspace_reference_only')
-steps=(OUT/'实施与验收.md').read_text(encoding='utf-8')
-ids=re.findall(r'(?:- \[ \] |\| )([FHOUR]\d{2})(?: |\b)',steps)
-check('66 unique future runtime acceptance cases enumerated',len(ids)==66 and len(set(ids))==66)
-check('no future runtime acceptance is marked completed','- [x]' not in steps.lower())
-check('SDK baseline is declared as a future reference, not an installed package','2.1.4' in scope['reference_backend'])
+    # Retained SDK artifacts are checked only as historical references.
+    schemas={}
+    for kind in ('module-manifest','backend-descriptor','backend-event'):
+        schema=load('docs/architecture/contracts/'+kind+'.schema.json')
+        Draft202012Validator.check_schema(schema)
+        schemas[kind]=Draft202012Validator(schema,format_checker=FormatChecker())
+        passed.append('historical '+kind+' schema is readable and structurally valid')
+    examples={'module-manifest':'module-manifest','opencode-backend':'backend-descriptor','native-system-backend':'backend-descriptor'}
+    for name,kind in examples.items():
+        check('historical '+name+' example remains valid',schemas[kind].is_valid(load('docs/architecture/examples/'+name+'.json')))
+    check('historical event examples remain valid',all(schemas['backend-event'].is_valid(e) for e in load('docs/architecture/examples/backend-events.json')))
 
-plan=json.loads((ROOT/'docs/handoff/work-plan.json').read_text(encoding='utf-8'))
-progress=json.loads((ROOT/'docs/handoff/progress.json').read_text(encoding='utf-8'))
-tasks=plan['tasks'];index={t['id']:t for t in tasks};states=progress['tasks']
-check('18 unique implementation work items defined',len(tasks)==18 and len(index)==18)
-check('handoff keeps whole-backend foundation scope',plan['scope']=='foundation_only' and plan['integration_unit']=='complete_conversation_backend')
-check('progress has exactly one state per work item',set(index)==set(states))
-check('initial implementation starts at P0-01',plan['start_task']=='P0-01' and not index['P0-01']['depends_on'])
-check('all task dependencies refer to existing different tasks',all(d in index and d!=t['id'] for t in tasks for d in t['depends_on']))
-visited=set();visiting=set()
-def visit(ident):
-    if ident in visiting:raise AssertionError('Task dependency cycle: '+ident)
-    if ident in visited:return
-    visiting.add(ident)
-    for dep in index[ident]['depends_on']:visit(dep)
-    visiting.remove(ident);visited.add(ident)
-for ident in index:visit(ident)
-check('work item graph is acyclic',len(visited)==18)
-assigned=[case for t in tasks for case in t['acceptance_ids']]
-check('all 66 acceptance cases have exactly one primary implementation owner',len(assigned)==66 and len(set(assigned))==66 and set(assigned)==set(ids))
-for t in tasks:
-    check(t['id']+' defines outputs tests commands and completion criteria',
-          bool(t['outputs']) and bool(t['test_files']) and len(t['done_when'])>=3 and
-          f"python tools/run_runtime_checks.py --task {t['id']}" in t['verification_commands'])
-    paths=t['outputs']+t['test_files']
-    check(t['id']+' planned targets stay inside repository source areas',
-          all((ROOT/p).resolve().is_relative_to(ROOT.resolve()) and p.split('/')[0] in
-              {'sdk','host','conversation','modules','portal_adapter','tests'} for p in paths))
-check('progress status values recognized',all(s['status'] in {'pending','in_progress','blocked','done'} for s in states.values()))
-recorded=[]
-for ident,s in states.items():
-    if s['status']=='in_progress':check(ident+' active dependencies completed',all(states[d]['status']=='done' for d in index[ident]['depends_on']))
-    if s['status']=='blocked':check(ident+' records a concrete blocker',isinstance(s['blocked_reason'],str) and bool(s['blocked_reason'].strip()))
-    if s['status']!='done':continue
-    check(ident+' dependencies completed',all(states[d]['status']=='done' for d in index[ident]['depends_on']))
-    check(ident+' has actual source/test artifacts',bool(s['artifacts']) and all((ROOT/p).is_file() for p in s['artifacts']) and all((ROOT/p).is_file() for p in index[ident]['test_files']))
-    verified=[v for v in s['verification'] if v.get('kind')=='runtime' and v.get('status')=='passed' and v.get('exit_code')==0 and v.get('tests_run',0)>0]
-    check(ident+' has nonzero runtime verification evidence',bool(verified))
-    cases={case for v in verified for case in v.get('acceptance_ids',[])}
-    check(ident+' evidence covers assigned acceptance cases',set(index[ident]['acceptance_ids'])<=cases)
-    recorded.extend(index[ident]['acceptance_ids'])
-check('global acceptance progress agrees with completed work items',set(progress['runtime_acceptance_completed'])==set(recorded) and len(progress['runtime_acceptance_completed'])==len(set(recorded)))
-if any(s['status'] in {'in_progress','done'} for s in states.values()):
-    check('implementation start flag reflects actual recorded work',progress['implementation_started'] is True)
-check('local-only client configuration is ignored', '/handoff.local.json' in (ROOT/'.gitignore').read_text(encoding='utf-8').splitlines())
-local_example=json.loads((ROOT/'handoff.local.example.json').read_text(encoding='utf-8'))
-check('portable local reference example is read-only and not personal',local_example['schema_version']==1 and local_example['access']=='read_only' and not Path(local_example['legacy_root']).is_absolute())
-baseline=json.loads((ROOT/'docs/handoff/dependency-baseline.json').read_text(encoding='utf-8'))
-check('dependency evidence explicitly remains historical',baseline['kind']=='historical_reference_only' and baseline['opencode']['installed_in_this_repository'] is False)
-check('reference dependency records contain version integrity and public origin',len(baseline['opencode']['packages'])==3 and all(p['version']=='2.1.4' and p['integrity'].startswith('sha512-') and p['resolved'].startswith('https://registry.npmjs.org/') for p in baseline['opencode']['packages']))
+    documents=sorted({root/'README.md',root/'AGENTS.md',*root.glob('*/README.md'),*(root/'docs').rglob('*.md'),*(root/'tests').rglob('*.md')})
+    for path in documents:
+        content=path.read_text(encoding='utf-8')
+        check(str(path.relative_to(root))+' readable UTF8 and balanced fences','\x00' not in content and '\ufffd' not in content and content.count('```')%2==0)
+        for link in re.findall(r'\[[^\]]*\]\(([^)]+)\)',content):
+            if link.startswith(('http://','https://','#')):continue
+            target=(path.parent/link.split('#')[0]).resolve()
+            check(str(path.relative_to(root))+' local link '+link,target.is_relative_to(root) and target.is_file())
+    check('private reference config is ignored','/handoff.local.json' in (root/'.gitignore').read_text(encoding='utf-8').splitlines())
+    example=load('handoff.local.example.json')
+    check('portable reference example remains read-only',example['access']=='read_only' and not Path(example['legacy_root']).is_absolute())
+    receipt={'status':'active_plan_validated','plan_id':plan['plan_id'],'count':len(passed),'checks':passed,
+             'implementation_work_items':len(tasks),'planned_runtime_acceptance_count':len(ids),
+             'runtime_acceptance_executed':0,'runtime_acceptance_recorded_completed':len(recorded),
+             'archived_recorded_tests':49,'model_calls':0,'qq_calls':0,'production_deployments':0,
+             'documents':{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in documents}}
+    output=root/'.reports/design-validation.json';output.parent.mkdir(parents=True,exist_ok=True)
+    output.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    return receipt
 
-REPORT.parent.mkdir(parents=True,exist_ok=True)
-receipt={'status':'design_files_validated','checks':passed,'count':len(passed),
-         'planned_runtime_acceptance_count':66,'runtime_acceptance_executed':0,
-         'schemas':3,'examples':4,'model_calls':0,'qq_calls':0,'production_deployments':0,
-         'write_scope':str(OUT),'whole_backend_integration':True,'business_migration':False,
-         'implementation_work_items':18,'runtime_acceptance_recorded_completed':len(recorded),
-         'documents':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in documents}}
-REPORT.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-for target in generated_links:check('generated validation receipt link exists',target.is_file())
-receipt['count']=len(passed)
-REPORT.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-print(json.dumps({k:receipt[k] for k in ['status','count','planned_runtime_acceptance_count','runtime_acceptance_executed','model_calls','production_deployments']},ensure_ascii=False))
+
+if __name__=='__main__':
+    result=validate()
+    print(json.dumps({k:result[k] for k in ('status','plan_id','count','planned_runtime_acceptance_count','runtime_acceptance_executed','runtime_acceptance_recorded_completed','archived_recorded_tests')},ensure_ascii=False))

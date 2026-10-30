@@ -1,63 +1,28 @@
 {
   "kind": "architecture_scope",
-  "date": "2026-10-30",
-  "timezone": "Asia/Shanghai",
-  "scope": "host foundation and whole conversation backend integration",
-  "unit_of_integration": "complete_conversation_backend",
+  "plan_id": "opencode-app-base-v2",
+  "scope": "OpenCode application secondary development with assistant capabilities",
+  "base": "OpenCode full application",
+  "unit_of_integration": "modified_opencode_application",
+  "parallel_python_host": false,
+  "parallel_conversation_state_machine": false,
+  "parallel_native_history_database": false,
   "separate_context_or_compactor_plugins_required": false,
-  "queue_authority": "owning_conversation_backend",
-  "host_ledger": "ingress_delivery_and_notifications_only",
-  "native_context_and_compaction_owner": "owning_conversation_backend",
-  "reference_backend": "OpenCode @opencode/sdk and @opencode/plugin locked 2.1.4",
-  "codex": "future peer whole backend; no migration this phase",
+  "queue_authority": "owning_native_session_executor",
+  "legacy_source_role": "local_read_only_capability_and_regression_reference",
+  "source_evidence_scope": "public_upstream_review_and_local_reference_only",
+  "filesystem": {
+    "project_tree": false,
+    "project_file_tools": false,
+    "general_shell_tools": false,
+    "internal_persistence": true,
+    "controlled_attachments": true,
+    "controlled_business_file_operations": true
+  },
   "production_switch": false,
   "business_module_migration": false,
-  "implementation_phases": [
-    "P0",
-    "P1",
-    "P2",
-    "P3",
-    "P4"
-  ],
-  "deferred": [
-    "Codex production migration",
-    "QQ migration",
-    "research restructuring",
-    "downloads restructuring",
-    "personal companion migration",
-    "media and music data migration",
-    "external cinema migration",
-    "online module marketplace"
-  ],
-  "source_evidence": [
-    "assistant_runtime/control/task_channels.py",
-    "assistant_runtime/control/task_coordinator.py",
-    "assistant_runtime/control/task_store.py",
-    "assistant_host.py",
-    "opencode_core/package.json",
-    "opencode_core/package-lock.json",
-    "opencode_core/service.mjs",
-    "opencode_core/bridge.py",
-    "data/plugins/astrbot_plugin_assistant_control/main.py",
-    "management_center/module_catalog.py",
-    "management_center/module_control.py",
-    "management_center/server.py",
-    "performance_monitor/README.md"
-  ],
-  "official_references": [
-    "https://opencode.ai/v2/docs/build/sdk/",
-    "https://opencode.ai/v2/docs/build/plugins/"
-  ],
-  "module_directory": "modules/<module-id>",
-  "source_evidence_scope": "legacy_workspace_reference_only",
   "implementation_status_source": "../handoff/progress.json",
-  "conversation_frontend_strategy": {
-    "base": "OpenCode actual interaction frontend and native data access",
-    "customization": "assistant shell, visual styles and animations",
-    "parallel_custom_interaction_state_machine": false,
-    "upstream_frontend_baseline": "unverified; resolve E07 in P3-01",
-    "filesystem_removal_scope": "pending user clarification E08",
-    "keep_internal_database_and_controlled_attachment_storage": true,
-    "codex_native_backend_ownership_unchanged": true
-  }
+  "capability_package_directory": "modules/<module-id>",
+  "source_directory": "opencode/",
+  "historical_python_sdk_status": "reference_and_regression_examples_only"
 }

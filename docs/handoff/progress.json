@@ -1,209 +1,65 @@
 {
-  "schema_version": 1,
-  "implementation_started": true,
-  "runtime_acceptance_completed": [
-    "F01",
-    "F02",
-    "F03",
-    "F04",
-    "F05",
-    "F06",
-    "F07",
-    "F08"
-  ],
+  "schema_version": 2,
+  "plan_id": "opencode-app-base-v2",
+  "implementation_started": false,
+  "runtime_acceptance_completed": [],
+  "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
-    "P0-01": {
-      "status": "done",
-      "artifacts": [
-        "sdk/__init__.py",
-        "sdk/contracts.py",
-        "sdk/errors.py",
-        "tests/__init__.py",
-        "sdk/manifest.py",
-        "tests/test_contracts.py"
-      ],
-      "verification": [
-        {
-          "task": "P0-01",
-          "status": "passed",
-          "tests_run": 21,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0,
-          "acceptance_ids": [
-            "F01",
-            "F04",
-            "F05"
-          ],
-          "progress_updated": false,
-          "kind": "runtime",
-          "exit_code": 0,
-          "command": "python tools/run_runtime_checks.py --task P0-01"
-        }
-      ],
-      "blocked_reason": null
-    },
-    "P0-02": {
-      "status": "done",
-      "artifacts": [
-        "sdk/transport.py",
-        "sdk/jsonrpc.py",
-        "tests/test_transport.py"
-      ],
-      "verification": [
-        {
-          "task": "P0-02",
-          "status": "passed",
-          "tests_run": 13,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0,
-          "acceptance_ids": [
-            "F07"
-          ],
-          "progress_updated": false,
-          "kind": "runtime",
-          "exit_code": 0,
-          "command": "python tools/run_runtime_checks.py --task P0-02"
-        }
-      ],
-      "blocked_reason": null
-    },
-    "P0-03": {
-      "status": "done",
-      "artifacts": [
-        "tests/backend_fixtures/__init__.py",
-        "tests/backend_fixtures/backend_a.py",
-        "tests/backend_fixtures/backend_b.py",
-        "tests/backend_fixtures/control.py",
-        "tests/test_backend_fixtures.py",
-        "tests/backend_fixtures/client.py"
-      ],
-      "verification": [
-        {
-          "task": "P0-03",
-          "status": "passed",
-          "tests_run": 9,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0,
-          "acceptance_ids": [
-            "F02",
-            "F03",
-            "F06"
-          ],
-          "progress_updated": false,
-          "kind": "runtime",
-          "exit_code": 0,
-          "command": "python tools/run_runtime_checks.py --task P0-03"
-        }
-      ],
-      "blocked_reason": null
-    },
-    "P0-04": {
-      "status": "done",
-      "artifacts": [
-        "sdk/conformance.py",
-        "tests/test_conformance.py"
-      ],
-      "verification": [
-        {
-          "task": "P0-04",
-          "status": "passed",
-          "tests_run": 6,
-          "failures": 0,
-          "errors": 0,
-          "skipped": 0,
-          "acceptance_ids": [
-            "F08"
-          ],
-          "progress_updated": false,
-          "kind": "runtime",
-          "exit_code": 0,
-          "command": "python tools/run_runtime_checks.py --task P0-04"
-        }
-      ],
-      "blocked_reason": null
-    },
-    "P1-01": {
+    "R0-01": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P1-02": {
+    "R1-01": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P1-03": {
+    "R1-02": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P1-04": {
+    "R2-01": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P1-05": {
+    "R2-02": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P2-01": {
+    "R3-01": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P2-02": {
+    "R3-02": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P2-03": {
+    "R4-01": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P2-04": {
+    "R4-02": {
       "status": "pending",
       "artifacts": [],
       "verification": [],
       "blocked_reason": null
     },
-    "P3-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
-      "blocked_reason": null
-    },
-    "P3-02": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
-      "blocked_reason": null
-    },
-    "P3-03": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
-      "blocked_reason": null
-    },
-    "P4-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
-      "blocked_reason": null
-    },
-    "P4-02": {
+    "R5-01": {
       "status": "pending",
       "artifacts": [],
       "verification": [],

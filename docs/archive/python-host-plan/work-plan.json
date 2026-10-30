@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "scope": "foundation_only",
+  "integration_unit": "complete_conversation_backend",
+  "start_task": "P0-01",
+  "progress_file": "docs/handoff/progress.json",
+  "runtime_verifier": "tools/run_runtime_checks.py",
+  "tasks": [
+    {
+      "id": "P0-01",
+      "phase": "P0",
+      "title": "SDK 契约类型与静态清单验证",
+      "depends_on": [],
+      "outputs": [
+        "sdk/__init__.py",
+        "sdk/contracts.py",
+        "sdk/errors.py",
+        "tests/__init__.py",
+        "sdk/manifest.py"
+      ],
+      "test_files": [
+        "tests/test_contracts.py"
+      ],
+      "acceptance_ids": [
+        "F01",
+        "F04",
+        "F05"
+      ],
+      "scope": "按现有 Schema 建立完整后端的描述、身份引用和错误类型；只读取与校验清单，不执行包入口。 同步处理 C01/C02/C03，不把新的规范形状当作本轮已实现。",
+      "done_when": [
+        "已定义基本类型和业务错误，支持有界不透明原生 ID。",
+        "不兼容协议、路径逃逸、缺少必需方法及非法类型被明确拒绝。",
+        "纯静态校验不导入模块，不启动进程，不发起网络。",
+        "C01/C02/C03 有明确结论，文档、Schema 和行为测试一致。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P0-01"
+      ]
+    },
+    {
+      "id": "P0-02",
+      "phase": "P0",
+      "title": "有界 JSON-RPC 传输与响应路由",
+      "depends_on": [
+        "P0-01"
+      ],
+      "outputs": [
+        "sdk/transport.py",
+        "sdk/jsonrpc.py"
+      ],
+      "test_files": [
+        "tests/test_transport.py"
+      ],
+      "acceptance_ids": [
+        "F07"
+      ],
+      "scope": "实现逐行 UTF-8 JSON-RPC、方向 ID、响应与事件分流、帧大小和超时；不实现会话队列。",
+      "done_when": [
+        "部分帧、转义换行和并发响应可正确处理。",
+        "非法 JSON、日志混入 stdout、过大帧和断开不会卡住读取器。",
+        "回执超时不自动调用运行取消或盲目重交。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P0-02"
+      ]
+    },
+    {
+      "id": "P0-03",
+      "phase": "P0",
+      "title": "两套独立完整后端夹具",
+      "depends_on": [
+        "P0-02"
+      ],
+      "outputs": [
+        "tests/backend_fixtures/__init__.py",
+        "tests/backend_fixtures/backend_a.py",
+        "tests/backend_fixtures/backend_b.py",
+        "tests/backend_fixtures/control.py"
+      ],
+      "test_files": [
+        "tests/test_backend_fixtures.py"
+      ],
+      "acceptance_ids": [
+        "F02",
+        "F03",
+        "F06"
+      ],
+      "scope": "夹具各自拥有不同格式的历史、上下文、压缩和队列，提供持久接纳、事件、故障开关及原生 ID。",
+      "done_when": [
+        "相同外部接口可以驱动两种内部结构。",
+        "实例和主体隔离，断开与重连不重建原生会话。",
+        "夹具记录可证明宿主只经公开方法访问，不猜读私有格式。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P0-03"
+      ]
+    },
+    {
+      "id": "P0-04",
+      "phase": "P0",
+      "title": "完整后端接入测试驱动",
+      "depends_on": [
+        "P0-03"
+      ],
+      "outputs": [
+        "sdk/conformance.py"
+      ],
+      "test_files": [
+        "tests/test_conformance.py"
+      ],
+      "acceptance_ids": [
+        "F08"
+      ],
+      "scope": "以同一测试驱动检查必需行为及可选能力；能力未声明时不调用，宣称支持但方法缺失则拒绝。",
+      "done_when": [
+        "测试驱动不根据后端名称分支。",
+        "基线接入与每个可选能力的结果分开报告。",
+        "不存在用跳过全部用例或固定成功表示后端可用的路径。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P0-04"
+      ]
+    },
+    {
+      "id": "P1-01",
+      "phase": "P1",
+      "title": "宿主身份 配置与持久基础",
+      "depends_on": [
+        "P0-04"
+      ],
+      "outputs": [
+        "host/__init__.py",
+        "host/storage.py",
+        "host/identity.py",
+        "host/settings.py",
+        "host/secrets.py"
+      ],
+      "test_files": [
+        "tests/test_host_data.py"
+      ],
+      "acceptance_ids": [
+        "H05",
+        "H06"
+      ],
+      "scope": "宿主自己的 SQLite、授权主体、配置修订和安全凭据引用；不存后端原生上下文或执行队列。",
+      "done_when": [
+        "本机身份不依赖 QQ 账号，不能通过请求正文伪造。",
+        "配置并发冲突明确，实际消费者回读一致，日志不回显密钥。",
+        "测试数据只写仓库临时运行目录，不读私人配置。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P1-01"
+      ]
+    },
+    {
+      "id": "P1-02",
+      "phase": "P1",
+      "title": "实例目录与隔离进程生命周期",
+      "depends_on": [
+        "P1-01"
+      ],
+      "outputs": [
+        "host/registry.py",
+        "host/runtime.py"
+      ],
+      "test_files": [
+        "tests/test_runtime_manager.py"
+      ],
+      "acceptance_ids": [
+        "H03",
+        "H04",
+        "H07",
+        "H08"
+      ],
+      "scope": "静态发现、hello、状态与连接可用性、实例数据根、退出事件及单实例 drain/stop。",
+      "done_when": [
+        "启动或请求卡住的实例 A 不阻断 B。",
+        "仅处理核实所有权的进程，外部服务断开不被关闭。",
+        "维护仅暂停目标接纳并报告真正的阻塞。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P1-02"
+      ]
+    },
+    {
+      "id": "P1-03",
+      "phase": "P1",
+      "title": "统一门面与可靠输入转交",
+      "depends_on": [
+        "P1-02"
+      ],
+      "outputs": [
+        "conversation/__init__.py",
+        "conversation/catalog.py",
+        "conversation/gateway.py",
+        "host/ingress.py"
+      ],
+      "test_files": [
+        "tests/test_ingress_delivery.py"
+      ],
+      "acceptance_ids": [
+        "H10",
+        "H11",
+        "H12",
+        "H13"
+      ],
+      "scope": "映射会话、冻结目标和连接修订、持久请求身份、接纳回执和结果未知核对；不调度原生下一任务。",
+      "done_when": [
+        "同 ID 同参数重试不二次执行，不同参数冲突。",
+        "accepted 与 applied 分开，超时保留 unknown。",
+        "未知只约束相关会话的投递顺序，其他会话继续可用。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P1-03"
+      ]
+    },
+    {
+      "id": "P1-04",
+      "phase": "P1",
+      "title": "来源事件 缓存与通知发件箱",
+      "depends_on": [
+        "P1-03"
+      ],
+      "outputs": [
+        "host/event_store.py",
+        "host/projections.py",
+        "host/notifications.py"
+      ],
+      "test_files": [
+        "tests/test_host_events.py"
+      ],
+      "acceptance_ids": [
+        "H14",
+        "H15"
+      ],
+      "scope": "来源游标与去重、消息替换版本、通知订阅与未读；事务写入后推进游标。",
+      "done_when": [
+        "最终消息引用先于完成状态可见，通知失败不重跑。",
+        "事件重放只更新同一消息版本，不重复追加。",
+        "通知未读与待处理事项分别保存。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P1-04"
+      ]
+    },
+    {
+      "id": "P1-05",
+      "phase": "P1",
+      "title": "独立宿主启动与最小管理入口",
+      "depends_on": [
+        "P1-04"
+      ],
+      "outputs": [
+        "host/__main__.py",
+        "host/api.py",
+        "portal_adapter/__init__.py"
+      ],
+      "test_files": [
+        "tests/test_host_boot.py"
+      ],
+      "acceptance_ids": [
+        "H01",
+        "H02",
+        "H09"
+      ],
+      "scope": "实现 python -m host；无模块时提供基础状态和配置/空态的本机管理入口。不是旧客户端真实迁移。",
+      "done_when": [
+        "没有 QQ、AstrBot、网关和后端也能启动。",
+        "页面或接口不等待模型，不持续扫描硬件或所有进程。",
+        "入口的本机授权与跨源访问规则经过测试。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P1-05"
+      ]
+    },
+    {
+      "id": "P2-01",
+      "phase": "P2",
+      "title": "OpenCode 完整包与普通 API 连接",
+      "depends_on": [
+        "P1-05"
+      ],
+      "outputs": [
+        "modules/opencode/module.json",
+        "modules/opencode/package.json",
+        "modules/opencode/package-lock.json",
+        "modules/opencode/backend.mjs",
+        "modules/opencode/src/connections.mjs"
+      ],
+      "test_files": [
+        "tests/test_opencode_boot.py"
+      ],
+      "acceptance_ids": [
+        "O01",
+        "O02",
+        "O03"
+      ],
+      "scope": "按历史依赖基线创建完整后端包，核对 SDK 和运行时，以隔离兼容 API 服务验证，不依赖旧网关插件。",
+      "done_when": [
+        "当前 SDK 版本、锁文件及完整性可核对。",
+        "稳定会话创建和关联可恢复。",
+        "没有模型凭据时管理门面仍可用，普通 API 地址可替换。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P2-01"
+      ]
+    },
+    {
+      "id": "P2-02",
+      "phase": "P2",
+      "title": "原生输入 队列与公开事件适配",
+      "depends_on": [
+        "P2-01"
+      ],
+      "outputs": [
+        "modules/opencode/src/sessions.mjs",
+        "modules/opencode/src/events.mjs",
+        "modules/opencode/src/inbox.mjs"
+      ],
+      "test_files": [
+        "tests/test_opencode_delivery.py"
+      ],
+      "acceptance_ids": [
+        "O04",
+        "O05",
+        "O09",
+        "O10"
+      ],
+      "scope": "将原生 Inbox 和执行事件接入通用门面，核对输入、队列、撤回和冻结配置，不产生第二套宿主调度。",
+      "done_when": [
+        "真实原生 applied 与已排队分别回执。",
+        "撤回和调整严格指向原输入/运行。",
+        "全局设置变化不重写已接收输入配置。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P2-02"
+      ]
+    },
+    {
+      "id": "P2-03",
+      "phase": "P2",
+      "title": "原生工具 压缩与上下文保持",
+      "depends_on": [
+        "P2-02"
+      ],
+      "outputs": [
+        "modules/opencode/src/policy.mjs",
+        "modules/opencode/src/tools.mjs",
+        "modules/opencode/src/context.mjs"
+      ],
+      "test_files": [
+        "tests/test_opencode_context.py"
+      ],
+      "acceptance_ids": [
+        "O06",
+        "O07",
+        "O08",
+        "O12"
+      ],
+      "scope": "保留 OpenCode 原生机制，以可控模型夹具触发工具和压缩；后端工具权限有明确范围。",
+      "done_when": [
+        "一次工具动作不被宿主事件重放执行第二次。",
+        "强制压缩有原生记录、保留历史，失败不清空上下文。",
+        "宿主没有复制一份上下文或自己的压缩循环。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P2-03"
+      ]
+    },
+    {
+      "id": "P2-04",
+      "phase": "P2",
+      "title": "恢复 用量与异常预算",
+      "depends_on": [
+        "P2-03"
+      ],
+      "outputs": [
+        "modules/opencode/src/recovery.mjs",
+        "modules/opencode/src/usage.mjs"
+      ],
+      "test_files": [
+        "tests/test_opencode_recovery.py"
+      ],
+      "acceptance_ids": [
+        "O11",
+        "O13",
+        "O14"
+      ],
+      "scope": "重启核对、持久来源事件、用量口径及空响应/重复操作/限流的有限处理。",
+      "done_when": [
+        "未知副作用先核对，不盲目恢复原生执行。",
+        "目录探测、鉴权与生成验收分开，不伪造 Token。",
+        "异常循环有明确有限终止条件。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P2-04"
+      ]
+    },
+    {
+      "id": "P3-01",
+      "phase": "P3",
+      "title": "OpenCode 前端基线与会话历史接入",
+      "depends_on": [
+        "P2-04"
+      ],
+      "outputs": [
+        "conversation/history.py",
+        "portal_adapter/history.js",
+        "portal_adapter/opencode/upstream.json",
+        "portal_adapter/opencode/package.json",
+        "portal_adapter/opencode/package-lock.json",
+        "portal_adapter/opencode/README.md"
+      ],
+      "test_files": [
+        "tests/test_portal_history.py"
+      ],
+      "acceptance_ids": [
+        "U01",
+        "U02",
+        "U07",
+        "U11"
+      ],
+      "scope": "基于 OpenCode 实际前端的会话列表、历史和客户端数据访问机制接入统一门面，保留助手壳与外观。先完成 E07 的上游来源/commit/许可/依赖与兼容性核查；history.js 仅做薄适配，不重写历史状态机或直接操作原生私有数据库。E01 仅提供本地样式及壳参考，E08 决定文件系统裁剪范围。",
+      "done_when": [
+        "最近10条首显、分页锚点、消息归属与修订稳定。",
+        "历史消息不重播动效，新消息按 ID 只一次。",
+        "完成真实页面适配前落实 E01 并记录真实浏览器证据。",
+        "upstream.json 记录实际上游仓库、commit、许可、采用文件及最小补丁；前端版本不从后端 SDK 版本推断。",
+        "复用的交互与原生数据访问有源码证据，不以仿制外观或重新自研状态机代替接入。",
+        "按 E08 确认范围裁剪文件系统功能，内部数据库和受控附件持久化仍可正常使用；未确认时不擅自删除工具。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P3-01"
+      ]
+    },
+    {
+      "id": "P3-02",
+      "phase": "P3",
+      "title": "OpenCode 发送接收与队列交互适配",
+      "depends_on": [
+        "P3-01"
+      ],
+      "outputs": [
+        "portal_adapter/conversation.js",
+        "portal_adapter/queue.js"
+      ],
+      "test_files": [
+        "tests/test_portal_delivery.py"
+      ],
+      "acceptance_ids": [
+        "U03",
+        "U04",
+        "U05",
+        "U06",
+        "U08",
+        "U09",
+        "U10",
+        "U15"
+      ],
+      "scope": "复用锁定 OpenCode 前端的输入、发送接收、回执、会话切换和队列交互，conversation.js/queue.js 仅承担通用门面适配；所属后端仍是执行队列唯一权威，不保留旧自研平行状态机。",
+      "done_when": [
+        "空闲不回弹，排队显示不等 AI 回复。",
+        "结束与下一项依来源顺序渲染，切页不暂停。",
+        "不支持的动作不冒充成功，调序带原队列修订。",
+        "发送、排队、撤回及切换交互来自已核对的上游组件/控制器，原控制器退出发送链；不双重提交或双重驱动队列。",
+        "上游与公共后端契约的差异集中在薄适配层，确需修改上游时有最小补丁及对应回归证据。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P3-02"
+      ]
+    },
+    {
+      "id": "P3-03",
+      "phase": "P3",
+      "title": "OpenCode 会话换肤与多后端能力展示",
+      "depends_on": [
+        "P3-02"
+      ],
+      "outputs": [
+        "portal_adapter/backends.js",
+        "portal_adapter/usage.js",
+        "portal_adapter/opencode/theme.css",
+        "portal_adapter/opencode/motion.css"
+      ],
+      "test_files": [
+        "tests/test_portal_backends.py"
+      ],
+      "acceptance_ids": [
+        "U12",
+        "U13",
+        "U14"
+      ],
+      "scope": "在复用的 OpenCode 会话前端定制助手样式和动效，两种完整后端共用交互；离线、能力差异和今天/7天/累计用量保持原契约，不将视觉修改变成另一套状态流转。",
+      "done_when": [
+        "界面不按具体后端名称决定发送行为。",
+        "一个后端离线不拖慢另一个，未报告用量不置零。",
+        "真实 UI 验收与夹具测试分开，完成需落实 E01。",
+        "主题与动效修改不改变任务归属、消息顺序、投递语义和队列调度；相同交互回归在换肤前后均通过。",
+        "文件系统裁剪遵守 E08，不通过隐藏按钮代替已确认要求移除的能力，不删除内部数据库或受控附件存储。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P3-03"
+      ]
+    },
+    {
+      "id": "P4-01",
+      "phase": "P4",
+      "title": "持久边界和恢复故障注入",
+      "depends_on": [
+        "P2-04"
+      ],
+      "outputs": [
+        "tests/test_recovery_faults.py"
+      ],
+      "test_files": [
+        "tests/test_recovery_faults.py"
+      ],
+      "acceptance_ids": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R09",
+        "R10",
+        "R11",
+        "R12"
+      ],
+      "scope": "独立于旧 UI 的故障验证，可以在 E01 阻塞时继续；覆盖落盘、回执丢失、未知动作和事件恢复。",
+      "done_when": [
+        "每个故障窗口有可重跑的验证，而不是只写结构断言。",
+        "外部不支持恰好一次时只证明不盲目重放。",
+        "保留原输入、最终结果和恢复核对线索。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P4-01"
+      ]
+    },
+    {
+      "id": "P4-02",
+      "phase": "P4",
+      "title": "隔离 压力和维护故障注入",
+      "depends_on": [
+        "P4-01"
+      ],
+      "outputs": [
+        "tests/test_isolation_faults.py"
+      ],
+      "test_files": [
+        "tests/test_isolation_faults.py"
+      ],
+      "acceptance_ids": [
+        "R06",
+        "R07",
+        "R08",
+        "R13",
+        "R14"
+      ],
+      "scope": "验证并发调序、实例隔离、PID 所有权、背压与维护；最终交付仍要求所有 P0-P3 工作完成。",
+      "done_when": [
+        "一套后端挂起或崩溃不连带其他实例。",
+        "高频输出和长历史资源有界，维护不丢队列。",
+        "记录可比较基线和限制，不以单个空会话代表整个性能验收。"
+      ],
+      "verification_commands": [
+        "python tools/validate_design.py",
+        "python tools/run_runtime_checks.py --task P4-02"
+      ]
+    }
+  ]
+}
