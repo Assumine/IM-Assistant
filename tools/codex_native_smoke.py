@@ -92,7 +92,7 @@ def _run(checkpoint):
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
         "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "e2e/regression/composer.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 129 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 131 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
@@ -144,7 +144,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["native direct-steer, per-token live-text UI and production host activation; native queue update/confirmed withdrawal, editor submission and committed draft/handoff recovery verified with fixtures",
+        "remaining": ["human-input UI, backend selection and production host activation; direct guidance, native queue controls, committed draft recovery and scoped live text verified with fixtures",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

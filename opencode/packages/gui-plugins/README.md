@@ -211,6 +211,12 @@ The native Stop action carries the observed turn ID. A different turn must rejec
 silently stopping newer work. Dispatched writes survive view navigation, while late UI results belong only to the
 original live view. Read requests and subscriptions still end with that view.
 `ctx.ui.BackendComposer` delegates to the app's real `ComposerEditor`, text interaction and submission capture.
+Native alternate delivery offers direct guidance only with a current running turn; its input captures that turn ID.
+A definitive `rejected` admission restores the text before any newer draft and clears the handoff once; it never
+silently becomes a queued task. Unknown delivery keeps its original input ID and turn guard for explicit checking.
+The whole-backend `content` event is an ephemeral, scoped text feed; history stays backend-owned. Stream IDs and
+UTF-16 offsets prevent repeated bridge events from duplicating text. A missing range reads one native snapshot;
+reading older records only shows the existing new-activity cue, without scrolling or polling for each fragment.
 Pass `execution`, `busy` and `control` to attach the native queue strip to that editor. The app owns the edit stash
 and restores the original draft on cancel; the backend owns queue identity, order and mutation. Edits use `update`
 on the original input ID rather than withdrawal and re-admission. A consumed input never becomes a new task.

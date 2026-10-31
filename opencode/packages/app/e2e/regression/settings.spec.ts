@@ -8,6 +8,132 @@ import { installSseTransport } from "../utils/sse-transport"
 import { backendEvent, backendRpc, backendTabs, backendHref } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 
+test("backends: live text deduplicates offsets, repairs one gap and preserves older reading", async ({ page }) => {
+  const alpha: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "same-thread" },
+    title: "Stream Alpha",
+    state: "running",
+  }
+
+  const beta: ConversationBackend.Thread = { ...alpha, ref: { ...alpha.ref, backendID: "beta" }, title: "Stream Beta" }
+
+  const entry: ConversationBackend.Entry = {
+    id: "live-item",
+    turnID: "live-turn",
+    kind: "assistant",
+    text: "",
+    partial: false,
+  }
+
+  const records: ConversationBackend.Entry[] = Array.from({ length: 20 }, (_, index) => ({
+    ...entry,
+    id: `old-${index}`,
+    turnID: "old-turn",
+    text: `Old record ${index}\n${"Earlier text.\n".repeat(8)}`,
+  }))
+
+  let current: ConversationBackend.Thread = alpha
+  let stored = records
+  let live: ConversationBackend.Entry[] = []
+  const reads = { alpha: 0, beta: 0 }
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeTextStream",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [alpha, beta]),
+    rpc: backendRpc({
+      list: () => [alpha, beta].map((thread) => ({ id: thread.ref.backendID, label: thread.title, browse: true })),
+      status: () => ({ authentication: null }),
+      history: ({ ref }) => {
+        if (ref.backendID === "beta") {
+          reads.beta++
+
+          return { thread: beta, items: [], content: { streamID: "beta-stream", items: [] } }
+        }
+
+        reads.alpha++
+
+        return { thread: current, items: stored, content: { streamID: "alpha-stream", items: live } }
+      },
+    }),
+  })
+
+  const snapshot = (text: string, done = false): ConversationBackend.Content => ({
+    type: "snapshot",
+    ref: alpha.ref,
+    streamID: "alpha-stream",
+    entry: { ...entry, text },
+    done,
+  })
+
+  const append = (offset: number, text: string): ConversationBackend.Content => ({
+    type: "append",
+    ref: alpha.ref,
+    streamID: "alpha-stream",
+    turnID: entry.turnID,
+    itemID: entry.id,
+    offset,
+    text,
+  })
+
+  const push = (events: ConversationBackend.Content[]) =>
+    workspace.push(events.map((event) => backendEvent("content", event, workspace.directory)))
+
+  await page.goto(backendHref(alpha.ref))
+  const history = page.getByRole("region", { name: "Conversation history" })
+  const viewport = history.locator("div[data-scrollable]")
+  await expect(history.getByText(records[19].text, { exact: true })).toBeVisible()
+  await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  await push([snapshot("Hel"), append(3, "lo"), append(3, "lo")])
+  await expect(history.getByText("Hello", { exact: true })).toHaveCount(1)
+  const paragraph = await history.getByText("Hello", { exact: true }).elementHandle()
+
+  if (!paragraph) throw new Error("Live text paragraph is missing")
+  await push([append(5, "🌟"), append(5, "🌟")])
+  await expect(history.getByText("Hello🌟", { exact: true })).toHaveCount(1)
+  expect(await paragraph.evaluate((element) => element.isConnected)).toBe(true)
+  expect(reads.alpha).toBe(1)
+  live = [{ ...entry, text: "Hello🌟 again" }]
+  await push([append(13, "!")])
+  await expect(history.getByText("Hello🌟 again!", { exact: true })).toHaveCount(1)
+  expect(reads.alpha).toBe(2)
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0
+  })
+  live = [{ ...entry, text: "Hello🌟 again! More" }]
+  await push([append(14, " More")])
+  await expect(history.getByRole("button", { name: "New activity — show latest records" })).toBeEnabled()
+  await expect(viewport).toHaveJSProperty("scrollTop", 0)
+  await expect(history.getByText("Hello🌟 again! More", { exact: true })).toHaveCount(0)
+  expect(reads.alpha).toBe(2)
+  await history.getByRole("button", { name: "New activity — show latest records" }).click()
+  await expect(history.getByText("Hello🌟 again! More", { exact: true })).toHaveCount(1)
+  await push([snapshot("The final native answer", true)])
+  await expect(history.getByText("The final native answer", { exact: true })).toHaveCount(1)
+  current = { ...alpha, state: "idle" }
+  live = []
+  stored = [...records, { ...entry, text: "The final native answer" }]
+  await workspace.push([backendEvent("activity", { ref: alpha.ref, change: "both" }, workspace.directory)])
+  await expect.poll(() => reads.alpha).toBe(4)
+  await expect(history.getByRole("button", { name: "Refresh latest records" })).toBeEnabled()
+  await push([append(23, "must-not-append"), snapshot("old start")])
+  await expect(history.getByText("The final native answer", { exact: true })).toHaveCount(1)
+  await expect(history.getByText("old start", { exact: true })).toHaveCount(0)
+  await page
+    .locator("[data-titlebar-tab-slot]")
+    .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: "Stream Beta" }) })
+    .locator("[data-titlebar-tab-link]")
+    .click()
+  await expect(history.getByText("No recorded history.", { exact: true })).toBeVisible()
+  await push([snapshot("Wrong backend")])
+  await expect(history.getByText("Wrong backend", { exact: true })).toHaveCount(0)
+  await push([{ ...snapshot("Beta text"), ref: beta.ref, streamID: "beta-stream" }])
+  await expect(history.getByText("Beta text", { exact: true })).toHaveCount(1)
+  expect(reads.beta).toBe(1)
+  await page.screenshot({ path: test.info().outputPath("whole-backend-live-text.png"), fullPage: true })
+})
+
 test("backends: native completion refreshes latest records without interrupting older reading", async ({ page }) => {
   const thread: ConversationBackend.Thread = {
     ref: { backendID: "alpha", threadID: "live-history" },

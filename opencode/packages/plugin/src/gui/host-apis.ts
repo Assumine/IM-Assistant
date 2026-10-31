@@ -2051,7 +2051,7 @@ export interface UiBackendComposerProps {
   /**
    * Submit one stable input through the public whole-backend admission service. The composer never starts a runner.
    * Only an explicit user action calls this, including retry/reconciliation with the unchanged input id and body.
-   * @param input - Captured text and original native target, with queue delivery.
+   * @param input - Captured text, original native target and delivery, including the turn guard for direct guidance.
    * A dispatched admission must survive view navigation; discard late UI results rather than canceling the write.
    */
   send(input: ConversationBackend.Input): Promise<ConversationBackend.Admission>

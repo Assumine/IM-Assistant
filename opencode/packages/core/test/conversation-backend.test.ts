@@ -2,7 +2,14 @@ import { expect } from "bun:test"
 import { Effect, Layer, Deferred, Fiber, Exit, Logger, Stream } from "effect"
 import type { Definition } from "@opencode/plugin/effect/conversation"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
-import { Api, type Activity, type Input, type Receipt } from "@opencode/schema/conversation-backend"
+import {
+  Api,
+  type Activity,
+  type Admission,
+  type Content,
+  type Input,
+  type Receipt,
+} from "@opencode/schema/conversation-backend"
 import { Database } from "@opencode/core/database/database"
 import { KV } from "@opencode/core/kv"
 import { Rpc } from "@opencode/core/rpc"
@@ -130,6 +137,16 @@ it.effect("execution observations and invalidations retain native ownership acro
     const example = fixture()
     const calls: object[] = []
     let emit = (_event: Activity) => {}
+    let emitContent = (_event: Content) => {}
+    let contentClosed = 0
+    const content: NonNullable<Definition["content"]> = {
+      subscribe: (listener) => {
+        emitContent = listener
+        return () => {
+          contentClosed++
+        }
+      },
+    }
     let unsubscribed = 0
     let mismatch = false
     const thread = { ref: input.ref, title: "Native task", state: "running" as const }
@@ -150,7 +167,7 @@ it.effect("execution observations and invalidations retain native ownership acro
         }
       },
     }
-    const registered = yield* host.register({ ...example.backend, execution })
+    const registered = yield* host.register({ ...example.backend, execution, content })
     const client = rpc.client(Api)
     const snapshot = yield* client.execution({ ref: input.ref, cursor: "native-cursor", limit: 1 })
     expect(snapshot.thread).toEqual(thread)
@@ -165,9 +182,27 @@ it.effect("execution observations and invalidations retain native ownership acro
     emit({ ref: { ...input.ref, backendID: "another" }, change: "execution" })
     emit({ ref: input.ref, change: "execution" })
     const old = emit
+    const textEvents = yield* client.events
+      .subscribe("content")
+      .pipe(Stream.take(2), Stream.runCollect, Effect.forkScoped({ startImmediately: true }))
+    const frame: Content = {
+      type: "append",
+      ref: input.ref,
+      streamID: "native-stream",
+      turnID: "native-turn",
+      itemID: "native-item",
+      offset: 0,
+      text: "prefix",
+    }
+    emitContent({ ...frame, ref: { ...input.ref, backendID: "other" } })
+    emitContent(frame)
+    const oldContent = emitContent
     yield* registered.dispose
     expect(unsubscribed).toBe(1)
-    yield* host.register({ ...example.backend, execution })
+    expect(contentClosed).toBe(1)
+    yield* host.register({ ...example.backend, execution, content })
+    oldContent({ ...frame, text: "stale-registration" })
+    emitContent({ ...frame, offset: 6, text: "suffix" })
     old({ ref: input.ref, change: "both" })
     emit({ ref: input.ref, change: "history" })
     expect(Array.from(yield* Fiber.join(observed)).map((event) => event.data)).toEqual([
@@ -175,6 +210,10 @@ it.effect("execution observations and invalidations retain native ownership acro
       { ref: input.ref, change: "history" },
     ])
     expect(example.admissions).toEqual([])
+    expect(Array.from(yield* Fiber.join(textEvents)).map((event) => event.data)).toEqual([
+      frame,
+      { ...frame, offset: 6, text: "suffix" },
+    ])
   }),
 )
 
@@ -332,9 +371,16 @@ it.effect("steering shares durable admission and cannot bypass it through the co
     const example = fixture()
     let status: "applied" | "not-found" = "applied"
     let failing = false
+    let decline = false
+    let attempts = 0
     const controls: object[] = []
-    yield* host.register({
+    const registered = yield* host.register({
       ...example.backend,
+      enqueue: async (request) => {
+        attempts++
+        if (decline) return { status: "rejected", reason: "not-accepted" }
+        return example.backend.enqueue(request)
+      },
       control: async (request) => {
         controls.push(request)
         if (failing) throw new Error("Private native failure must not escape")
@@ -373,6 +419,21 @@ it.effect("steering shares durable admission and cannot bypass it through the co
           .pipe(Effect.exit),
       ),
     ).toBe(true)
+    expect(example.admissions).toHaveLength(1)
+    decline = true
+    const refused = { ...steer, inputID: "refused-guidance" }
+    const rejection: Admission = {
+      status: "rejected",
+      reason: "not-accepted",
+      ref: input.ref,
+      inputID: refused.inputID,
+    }
+    expect(yield* client.send(refused)).toEqual(rejection)
+    expect(yield* client.send(refused)).toEqual(rejection)
+    expect(attempts).toBe(2)
+    yield* registered.dispose
+    yield* host.register(example.backend)
+    expect(yield* client.send(refused)).toEqual(rejection)
     expect(example.admissions).toHaveLength(1)
   }),
 )

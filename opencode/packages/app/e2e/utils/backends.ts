@@ -95,7 +95,7 @@ export function backendRpc(fixture: Fixture): NonNullable<MockServerConfig["rpc"
 }
 
 export function backendEvent(
-  name: "changed" | "authentication" | "activity",
+  name: "changed" | "authentication" | "activity" | "content",
   data: Schema.JsonObject,
   directory: string,
 ): OpenCodeEvent {

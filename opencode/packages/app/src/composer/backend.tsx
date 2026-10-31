@@ -1,4 +1,4 @@
-import { onCleanup, Show } from "solid-js"
+import { batch, onCleanup, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import type { UiBackendComposerProps, UiQueueView } from "@opencode/plugin/gui"
 import { Schema } from "effect"
@@ -47,7 +47,7 @@ export default function BackendComposer(props: UiBackendComposerProps) {
   const [state, setState] = createStore<{
     sending: boolean
     changing: boolean
-    notice?: "editMissing" | "withdrawMissing" | "partialInput"
+    notice?: "editMissing" | "withdrawMissing" | "partialInput" | "rejected" | "steerUnavailable"
   }>({ sending: false, changing: false })
 
   const lifetime = { closed: false }
@@ -65,6 +65,21 @@ export default function BackendComposer(props: UiBackendComposerProps) {
 
     if (lifetime.closed) return
     setState("sending", false)
+
+    if (admission?.status === "rejected") {
+      const restored = mergeQueuePrompt(
+        [{ type: "text", content: input.text, start: 0, end: input.text.length }],
+        draft.current(),
+      )
+
+      batch(() => {
+        draft.set(restored, promptLength(restored))
+        setStore("handoff", undefined)
+      })
+      setState("notice", "rejected")
+
+      return
+    }
 
     if (admission?.status !== "accepted") return
     setStore("handoff", undefined)
@@ -242,7 +257,9 @@ export default function BackendComposer(props: UiBackendComposerProps) {
     },
   }
 
-  const submit = () => {
+  const steerable = () => !blocked() && observed()?.thread.state === "running" && observed()?.turn?.state === "running"
+
+  const submit = (options?: { alternate?: boolean }) => {
     if (store.editing) {
       void saveEdit()
 
@@ -254,8 +271,18 @@ export default function BackendComposer(props: UiBackendComposerProps) {
     const text = prompt.flatMap((part) => (part.type === "text" ? [part.content] : [])).join("")
 
     if (!text.trim()) return
+    const turn = options?.alternate && steerable() ? observed()?.turn : undefined
+
+    if (options?.alternate && !turn) {
+      setState("notice", "steerUnavailable")
+
+      return
+    }
+
+    setState("notice", undefined)
     const submission = createComposerSubmission({ target: draft, prompt, context: [] })
-    setStore("handoff", { ref: props.threadRef, inputID: uuid(), text, delivery: "queue" })
+    const base = { ref: props.threadRef, inputID: uuid(), text }
+    setStore("handoff", turn ? { ...base, delivery: "steer", expectedTurnID: turn.id } : { ...base, delivery: "queue" })
     // Capture before clearing. Later typing belongs to the next draft and is never cleared by an old reply.
     submission.clear()
     void deliver()
@@ -281,6 +308,24 @@ export default function BackendComposer(props: UiBackendComposerProps) {
           (!store.editing || (!blocked() && !store.editing.unconfirmed)),
         stopping: () => false,
         held: () => state.sending || state.changing,
+        get queue() {
+          if (store.editing) return
+
+          return {
+            count: () => observed()?.queue.length ?? 0,
+            undoing: () => state.changing,
+            delivery: () => "queue" as const,
+            alternate: () => (steerable() ? ("steer" as const) : undefined),
+            editing: () => undefined,
+            confirmEdit: () => void saveEdit(),
+            cancelEdit,
+            editFirst: () => {
+              const first = observed()?.queue[0]
+
+              return first ? edit(first.nativeID) : false
+            },
+          }
+        },
         onSubmit: submit,
         onStop: () => {},
       },

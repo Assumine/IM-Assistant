@@ -26,7 +26,7 @@ type Handler = (body: Body, serial: number, url: URL) => Promise<Record<string, 
 function reply(serial: number, text = `native-reply-${serial}`) {
   return { id: `msg_${serial}`, type: "message", role: "assistant", status: "completed", content: [{ type: "output_text", text, annotations: [] }] }
 }
-function fixture(handler: Handler = (_, serial) => reply(serial)) {
+function fixture(handler: Handler = (_, serial) => reply(serial), stream?: { entered: () => void; release: Promise<void> }) {
   const requests: { body: Body; url: URL }[] = []
   const server = Bun.serve({
     hostname: "127.0.0.1", port: 0,
@@ -44,6 +44,25 @@ function fixture(handler: Handler = (_, serial) => reply(serial)) {
         { type: "response.output_item.done", output_index: 0, item },
         { type: "response.completed", response: { id: `resp_${serial}`, status: "completed", output: [item], usage: { input_tokens: 100, output_tokens: 5, total_tokens: 105, input_tokens_details: { cached_tokens: 0 } } } },
       ]
+      if (serial === 1 && stream) {
+        const encoder = new TextEncoder()
+        const fullText = "native-reply-1"
+        return new Response(new ReadableStream({
+          async start(controller) {
+            const push = (event: Record<string, unknown>) => controller.enqueue(encoder.encode(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`))
+            push(events[0])
+            push({ ...events[1], item: { ...item, status: "in_progress", content: [] } })
+            push({ type: "response.content_part.added", item_id: item.id, output_index: 0, content_index: 0, part: { type: "output_text", text: "", annotations: [] } })
+            push({ type: "response.output_text.delta", item_id: item.id, output_index: 0, content_index: 0, delta: "native-" })
+            stream.entered()
+            await stream.release
+            push({ type: "response.output_text.delta", item_id: item.id, output_index: 0, content_index: 0, delta: "reply-1" })
+            push({ type: "response.output_text.done", item_id: item.id, output_index: 0, content_index: 0, text: fullText })
+            push({ type: "response.content_part.done", item_id: item.id, output_index: 0, content_index: 0, part: { type: "output_text", text: fullText, annotations: [] } })
+            push(events[2]); push(events[3]); controller.close()
+          },
+        }), { headers: { "content-type": "text/event-stream" } })
+      }
       return new Response(events.map((event) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join(""), {
         headers: { "content-type": "text/event-stream" },
       })
@@ -318,14 +337,20 @@ describe("shared native service ownership", () => {
     const entered = deferred<void>()
     const release = deferred<void>()
     cleanup.push(() => release.resolve())
-    const upstream = fixture(async (_, serial) => {
-      if (serial === 1) { entered.resolve(); await release.promise }
-      return reply(serial)
-    })
+    const upstream = fixture(undefined, { entered: () => entered.resolve(), release: release.promise })
     const options = await managed(upstream.url)
     const adapter = await open(options.profile)
     const observer = observe(adapter)
     const backend = nativeBackend(adapter)
+    const previews: object[] = []
+    const previewed = deferred<void>()
+    const unsubscribeContent = backend.content?.subscribe((event) => {
+      previews.push(event)
+      if (event.type === "snapshot" && event.entry.text === "native-") previewed.resolve()
+      if (event.type === "append" && event.text === "native-") previewed.resolve()
+    })
+    if (!unsubscribeContent) throw new Error("Native content projection missing")
+    cleanup.push(unsubscribeContent)
     const execution = backend.execution
     if (!execution) throw new Error("Native execution adapter missing")
     const { thread } = await adapter.create()
@@ -340,6 +365,9 @@ describe("shared native service ownership", () => {
     cleanup.push(unsubscribe)
     await backend.enqueue({ ref, inputID: "execution-first", text: "First execution" })
     await entered.promise
+    await previewed.promise
+    const live = await backend.browse?.history(ref, { limit: 10 })
+    expect(live?.content?.items.map((item) => item.text)).toEqual(["native-"])
     const active = await execution.read(ref, { limit: 1 })
     expect(active.thread.state).toBe("running")
     expect(active.turn?.state).toBe("running")
@@ -350,6 +378,8 @@ describe("shared native service ownership", () => {
     const second = await backend.enqueue({ ref, inputID: "execution-second", text: "Second original" })
     const third = await backend.enqueue({ ref, inputID: "execution-third", text: "Third original" })
     const cancelled = await backend.enqueue({ ref, inputID: "execution-cancelled", text: "Must not execute" })
+    if (!("nativeID" in second) || !("nativeID" in third) || !("nativeID" in cancelled)) throw new Error("Native queue admission rejected")
+    expect(await backend.enqueue({ ref, inputID: "stale-guidance", text: "Must not steer", delivery: "steer", expectedTurnID: "stale-turn" })).toEqual({ status: "rejected", reason: "not-accepted" })
     const page = await execution.read(ref, { limit: 1 })
     expect(page.queue).toEqual([{ nativeID: second.nativeID, inputID: "execution-second", text: "Second original", partial: false }])
     expect(page.nextCursor).toBeString()
@@ -374,6 +404,14 @@ describe("shared native service ownership", () => {
     expect(text(upstream.requests[1].body)).toContain("Third original")
     expect(text(upstream.requests[2].body)).toContain("Second edited")
     expect(upstream.requests.every(({ body }) => !text(body).includes("Must not execute"))).toBe(true)
+    expect(upstream.requests.every(({ body }) => !text(body).includes("Must not steer"))).toBe(true)
+    expect(previews.some((event) => "type" in event && event.type === "append" && "offset" in event && event.offset === 7)).toBe(true)
+    expect((await backend.browse?.history(ref, {}))?.content?.items).toEqual([])
+    unsubscribeContent()
+    const fresh = backend.content?.subscribe(() => {})
+    if (!fresh) throw new Error("Native content projection missing")
+    expect((await backend.browse?.history(ref, {}))?.content?.streamID).not.toBe(live?.content?.streamID)
+    fresh()
   })
 
   test("read-only browsing preserves native IDs and page order without resuming or reading another workspace", async () => {
@@ -434,6 +472,7 @@ describe("shared native service ownership", () => {
     expect(upstream.requests).toHaveLength(3)
     const active = observe(reader)
     const receipt = await backend.enqueue({ ref, inputID: "browse-explicit-send", text: "continue-original-native-thread" })
+    if (!("nativeID" in receipt)) throw new Error("Native queue admission rejected")
     expect(receipt.kind).toBe("queued")
     await active.wait(completed)
     expect(upstream.requests).toHaveLength(4)

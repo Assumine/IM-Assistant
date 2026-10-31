@@ -132,6 +132,106 @@ test("whole backend: native editor preserves scoped drafts and reconciles a lost
   expect(sessions).toEqual([])
 })
 
+test("whole backend: direct guidance retains its turn guard and rejected text returns to the draft", async ({
+  page,
+}) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "guided" },
+    title: "Guided native task",
+    state: "running",
+  }
+
+  let value: ConversationBackend.Execution = { thread, turn: { id: "first-turn", state: "running" }, queue: [] }
+  const calls: ConversationBackend.Input[] = []
+  const entered = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  const seen = new Set<string>()
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeGuidance",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [thread]),
+    rpc: backendRpc({
+      list: () => [{ id: "native", label: thread.title, execution: true }],
+      status: () => ({ authentication: null }),
+      history: () => ({ thread, items: [] }),
+      execution: () => value,
+      send: async (input) => {
+        calls.push(input)
+
+        if (calls.length === 1) {
+          entered.resolve()
+          await released.promise
+
+          return { status: "rejected", reason: "not-accepted", ref: input.ref, inputID: input.inputID }
+        }
+
+        if (input.delivery === "steer" && !seen.has(input.inputID)) {
+          seen.add(input.inputID)
+
+          return { status: "uncertain", ref: input.ref, inputID: input.inputID }
+        }
+
+        return {
+          status: "accepted",
+          ref: input.ref,
+          inputID: input.inputID,
+          receipt: {
+            nativeID: input.delivery === "steer" ? "native-turn" : "native-queue",
+            kind: input.delivery === "steer" ? "steered" : "queued",
+          },
+        }
+      },
+    }),
+  })
+
+  await page.goto(backendHref(thread.ref))
+  const editor = page.locator('[data-component="composer-editor"]')
+  const composer = page.getByRole("region", { name: "Backend message input" })
+  await expect(editor).toBeEditable()
+  await editor.fill("Adjust this task")
+  await composer.locator('[data-action="composer-alternate-delivery"]').click()
+  await entered.promise
+  expect(calls[0]).toMatchObject({
+    delivery: "steer",
+    expectedTurnID: "first-turn",
+    text: "Adjust this task",
+    ref: thread.ref,
+  })
+  await editor.fill("Keep my next draft")
+  released.resolve()
+  await expect(editor).toHaveText("Adjust this task\n\nKeep my next draft")
+  await expect(composer.getByRole("alert")).toContainText("did not accept this input")
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toHaveCount(0)
+  value = { ...value, turn: { id: "second-turn", state: "running" } }
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+  await editor.fill("Guide the next turn")
+  await expect(composer.locator('[data-action="composer-alternate-delivery"]')).toBeEnabled()
+  await editor.press("ControlOrMeta+Enter")
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  expect(calls[1]).toMatchObject({ delivery: "steer", expectedTurnID: "second-turn", text: "Guide the next turn" })
+  await expect.poll(() => readBackendDraft(page, SERVER, thread.ref)).toMatchObject({ handoff: calls[1] })
+  value = { ...value, turn: { id: "later-turn", state: "running" } }
+  await page.reload()
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  expect(calls).toHaveLength(2)
+  await composer.getByRole("button", { name: "Retry or check delivery" }).click()
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toHaveCount(0)
+  expect(calls[2]).toEqual(calls[1])
+  value = { ...value, turn: { id: "later-turn", state: "completed" } }
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+  await editor.fill("A separate queued task")
+  await expect(composer.locator('[data-action="composer-alternate-delivery"]')).toHaveCount(0)
+  await editor.press("ControlOrMeta+Enter")
+  await expect(composer.getByRole("alert")).toContainText("no available running turn")
+  expect(calls).toHaveLength(3)
+  await editor.press("Enter")
+  await expect.poll(() => calls.length).toBe(4)
+  expect(calls[3]).toMatchObject({ delivery: "queue", text: "A separate queued task" })
+  expect(calls[3]).not.toHaveProperty("expectedTurnID")
+})
+
 test("whole backend: uncertain admission survives reload without automatic resend", async ({ page }) => {
   const thread: ConversationBackend.Thread = {
     ref: { backendID: "native", threadID: "uncertain-thread" },

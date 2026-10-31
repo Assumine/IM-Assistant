@@ -1,5 +1,5 @@
 import { For, onCleanup, Show } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createStore, reconcile } from "solid-js/store"
 import { createKeyed, usePlugin, type ServerRef } from "@opencode/plugin/gui"
 import { ConversationBackend } from "@opencode/schema/conversation-backend"
 import { Dialog, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
@@ -48,7 +48,70 @@ export function ConversationBrowser(props: {
       const controller = new AbortController()
       const options = { signal: controller.signal }
       const rpc = client.rpc(ConversationBackend.Api)
-      const version = { list: 0, history: 0 }
+      const version = { list: 0, history: 0, dirty: false }
+      const pending: ConversationBackend.Content[] = []
+      const active = new Set<string>()
+      const finished = new Set<string>()
+      const gaps = new Set<string>()
+      const itemKey = (turnID: string, id: string) => `${turnID}\0${id}`
+
+      const apply = (event: ConversationBackend.Content) => {
+        const history = state.history
+
+        if (!history || history.content?.streamID !== event.streamID) return true
+        const turnID = event.type === "snapshot" ? event.entry.turnID : event.turnID
+        const id = event.type === "snapshot" ? event.entry.id : event.itemID
+        const key = itemKey(turnID, id)
+        const index = history.items.findIndex((item) => item.turnID === turnID && item.id === id)
+        const current = history.items[index]
+
+        if (event.type === "snapshot") {
+          if (event.entry.kind !== "assistant" || (!event.done && finished.has(key))) return true
+
+          if (event.done) {
+            finished.add(key)
+            active.delete(key)
+          } else {
+            // A delayed start cannot replace a longer native record already read from history.
+            if (current && !active.has(key) && current.text.length >= event.entry.text.length) return true
+            active.add(key)
+          }
+
+          if (current && !event.done && current.text.startsWith(event.entry.text)) return true
+
+          const items =
+            index < 0
+              ? [...history.items, event.entry]
+              : history.items.map((item, at) => (at === index ? event.entry : item))
+
+          setState("history", reconcile({ ...history, items }, { key: null, merge: true }))
+
+          return true
+        }
+
+        if (finished.has(key) || !active.has(key)) return true
+
+        if (!current || event.offset > current.text.length) return false
+
+        if (event.offset < current.text.length)
+          return current.text.slice(event.offset, event.offset + event.text.length) === event.text
+
+        const items = history.items.map((item, at) =>
+          at === index ? { ...item, text: current.text + event.text } : item,
+        )
+
+        setState("history", reconcile({ ...history, items }, { key: null, merge: true }))
+
+        return true
+      }
+
+      const follow = () => {
+        const element = viewport
+        queueMicrotask(() => {
+          if (!controller.signal.aborted && viewport === element && element) element.scrollTop = element.scrollHeight
+        })
+      }
+
       onCleanup(() => controller.abort())
       setState({ connected: true, listing: false, reading: false })
 
@@ -58,6 +121,8 @@ export function ConversationBrowser(props: {
         if (older && !cursor) return
         const revision = ++version.history
         const existing = state.selected?.ref.threadID === thread.ref.threadID ? state.history : undefined
+        pending.length = 0
+        version.dirty = false
         setState({ selected: thread, history: existing, reading: true, updated: false, error: undefined })
 
         const current = () =>
@@ -71,6 +136,7 @@ export function ConversationBrowser(props: {
 
             // The user can start reading older records while a lifecycle refresh is in flight.
             if (background && !atEnd()) {
+              pending.length = 0
               setState({ reading: false, updated: true })
 
               return
@@ -84,7 +150,38 @@ export function ConversationBrowser(props: {
               ? [...page.items.filter((item) => !seen.has(`${item.turnID}\0${item.id}`)), ...(existing?.items ?? [])]
               : page.items
 
-            setState({ selected: page.thread, history: { ...page, items }, reading: false })
+            const live = older ? [] : (page.content?.items ?? [])
+
+            const combined = items.map(
+              (item) => live.find((entry) => entry.turnID === item.turnID && entry.id === item.id) ?? item,
+            )
+
+            const known = new Set(combined.map((item) => itemKey(item.turnID, item.id)))
+
+            if (!older) {
+              active.clear()
+              finished.clear()
+            }
+
+            for (const entry of live) active.add(itemKey(entry.turnID, entry.id))
+
+            if (page.thread.state === "idle")
+              for (const entry of combined)
+                if (entry.kind === "assistant") finished.add(itemKey(entry.turnID, entry.id))
+            setState({
+              selected: page.thread,
+              history: {
+                ...page,
+                content: older ? existing?.content : page.content,
+                items: [...combined, ...live.filter((entry) => !known.has(itemKey(entry.turnID, entry.id)))],
+              },
+              reading: false,
+            })
+
+            for (const event of pending.splice(0)) {
+              if (older || !apply(event)) setState("updated", true)
+            }
+
             props.onThread?.(page.thread)
             // Text records have synchronous layout; preserve the visible record when prepending an older page.
             queueMicrotask(() => {
@@ -93,7 +190,7 @@ export function ConversationBrowser(props: {
                 older && previous ? previous.top + element.scrollHeight - previous.height : element.scrollHeight
 
               // A completion during this read may describe newer native data. Coalesce it after the current page.
-              if (state.updated && !older && atEnd()) read(page.thread, false, true)
+              if (version.dirty && !older && atEnd()) read(page.thread, false, true)
             })
           },
           () => {
@@ -138,7 +235,47 @@ export function ConversationBrowser(props: {
         ),
       )
 
-      if (props.embedded)
+      if (props.embedded) {
+        onCleanup(
+          rpc.events.on(
+            "content",
+            ({ data: event }) => {
+              const thread = state.selected
+
+              if (!thread || event.ref.backendID !== thread.ref.backendID || event.ref.threadID !== thread.ref.threadID)
+                return
+
+              if (state.reading) {
+                pending.push(event)
+
+                return
+              }
+
+              if (state.history?.content?.streamID !== event.streamID) return
+
+              if (!atEnd()) {
+                setState("updated", true)
+
+                return
+              }
+
+              if (!apply(event)) {
+                const key = `${event.streamID}\0${event.type === "snapshot" ? event.entry.turnID : event.turnID}\0${event.type === "snapshot" ? event.entry.id : event.itemID}`
+                setState("updated", true)
+
+                if (gaps.has(key)) return
+                gaps.add(key)
+                read(thread, false, true)
+                pending.push(event)
+
+                return
+              }
+
+              follow()
+            },
+            options,
+          ),
+        )
         onCleanup(
           rpc.events.on(
             "activity",
@@ -156,6 +293,8 @@ export function ConversationBrowser(props: {
               if (state.reading || !atEnd()) {
                 setState("updated", true)
 
+                if (state.reading) version.dirty = true
+
                 return
               }
 
@@ -164,6 +303,7 @@ export function ConversationBrowser(props: {
             options,
           ),
         )
+      }
 
       if (!props.thread) list()
 

@@ -27,6 +27,10 @@ export function Execution(props: {
 
   let inspect = () => {}
 
+  let send = async (_input: ConversationBackend.Input): Promise<ConversationBackend.Admission> => {
+    throw new Error("Backend unavailable")
+  }
+
   let control = async (_action: ConversationBackend.Control): Promise<ConversationBackend.ControlResult> => {
     throw new Error("Backend unavailable")
   }
@@ -99,6 +103,14 @@ export function Execution(props: {
       }
 
       inspect = list
+      send = async (input) => {
+        if (lifetime.signal.aborted || !state.supported) throw new Error("Backend unavailable")
+        const admission = await rpc.send(input)
+
+        if (!lifetime.signal.aborted && admission.status === "rejected") refresh()
+
+        return admission
+      }
 
       control = async (action) => {
         if (lifetime.signal.aborted || busy()) throw new Error("Backend unavailable")
@@ -212,14 +224,7 @@ export function Execution(props: {
           execution={state.value}
           busy={busy()}
           control={(action) => control(action)}
-          send={(input) => {
-            const server = props.serverRef()
-
-            if (!server?.connected || !server.compatible || !state.supported)
-              return Promise.reject(new Error("Backend unavailable"))
-
-            return server.client.rpc(ConversationBackend.Api).send(input)
-          }}
+          send={(input) => send(input)}
           onAccepted={() => {
             refresh()
             props.onAccepted?.()

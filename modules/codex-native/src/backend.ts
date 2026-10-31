@@ -1,6 +1,8 @@
 import type { Definition } from "../../../opencode/packages/plugin/src/effect/conversation"
 import type { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
 import type { CodexSessionAdapter, Thread, ItemEntry } from "./session-adapter"
+import { NativeError } from "./connection"
+import { nativeContent } from "./content"
 
 // Native responses are JSON-RPC values. The host's public RPC schema validates them again.
 const json = async (response: Promise<unknown>) => await response as Awaited<ReturnType<Definition["create"]>>
@@ -8,12 +10,14 @@ const json = async (response: Promise<unknown>) => await response as Awaited<Ret
 export function nativeBackend(adapter: CodexSessionAdapter): Definition {
   if (adapter.runtimeInfo().mode !== "shared") throw new Error("Managed backend requires the shared native service")
   const descriptor = { id: "codex-native", label: "Codex", browse: true, execution: true }
+  const content = nativeContent(adapter, descriptor.id)
   const owned = async (ref: ConversationBackend.Ref) => {
     if (ref.backendID !== descriptor.id) throw new Error("Different native backend")
     return adapter.readOwned(ref.threadID)
   }
   return {
     descriptor,
+    content: { subscribe: content.subscribe },
     execution: {
       read: async (ref, pagination) => {
         if (ref.backendID !== descriptor.id) throw new Error("Different native backend")
@@ -52,6 +56,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
           thread: threadView(page.thread, descriptor.id),
           items: page.data.map(entryView).reverse(),
           nextCursor: page.nextCursor ?? undefined,
+          content: content.snapshot(ref.threadID),
         }
       },
     },
@@ -107,7 +112,13 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
     enqueue: async (input) => {
       const thread = await owned(input.ref)
       if (input.delivery === "steer") {
-        const result = await adapter.steer(input.ref.threadID, input.expectedTurnID, input.inputID, input.text)
+        const result = await adapter.steer(input.ref.threadID, input.expectedTurnID, input.inputID, input.text).catch((error) => {
+          // The pinned native protocol rejects invalid requests/parameters before accepting guidance.
+          // Internal errors and transport loss remain unknown; never infer rejection from error prose.
+          if (error instanceof NativeError && (error.code === -32600 || error.code === -32602)) return undefined
+          throw error
+        })
+        if (!result) return { status: "rejected", reason: "not-accepted" }
         return { nativeID: result.turnId, kind: "steered" }
       }
       // A persisted, unloaded thread accepts queue/add but cannot drain until an explicit resume.
@@ -136,7 +147,10 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       if (messages.length > 1) throw new Error("Ambiguous native messages")
       if (typeof messages[0]?.id === "string") return { nativeID: messages[0].id, kind: "message" }
     },
-    subscribe: (listener) => adapter.subscribe((event) => listener(event as unknown as Awaited<ReturnType<Definition["create"]>>)),
+    subscribe: (listener) => adapter.subscribe((event) => {
+      // Text fragments have their own scoped, offset-aware projection, not a duplicate raw public event.
+      if (event.method !== "item/agentMessage/delta") listener(event as unknown as Awaited<ReturnType<Definition["create"]>>)
+    }),
     onClose: (listener) => adapter.onClose(listener),
   }
 }

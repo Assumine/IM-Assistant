@@ -13,6 +13,7 @@ const Stored = Schema.Struct({
   inputID: Schema.String,
   fingerprint: Schema.String,
   receipt: Schema.optional(ConversationBackend.Receipt),
+  rejection: Schema.optional(ConversationBackend.Rejection),
 })
 
 interface Interface extends ConversationDomain {
@@ -29,6 +30,7 @@ const layer = Layer.effect(
     const changed = new Set<() => void>()
     const authentication = new Set<(backendID: string, event: ConversationBackend.AuthenticationEvent) => void>()
     const activity = new Set<(event: ConversationBackend.Activity) => void>()
+    const content = new Set<(event: ConversationBackend.Content) => void>()
     const register: ConversationDomain["register"] = Effect.fn("ConversationBackend.register")(function* (backend) {
       const descriptor = yield* Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Descriptor))(
         backend.descriptor,
@@ -43,6 +45,18 @@ const layer = Layer.effect(
           for (const listener of authentication) listener(descriptor.id, event)
         }) ?? (() => {})
       let stopped = false
+      const unsubscribeContent =
+        backend.content?.subscribe((event) => {
+          if (stopped || backends.get(descriptor.id) !== backend) return
+          let decoded: ConversationBackend.Content
+          try {
+            decoded = Schema.decodeUnknownSync(Schema.toType(ConversationBackend.Content))(event)
+          } catch {
+            return
+          }
+          if (decoded.ref.backendID !== descriptor.id) return
+          for (const listener of content) listener(decoded)
+        }) ?? (() => {})
       const unsubscribeActivity =
         backend.execution?.subscribe((event) => {
           if (stopped || backends.get(descriptor.id) !== backend) return
@@ -66,6 +80,7 @@ const layer = Layer.effect(
         unsubscribe()
         unsubscribeAuthentication()
         unsubscribeActivity()
+        unsubscribeContent()
         unsubscribeClose()
       }
       const dispose = Effect.sync(remove)
@@ -221,12 +236,21 @@ const layer = Layer.effect(
             }
             if ("receipt" in current && current.receipt)
               return { status: "accepted" as const, ref: input.ref, inputID: input.inputID, receipt: current.receipt }
+            if ("rejection" in current && current.rejection)
+              return { ...current.rejection, ref: input.ref, inputID: input.inputID }
             // An interrupted or concurrent request is never sent again. Only native state can confirm delivery.
             const result = yield* Effect.tryPromise({
               try: () => (first ? backend.enqueue(input) : backend.reconcile(input.ref, input.inputID)),
               catch: () => undefined,
             }).pipe(Effect.catch(() => Effect.succeed(undefined)))
             if (!result) return { status: "uncertain" as const, ref: input.ref, inputID: input.inputID }
+            if ("status" in result && result.status === "rejected") {
+              const rejection = yield* Schema.decodeUnknownEffect(ConversationBackend.Rejection)(result).pipe(
+                Effect.orDie,
+              )
+              yield* kv.set(key, { ...stored, rejection })
+              return { ...rejection, ref: input.ref, inputID: input.inputID }
+            }
             const receipt = yield* Schema.decodeUnknownEffect(ConversationBackend.Receipt)(result).pipe(Effect.orDie)
             yield* kv.set(key, { ...stored, receipt })
             return { status: "accepted" as const, ref: input.ref, inputID: input.inputID, receipt }
@@ -238,6 +262,10 @@ const layer = Layer.effect(
         void run(registration.events.emit("notification", { backendID, notification })).catch(() => undefined)
       }
       listeners.add(listener)
+      const onContent = (event: ConversationBackend.Content) => {
+        void run(registration.events.emit("content", event)).catch(() => undefined)
+      }
+      content.add(onContent)
       const onChanged = () => {
         void run(registration.events.emit("changed", {})).catch(() => undefined)
       }
@@ -256,6 +284,7 @@ const layer = Layer.effect(
           changed.delete(onChanged)
           authentication.delete(onAuthentication)
           activity.delete(onActivity)
+          content.delete(onContent)
         }),
       )
     })

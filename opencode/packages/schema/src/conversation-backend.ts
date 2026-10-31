@@ -15,9 +15,13 @@ export const Input = Schema.Union([
 export type Input = typeof Input.Type
 export const Receipt = Schema.Struct({ nativeID: ID, kind: Schema.Literals(["queued", "steered", "message"]) })
 export type Receipt = typeof Receipt.Type
+// A definitive backend refusal, not a timeout or an ambiguous delivery failure. Never contains private error text.
+export const Rejection = Schema.Struct({ status: Schema.Literal("rejected"), reason: Schema.Literal("not-accepted") })
+export interface Rejection extends Schema.Schema.Type<typeof Rejection> {}
 export const Admission = Schema.Union([
   Schema.Struct({ status: Schema.Literal("accepted"), ref: Ref, inputID: ID, receipt: Receipt }),
   Schema.Struct({ status: Schema.Literal("uncertain"), ref: Ref, inputID: ID }),
+  Schema.Struct({ ...Rejection.fields, ref: Ref, inputID: ID }),
 ])
 export type Admission = typeof Admission.Type
 export const Page = {
@@ -74,6 +78,8 @@ export const History = Schema.Struct({
   // Each page is chronological; nextCursor requests an earlier page.
   items: Schema.Array(Entry),
   nextCursor: optional(Schema.String),
+  // Ephemeral active text, scoped to this live backend connection. It is not another history database.
+  content: optional(Schema.Struct({ streamID: ID, items: Schema.Array(Entry) })),
 })
 export type History = typeof History.Type
 
@@ -96,6 +102,20 @@ export const Execution = Schema.Struct({
 // Invalidation only. Consumers re-read the relevant visible data; this is not a replayable execution log.
 export interface Activity extends Schema.Schema.Type<typeof Activity> {}
 export const Activity = Schema.Struct({ ref: Ref, change: Schema.Literals(["execution", "history", "both"]) })
+// Native ordered text feed. Offsets count UTF-16 code units, matching JS strings; a new connection has a new stream ID.
+export const Content = Schema.Union([
+  Schema.Struct({ type: Schema.Literal("snapshot"), ref: Ref, streamID: ID, entry: Entry, done: Schema.Boolean }),
+  Schema.Struct({
+    type: Schema.Literal("append"),
+    ref: Ref,
+    streamID: ID,
+    turnID: ID,
+    itemID: ID,
+    offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    text: Schema.String,
+  }),
+])
+export type Content = typeof Content.Type
 
 // Display projections only: credentials, OAuth tokens and native configuration never cross this surface.
 export const Account = Schema.Struct({
@@ -187,6 +207,7 @@ export const Api = Rpc.define({
     send: { input: Schema.toStandardSchemaV1(Input), output: Schema.toStandardSchemaV1(Admission), errors },
   },
   events: {
+    content: { schema: Schema.toStandardSchemaV1(Content) },
     activity: { schema: Schema.toStandardSchemaV1(Activity) },
     changed: { schema: Schema.toStandardSchemaV1(Schema.Struct({})) },
     authentication: { schema: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID, event: AuthenticationEvent })) },

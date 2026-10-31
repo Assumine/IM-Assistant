@@ -137,6 +137,19 @@ async function round(resume: boolean) {
           call("send", { ref, inputID: "host-pending", text: "native-pending" }),
         )
         assert.deepEqual(retried, receipt)
+        const refused = {
+          ref,
+          inputID: "host-stale-steer",
+          text: "native-adjustment",
+          delivery: "steer",
+          expectedTurnID: "stale-turn",
+        }
+        assert.deepEqual(yield* Effect.promise(() => call("send", refused)), {
+          ref,
+          inputID: refused.inputID,
+          status: "rejected",
+          reason: "not-accepted",
+        })
         assert.equal(requests.length, 4)
         checks.push("application SQLite restart returns the same receipt without native re-admission")
         const disconnected = Promise.withResolvers<void>()
@@ -176,6 +189,10 @@ async function round(resume: boolean) {
       assert.equal(steered.status, "accepted")
       if (steered.status === "accepted") assert.equal(steered.receipt.kind, "steered")
       assert.deepEqual(yield* Effect.promise(() => call("send", adjustment)), steered)
+      const refused = { ...adjustment, inputID: "host-stale-steer", expectedTurnID: "stale-turn" }
+      const rejection = { ref, inputID: refused.inputID, status: "rejected", reason: "not-accepted" }
+      assert.deepEqual(yield* Effect.promise(() => call("send", refused)), rejection)
+      assert.deepEqual(yield* Effect.promise(() => call("send", refused)), rejection)
       checks.push("steering uses the same admission ID and the native active-turn guard")
       const duplicated = yield* Effect.promise(() =>
         Promise.all(

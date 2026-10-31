@@ -21,6 +21,10 @@ export const dict = {
     "Withdrawal unconfirmed. Check native execution. The original text is retained below; it has not been restored or resent.",
   "backend.composer.withdrawMissing": "This message already left the queue. It has not been restored into the draft.",
   "backend.composer.dismissWithdrawal": "Dismiss withdrawal record",
+  "backend.composer.rejected":
+    "The backend did not accept this input. Its text has been restored to your draft; it has not been queued or resent.",
+  "backend.composer.steerUnavailable":
+    "There is no available running turn to guide. Your draft is kept; Enter queues a separate task.",
   "backend.view.unavailable": "This conversation view is unavailable. Its original backend reference has been kept.",
   "settings.providers.connection.add": "Add compatible API",
   "settings.providers.connection.description":

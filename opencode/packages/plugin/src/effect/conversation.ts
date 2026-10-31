@@ -9,13 +9,20 @@ export interface Definition {
   readonly create: () => Promise<Schema.Json>
   readonly query: (query: ConversationBackend.Query) => Promise<Schema.Json>
   readonly control: (control: ConversationBackend.Control) => Promise<ConversationBackend.ControlResult>
-  readonly enqueue: (input: ConversationBackend.Input) => Promise<ConversationBackend.Receipt>
+  // Rejection is permitted only when the native backend confirms non-acceptance. Ambiguous failures must throw.
+  readonly enqueue: (
+    input: ConversationBackend.Input,
+  ) => Promise<ConversationBackend.Receipt | ConversationBackend.Rejection>
   readonly reconcile: (
     ref: ConversationBackend.Ref,
     inputID: string,
   ) => Promise<ConversationBackend.Receipt | undefined>
   readonly subscribe: (listener: (notification: Schema.Json) => void) => () => void
   readonly onClose?: (listener: () => void) => () => void
+  // Optional ephemeral native text feed. Completed history still comes from browse.history.
+  readonly content?: {
+    readonly subscribe: (listener: (event: ConversationBackend.Content) => void) => () => void
+  }
   // Optional native run/queue projection; observers never own execution or automatically replay controls.
   readonly execution?: {
     readonly read: (
