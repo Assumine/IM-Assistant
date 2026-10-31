@@ -3,6 +3,7 @@ import type { ConversationBackend } from "../../../opencode/packages/schema/src/
 import type { CodexSessionAdapter, Thread, ItemEntry } from "./session-adapter"
 import { NativeError } from "./connection"
 import { nativeContent } from "./content"
+import { nativeQuestions } from "./questions"
 
 // Native responses are JSON-RPC values. The host's public RPC schema validates them again.
 const json = async (response: Promise<unknown>) => await response as Awaited<ReturnType<Definition["create"]>>
@@ -11,6 +12,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
   if (adapter.runtimeInfo().mode !== "shared") throw new Error("Managed backend requires the shared native service")
   const descriptor = { id: "codex-native", label: "Codex", browse: true, execution: true }
   const content = nativeContent(adapter, descriptor.id)
+  const questions = nativeQuestions(adapter, descriptor.id)
   const owned = async (ref: ConversationBackend.Ref) => {
     if (ref.backendID !== descriptor.id) throw new Error("Different native backend")
     return adapter.readOwned(ref.threadID)
@@ -29,9 +31,11 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
             nativeID: submission.id, inputID: submission.clientUserMessageId, ...inputView(submission.input),
           })),
           nextCursor: snapshot.queue.nextCursor ?? undefined,
+          questions: questions.snapshot(ref.threadID),
         }
       },
       subscribe: (listener) => {
+        const unsubscribeQuestions = questions.subscribe(listener)
         let closed = false
         const unsubscribe = adapter.subscribe((event) => {
           const change = activity(event.method)
@@ -42,7 +46,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
             if (!closed) listener({ ref: { backendID: descriptor.id, threadID }, change })
           }, () => undefined)
         })
-        return () => { closed = true; unsubscribe() }
+        return () => { closed = true; unsubscribe(); unsubscribeQuestions() }
       },
     },
     browse: {
@@ -100,6 +104,8 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
     control: async (control) => {
       await adapter.readOwned(control.threadID)
       switch (control.action) {
+        case "answer": return questions.respond(control.threadID, control.questionID, control.answers)
+        case "dismiss-question": return questions.respond(control.threadID, control.questionID)
         case "withdraw": return { status: (await adapter.withdraw(control.threadID, control.nativeID)).deleted ? "applied" : "not-found" }
         case "guide": await adapter.guide(control.threadID, control.nativeID); break
         case "update": await adapter.update(control.threadID, control.nativeID, control.text); break

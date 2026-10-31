@@ -285,7 +285,9 @@
         "opencode/packages/app/src/composer/state.ts",
         "opencode/packages/app/src/composer/queue-draft.ts",
         "opencode/packages/app/src/session/composer/queue.ts",
-        "modules/codex-native/src/content.ts"
+        "modules/codex-native/src/content.ts",
+        "modules/codex-native/src/questions.ts",
+        "modules/codex-native/test/connection.test.ts"
       ],
       "verification": [
         {
@@ -293,14 +295,14 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 239,
+          "tests_run": 245,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
           "publication": "disabled",
           "native_http_checks": 10,
-          "native_unit_tests": 77,
+          "native_unit_tests": 83,
           "browser_tests": 162
         }
       ],

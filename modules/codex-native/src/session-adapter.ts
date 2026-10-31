@@ -1,5 +1,6 @@
 import { Transport, type Launch, type Notification } from "./transport"
 import type { Connection } from "./connection"
+import type { UserInputRequest } from "./connection"
 import path from "node:path"
 
 export interface Thread {
@@ -64,6 +65,12 @@ export class CodexSessionAdapter {
   runtimeInfo() { return this.native.info() }
   onClose(listener: () => void) { return this.native.onClose(listener) }
   close() { return this.native.close() }
+  onUserInput(listener: (request: UserInputRequest) => void) { return this.native.onUserInput(listener) }
+  userInput(requestID: number | string) { return this.native.userInput(requestID) }
+  answerUserInput(requestID: number | string, answers: Record<string, { answers: readonly string[] }>) {
+    return this.native.answerUserInput(requestID, { answers })
+  }
+  rejectUserInput(requestID: number | string) { this.native.rejectUserInput(requestID) }
 
   create() {
     return this.native.request<{ thread: Thread }>("thread/start", {

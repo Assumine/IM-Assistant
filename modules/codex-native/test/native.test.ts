@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url"
 import { CodexSessionAdapter, createProfile, createSharedProfile, stopSharedService, loadProfile, nativeBackend, NativeError, OutcomeUnknown, type Notification, type Profile } from "../src"
 import { policy } from "../src/profile"
 import { Transport } from "../src/transport"
+import type { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
 
 const executable = process.env.IM_CODEX_EXECUTABLE
 const root = process.env.IM_CODEX_TEST_ROOT
@@ -110,6 +111,131 @@ function text(body: Body) {
 }
 
 describe("real Codex App Server (local synthetic model, no user credentials)", () => {
+  test("human input stays pending across observers, validates scoped answers and waits for native resolution", async () => {
+    const entered = deferred<void>()
+    const release = deferred<void>()
+    cleanup.push(() => release.resolve())
+    const upstream = fixture(async (_, serial) => {
+      if (serial === 1) { entered.resolve(); await release.promise }
+      return serial <= 5 && serial % 2 === 1 ? {
+        id: `fc_question_${serial}`, call_id: `call_question_${serial}`, type: "function_call", name: "request_user_input", status: "completed",
+        arguments: JSON.stringify({ questions: [
+          { id: "choice", header: "Pick", question: "Choose a direction", options: [{ label: "Alpha", description: "First" }, { label: "Beta", description: "Second" }] },
+          { id: "detail", header: "Detail", question: "What should we keep?", options: [{ label: "Simple", description: "Keep it small" }, { label: "Full", description: "Include details" }] },
+        ] }),
+      } : reply(serial)
+    })
+    const options = await managed(upstream.url)
+    const first = await open(options.profile)
+    const second = await open(options.profile)
+    const observer = observe(first)
+    const other = observe(second)
+    const backend = nativeBackend(first)
+    const execution = backend.execution!
+    const { thread } = await first.create()
+    const wrong = await first.create()
+    const ref = { backendID: backend.descriptor.id, threadID: thread.id }
+    const pending = deferred<ConversationBackend.Question>()
+    const readErrors: unknown[] = []
+    const subscribe = () => execution.subscribe((event) => {
+      if (event.ref.threadID !== thread.id) return
+      void execution.read(ref, {}).then((snapshot) => { if (snapshot.questions?.[0]) pending.resolve(snapshot.questions[0]) }, (error) => { readErrors.push(error) })
+    })
+    let detach = subscribe()
+    cleanup.push(() => detach())
+    const wire = await Transport.open(options)
+    cleanup.push(() => wire.close())
+    // Explicit native test setup only: production never switches Default threads to Plan to force a question.
+    await wire.request("thread/settings/update", { threadId: thread.id, collaborationMode: {
+      mode: "plan", settings: { model: "local-fixture", reasoning_effort: null, developer_instructions: null },
+    } })
+    await backend.enqueue({ ref, inputID: "question-input", text: "Ask which direction" })
+    await entered.promise
+    await second.resume(thread.id)
+    release.resolve()
+    const question = await pending.promise
+    expect(question.state).toBe("pending")
+    expect(question.blocking).toBe(true)
+    expect(question.prompts.map((prompt) => prompt.id)).toEqual(["choice", "detail"])
+    expect(question.id).not.toBe("0")
+    expect(upstream.requests).toHaveLength(1)
+    expect((await first.read(thread.id)).thread.status.activeFlags).toContain("waitingOnUserInput")
+    const answer = { action: "answer" as const, threadID: thread.id, questionID: question.id, answers: { choice: ["Alpha"], detail: ["Keep the current layout"] } }
+    expect(await backend.control({ ...answer, threadID: wrong.thread.id })).toEqual({ status: "not-found" })
+    await expect(backend.control({ ...answer, answers: { choice: ["Alpha"] } })).rejects.toThrow("Invalid human input")
+    await expect(backend.control({ ...answer, answers: { ...answer.answers, private: ["must-not-apply"] } })).rejects.toThrow("Invalid human input")
+    await expect(backend.control({ ...answer, answers: { choice: ["Alpha", "Beta"], detail: ["Full"] } })).rejects.toThrow("Invalid human input")
+    expect(upstream.requests).toHaveLength(1)
+    detach()
+    expect((await execution.read(ref, {})).questions).toEqual([])
+    const reattached = deferred<ConversationBackend.Question>()
+    detach = execution.subscribe((event) => {
+      if (event.ref.threadID !== thread.id) return
+      void execution.read(ref, {}).then((snapshot) => { if (snapshot.questions?.[0]) reattached.resolve(snapshot.questions[0]) }, (error) => { readErrors.push(error) })
+    })
+    const current = await reattached.promise
+    expect(current.id).not.toBe(question.id)
+    expect(await backend.control(answer)).toEqual({ status: "not-found" })
+    expect(await backend.control({ ...answer, questionID: current.id })).toEqual({ status: "resolved" })
+    await observer.wait(completed)
+    await other.wait((event) => event.method === "serverRequest/resolved")
+    expect(upstream.requests).toHaveLength(2)
+    const result = upstream.requests[1].body.input?.find((item) => item.type === "function_call_output")
+    expect(JSON.parse(result!.output as string)).toEqual({ answers: { choice: { answers: ["Alpha"] }, detail: { answers: ["Keep the current layout"] } } })
+    expect((await execution.read(ref, {})).questions).toEqual([])
+    expect(await backend.control({ ...answer, questionID: current.id })).toEqual({ status: "not-found" })
+    expect((await first.queue(thread.id)).data).toEqual([])
+    const nextQuestion = () => {
+      const next = deferred<ConversationBackend.Question>()
+      const stop = execution.subscribe((event) => {
+        if (event.ref.threadID !== thread.id) return
+        void execution.read(ref, {}).then((snapshot) => { if (snapshot.questions?.[0]) next.resolve(snapshot.questions[0]) }, (error) => { readErrors.push(error) })
+      })
+      cleanup.push(stop)
+      return next.promise
+    }
+    const next = nextQuestion()
+    await backend.enqueue({ ref, inputID: "question-dismiss", text: "Ask then dismiss" })
+    const dismissed = await next
+    expect(dismissed.id).not.toBe(current.id)
+    expect(await backend.control({ action: "dismiss-question", threadID: thread.id, questionID: dismissed.id })).toEqual({ status: "resolved" })
+    await observer.wait((event) => completed(event) && observer.events.filter(completed).length === 2)
+    expect(upstream.requests).toHaveLength(4)
+    const empty = upstream.requests[3].body.input?.findLast((item) => item.type === "function_call_output")
+    expect(JSON.parse(empty!.output as string)).toEqual({ answers: {} })
+    const last = nextQuestion()
+    await backend.enqueue({ ref, inputID: "question-interrupt", text: "Ask then interrupt" })
+    const interrupted = await last
+    expect(await backend.control({ action: "interrupt", threadID: thread.id, turnID: interrupted.turnID })).toEqual({ status: "applied" })
+    await observer.wait((event) => completed(event) && observer.events.filter(completed).length === 3)
+    expect((await execution.read(ref, {})).questions).toEqual([])
+    expect(await backend.control({ ...answer, questionID: interrupted.id })).toEqual({ status: "not-found" })
+    expect(upstream.requests).toHaveLength(5)
+    // Initial invalidation may precede native rollout creation. It is a failed read, never a fabricated idle snapshot.
+    expect(readErrors.every((error) => error instanceof NativeError && error.code === -32601)).toBe(true)
+    expect(upstream.requests.every(({ body }) => body.tools?.every((tool) => tool.name === "request_user_input"))).toBe(true)
+  })
+
+  test("Default mode keeps native question refusal instead of silently changing collaboration mode", async () => {
+    const upstream = fixture((_, serial) => serial === 1 ? {
+      id: "fc_default", call_id: "call_default", type: "function_call", name: "request_user_input", status: "completed",
+      arguments: JSON.stringify({ questions: [{ id: "choice", header: "Pick", question: "Choose", options: [{ label: "Alpha", description: "First" }, { label: "Beta", description: "Second" }] }] }),
+    } : reply(serial))
+    const options = await managed(upstream.url)
+    const adapter = await open(options.profile)
+    const backend = nativeBackend(adapter)
+    const detach = backend.execution!.subscribe(() => {})
+    cleanup.push(detach)
+    const observer = observe(adapter)
+    const { thread } = await adapter.create()
+    const ref = { backendID: backend.descriptor.id, threadID: thread.id }
+    await backend.enqueue({ ref, inputID: "default-question", text: "Try native question" })
+    await observer.wait(completed)
+    expect(upstream.requests).toHaveLength(2)
+    expect(text(upstream.requests[1].body)).toContain("request_user_input is unavailable in Default mode")
+    expect((await backend.execution!.read(ref, {})).questions).toEqual([])
+  })
+
   test("native queue is the only scheduler: idle launch, update, reorder, withdraw and FIFO", async () => {
     const entered = deferred<void>()
     const release = deferred<void>()

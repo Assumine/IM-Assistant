@@ -641,7 +641,7 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "44aaf5560c906d940ea2cf55dfc17c3acc10630719d08127f1f54beda2af3376"
+          "sha256": "c2efdc357167571aacab6abcff6f816130281584c5f272d0827525690ca6beb1"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
@@ -656,7 +656,7 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "fbb417db930b29ba0af6df5a8047b5077f3736a4e433b34df16ff910b0ce5b08"
+          "sha256": "4f322c5c945356a06c6f3ed77863a9de25b0109fb2a2a57a903d7fdbe5378ab9"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",

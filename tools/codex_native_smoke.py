@@ -59,8 +59,8 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 13 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
-        raise RuntimeError("Required thirteen real-native scenarios did not all execute")
+    if steps[-1]["passed"] != 19 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+        raise RuntimeError("Required fifteen real-native and four wire scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
@@ -144,7 +144,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["human-input UI, backend selection and production host activation; direct guidance, native queue controls, committed draft recovery and scoped live text verified with fixtures",
+        "remaining": ["human-input UI, backend selection and production host activation; human-input backend bridge, direct guidance, native queue controls, committed draft recovery and scoped live text verified with fixtures",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

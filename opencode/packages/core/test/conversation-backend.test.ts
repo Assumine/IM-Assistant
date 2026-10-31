@@ -158,6 +158,17 @@ it.effect("execution observations and invalidations retain native ownership acro
           turn: { id: "native-turn", state: "running" },
           queue: [{ nativeID: "native-pending", inputID: "original-input", text: "Pending input", partial: false }],
           nextCursor: undefined,
+          questions: [
+            {
+              id: "native-question",
+              turnID: "native-turn",
+              itemID: "native-item",
+              blocking: true,
+              state: "pending",
+              prompts: [{ id: "choice", header: "Pick", question: "Which?", other: true, options: [] }],
+              privatePayload: "must-stay-native",
+            },
+          ],
         }
       },
       subscribe: (listener) => {
@@ -173,6 +184,14 @@ it.effect("execution observations and invalidations retain native ownership acro
     expect(snapshot.thread).toEqual(thread)
     expect(snapshot.queue[0].nativeID).toBe("native-pending")
     expect("nextCursor" in snapshot).toBe(false)
+    expect(snapshot.questions?.[0]).toEqual({
+      id: "native-question",
+      turnID: "native-turn",
+      itemID: "native-item",
+      blocking: true,
+      state: "pending",
+      prompts: [{ id: "choice", header: "Pick", question: "Which?", other: true, options: [] }],
+    })
     expect(calls).toEqual([{ ref: input.ref, page: { cursor: "native-cursor", limit: 1 } }])
     mismatch = true
     expect(Exit.isFailure(yield* client.execution({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
@@ -369,7 +388,7 @@ it.effect("steering shares durable admission and cannot bypass it through the co
     const rpc = yield* Rpc.Service
     yield* host.bind(rpc)
     const example = fixture()
-    let status: "applied" | "not-found" = "applied"
+    let status: "applied" | "not-found" | "resolved" = "applied"
     let failing = false
     let decline = false
     let attempts = 0
@@ -398,6 +417,17 @@ it.effect("steering shares durable admission and cannot bypass it through the co
     failing = true
     expect(Exit.isFailure(yield* client.control(withdrawal).pipe(Effect.exit))).toBe(true)
     expect(controls).toEqual([withdrawal.control, withdrawal.control, withdrawal.control])
+    failing = false
+    status = "resolved"
+    const answer = {
+      action: "answer" as const,
+      threadID: "native-thread",
+      questionID: "native-question",
+      answers: { choice: ["Alpha"] },
+    }
+    expect(yield* client.control({ backendID: "example", control: answer })).toEqual({ status: "resolved" })
+    expect(controls.at(-1)).toEqual(answer)
+    expect(example.admissions).toEqual([])
     const steer = { ...input, delivery: "steer" as const, expectedTurnID: "active-native-turn" }
     yield* client.send(steer)
     yield* client.send(steer)

@@ -40,11 +40,19 @@ export const Control = Schema.Union([
   Schema.Struct({ action: Schema.Literal("reorder"), threadID: ID, nativeIDs: Schema.Array(ID) }),
   Schema.Struct({ action: Schema.Literal("interrupt"), threadID: ID, turnID: ID }),
   Schema.Struct({ action: Schema.Literal("compact"), threadID: ID }),
+  Schema.Struct({
+    action: Schema.Literal("answer"),
+    threadID: ID,
+    questionID: ID,
+    answers: Schema.Record(Schema.String, Schema.Array(Schema.String)),
+  }),
+  Schema.Struct({ action: Schema.Literal("dismiss-question"), threadID: ID, questionID: ID }),
 ])
 export type Control = typeof Control.Type
 // An acknowledgement, never a replacement execution snapshot. Missing means a pending input already left the queue.
 // Transport/backend failures remain errors with unknown effect; callers must not infer success or automatically retry.
-export const ControlResult = Schema.Struct({ status: Schema.Literals(["applied", "not-found"]) })
+// For human input, resolved confirms native resolution, potentially by another attached client; not whose answer won.
+export const ControlResult = Schema.Struct({ status: Schema.Literals(["applied", "not-found", "resolved"]) })
 export type ControlResult = typeof ControlResult.Type
 export const Descriptor = Schema.Struct({
   id: ID,
@@ -90,6 +98,24 @@ export const Turn = Schema.Struct({
   id: ID,
   state: Schema.Literals(["running", "completed", "interrupted", "failed"]),
 })
+// Live, non-secret human questions only. IDs expire with the connection/turn; never replay answers after reconnect.
+export interface Question extends Schema.Schema.Type<typeof Question> {}
+export const Question = Schema.Struct({
+  id: ID,
+  turnID: ID,
+  itemID: ID,
+  blocking: Schema.Boolean,
+  state: Schema.Literals(["pending", "responding"]),
+  prompts: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      header: Schema.String,
+      question: Schema.String,
+      other: Schema.Boolean,
+      options: Schema.Array(Schema.Struct({ label: Schema.String, description: Schema.String })),
+    }),
+  ),
+})
 // Observations, not an atomic snapshot or an admission receipt. The latest turn can already be finished.
 // Queue pages contain only pending inputs, in native order; nextCursor means the page is incomplete.
 export interface Execution extends Schema.Schema.Type<typeof Execution> {}
@@ -98,6 +124,7 @@ export const Execution = Schema.Struct({
   turn: optional(Turn),
   queue: Schema.Array(QueuedInput),
   nextCursor: optional(Schema.String),
+  questions: optional(Schema.Array(Question)),
 })
 // Invalidation only. Consumers re-read the relevant visible data; this is not a replayable execution log.
 export interface Activity extends Schema.Schema.Type<typeof Activity> {}
