@@ -45,14 +45,14 @@ def _run():
         content = log.read_text(encoding="utf-8", errors="replace")
         counts = re.search(r"\b(\d+) pass\s+.*?\b(\d+) fail", content, re.S)
         skipped = sum(map(int, re.findall(r"\b(\d+) (?:skip|skipped)\b", content)))
-        if process.returncode or skipped or label.endswith("tests") and (not counts or (int(counts[1]), int(counts[2])) != (45, 0)):
+        if process.returncode or skipped or label.endswith("tests") and (not counts or (int(counts[1]), int(counts[2])) != (59, 0)):
             raise RuntimeError(f"QQ module check failed: {label}; see {log.relative_to(ROOT)}")
         steps.append({"label": label, "exit_code": process.returncode, "passed": int(counts[1]) if counts else None, "skipped": skipped, "log": log.relative_to(ROOT).as_posix()})
     steps.append(run_command("packages/server", ["run", "script/qq-portal-smoke.ts"], "r3-qq-http", timeout=180,
                              extra_env={"IM_QQ_TEST_ROOT": directory}))
     lines = (reports / "r3-qq-http.log").read_text(encoding="utf-8").splitlines()
     http = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if http["status"] != "passed" or len(http["checks"]) != 12 or http["model_requests"] != 5 or http["actual_qq_connection"] or http["external_messages_sent"]:
+    if http["status"] != "passed" or len(http["checks"]) != 15 or http["model_requests"] != 5 or http["actual_qq_connection"] or http["external_messages_sent"]:
         raise RuntimeError("QQ original SDK/HTTP/SQLite acceptance was incomplete")
     native_parent = ROOT / "runtime/codex-native"
     native_parent.mkdir(parents=True, exist_ok=True)
@@ -61,7 +61,7 @@ def _run():
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_QQ_BACKEND_TEST_ROOT": native_directory}))
     lines = (reports / "r3-qq-native-http.log").read_text(encoding="utf-8").splitlines()
     native = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if native["status"] != "passed" or len(native["checks"]) != 8 or native["model_requests"] != 4 or native["native_admissions"] != 5 or native["actual_qq_connection"] or native["external_messages_sent"] or native["production_credentials_used"]:
+    if native["status"] != "passed" or len(native["checks"]) != 10 or native["model_requests"] != 4 or native["native_admissions"] != 5 or native["actual_qq_connection"] or native["external_messages_sent"] or native["production_credentials_used"]:
         raise RuntimeError("QQ real native backend target acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
@@ -100,6 +100,9 @@ def _run():
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
             "steps": steps, "http_acceptance": http, "backend_acceptance": native,
             "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
+            "source_routing": {"owner": "original-plugin-kv", "frozen_envelope": True,
+                               "reverse_lookup_requires_native_admission": True, "legacy_missing_source_is_not_inferred": True,
+                               "outbound_transport_connected": False},
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",

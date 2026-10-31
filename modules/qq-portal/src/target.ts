@@ -66,14 +66,14 @@ export function targets(session: Native, backend?: Backend) {
     },
     async reconcile(destination: Target, inputID: string): Promise<Evidence> {
       if (destination.kind === "backend") return receipt(await required().reconcile({ ref: destination.ref, inputID }), destination, inputID)
-      if ((await session.inbox.list({ sessionID: destination.sessionID })).some((entry) => entry.id === inputID)) return "accepted"
+      if ((await session.inbox.list({ sessionID: destination.sessionID })).some((entry) => entry.id === inputID && entry.type === "user")) return "accepted"
       return session.message.get({ sessionID: destination.sessionID, messageID: inputID })
         .then((entry) => entry.type === "user" ? "accepted" as const : "uncertain" as const, () => "uncertain" as const)
     },
     async send(destination: Target, inputID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"]): Promise<Evidence> {
       if (destination.kind === "backend") return receipt(await required().send({ ref: destination.ref, inputID, text, delivery: "queue" }), destination, inputID)
       const accepted = await session.prompt({ sessionID: destination.sessionID, id: inputID, text, delivery: "queue", metadata })
-      if (accepted.id !== inputID || accepted.sessionID !== destination.sessionID) throw new Error("Native QQ admission identity mismatch")
+      if (accepted.id !== inputID || accepted.sessionID !== destination.sessionID || accepted.type !== "user") throw new Error("Native QQ admission identity mismatch")
       return "accepted"
     },
     async withdraw(destination: Target, inputID: string): Promise<"withdrawn" | "unchanged" | "uncertain"> {

@@ -188,6 +188,16 @@ try {
   if (pending[0].type !== "user") throw new Error("User input expected")
   assert.equal(pending[0].payload.text, "Unique QQ queued body")
   assert.equal(pending[0].payload.metadata?.qq && typeof pending[0].payload.metadata.qq === "object", true)
+  const taskTarget = { kind: "session" as const, sessionID: first.id }
+  const taskSource = { scope: peer, messageID: "queued", actorID: "20001" }
+  assert.deepEqual(await portal.sourceFor(taskTarget, pending[0].id), { status: "found", source: taskSource })
+  assert.deepEqual(await portal.sourceFor({ kind: "session", sessionID: second.id }, pending[0].id), {
+    status: "missing",
+  })
+  assert.equal((await storage.scan({ prefix: "input-origin:" })).entries.length, 1)
+  checks.push(
+    "real plugin SQLite stores and reverses the original QQ envelope without inferring recipients from another Session",
+  )
   assert.equal(
     (
       await app.session.inbox.amendment({
@@ -251,6 +261,29 @@ try {
   assert.equal((await lost.receive(message("lost", "QQ recovered acknowledgment"))).status, "accepted")
   assert.equal((await lost.receive(message("lost", "QQ recovered acknowledgment"))).status, "accepted")
   assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 3)
+  const interruptedIndex = createPortal({
+    policy,
+    session: app.session,
+    storage: {
+      ...storage,
+      insert: async (key, value) => {
+        if (key.startsWith("input-origin:")) throw new Error("Reverse-index fixture failure")
+        return storage.insert(key, value)
+      },
+    },
+  })
+  await assert.rejects(
+    () => interruptedIndex.receive(message("index-interrupted", "Must not submit incomplete routing metadata")),
+    /Reverse-index/,
+  )
+  assert.equal(
+    (await portal.receive(message("index-interrupted", "Must not submit incomplete routing metadata"))).status,
+    "uncertain",
+  )
+  assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 3)
+  checks.push(
+    "a persisted origin with a failed reverse-index write repairs only routing metadata on redelivery, never admitting new work",
+  )
   checks.push(
     "unknown handoff is not replayed; a lost HTTP acknowledgment is reconciled from actual native pending evidence",
   )
@@ -346,6 +379,15 @@ try {
   portal = createPortal({ policy, storage, session: app.session })
   const restored = await portal.receive(queued)
   assert(restored.status === "accepted" && restored.sessionID === first.id && restored.duplicate)
+  const recoveredSource = await portal.sourceFor(taskTarget, pending[0].id)
+  assert.deepEqual(recoveredSource, { status: "found", source: taskSource })
+  if (recoveredSource.status !== "found") throw new Error("Original QQ source expected")
+  await portal.linkReply(recoveredSource.source, "restored-final-reply")
+  assert.deepEqual(await portal.sourceFor(taskTarget, pending[0].id), recoveredSource)
+  assert.equal(requests.length, 5)
+  checks.push(
+    "SQLite reopen restores the task starting message for first/final references after amendments and rebinding without model replay",
+  )
   assert.equal((await portal.receive(adjustment)).status, "amended")
   assert.equal((await portal.receive(recoveredAppend)).status, "amended")
   const decodedAdjustment = (await import("../../../../modules/qq-portal/src/routing")).decode(adjustment, policy)

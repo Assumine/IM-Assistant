@@ -421,7 +421,9 @@
         "opencode/packages/protocol/src/groups/session.ts",
         "opencode/packages/schema/src/session-event.ts",
         "opencode/packages/schema/src/session-inbox.ts",
-        "opencode/packages/server/src/handlers/session.ts"
+        "opencode/packages/server/src/handlers/session.ts",
+        "modules/qq-portal/src/sources.ts",
+        "modules/qq-portal/test/sources.test.ts"
       ],
       "verification": [
         {
@@ -429,12 +431,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 137,
+          "tests_run": 151,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 20,
+          "http_checks": 25,
           "publication": "disabled"
         }
       ],

@@ -306,6 +306,17 @@ async function round(restored: boolean) {
         checks.push(
           "backend targets and acknowledged aliases stay frozen through rebinding; no body or task queue is mirrored in QQ metadata",
         )
+        assert.deepEqual(yield* Effect.promise(() => portal.sourceFor(first, inputID(origin(kept)))), {
+          status: "found",
+          source: { scope, messageID: "kept", actorID: "20001" },
+        })
+        assert.deepEqual(yield* Effect.promise(() => portal.sourceFor(second, inputID(origin(kept)))), {
+          status: "missing",
+        })
+        assert.equal(admissions, 5)
+        checks.push(
+          "the real native backend has a recoverable QQ recipient independent of the current binding and without a shadow Session",
+        )
       } else {
         const duplicate = yield* Effect.promise(() => portal.receive(kept))
         assert(duplicate.status === "accepted" && JSON.stringify(duplicate.target) === JSON.stringify(first))
@@ -313,6 +324,17 @@ async function round(restored: boolean) {
         assert.equal((yield* Effect.promise(() => portal.receive(unknown))).status, "uncertain")
         assert.equal(admissions, 5)
         assert.equal(requests.length, 1)
+        const recoveredSource = yield* Effect.promise(() => portal.sourceFor(first, inputID(origin(kept))))
+        assert.deepEqual(recoveredSource, { status: "found", source: { scope, messageID: "kept", actorID: "20001" } })
+        if (recoveredSource.status !== "found") throw new Error("Original QQ source expected")
+        yield* Effect.promise(() => portal.linkReply(recoveredSource.source, "restored-native-final"))
+        assert.deepEqual(yield* Effect.promise(() => portal.sourceFor(first, inputID(origin(unknown)))), {
+          status: "uncertain",
+        })
+        assert.equal(admissions, 5)
+        checks.push(
+          "application SQLite reopen restores the original native input envelope and reply aliases; unknown handoff lookup never sends",
+        )
         checks.push(
           "application SQLite restart restores both targets and receipts without resuming, re-admitting or moving old input",
         )

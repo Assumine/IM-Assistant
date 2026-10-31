@@ -1,9 +1,9 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
 import { command, decode, fingerprint, inputID, originKey, scopeKey, type Message, type Policy, type Scope } from "./routing"
 import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence } from "./target"
+import { sources, type Origin, type Source, type SourceResult } from "./sources"
 
 type Storage = Pick<StorageDomain, "get" | "set" | "insert">
-type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string }
 export type Result =
   | { status: "ignored" | "unsupported" | "unbound" | "recalled" | "uncertain" | "unchanged" | "withdrawn" | "conflict" }
   | { status: "command"; action: string; arguments: string }
@@ -12,26 +12,15 @@ export type Result =
   | { status: "accepted"; target: Target; sessionID?: string; inputID: string; duplicate: boolean; reference?: "unresolved" }
   | { status: "amended"; target: Target; inputID: string; amendmentID: string; duplicate: boolean }
 
-const origin = (value: unknown): Origin | undefined => {
-  if (value === undefined) return undefined
-  if (!value || typeof value !== "object" ||
-    !("inputID" in value) || typeof value.inputID !== "string" || !("actorID" in value) || typeof value.actorID !== "string" ||
-    !("fingerprint" in value) || typeof value.fingerprint !== "string") throw new Error("Invalid QQ origin metadata")
-  const destination = target("target" in value ? value.target : "sessionID" in value ? value.sessionID : undefined)
-  if ("target" in value && "sessionID" in value && !sameTarget(destination, target(value.sessionID))) throw new Error("Conflicting QQ origin target")
-  if ("amendmentID" in value && (typeof value.amendmentID !== "string" || !/^msg_[A-Za-z0-9_-]+$/.test(value.amendmentID))) throw new Error("Invalid QQ amendment metadata")
-  return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint,
-    ...("amendmentID" in value ? { amendmentID: value.amendmentID as string } : {}) }
-}
-
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
 export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy }) {
   const { storage, session, policy } = options
   const native = targets(session, options.backend)
+  const metadata = sources(storage, policy)
   const key = (scope: Scope, id: string) => "origin:" + originKey(scope, id)
   const tombstone = (scope: Scope, id: string) => "recall:" + originKey(scope, id)
   const recalled = async (input: Message) => (await storage.get(tombstone(input.scope, input.messageID))) === input.actorID
-  const lookup = async (scope: Scope, id: string) => origin(await storage.get(key(scope, id)))
+  const lookup = metadata.lookup
   const binding = async (scope: Scope) => {
     const value = await storage.get("binding:" + scopeKey(scope))
     if (value === undefined || value === null) return undefined
@@ -59,11 +48,21 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       if (destination) await native.validate(destination)
       await storage.set("binding:" + scopeKey(scope), destination ?? null)
     },
-    async linkReply(source: Message, outgoingMessageID: string) {
-      const record = await lookup(source.scope, source.messageID)
-      if (!record) throw new Error("QQ source message has no accepted origin")
-      const inserted = await storage.insert(key(source.scope, outgoingMessageID), record)
-      if (!inserted && JSON.stringify(await lookup(source.scope, outgoingMessageID)) !== JSON.stringify(record)) throw new Error("QQ reply origin conflict")
+    /** Read-only lookup for future outbound transport. Never infer the recipient from the current binding. */
+    async sourceFor(value: Target, inputID: string): Promise<SourceResult> {
+      try {
+        const destination = target(value)
+        const found = await metadata.resolve(destination, inputID)
+        if (found.status !== "found") return found
+        const state = await native.reconcile(destination, inputID)
+        return state === "accepted" ? found : { status: state === "rejected" ? "not-accepted" : "uncertain" }
+      } catch { return { status: "uncertain" } }
+    },
+    async linkReply(source: Source, outgoingMessageID: string) {
+      const record = await metadata.replyOrigin(source, outgoingMessageID)
+      const state = await evidence(record)
+      if (state !== "accepted" && state !== "amended") throw new Error("QQ source input is not confirmed accepted")
+      await metadata.linkReply(source, outgoingMessageID)
     },
     async receive(raw: unknown): Promise<Result> {
       const event = decode(raw, policy)
@@ -84,6 +83,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       const old = await lookup(input.scope, input.messageID)
       if (old) {
         if (old.fingerprint !== fingerprint(input)) return { status: "conflict" }
+        await metadata.retain(old)
         return result(old, await evidence(old), true)
       }
       const destination = await binding(input.scope)
@@ -96,13 +96,16 @@ export function createPortal(options: { storage: Storage; session: Native; backe
         catch { return { status: "uncertain" } }
       }
       const record: Origin = { target: destination, inputID: quoted?.inputID ?? inputID(input), actorID: input.actorID, fingerprint: fingerprint(input),
+        source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
         ...(quoted ? { amendmentID: inputID(input) } : {}) }
       if (!(await storage.insert(key(input.scope, input.messageID), record))) {
         const winner = await lookup(input.scope, input.messageID)
         if (!winner) throw new Error("QQ origin admission was not retained")
         if (winner.fingerprint !== record.fingerprint) return { status: "conflict" }
+        await metadata.retain(winner)
         return result(winner, await evidence(winner), true)
       }
+      await metadata.retain(record)
       if (await recalled(input)) return { status: "recalled" }
       try {
         const state = record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text,
@@ -117,3 +120,4 @@ export function createPortal(options: { storage: Storage; session: Native; backe
 
 export { decode, command, type Message, type Policy, type Scope } from "./routing"
 export { type Target, type Backend } from "./target"
+export { type Source, type SourceResult } from "./sources"
