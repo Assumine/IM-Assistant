@@ -450,10 +450,13 @@ test("whole backend: queue edits preserve native IDs, draft stashes and unconfir
   const editor = panel.locator('[data-component="composer-editor"]')
   const rows = panel.locator('[data-component="session-queue-row"]')
   await expect(editor).toBeEditable()
-  await editor.fill("Keep the original draft")
+  // Use the real keyboard path: keydown settles the editor's pending focus before replacing the selection.
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("Keep the original draft")
   await rows.filter({ hasText: "First" }).locator('[data-action="session-queue-edit"]').click()
   await expect(editor).toHaveText("First")
-  await editor.fill("First edited")
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("First edited")
   await expect
     .poll(() => readBackendDraft(page, SERVER, thread.ref))
     .toMatchObject({
@@ -466,17 +469,22 @@ test("whole backend: queue edits preserve native IDs, draft stashes and unconfir
   await editor.press("Escape")
   await expect(editor).toHaveText("Keep the original draft")
   await rows.filter({ hasText: "First" }).locator('[data-action="session-queue-edit"]').click()
-  await editor.fill("First saved")
+  await expect(editor).toHaveText("First")
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("First saved")
   await panel.getByRole("button", { name: "Save changes", exact: true }).click()
   await expect(editor).toHaveText("Keep the original draft")
   await expect(rows.locator('[data-action="session-queue-edit"]')).toHaveText(["First saved", "Second"])
   expect(value.queue.map((item) => item.nativeID)).toEqual(["First", "Second"])
   mode = "held"
   await rows.filter({ hasText: "First saved" }).locator('[data-action="session-queue-edit"]').click()
-  await editor.fill("First second save")
+  await expect(editor).toHaveText("First saved")
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("First second save")
   await editor.press("Enter")
   await entered.promise
-  await editor.fill("A newer edit typed during saving")
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("A newer edit typed during saving")
   released.resolve()
   await expect(panel.getByRole("button", { name: "Save changes", exact: true })).toBeEnabled()
   await expect(editor).toHaveText("A newer edit typed during saving")
@@ -484,7 +492,9 @@ test("whole backend: queue edits preserve native IDs, draft stashes and unconfir
   await expect(editor).toHaveText("Keep the original draft")
   mode = "unknown"
   await rows.filter({ hasText: "First second save" }).locator('[data-action="session-queue-edit"]').click()
-  await editor.fill("An uncertain saved edit")
+  await expect(editor).toHaveText("First second save")
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("An uncertain saved edit")
   await editor.press("Enter")
   await expect(panel.getByText("Update unconfirmed.", { exact: false })).toBeVisible()
   await expect
@@ -496,7 +506,9 @@ test("whole backend: queue edits preserve native IDs, draft stashes and unconfir
   expect(actions).toHaveLength(3)
   await panel.getByRole("button", { name: "Cancel edit" }).click()
   await rows.filter({ hasText: "An uncertain saved edit" }).locator('[data-action="session-queue-edit"]').click()
-  await editor.fill("Do not turn this into a new task")
+  await expect(editor).toHaveText("An uncertain saved edit")
+  await editor.press("ControlOrMeta+A")
+  await editor.pressSequentially("Do not turn this into a new task")
   value = { ...value, queue: value.queue.filter((item) => item.nativeID !== "First") }
   await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
   await expect(rows.locator('[data-action="session-queue-edit"]')).toHaveText(["Second"])

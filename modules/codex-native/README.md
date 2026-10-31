@@ -43,3 +43,5 @@ GUI通过公共BackendView承载整套后端。原生标签存server＋原始Ref
 人工提问仅接item/tool/requestUserInput；观察连接不抢先拒绝，唯一输入owner先核对工作区，再发布非秘密questions投影。公共ID随捕获代际失效，answer/dismiss-question只响应当前原生请求。等待原生serverRequest/resolved后返回resolved，不把写入当成功，也不能据此判定竞争客户端中哪份答案获胜。未知结果不重发；结束/断线清理。Default模式原生不支持此工具，不自动切Plan。提问界面复用原生QuestionDock，宿主重启后待答请求恢复尚无已验证枚举API；不编造表单或重放答案。详见当前交接记录。
 
 公共ctx.ui.BackendQuestion现复用classic/experimental呈现器；完整身份隔离未提交选择，阻塞时保持原编辑器节点但隐藏/禁用。原Session表单RPC不变，整套后端只发送原生answer/dismiss-question。回执先于状态更新时继续保留禁用面板，直到原生问题消失；未知结果不重发，迟到错误不进入另一会话。当前均为隔离夹具验证，不代表真人账号、ACL或生产激活完成。
+
+主页通过公共home.sessions.before展示其他后端分组；用户展开并选择后才复用同一个原生列表读取器。列表模式不读取预览历史，条目直接打开原Ref；活动只提示手动刷新，不主动重排快照。收起、离开或切换后端释放读取和订阅，失效选择保留为不可用。原OpenCode列表、查询、数据库和默认提交逻辑不变，未增加默认后端偏好。

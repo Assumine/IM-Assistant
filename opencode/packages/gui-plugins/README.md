@@ -187,6 +187,15 @@ It then falls back to the quote's composer tile without closing the editor or di
 
 ### Whole conversation backends
 
+`home.sessions.before` contributes a section before the Home session list, with only its current server key. It
+does not expose Session stores or controllers. The `backends` plugin contributes a collapsed directory there;
+opening it loads the backend catalog, and explicitly choosing a browsable backend mounts the same paginated native
+thread reader used by the history browser. Rows open their original `Ref` directly through `ctx.tabs.openBackend`,
+without a preview read, resume or input admission. Matching native activity marks the list for manual refresh;
+it never polls, reorders a reading user's snapshot or adds rows to the OpenCode Session database. Collapsing or
+leaving ends reads and subscriptions. Missing registrations retain the selected backend and show unavailable,
+while the original Session list remains usable. There is no implicit choice or persisted default backend.
+
 `ctx.tabs.openBackend({ server, ref, title }, { focus: true })` opens an original `{ backendID, threadID }` reference
 in the shell's own tab strip. It does not create an OpenCode Session, resume a thread or send input. Opening the same
 server/backend/thread again preserves its position and updates the displayed title; this does not rename the native

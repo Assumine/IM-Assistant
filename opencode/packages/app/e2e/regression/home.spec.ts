@@ -5,8 +5,164 @@ import { mockOpenCodeServer } from "../utils/mock-server"
 import { fixture, mockStressTimeline } from "../utils/session-fixture"
 import { mockRemoteServer, mockWorkspace, newSessionLocation } from "../utils/workspace"
 import { APP_READY_TIMEOUT, expectAppVisible } from "../utils/waits"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+import { backendEvent, backendHref, backendRpc } from "../utils/backends"
 
 test.use({ serviceWorkers: "block" })
+
+test("whole backend Home: loads only on demand and opens the original native reference directly", async ({
+  page,
+}, info) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "ses_home_shared_identity" },
+    title: "Native conversation",
+    state: "idle",
+  }
+
+  const older: ConversationBackend.Thread = {
+    ...thread,
+    ref: { ...thread.ref, threadID: "older_native" },
+    title: "Older native conversation",
+  }
+
+  const methods: string[] = []
+  const cursors: (string | undefined)[] = []
+
+  const rpc = backendRpc({
+    list: () => [{ id: "native", label: "Native", browse: true }],
+    status: () => ({ authentication: null }),
+    threads: ({ backendID, cursor }) => {
+      expect(backendID).toBe("native")
+      cursors.push(cursor)
+
+      return cursor ? { items: [thread, older] } : { items: [thread], nextCursor: "older" }
+    },
+    history: ({ ref }) => {
+      expect(ref).toEqual(thread.ref)
+
+      return { thread, items: [] }
+    },
+  })
+
+  const view = await mockWorkspace(page, {
+    name: "NativeHome",
+    workspace: false,
+    sessions: [{ id: thread.ref.threadID, title: "OpenCode conversation" }],
+    rpc: (input) => {
+      methods.push(input.method)
+
+      return rpc(input)
+    },
+  })
+
+  await page.goto("/")
+  const section = page.getByRole("region", { name: "Other backends", exact: true })
+  const toggle = section.getByRole("button", { name: "Other backends", exact: true })
+  await expect(toggle).toBeEnabled()
+  await expect(row(page, "OpenCode conversation")).toBeVisible()
+  expect(methods).toEqual([])
+  await toggle.click()
+  const native = section.getByRole("button", { name: "Native", exact: true })
+  await expect(native).toBeEnabled()
+  expect(methods).toEqual(["list"])
+  await native.click()
+  const list = section.getByRole("region", { name: "Native", exact: true })
+  await expect(list.getByRole("button", { name: thread.title, exact: true })).toBeEnabled()
+  expect(methods).toEqual(["list", "threads"])
+  await list.getByRole("button", { name: "Load more conversations", exact: true }).click()
+  await expect(list.getByRole("button", { name: older.title, exact: true })).toBeEnabled()
+  await expect(list.getByRole("button", { name: thread.title, exact: true })).toHaveCount(1)
+  expect(cursors).toEqual([undefined, "older"])
+  await view.push([backendEvent("activity", { ref: thread.ref, change: "both" }, view.directory)])
+  await expect(list.getByRole("button", { name: "New activity — refresh conversations", exact: true })).toBeEnabled()
+  expect(cursors).toEqual([undefined, "older"])
+
+  if (info.repeatEachIndex === 0)
+    await info.attach("native-home", { body: await page.screenshot(), contentType: "image/png" })
+  await list.getByRole("button", { name: thread.title, exact: true }).click()
+  await expectPath(page, backendHref(thread.ref))
+  await expect(page.getByRole("heading", { name: thread.title, exact: true })).toBeVisible()
+  await expect(page.getByText("No recorded history.", { exact: true })).toBeVisible()
+  expect(methods.filter((method) => ["create", "query", "send", "control"].includes(method))).toEqual([])
+  expect(methods.filter((method) => method === "history")).toHaveLength(1)
+})
+
+test("whole backend Home: failed catalogs can retry, unavailable selections stay put and collapse stops subscriptions", async ({
+  page,
+}) => {
+  const alpha = { id: "alpha", label: "Alpha", browse: true }
+  const beta = { id: "beta", label: "Beta", browse: true }
+  let items: ConversationBackend.Descriptor[] = [alpha, beta]
+  let fail = true
+  const methods: string[] = []
+
+  const rpc = backendRpc({
+    list: () => {
+      if (fail) throw new Error("Private directory failure")
+
+      return items
+    },
+    status: () => ({ authentication: null }),
+    threads: ({ backendID }) => ({
+      items: [{ ref: { backendID, threadID: "same_native_id" }, title: `${backendID} conversation`, state: "idle" }],
+    }),
+  })
+
+  const view = await mockWorkspace(page, {
+    name: "NativeHomeAvailability",
+    workspace: false,
+    rpc: (input) => {
+      methods.push(input.method)
+
+      return rpc(input)
+    },
+  })
+
+  await page.goto("/")
+  const section = page.getByRole("region", { name: "Other backends", exact: true })
+  const toggle = section.getByRole("button", { name: "Other backends", exact: true })
+  await toggle.click()
+  await expect(section.getByRole("alert")).toHaveText("Could not load backends. Refresh to check the connection.")
+  await expect(page.getByText("Private directory failure", { exact: true })).toHaveCount(0)
+  fail = false
+  await section.getByRole("button", { name: "Refresh backends", exact: true }).click()
+  await section.getByRole("button", { name: "Alpha", exact: true }).click()
+  await expect(section.getByRole("button", { name: "alpha conversation", exact: true })).toBeEnabled()
+  await section.getByRole("button", { name: "Beta", exact: true }).click()
+  const selected = section.getByRole("region", { name: "Beta", exact: true })
+  await expect(selected.getByRole("button", { name: "beta conversation", exact: true })).toBeEnabled()
+  items = [alpha]
+  await view.push([backendEvent("changed", {}, view.directory)])
+  await expect(selected.getByRole("status")).toHaveText("Unavailable")
+  await expect(section.getByRole("button", { name: "Alpha", exact: true })).toHaveAttribute("aria-pressed", "false")
+  await expect(section.getByRole("button", { name: "alpha conversation", exact: true })).toHaveCount(0)
+  items = [alpha, beta]
+  await view.push([backendEvent("changed", {}, view.directory)])
+  await expect(selected.getByRole("button", { name: "beta conversation", exact: true })).toBeEnabled()
+  await toggle.click()
+  await expect(toggle).toHaveAttribute("aria-expanded", "false")
+  await expect(selected).toHaveCount(0)
+  const calls = [...methods]
+  const updated = { ...view.sessions[0]!, title: "Core event after closing" }
+  await view.push([
+    backendEvent("changed", {}, view.directory),
+    backendEvent(
+      "activity",
+      { ref: { backendID: "beta", threadID: "same_native_id" }, change: "both" },
+      view.directory,
+    ),
+    {
+      id: "evt_home_after_closing",
+      created: T0 + 1,
+      type: "session.renamed",
+      location: { directory: view.directory },
+      durable: { aggregateID: updated.id, seq: 1, version: 1 },
+      data: { sessionID: updated.id, title: updated.title },
+    },
+  ])
+  await expect(row(page, updated.title)).toBeVisible()
+  expect(methods).toEqual(calls)
+})
 
 const row = (page: Page, title: string) =>
   page.locator('[data-component="home-session-row"]').filter({ hasText: title })

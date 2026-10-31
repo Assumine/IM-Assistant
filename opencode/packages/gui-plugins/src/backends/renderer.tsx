@@ -1,4 +1,4 @@
-import { lazy, onCleanup, Suspense } from "solid-js"
+import { lazy, onCleanup, Show, Suspense } from "solid-js"
 import { BackendView, SettingsPage, Slot, type Plugin } from "@opencode/plugin/gui"
 import { Loader } from "@opencode/ui/loader"
 import { onIdle } from "@opencode/plugin/gui/builtin"
@@ -8,6 +8,28 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   const Page = lazy(() => import("./page"))
   const Room = lazy(() => import("./room"))
   const Launcher = lazy(() => import("./launcher"))
+  const Home = lazy(() => import("./home"))
+  ctx.add(Slot, {
+    at: "home.sessions.before",
+    render: (input) => (
+      <Show when={input.server} keyed>
+        {(server) => (
+          // Only this contribution waits for its first chunk; the native Home list remains mounted.
+          <Suspense
+            fallback={
+              <section class="py-2 pr-3">
+                <ctx.ui.Button variant="ghost" size="small" disabled>
+                  {ctx.t("home.title")}
+                </ctx.ui.Button>
+              </section>
+            }
+          >
+            <Home server={server} />
+          </Suspense>
+        )}
+      </Show>
+    ),
+  })
   ctx.add(Slot, {
     at: "new-session.actions",
     render: (input) => (

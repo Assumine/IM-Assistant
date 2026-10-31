@@ -706,6 +706,14 @@ export interface ComposerPill {
 
 /** The places a `Slot` renders, with the input each passes to `render`. */
 export interface SlotMap {
+  /** Sections before the Home session list. Contributions own their data and never insert synthetic Sessions. */
+  readonly "home.sessions.before": {
+    /**
+     * Stable Home server key. Read its live ServerRef through the SDK. Inputs update without remounting;
+     * key server-local state by this value.
+     */
+    readonly server: string
+  }
   /** Additional launch actions on a new Session draft. Does not replace the native editor or submit its draft. */
   readonly "new-session.actions": {
     /** Stable server key for this draft; a contribution reads the live ServerRef from the SDK when acting. */

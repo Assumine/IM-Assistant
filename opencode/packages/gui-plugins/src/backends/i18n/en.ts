@@ -1,4 +1,6 @@
 export default {
+  "home.title": "Other backends",
+  "home.newer": "New activity — refresh conversations",
   "launch.open": "Other conversation backends",
   "launch.title": "Choose a conversation backend",
   "launch.backend": "Conversation backend",

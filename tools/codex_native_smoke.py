@@ -91,9 +91,9 @@ def _run(checkpoint):
         port = reservation.getsockname()[1]
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
         "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "e2e/regression/composer.spec.ts",
-        "e2e/regression/session-request-docks.spec.ts", "e2e/regression/new-session.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts|session-request-docks.spec.ts|new-session.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
+        "e2e/regression/session-request-docks.spec.ts", "e2e/regression/new-session.spec.ts", "e2e/regression/home.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts|session-request-docks.spec.ts|new-session.spec.ts|home.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 169 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 185 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
@@ -114,6 +114,8 @@ def _run(checkpoint):
         "packages/app/src/session/requests/backend-question.tsx", "packages/app/src/session/requests/question-dock-props.ts",
         "packages/app/src/new-session/view.tsx", "packages/app/e2e/regression/new-session.spec.ts",
         "packages/gui-plugins/src/backends/launcher.tsx",
+        "packages/app/src/home/sessions/view.tsx", "packages/app/e2e/regression/home.spec.ts",
+        "packages/gui-plugins/src/backends/home.tsx",
         "packages/app/src/session/requests/session-question-dock-classic.tsx",
         "packages/app/src/session/requests/session-question-dock-experimental.tsx",
         "packages/app/e2e/regression/session-request-docks.spec.ts",
@@ -151,7 +153,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["trusted production host activation, main-list/default-backend UX and real-account validation remain; explicit native creation/open launcher, human input, guidance, native queue controls, draft recovery and scoped live text verified with fixtures",
+        "remaining": ["trusted production host activation and real-account validation remain; demand-loaded Home native lists, explicit creation/open launcher, human input, guidance, native queue controls, draft recovery and scoped live text verified with fixtures; no persisted default-backend preference is added",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

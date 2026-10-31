@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "3aa0c0d9efcc15d60dfd9249de0477de2b72305fa2314edfab1c918e9a8fc077"
+          "sha256": "d077aeb754e55d9d0bc10e4a60bd4db0aa825010cbe1ecbb8a6e1b149a38649e"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -685,12 +685,12 @@
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "cef6224868ba74285fa42f004f584ceda4000c5026d4c24cdaf0507f4e8f6c25"
+          "sha256": "788a39fbde8a2ca9d699c22fa7f683c4cf42b1f9651c83f0984e9c0f8854899e"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "e24e4b47846d42ecf16746a8680eba098bc3e565d8744106d49209ccc6197793"
+          "sha256": "a199d4667c1aad848c80bf6a11c1247b8b38d73b3d5aaaee84cd523663b2b1bd"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -705,7 +705,7 @@
         {
           "path": "packages/gui-plugins/src/backends/renderer.tsx",
           "action": "added",
-          "sha256": "c050624dd71b2d0b0ec2fde7257fefac3b136e839a24bfd62ebc9ae5e4bb0243"
+          "sha256": "de6c40e5bd201c0a2838784cfef0467b93711d1503636f5dfd6b5035bbd3ab94"
         },
         {
           "path": "packages/gui-plugins/src/main.ts",
@@ -729,7 +729,7 @@
         {
           "path": "packages/gui-plugins/src/backends/browser.tsx",
           "action": "added",
-          "sha256": "52cedca3c2b09b25d758a64cfb73c3f08cb47f5d664c09c92cc6eb367ffbdb5b"
+          "sha256": "b02d6aecaad17b9dbe39ec413bfb25543e46e2bf15ba17770b59ac5411d24361"
         }
       ]
     },
@@ -833,7 +833,7 @@
         {
           "path": "packages/plugin/src/gui/registries.ts",
           "action": "modified",
-          "sha256": "dcd847a87f2e1472d6c89e4d6b66e685bd91e923fa4bbd83982d19d64d91c9c7"
+          "sha256": "69a5d0d518a8353b0474174c519aa86b9cb56cf20770381631cc6e3228a7af5c"
         }
       ]
     },
@@ -961,6 +961,31 @@
           "path": "packages/gui-plugins/src/backends/launcher.tsx",
           "action": "added",
           "sha256": "ce0083ba40c60b92eb7e5716139b6b73133b54a4a6082ea2c2a1d8c4afb7034c"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-home-list",
+      "reason": "在公共Home会话分组位置按需复用原生线程列表；按后端ID隔离读取生命周期，条目直接打开原Ref，活动只提示刷新，不构造Session或新调度器。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke",
+        "python -m tools.verify_upstream"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/regression/home.spec.ts",
+          "action": "modified",
+          "sha256": "0544ba76853c1eb6ae431d8e412ddde5d01bf00329f197fcba9a54ec81acc4c2"
+        },
+        {
+          "path": "packages/app/src/home/sessions/view.tsx",
+          "action": "modified",
+          "sha256": "41eed8b9c3b05216da0e40aa9222a8fe3b3d44ec8a9c19be08d4544937c4b34d"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/home.tsx",
+          "action": "added",
+          "sha256": "f62786c8b571083f12efc05de7d1cbcd1ac45a5651830940a1de0bf7eb8b31b6"
         }
       ]
     }

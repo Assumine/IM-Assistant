@@ -13,6 +13,8 @@ export function ConversationBrowser(props: {
   backend: ConversationBackend.Descriptor
   thread?: ConversationBackend.Thread
   embedded?: boolean
+  // Home uses the same paginated reader, opening the original Ref directly instead of reading its history.
+  listOnly?: boolean
   revision?: number
   onOpen?: (thread: ConversationBackend.Thread) => void
   onThread?: (thread: ConversationBackend.Thread) => void
@@ -204,6 +206,8 @@ export function ConversationBrowser(props: {
 
         if (more && !cursor) return
         const revision = ++version.list
+
+        if (props.listOnly) setState("updated", false)
         setState({ listing: true, error: undefined })
         void rpc.threads({ backendID: props.backend.id, limit: 20, cursor }, options).then(
           (page) => {
@@ -234,6 +238,18 @@ export function ConversationBrowser(props: {
           options,
         ),
       )
+
+      if (props.listOnly) {
+        onCleanup(
+          rpc.events.on(
+            "activity",
+            ({ data: event }) => {
+              if (event.ref.backendID === props.backend.id) setState("updated", true)
+            },
+            options,
+          ),
+        )
+      }
 
       if (props.embedded) {
         onCleanup(
@@ -322,6 +338,82 @@ export function ConversationBrowser(props: {
   )
   const history = () => (state.history?.thread.ref.threadID === selected()?.ref.threadID ? state.history : undefined)
 
+  const threads = () => (
+    <aside
+      class={
+        props.listOnly
+          ? "flex min-h-0 flex-col"
+          : "flex max-h-48 min-h-0 flex-col border-b border-v2-border-border-muted md:max-h-none md:w-64 md:shrink-0 md:border-b-0 md:border-r"
+      }
+      aria-label={ctx.t("browse.list")}
+    >
+      <div class="flex items-center justify-between gap-2 px-4 py-3">
+        <h3 class="text-13-regular font-medium">{ctx.t("browse.list")}</h3>
+        <Button size="small" variant="ghost" disabled={!state.connected || state.listing} onClick={() => list()}>
+          {ctx.t(props.listOnly && state.updated ? "home.newer" : "browse.refreshList")}
+        </Button>
+      </div>
+      <div
+        data-scrollable={props.listOnly ? undefined : ""}
+        class={props.listOnly ? "px-2 pb-2" : "min-h-0 flex-1 overflow-y-auto px-2 pb-2"}
+      >
+        <Show when={props.listOnly && !state.connected}>
+          <p role="alert" class="p-2 text-13-regular">
+            {ctx.t("browse.offline")}
+          </p>
+        </Show>
+        <Show when={props.listOnly && state.error === "listFailed"}>
+          <p role="alert" class="p-2 text-13-regular">
+            {ctx.t("browse.listFailed")}
+          </p>
+        </Show>
+        <For each={state.threads}>
+          {(thread) => (
+            <button
+              type="button"
+              class="flex w-full items-center gap-2 rounded-md px-2 py-3 text-start hover:bg-v2-background-bg-layer-01 aria-pressed:bg-v2-background-bg-layer-01"
+              aria-label={thread.title}
+              aria-pressed={selected()?.ref.threadID === thread.ref.threadID}
+              disabled={!state.connected}
+              onClick={() => (props.listOnly ? props.onOpen?.(thread) : read(thread))}
+            >
+              <Show when={thread.state === "running" || thread.state === "waiting"}>
+                <Spinner />
+              </Show>
+              <span
+                class={props.listOnly ? "flex min-w-0 flex-1 items-center gap-3" : "flex min-w-0 flex-1 flex-col gap-1"}
+              >
+                <span class="min-w-0 truncate text-13-regular" title={thread.title}>
+                  {thread.title}
+                </span>
+                <span
+                  class="text-11-regular text-v2-text-text-muted"
+                  classList={{ "ms-auto shrink-0": props.listOnly }}
+                >
+                  {ctx.t(`browse.state.${thread.state}`)}
+                </span>
+              </span>
+            </button>
+          )}
+        </For>
+        <Show when={state.listing}>
+          <p role="status" class="flex items-center gap-2 px-2 py-3">
+            <Loader />
+            {ctx.t("browse.loadingList")}
+          </p>
+        </Show>
+        <Show when={!state.listing && !state.threads.length && !state.error && state.connected}>
+          <p class="p-2 text-13-regular text-v2-text-text-muted">{ctx.t("browse.empty")}</p>
+        </Show>
+        <Show when={state.listCursor}>
+          <Button size="small" variant="ghost" disabled={state.listing || !state.connected} onClick={() => list(true)}>
+            {ctx.t("browse.more")}
+          </Button>
+        </Show>
+      </div>
+    </aside>
+  )
+
   const content = () => (
     <>
       <Show
@@ -341,64 +433,7 @@ export function ConversationBrowser(props: {
         class="flex min-h-0 w-full flex-col border-t border-v2-border-border-muted md:flex-row"
         classList={{ "h-[min(70vh,720px)]": !props.embedded, "flex-1": props.embedded }}
       >
-        <Show when={!props.thread}>
-          <aside
-            class="flex max-h-48 min-h-0 flex-col border-b border-v2-border-border-muted md:max-h-none md:w-64 md:shrink-0 md:border-b-0 md:border-r"
-            aria-label={ctx.t("browse.list")}
-          >
-            <div class="flex items-center justify-between gap-2 px-4 py-3">
-              <h3 class="text-13-regular font-medium">{ctx.t("browse.list")}</h3>
-              <Button size="small" variant="ghost" disabled={!state.connected || state.listing} onClick={() => list()}>
-                {ctx.t("browse.refreshList")}
-              </Button>
-            </div>
-            <div data-scrollable class="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-              <For each={state.threads}>
-                {(thread) => (
-                  <button
-                    type="button"
-                    class="flex w-full items-center gap-2 rounded-md px-2 py-3 text-start hover:bg-v2-background-bg-layer-01 aria-pressed:bg-v2-background-bg-layer-01"
-                    aria-label={thread.title}
-                    aria-pressed={selected()?.ref.threadID === thread.ref.threadID}
-                    disabled={!state.connected}
-                    onClick={() => read(thread)}
-                  >
-                    <Show when={thread.state === "running" || thread.state === "waiting"}>
-                      <Spinner />
-                    </Show>
-                    <span class="flex min-w-0 flex-1 flex-col gap-1">
-                      <span class="truncate text-13-regular" title={thread.title}>
-                        {thread.title}
-                      </span>
-                      <span class="text-11-regular text-v2-text-text-muted">
-                        {ctx.t(`browse.state.${thread.state}`)}
-                      </span>
-                    </span>
-                  </button>
-                )}
-              </For>
-              <Show when={state.listing}>
-                <p role="status" class="flex items-center gap-2 px-2 py-3">
-                  <Loader />
-                  {ctx.t("browse.loadingList")}
-                </p>
-              </Show>
-              <Show when={!state.listing && !state.threads.length && !state.error && state.connected}>
-                <p class="p-2 text-13-regular text-v2-text-text-muted">{ctx.t("browse.empty")}</p>
-              </Show>
-              <Show when={state.listCursor}>
-                <Button
-                  size="small"
-                  variant="ghost"
-                  disabled={state.listing || !state.connected}
-                  onClick={() => list(true)}
-                >
-                  {ctx.t("browse.more")}
-                </Button>
-              </Show>
-            </div>
-          </aside>
-        </Show>
+        <Show when={!props.thread}>{threads()}</Show>
         <section class="flex min-h-0 min-w-0 flex-1 flex-col" aria-label={ctx.t("browse.history")}>
           <Show when={!state.connected}>
             <p role="alert" class="px-5 py-3 text-13-regular text-v2-text-text-muted">
@@ -502,7 +537,9 @@ export function ConversationBrowser(props: {
     </>
   )
 
-  return props.embedded ? (
+  return props.listOnly ? (
+    threads()
+  ) : props.embedded ? (
     <div class="flex size-full min-h-0 flex-col">{content()}</div>
   ) : (
     <Dialog size="x-large">{content()}</Dialog>
