@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { spawn } from "node:child_process"
 import { createInterface } from "node:readline"
@@ -459,6 +459,36 @@ function worker(profile: Profile) {
 }
 
 describe("shared native service ownership", () => {
+  test("profile permission drift is refused before starting a native service", async () => {
+    const upstream = fixture()
+    const options = await managed(upstream.url)
+    const profile = options.profile
+    const service = profile.service!
+    const change = async (target: string, grant: boolean, directory: boolean) => {
+      if (process.platform !== "win32") {
+        await chmod(target, grant ? (directory ? 0o755 : 0o644) : (directory ? 0o700 : 0o600))
+        return
+      }
+      const child = Bun.spawn(["icacls", target, ...(grant ? ["/grant", `*S-1-1-0:${directory ? "(OI)(CI)" : ""}R`] : ["/remove:g", "*S-1-1-0"])], {
+        stdout: "pipe", stderr: "pipe", windowsHide: true,
+      })
+      const [code, error] = await Promise.all([child.exited, new Response(child.stderr).text()])
+      expect(code, error).toBe(0)
+    }
+    for (const [target, directory] of [[profile.home, true], [service.tokenFile, false]] as const) {
+      await change(target, true, directory)
+      try {
+        await expect(loadProfile(profile.home)).rejects.toThrow("permissions")
+        await expect(CodexSessionAdapter.open(options)).rejects.toThrow("permissions")
+        await expect(fetch(`http://127.0.0.1:${service.port}/readyz`, { signal: AbortSignal.timeout(1000) })).rejects.toThrow()
+      } finally {
+        await change(target, false, directory)
+      }
+      expect((await loadProfile(profile.home)).home).toBe(profile.home)
+    }
+    expect(upstream.requests).toEqual([])
+  })
+
   test("execution observations follow the native turn and pending queue without scheduling a second copy", async () => {
     const entered = deferred<void>()
     const release = deferred<void>()

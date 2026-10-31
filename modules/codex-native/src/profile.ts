@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { createServer } from "node:net"
 import { mkdir, readFile, readdir, realpath, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { privatePath } from "./permissions"
 
 export const verifiedVersion = "codex-cli 0.166.0-alpha.5.1"
 
@@ -62,8 +63,9 @@ async function create(root: string, connection: Connection | undefined, shared: 
   await mkdir(root, { recursive: true })
   if ((await readdir(root)).length) throw new Error("Refusing to adopt an existing profile")
   const home = await realpath(root)
+  await privatePath(home, "home", true)
   const workspace = path.join(home, "workspace")
-  await mkdir(workspace)
+  await mkdir(workspace, { mode: 0o700 })
   const lines = [
     'approval_policy = "never"', 'sandbox_mode = "read-only"', 'project_doc_max_bytes = 0',
     'web_search = "disabled"',
@@ -76,7 +78,7 @@ async function create(root: string, connection: Connection | undefined, shared: 
       `env_key = ${JSON.stringify(connection.keyName)}`, 'requires_openai_auth = false', 'supports_websockets = false')
   }
   const config = lines.join("\n") + "\n"
-  await writeFile(path.join(home, "config.toml"), config, { flag: "wx" })
+  await writeFile(path.join(home, "config.toml"), config, { flag: "wx", mode: 0o600 })
   const profile: Profile = { home, workspace, keyName: connection?.keyName }
   if (shared) {
     const reservation = createServer()
@@ -91,7 +93,7 @@ async function create(root: string, connection: Connection | undefined, shared: 
     await writeFile(tokenFile, token, { flag: "wx", mode: 0o600 })
     profile.service = { port, tokenFile, tokenHash: digest(token) }
   }
-  await writeFile(path.join(home, marker), JSON.stringify({ ...profile, configHash: digest(config), version: verifiedVersion }), { flag: "wx" })
+  await writeFile(path.join(home, marker), JSON.stringify({ ...profile, configHash: digest(config), version: verifiedVersion }), { flag: "wx", mode: 0o600 })
   return profile
 }
 
@@ -105,6 +107,10 @@ export async function loadProfile(root: string): Promise<Profile> {
 
 export async function verifyProfile(profile: Profile) {
   const home = await realpath(profile.home)
+  await privatePath(home, "home")
+  await privatePath(profile.workspace, "directory")
+  await privatePath(path.join(home, marker), "file")
+  await privatePath(path.join(home, "config.toml"), "file")
   if (home !== profile.home || await realpath(profile.workspace) !== path.join(home, "workspace")) {
     throw new Error("Profile workspace must remain inside its managed home")
   }
@@ -116,6 +122,7 @@ export async function verifyProfile(profile: Profile) {
   }
   if (profile.service) {
     const service = profile.service
+    await privatePath(service.tokenFile, "file")
     if (!Number.isInteger(service.port) || service.port < 1 || service.port > 65535 ||
       service.tokenFile !== path.join(home, "app-server-token") || await realpath(service.tokenFile) !== service.tokenFile ||
       digest(await readFile(service.tokenFile, "utf8")) !== service.tokenHash) {

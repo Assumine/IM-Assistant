@@ -298,7 +298,13 @@
         "opencode/packages/gui-plugins/src/backends/launcher.tsx",
         "opencode/packages/app/e2e/regression/home.spec.ts",
         "opencode/packages/app/src/home/sessions/view.tsx",
-        "opencode/packages/gui-plugins/src/backends/home.tsx"
+        "opencode/packages/gui-plugins/src/backends/home.tsx",
+        "modules/codex-native/src/module.ts",
+        "modules/codex-native/src/permissions.ts",
+        "modules/codex-native/src/windows-security.ts",
+        "opencode/packages/server/src/backend-modules.ts",
+        "opencode/packages/server/src/fetch.ts",
+        "opencode/packages/server/src/process.ts"
       ],
       "verification": [
         {
@@ -306,14 +312,14 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 300,
+          "tests_run": 301,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
           "publication": "disabled",
-          "native_http_checks": 10,
-          "native_unit_tests": 84,
+          "native_http_checks": 12,
+          "native_unit_tests": 85,
           "browser_tests": 216
         }
       ],

@@ -52,3 +52,14 @@ export interface Definition {
 export interface ConversationDomain {
   readonly register: (backend: Definition) => Effect.Effect<Registration, unknown, Scope.Scope>
 }
+
+/** A trusted, complete backend module. Not serializable config, a model provider, or a remotely loadable plugin. */
+export interface Module {
+  readonly id: string
+  /** Acquire a bounded native connection; clean up partial acquisition on failure. Never admit work during startup. */
+  readonly open: () => Promise<{
+    readonly backend: Definition
+    /** Disconnect this host's connection only; native work and other clients retain their own lifecycle. */
+    readonly close: () => Promise<void>
+  }>
+}

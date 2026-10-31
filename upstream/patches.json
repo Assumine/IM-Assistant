@@ -611,7 +611,7 @@
         {
           "path": "packages/server/src/routes.ts",
           "action": "modified",
-          "sha256": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22"
+          "sha256": "3d7662952adc9eb92f0dd3595032ffa65739a46fd359199b0a3bc975d297143d"
         }
       ]
     },
@@ -646,7 +646,7 @@
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "e7e2a58d8eea4e63fdfdbef64f75062e99207660b0e536484e074ff16478bd22"
+          "sha256": "2d910bafe8507249e9542e441603c8673f009b2f1f5855a1495a3860777a6bd1"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -661,7 +661,7 @@
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "ab336c323a2b4e09442696d1de2745892622d444b0115a7610b9eda1b6c6a03b"
+          "sha256": "bbe1e7d082962a76fd0e88c6cf6bd0eca915f0801f80211e908667c61a43a859"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",
@@ -986,6 +986,31 @@
           "path": "packages/gui-plugins/src/backends/home.tsx",
           "action": "added",
           "sha256": "f62786c8b571083f12efc05de7d1cbcd1ac45a5651830940a1de0bf7eb8b31b6"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-trusted-backend-lifecycle",
+      "reason": "可信整套后端模块在原服务启动作用域独立获取/注册/释放，模块失败不阻断应用；不是用户配置或任意插件加载入口。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke",
+        "python -m tools.verify_upstream"
+      ],
+      "files": [
+        {
+          "path": "packages/server/src/backend-modules.ts",
+          "action": "added",
+          "sha256": "6287e0a345a311f1f094df20f14a6cbc22180e3ca6f2de0f10b3f3197703b3fa"
+        },
+        {
+          "path": "packages/server/src/fetch.ts",
+          "action": "modified",
+          "sha256": "f074f8085089e29373e3d1f1260f9748e499e4271b15e99a04b333106dfb8f8f"
+        },
+        {
+          "path": "packages/server/src/process.ts",
+          "action": "modified",
+          "sha256": "04dcd71a45c811fd208963da679fcab8e6a9a0a5ea33af458a782133781f8e78"
         }
       ]
     }

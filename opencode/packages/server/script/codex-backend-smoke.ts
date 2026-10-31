@@ -6,13 +6,13 @@ import { Context, Effect, Layer, Logger, Schema } from "effect"
 import { HttpEffect, HttpRouter, HttpServer } from "effect/http"
 import { Database } from "@opencode/core/database/database"
 import { SessionTable, SessionInboxTable } from "@opencode/core/session/sql"
-import { ConversationBackend } from "@opencode/core/conversation-backend"
 import { Admission, Created, Execution, type Ref } from "@opencode/schema/conversation-backend"
 import { createEmbeddedRoutes } from "../src/routes"
 import {
   CodexSessionAdapter,
   createSharedProfile,
   nativeBackend,
+  nativeModule,
   stopSharedService,
 } from "../../../../modules/codex-native/src"
 
@@ -72,23 +72,88 @@ const adapter = await CodexSessionAdapter.open({ executable, profile, apiKey: "f
 let completions = 0
 let activeTurnID: string | undefined
 adapter.subscribe((event) => {
-  if (event.method === "turn/started") activeTurnID = (event.params.turn as { id: string }).id
   if (event.method === "turn/completed" && ++completions === 3) finished.resolve()
 })
 let ref: Ref
 let receipt: unknown
 
 async function round(resume: boolean) {
+  const registered = Promise.withResolvers<void>()
+  const failed = Promise.withResolvers<void>()
+  const pendingBoot = Promise.withResolvers<void>()
+  const mismatch = Promise.withResolvers<void>()
+  const detached = Promise.withResolvers<void>()
+  const moduleDisconnected = Promise.withResolvers<void>()
+  const module = nativeModule({ executable: executable!, profile, apiKey: "fixture-only" })
+  let closes = 0
   await Effect.runPromise(
     Effect.gen(function* () {
       const context = yield* Layer.build(
-        createEmbeddedRoutes({
-          database: { path: path.join(home, "application.sqlite") },
-          models: { fetch: false },
-          runtime: { managedDirectory: profile.workspace },
-          config: { directory: path.join(home, "config"), project: false, claude: false, content: "{}" },
-          fs: { filewatcher: false },
-        }).pipe(Layer.provide(HttpServer.layerServices)),
+        createEmbeddedRoutes(
+          {
+            database: { path: path.join(home, "application.sqlite") },
+            models: { fetch: false },
+            runtime: { managedDirectory: profile.workspace },
+            config: { directory: path.join(home, "config"), project: false, claude: false, content: "{}" },
+            fs: { filewatcher: false },
+          },
+          [],
+          undefined,
+          [
+            {
+              id: "fixture-failed",
+              open: async () => {
+                failed.resolve()
+                throw new Error("Private fixture failure")
+              },
+            },
+            {
+              id: "fixture-pending",
+              open: async () => {
+                pendingBoot.resolve()
+                await detached.promise
+                throw new Error("Fixture acquisition released")
+              },
+            },
+            {
+              id: "fixture-mismatch",
+              open: async () => ({
+                backend: nativeBackend(adapter),
+                close: async () => {
+                  mismatch.resolve()
+                },
+              }),
+            },
+            {
+              ...module,
+              open: async () => {
+                const connection = await module.open()
+                return {
+                  backend: {
+                    ...connection.backend,
+                    onClose: (listener) => {
+                      const unsubscribe = connection.backend.onClose?.(() => {
+                        listener()
+                        moduleDisconnected.resolve()
+                      })
+                      registered.resolve()
+                      return unsubscribe ?? (() => {})
+                    },
+                    enqueue: async (input) => {
+                      const accepted = await connection.backend.enqueue(input)
+                      if (input.inputID === "host-lost-ack") throw new Error("Fixture lost native acknowledgment")
+                      return accepted
+                    },
+                  },
+                  close: async () => {
+                    closes++
+                    await connection.close()
+                  },
+                }
+              },
+            },
+          ],
+        ).pipe(Layer.provide(HttpServer.layerServices)),
       )
       const handler = Context.get(context, HttpRouter.HttpRouter)
         .asHttpEffect()
@@ -107,21 +172,18 @@ async function round(resume: boolean) {
         assert.equal(response.status, 200, `Native application RPC ${method} failed: ${JSON.stringify(body)}`)
         return body.output
       }
-      // Managed mode still denies arbitrary SDK plugins. The trusted embedder registers
-      // this complete backend through the public host service, not a config/plugin escape.
-      const host = Context.get(context, ConversationBackend.Service)
-      const backend = nativeBackend(adapter)
-      yield* host.register({
-        ...backend,
-        enqueue: async (input) => {
-          const accepted = await backend.enqueue(input)
-          if (input.inputID === "host-lost-ack") throw new Error("Fixture lost native acknowledgment")
-          return accepted
-        },
-      })
+      // Trusted in-process composition owns acquisition; user config still cannot load arbitrary modules.
+      yield* Effect.promise(() =>
+        Promise.all([registered.promise, failed.promise, pendingBoot.promise, mismatch.promise]),
+      )
+      yield* Effect.addFinalizer(() => Effect.sync(() => detached.resolve()))
       assert.deepEqual(yield* Effect.promise(() => call("list", {})), [
         { id: "codex-native", label: "Codex", browse: true, execution: true, create: true },
       ])
+      if (!resume)
+        checks.push(
+          "trusted module boot isolates failed, pending and mismatched modules without blocking the working backend",
+        )
       assert.deepEqual(yield* Effect.promise(() => call("status", { backendID: "codex-native" })), {
         authentication: { state: "not-required" },
       })
@@ -156,6 +218,7 @@ async function round(resume: boolean) {
         const unsubscribe = adapter.onClose(() => disconnected.resolve())
         yield* Effect.promise(() => stopSharedService({ executable: executable!, profile, apiKey: "fixture-only" }))
         yield* Effect.promise(() => disconnected.promise)
+        yield* Effect.promise(() => moduleDisconnected.promise)
         unsubscribe()
         assert.deepEqual(yield* Effect.promise(() => call("list", {})), [])
         checks.push("native disconnection unregisters the backend from the real application RPC")
@@ -170,12 +233,13 @@ async function round(resume: boolean) {
       )
       assert.equal(sent.status, "accepted")
       yield* Effect.promise(() => entered.promise)
-      assert(activeTurnID)
+      yield* Effect.promise(() => adapter.resume(ref.threadID))
       const running = Schema.decodeUnknownSync(Execution)(
         yield* Effect.promise(() => call("execution", { ref, limit: 1 })),
       )
       assert.equal(running.thread.state, "running")
-      assert.equal(running.turn?.id, activeTurnID)
+      activeTurnID = running.turn?.id
+      assert(activeTurnID)
       assert.equal(running.turn?.state, "running")
       assert.deepEqual(running.queue, [])
       const adjustment = {
@@ -280,6 +344,13 @@ async function round(resume: boolean) {
       checks.push("Codex inputs create no OpenCode Session or Inbox rows")
     }).pipe(Effect.scoped, Effect.provide(Logger.layer([]))),
   )
+  assert.equal(closes, 1)
+  if (!resume) {
+    assert.equal((await adapter.read(ref.threadID)).thread.status.type, "active")
+    checks.push(
+      "application scope closes its module connection once while the native running task and observer stay alive",
+    )
+  }
 }
 
 try {

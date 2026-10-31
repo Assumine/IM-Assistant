@@ -1,6 +1,7 @@
-// Deliberately not registered in the application until the whole-backend host slot is verified.
+// Explicit trusted-host composition only; product activation remains disabled pending acceptance.
 export { CodexSessionAdapter } from "./session-adapter"
 export { nativeBackend } from "./backend"
+export { nativeModule } from "./module"
 export type { Thread, Submission, Page, ItemEntry } from "./session-adapter"
 export { createProfile, createSharedProfile, loadProfile, verifiedVersion } from "./profile"
 export { stopSharedService } from "./shared"

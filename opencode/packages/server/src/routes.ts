@@ -57,6 +57,8 @@ import { formLocationLayer } from "./middleware/form-location"
 import { sessionLocationLayer } from "./middleware/session-location"
 import { ServerInfo } from "./server-info"
 import type { ServerOptions } from "./options"
+import type { Module } from "@opencode/plugin/effect/conversation"
+import { BackendModules } from "./backend-modules"
 
 const applicationServiceNodes = [
   RuntimePolicy.node,
@@ -96,6 +98,7 @@ export function createRoutes(
   options: ServerOptions = {},
   serviceURLs: () => ReadonlyArray<string> = () => [],
   overrides: LayerNode.Replacements = [],
+  backends: readonly Module[] = [],
 ) {
   return makeRoutes(
     options.password
@@ -104,6 +107,8 @@ export function createRoutes(
     options,
     serviceURLs,
     overrides,
+    undefined,
+    backends,
   )
 }
 
@@ -115,8 +120,16 @@ export function createEmbeddedRoutes(
   options: ServerOptions = {},
   overrides: LayerNode.Replacements = [],
   instances?: InstanceNode,
+  backends: readonly Module[] = [],
 ) {
-  return makeRoutes(ServerAuth.Config.configLayer({ password: Option.none() }), options, () => [], overrides, instances)
+  return makeRoutes(
+    ServerAuth.Config.configLayer({ password: Option.none() }),
+    options,
+    () => [],
+    overrides,
+    instances,
+    backends,
+  )
 }
 
 function makeRoutes<AuthError, AuthServices>(
@@ -126,40 +139,52 @@ function makeRoutes<AuthError, AuthServices>(
   // Runtime-profile replacements (e.g. workerd) applied after the standard set, so later entries win.
   overrides: LayerNode.Replacements,
   instances?: InstanceNode,
+  backends: readonly Module[] = [],
 ) {
   const standard: LayerNode.Replacements = [
     Database.node.replace(Database.configured(options.database)),
     PersistentPty.node.replace(PersistentPty.configured(options.pty)),
-    Bus.node.replace(Bus.configured({
-      persist: options.events?.persist,
-      retain: options.runtime?.managedDirectory ? [SessionEvent.UsageRecorded] : undefined,
-    })),
+    Bus.node.replace(
+      Bus.configured({
+        persist: options.events?.persist,
+        retain: options.runtime?.managedDirectory ? [SessionEvent.UsageRecorded] : undefined,
+      }),
+    ),
     App.node.replace(App.configured(options.app)),
     ModelsDev.node.replace(ModelsDev.configured(options.models)),
     Project.node.replace(Project.configured(options.runtime?.managedDirectory ? { discover: false } : options.project)),
     RuntimePolicy.node.replace(RuntimePolicy.configured(options.runtime)),
     ...(options.runtime?.managedDirectory ? [ConfigPluginSource.node.replace(ConfigPluginSource.empty)] : []),
-    Watcher.node.replace(Watcher.configured({ enabled: options.runtime?.managedDirectory ? false : options.fs?.filewatcher })),
-    FileWatch.node.replace(FileWatch.configured({ enabled: options.runtime?.managedDirectory ? false : options.fs?.filewatcher })),
+    Watcher.node.replace(
+      Watcher.configured({ enabled: options.runtime?.managedDirectory ? false : options.fs?.filewatcher }),
+    ),
+    FileWatch.node.replace(
+      FileWatch.configured({ enabled: options.runtime?.managedDirectory ? false : options.fs?.filewatcher }),
+    ),
     FileSystemSearch.node.replace(FileSystemSearch.configured({ fff: options.fs?.fff })),
-    Global.node.replace(Global.layerWith({
-      ...(options.config?.directory ? { config: options.config.directory } : {}),
-      ...(options.config?.home ? { home: options.config.home } : {}),
-    })),
+    Global.node.replace(
+      Global.layerWith({
+        ...(options.config?.directory ? { config: options.config.directory } : {}),
+        ...(options.config?.home ? { home: options.config.home } : {}),
+      }),
+    ),
     Config.node.replace(
       Config.configured({
         project: options.runtime?.managedDirectory ? false : options.config?.project,
         claude: options.runtime?.managedDirectory ? false : options.config?.claude,
         ...(options.runtime?.managedDirectory ? { global: false, system: false, fileReferences: false } : {}),
         file: options.runtime?.managedDirectory
-          ? path.join(options.config?.directory ?? Global.Path.config, "opencode.json") : options.config?.file,
+          ? path.join(options.config?.directory ?? Global.Path.config, "opencode.json")
+          : options.config?.file,
         content: options.config?.content,
       }),
     ),
-    InstructionDiscovery.node.replace(InstructionDiscovery.configured({
-      project: options.runtime?.managedDirectory ? false : options.config?.project,
-      global: options.runtime?.managedDirectory ? false : undefined,
-    })),
+    InstructionDiscovery.node.replace(
+      InstructionDiscovery.configured({
+        project: options.runtime?.managedDirectory ? false : options.config?.project,
+        global: options.runtime?.managedDirectory ? false : undefined,
+      }),
+    ),
     ShellSelect.node.replace(ShellSelect.configured({ gitbash: options.windows?.gitbash })),
     Mcp.node.replace(
       Mcp.configured({
@@ -217,7 +242,11 @@ function makeRoutes<AuthError, AuthServices>(
         Layer.provideMerge(services),
         Layer.provideMerge(HttpRouter.layer),
       )
-      return Layer.merge(api, V1Migration.layer.pipe(Layer.provide(services)))
+      return Layer.mergeAll(
+        api,
+        V1Migration.layer.pipe(Layer.provide(services)),
+        Layer.effectDiscard(BackendModules.install(backends)).pipe(Layer.provide(services)),
+      )
     }),
   )
 }

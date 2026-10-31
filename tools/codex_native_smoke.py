@@ -59,8 +59,8 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 19 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
-        raise RuntimeError("Required fifteen real-native and four wire scenarios did not all execute")
+    if steps[-1]["passed"] != 20 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+        raise RuntimeError("Required sixteen real-native and four wire scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
@@ -77,7 +77,7 @@ def _run(checkpoint):
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_CODEX_TEST_ROOT": str(test_root)}))
     output = (reports / "r3-host-http.log").read_text(encoding="utf-8")
     host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
-    if host["status"] != "passed" or len(host["checks"]) != 10 or host["model_requests"] != 4:
+    if host["status"] != "passed" or len(host["checks"]) != 12 or host["model_requests"] != 4:
         raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
     tabs = run_command("packages/app", ["test", "--conditions=solid", "--preload", "../ui/test/solid-jsx.ts",
         "--preload", "./happydom.ts", "./src/shell/tabs/tabs.test.ts", "./src/shell/state/layout.test.ts",
@@ -104,6 +104,7 @@ def _run(checkpoint):
         "packages/core/src/kv.ts", "packages/core/src/plugin/host.ts",
         "packages/core/test/conversation-backend.test.ts", "packages/core/test/plugin/fixture.ts",
         "packages/server/src/middleware/runtime-policy.ts", "packages/server/src/routes.ts",
+        "packages/server/src/backend-modules.ts", "packages/server/src/fetch.ts", "packages/server/src/process.ts",
         "packages/server/test/conversation-policy.test.ts", "packages/server/script/codex-backend-smoke.ts",
         "packages/gui-plugins/src/conversation.ts", "packages/gui-plugins/src/renderer.ts",
         "packages/gui-plugins/src/backends/index.ts", "packages/gui-plugins/src/backends/renderer.tsx",
