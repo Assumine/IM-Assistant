@@ -238,7 +238,7 @@
         {
           "path": "packages/core/src/session/session.ts",
           "action": "modified",
-          "sha256": "915368370850d2884f6ac779155218b5de75bf142f5b7d32c28d6a43d9bcb3fd"
+          "sha256": "7aa9f45fcd5eb3569d5ceb822b1e2e474ad6d329564ec45d87259de4a4e7ac46"
         },
         {
           "path": "packages/core/src/session/shell.ts",
@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "962936c52243293f9d87bff855135e861139236072232b069ebadce2bdf497b1"
+          "sha256": "bf3e9463aebebd2fa3978d15cf3216ce2b081f8e8f754783656923374583038e"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -496,12 +496,12 @@
         {
           "path": "packages/client/src/effect/generated/client.ts",
           "action": "modified",
-          "sha256": "1fd618210cbdecf7cb5d902aa7609f6a8f2dc63257ee9f3d6197b3861ddc4b04"
+          "sha256": "5fff2ad3aa16620740f97cf63c60e9acf52430b5b4f8094a2554a4c6a4f22a9a"
         },
         {
           "path": "packages/client/src/promise/generated/client.ts",
           "action": "modified",
-          "sha256": "a1cbc056a100716c70bbb6d660b85b2014f0c5d13e007054d62a78b2419eb254"
+          "sha256": "67402ac6d86a375f111a9d699d9416c0af9fc011dab989263151991e80c05692"
         },
         {
           "path": "packages/client/test/promise.test.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "e363bc6cc171f83218d3b06d05a12a2636b08509f257a98391fd741c6e112605"
+          "sha256": "caa326681f2854a509c2e2388243a0188fd6132273ebc5c8cfcaffebebb6d5ac"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -551,12 +551,12 @@
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "6914d78ebf08aa2af17a870ebdf5029d490aee719a10f241b8d38a2c7f3ad245"
+          "sha256": "c045a9570bce027ee6991c856992c47b7a25526fbe49102d9bdb97d57f422ac4"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "331fbafe0e9c9fbbb0e8165fb908555d20e52a7f8b9b55fc024ea378fcaebd8d"
+          "sha256": "f14baf17aa42a491f124948a0b71292c15d0aac73be8e36e96840222083d50ca"
         },
         {
           "path": "packages/core/src/bus.ts",
@@ -566,7 +566,7 @@
         {
           "path": "packages/core/src/session.ts",
           "action": "modified",
-          "sha256": "99691679dd596a4d2f9dd3ec33e9a6219642edacc6475e916fcadd731f2a6ac4"
+          "sha256": "b021912556e564941db8060b4df82590572d4b24a281bc9a75aed0f88d68a728"
         },
         {
           "path": "packages/core/src/session/compaction.ts",
@@ -606,7 +606,7 @@
         {
           "path": "packages/schema/src/session-event.ts",
           "action": "modified",
-          "sha256": "d17eb6c0f3dc552352e644652345bc1d406bad9e2c18de0613912a6928584fd0"
+          "sha256": "9dd2926a5fba5b4434370f0c69ab83351fc3dc7341f7d8686d3cd5611d8551bf"
         },
         {
           "path": "packages/server/src/routes.ts",
@@ -666,7 +666,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "565881aed89cf41be98a3c2e8509131b1340e853b65c3b23dac6fd88fc390c10"
+          "sha256": "9c2950bfa2499ca7d4270c5ce3bd5318acd0ff60981ae425c85f1a4107f16333"
         }
       ]
     },
@@ -1130,27 +1130,27 @@
         {
           "path": "packages/client/src/solid/data.ts",
           "action": "modified",
-          "sha256": "0e92974f1106ba5eace6812710a8699423b2a3f45ba41641a2302999637978fb"
+          "sha256": "8f54d2d9def6b43b94e8e6ce721db46644ff506ba8d68a84056e285775a9d6fa"
         },
         {
           "path": "packages/client/test/solid-inbox-race.test.ts",
           "action": "modified",
-          "sha256": "d8b3315e5da6bcf72b01bf4993f82947b424ad094aa81cb51e5858a8baea7a64"
+          "sha256": "cd68b9cdf08f722168002c2a4777c581cef7ae23af24b3e3cadbecb5810e04ed"
         },
         {
           "path": "packages/core/src/session/inbox.ts",
           "action": "modified",
-          "sha256": "0e6ddd954d0721a56a5ac48f297a0413a651eb335a963d9206a307cc99129bcb"
+          "sha256": "633a4354cb107ba0ce5cd3846566eef73d31c9a6d4d2649a4de1ebb6102e1764"
         },
         {
           "path": "packages/core/src/session/message-updater.ts",
           "action": "modified",
-          "sha256": "a66d780fa0ccfa941c462a72c532c2c360581e630ef2337ae972b841b8f164f1"
+          "sha256": "9611da111b1dfa78f0cd84ea7b2de66b9514eaae2ef9ca117d0632b5ab7fa970"
         },
         {
           "path": "packages/core/src/session/projector.ts",
           "action": "modified",
-          "sha256": "bd0650beb49ab7c9298ab74869da061927401d934d054dd29dfc9f134834a4a6"
+          "sha256": "1183d5e22a88cace64fdbf76e10c1169d01b75fcc7a9a8a7a78477e7db14b37c"
         },
         {
           "path": "packages/core/test/session-inbox-append.test.ts",
@@ -1160,17 +1160,72 @@
         {
           "path": "packages/protocol/src/groups/session.ts",
           "action": "modified",
-          "sha256": "33c69fc9403093e33a2956cbcd4271c9143ad15d1f0d6debb2b23a216b44a853"
+          "sha256": "7c8f847086488f65f428a0208814ff1a31b3d017b05f74b1c91efd64ffd2c7f2"
         },
         {
           "path": "packages/schema/src/session-inbox.ts",
           "action": "modified",
-          "sha256": "a439841126c822995b37c4f036cdee97272040a157979ee37976f8b5a4b6d118"
+          "sha256": "50e58b83ecc421eb642676189917e98da7fa3886d6b2cf49b3b52d3a59021047"
         },
         {
           "path": "packages/server/src/handlers/session.ts",
           "action": "modified",
-          "sha256": "6ab5601c1372b3557c9499914d71d4e14bcf96898c2fe72572fd4e2193112761"
+          "sha256": "d696bc10dc6a3d771b8845b88a9f785d31a7ee526742cdfe1132a2acf9a4beee"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-native-input-continuation",
+      "reason": "原生输入交付边界与可重放的续接护栏；追加录入/消费原子校验归属，终止作废未交付续接、关闭保留恢复；客户端不复活过期占位，禁止跨任务移动，QQ仅调用公共原生接口。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/src/session/composer/region.tsx",
+          "action": "modified",
+          "sha256": "45d9022e4531ab66201decf8221d69a678694992e2d612efdd15725b3c44e711"
+        },
+        {
+          "path": "packages/app/src/session/composer/timeline-actions.ts",
+          "action": "modified",
+          "sha256": "de12feaaf194a9f35d1ea33dddec90f801c16a403fb8d6d35321d48c64ddc838"
+        },
+        {
+          "path": "packages/core/src/session/execution.ts",
+          "action": "modified",
+          "sha256": "de124a31aabdac0306df718a2f77f5a63cd0c7a4eee20b06187bbeeaf6ef3527"
+        },
+        {
+          "path": "packages/core/src/session/input.ts",
+          "action": "added",
+          "sha256": "4837525a03952a5b9a143f582f79b6b20ad7041c5c5d0782832f3f839c8dc3df"
+        },
+        {
+          "path": "packages/core/src/session/runner/llm.ts",
+          "action": "modified",
+          "sha256": "0ec455bcb3b352304bf8b22c9643b88bbf2fe56cf91fcfcbfff9048ab2ed2a0c"
+        },
+        {
+          "path": "packages/core/test/session-input.test.ts",
+          "action": "added",
+          "sha256": "eba1a34fd2dceaf2b652656820af9ea2d3b4c990230691ea97131d756d523794"
+        },
+        {
+          "path": "packages/server/script/qq-continuation-smoke.ts",
+          "action": "added",
+          "sha256": "8c0cda0700c112a26a89716e0f2161ac976aa923f6b1de51a3a23010e72f3501"
+        },
+        {
+          "path": "packages/session-ui/src/actions.ts",
+          "action": "modified",
+          "sha256": "69459fc86ef6dfb5beef8a6dba3d782f2b41da9e7e4882bd3578e784d8b6cf2d"
+        },
+        {
+          "path": "packages/session-ui/src/message/message-content.tsx",
+          "action": "modified",
+          "sha256": "903e9a563b7f55abe6130a3b89f974c446403c07faa7a0050c72fb85781864e4"
         }
       ]
     }

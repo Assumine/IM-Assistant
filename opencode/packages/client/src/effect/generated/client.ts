@@ -73,6 +73,10 @@ import type {
   SessionInboxAppendOutput,
   SessionInboxAmendmentInput,
   SessionInboxAmendmentOutput,
+  SessionInputContinueInput,
+  SessionInputContinueOutput,
+  SessionInputContinuationInput,
+  SessionInputContinuationOutput,
   SessionGenerateInput,
   SessionGenerateOutput,
   SessionInterruptInput,
@@ -669,6 +673,21 @@ const EndpointSessionInboxAmendment = (raw: RawClient["server.session"]) => (inp
     }).pipe(Effect.mapError(mapClientError)),
   )
 
+const EndpointSessionInputContinue = (raw: RawClient["server.session"]) => (input: SessionInputContinueInput) =>
+  preserveEffect<SessionInputContinueOutput>()(
+    raw["session.input.continue"]({
+      params: { sessionID: input["sessionID"], expectedInputID: input["expectedInputID"], inboxID: input["inboxID"] },
+      payload: { text: input["text"], metadata: input["metadata"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSessionInputContinuation = (raw: RawClient["server.session"]) => (input: SessionInputContinuationInput) =>
+  preserveEffect<SessionInputContinuationOutput>()(
+    raw["session.input.continuation"]({
+      params: { sessionID: input["sessionID"], expectedInputID: input["expectedInputID"], inboxID: input["inboxID"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
 const EndpointSessionGenerate = (raw: RawClient["server.session"]) => (input: SessionGenerateInput) =>
   preserveEffect<SessionGenerateOutput>()(
     raw["session.generate"]({ params: { sessionID: input["sessionID"] }, payload: { prompt: input["prompt"] } }).pipe(
@@ -785,6 +804,7 @@ const adaptGroupSession = (raw: RawClient["server.session"]) => ({
     append: EndpointSessionInboxAppend(raw),
     amendment: EndpointSessionInboxAmendment(raw),
   },
+  input: { continue: EndpointSessionInputContinue(raw), continuation: EndpointSessionInputContinuation(raw) },
   generate: EndpointSessionGenerate(raw),
   interrupt: EndpointSessionInterrupt(raw),
   background: EndpointSessionBackground(raw),

@@ -7,10 +7,11 @@ type Storage = Pick<StorageDomain, "get" | "set" | "insert">
 export type Result =
   | { status: "ignored" | "unsupported" | "unbound" | "recalled" | "uncertain" | "unchanged" | "withdrawn" | "conflict" }
   | { status: "command"; action: string; arguments: string }
-  | { status: "blocked"; reason: "cross-session-confirmation-required" | "quoted-adjustment-unavailable" | "quoted-task-not-pending" }
+  | { status: "blocked"; reason: "cross-session-confirmation-required" | "quoted-adjustment-unavailable" | "quoted-task-not-pending" | "quoted-task-not-active" | "quoted-adjustment-expired" | "quoted-adjustment-cancelled" }
   | { status: "rejected"; reason: "not-accepted" }
   | { status: "accepted"; target: Target; sessionID?: string; inputID: string; duplicate: boolean; reference?: "unresolved" }
   | { status: "amended"; target: Target; inputID: string; amendmentID: string; duplicate: boolean }
+  | { status: "steered"; target: Target; inputID: string; continuationID: string; delivery: "pending" | "delivered"; duplicate: boolean }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
 export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy }) {
@@ -30,10 +31,14 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
   const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => evidence === "amended" && record.amendmentID
     ? { status: "amended", target: record.target, inputID: record.inputID, amendmentID: record.amendmentID, duplicate }
-    : evidence === "conflict" ? { status: "blocked", reason: "quoted-task-not-pending" } : evidence === "accepted" ? accepted(record, duplicate)
+    : (evidence === "continuation-pending" || evidence === "continuation-delivered") && record.continuationID
+      ? { status: "steered", target: record.target, inputID: record.inputID, continuationID: record.continuationID, delivery: evidence === "continuation-pending" ? "pending" : "delivered", duplicate }
+    : evidence === "continuation-expired" ? { status: "blocked", reason: "quoted-adjustment-expired" }
+    : evidence === "continuation-cancelled" ? { status: "blocked", reason: "quoted-adjustment-cancelled" }
+    : evidence === "conflict" ? { status: "blocked", reason: record.continuationID ? "quoted-task-not-active" : "quoted-task-not-pending" } : evidence === "accepted" ? accepted(record, duplicate)
     : evidence === "rejected" ? { status: "rejected", reason: "not-accepted" } : { status: "uncertain" }
   const evidence = async (record: Origin): Promise<Evidence> => {
-    try { return record.amendmentID ? await native.amendment(record.target, record.inputID, record.amendmentID) : await native.reconcile(record.target, record.inputID) }
+    try { return record.continuationID ? await native.continuation(record.target, record.inputID, record.continuationID) : record.amendmentID ? await native.amendment(record.target, record.inputID, record.amendmentID) : await native.reconcile(record.target, record.inputID) }
     catch { return "uncertain" }
   }
   const withdraw = async (record: Origin): Promise<Result> => {
@@ -61,7 +66,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     async linkReply(source: Source, outgoingMessageID: string) {
       const record = await metadata.replyOrigin(source, outgoingMessageID)
       const state = await evidence(record)
-      if (state !== "accepted" && state !== "amended") throw new Error("QQ source input is not confirmed accepted")
+      if (state !== "accepted" && state !== "amended" && state !== "continuation-pending" && state !== "continuation-delivered") throw new Error("QQ source input is not confirmed accepted")
       await metadata.linkReply(source, outgoingMessageID)
     },
     async receive(raw: unknown): Promise<Result> {
@@ -89,15 +94,21 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       const destination = await binding(input.scope)
       if (!destination) return { status: "unbound" }
       const quoted = input.quoteID ? await lookup(input.scope, input.quoteID) : undefined
+      let adjustment: "amendmentID" | "continuationID" | undefined
       if (quoted) {
         if (!sameTarget(quoted.target, destination)) return { status: "blocked", reason: "cross-session-confirmation-required" }
-        if (!native.canAppend(destination)) return { status: "blocked", reason: "quoted-adjustment-unavailable" }
-        try { if (!await native.pending(destination, quoted.inputID)) return { status: "blocked", reason: "quoted-task-not-pending" } }
+        if (!native.canAppend(destination) && !native.canContinue(destination)) return { status: "blocked", reason: "quoted-adjustment-unavailable" }
+        try {
+          const pending = await native.pending(destination, quoted.inputID)
+          if (pending && native.canAppend(destination)) adjustment = "amendmentID"
+          else if (!pending && native.canContinue(destination)) adjustment = "continuationID"
+          else return { status: "blocked", reason: "quoted-task-not-pending" }
+        }
         catch { return { status: "uncertain" } }
       }
       const record: Origin = { target: destination, inputID: quoted?.inputID ?? inputID(input), actorID: input.actorID, fingerprint: fingerprint(input),
         source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
-        ...(quoted ? { amendmentID: inputID(input) } : {}) }
+        ...(adjustment ? { [adjustment]: inputID(input) } : {}) }
       if (!(await storage.insert(key(input.scope, input.messageID), record))) {
         const winner = await lookup(input.scope, input.messageID)
         if (!winner) throw new Error("QQ origin admission was not retained")
@@ -108,8 +119,9 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       await metadata.retain(record)
       if (await recalled(input)) return { status: "recalled" }
       try {
-        const state = record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text,
-          { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } })
+        const metadata = { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } }
+        const state = record.continuationID ? await native.continueInput(record.target, record.inputID, record.continuationID, input.text, metadata)
+          : record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text, metadata)
         if (state !== "accepted") return result(record, state, false)
       } catch { return result(record, await evidence(record), true) }
       if (await recalled(input)) return withdraw(record)

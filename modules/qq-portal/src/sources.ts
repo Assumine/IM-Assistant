@@ -5,7 +5,7 @@ import { target, sameTarget, type Target } from "./target"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
 export type Source = { scope: Scope; messageID: string; actorID: string }
-export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; source?: Source }
+export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; continuationID?: string; source?: Source }
 export type SourceResult = { status: "found"; source: Source } | { status: "missing" | "forbidden" | "uncertain" | "not-accepted" }
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 const account = (value: unknown): value is string => typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value)
@@ -36,11 +36,12 @@ export const origin = (value: unknown): Origin | undefined => {
   const destination = target("target" in value ? value.target : value.sessionID)
   if ("target" in value && "sessionID" in value && !sameTarget(destination, target(value.sessionID))) throw new Error("Conflicting QQ origin target")
   if ("amendmentID" in value && !controlledID(value.amendmentID)) throw new Error("Invalid QQ amendment metadata")
+  if ("continuationID" in value && (!controlledID(value.continuationID) || "amendmentID" in value)) throw new Error("Invalid QQ continuation metadata")
   const envelope = "source" in value ? source(value.source) : undefined
-  if (envelope && (envelope.actorID !== value.actorID || inputID(envelope) !== (value.amendmentID ?? value.inputID)))
+  if (envelope && (envelope.actorID !== value.actorID || inputID(envelope) !== (value.continuationID ?? value.amendmentID ?? value.inputID)))
     throw new Error("Conflicting QQ source envelope")
   return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint,
-    ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(envelope ? { source: envelope } : {}) }
+    ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(value.continuationID ? { continuationID: value.continuationID as string } : {}), ...(envelope ? { source: envelope } : {}) }
 }
 
 /** Only immutable routing metadata in the original plugin KV. No message bodies, execution state or delivery queue. */
@@ -57,7 +58,7 @@ export function sources(storage: Storage, policy: Policy) {
     lookup,
     replyOrigin,
     async retain(value: Origin) {
-      if (!value.source || value.amendmentID) return
+      if (!value.source || value.amendmentID || value.continuationID) return
       const entry = source(value.source)
       if (!permitted(entry, policy) || inputID(entry) !== value.inputID) throw new Error("Invalid QQ input source")
       const index = sourceKey(value.target, value.inputID)
@@ -73,7 +74,7 @@ export function sources(storage: Storage, policy: Policy) {
       const entry = source(pointer)
       if (!permitted(entry, policy)) return { status: "forbidden" }
       const value = await lookup(entry.scope, entry.messageID)
-      if (!value?.source || value.amendmentID || value.inputID !== id || inputID(entry) !== id ||
+      if (!value?.source || value.amendmentID || value.continuationID || value.inputID !== id || inputID(entry) !== id ||
         !sameTarget(value.target, destination) || !sameSource(value.source, entry)) throw new Error("QQ input source conflict")
       return { status: "found", source: entry }
     },

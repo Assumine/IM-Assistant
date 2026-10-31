@@ -194,3 +194,53 @@ test("a remote append revalidates after an older Inbox read without moving or du
     setup.dispose()
   }
 })
+
+test.each(["succeeded", "failed", "interrupted"] as const)(
+  "a %s terminal expires guarded input without an old snapshot restoring its queue row or transcript",
+  async (action) => {
+    const old = Promise.withResolvers<Response>(),
+      reloaded = Promise.withResolvers<void>()
+    const guarded = { ...item, payload: { ...item.payload, continuationOf: "msg_parent" } }
+    const queued = { ...item, id: "msg_next", delivery: "queue" as const }
+    let reads = 0
+    const setup = fixture(async () => {
+      if (++reads === 1) return old.promise
+      reloaded.resolve()
+      return Response.json({ data: [queued] })
+    })
+    try {
+      setup.emit({
+        ...enqueued,
+        data: {
+          ...enqueued.data,
+          item: { type: guarded.type, delivery: guarded.delivery, payload: guarded.payload },
+          continuation: { expectedInputID: "msg_parent", requestHash: "fixture" },
+        },
+      })
+      const reading = setup.data.session.pending.sync(item.sessionID)
+      const base = { id: "evt_terminal", created: 2, durable: { aggregateID: item.sessionID, seq: 2, version: 1 } }
+      setup.emit(
+        action === "succeeded"
+          ? { ...base, type: "session.execution.succeeded", data: { sessionID: item.sessionID } }
+          : action === "failed"
+            ? {
+                ...base,
+                type: "session.execution.failed",
+                data: { sessionID: item.sessionID, error: { type: "test", message: "failed" } },
+              }
+            : { ...base, type: "session.execution.interrupted", data: { sessionID: item.sessionID, reason: "user" } },
+      )
+      expect(setup.data.session.message.get(item.sessionID, item.id)).toBeUndefined()
+      old.resolve(Response.json({ data: [guarded, queued] }))
+      await reading
+      await reloaded.promise
+      await setup.data.session.pending.sync(item.sessionID)
+      expect(reads).toBe(2)
+      expect(setup.data.session.pending.list(item.sessionID)).toEqual([queued])
+      expect(setup.data.session.message.get(item.sessionID, item.id)).toBeUndefined()
+    } finally {
+      old.resolve(Response.json({ data: [] }))
+      setup.dispose()
+    }
+  },
+)

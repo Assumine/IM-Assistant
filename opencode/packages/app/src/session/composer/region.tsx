@@ -293,6 +293,11 @@ export function createActiveSessionRegion(input: {
 
   const pendingSteer: TimelinePendingActions = {
     status: (sessionID, messageID) => data.session.pending.status(sessionID, messageID),
+    canQueue: ({ sessionID, messageID }) => {
+      const item = data.session.pending.list(sessionID).find((entry) => entry.id === messageID)
+
+      return item?.type !== "user" || !item.payload.continuationOf
+    },
     queue: ({ sessionID, messageID }) =>
       server.api.session.inbox
         .update({ sessionID, inboxID: messageID, delivery: "queue" })

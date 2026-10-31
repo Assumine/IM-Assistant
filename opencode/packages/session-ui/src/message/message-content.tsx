@@ -93,9 +93,7 @@ function modelItems(data: ReturnType<typeof useData>, model: SessionMessageAssis
 }
 
 function sameModel(a: SessionMessageAssistant["model"], b: SessionMessageAssistant["model"]) {
-  return (
-    a.providerID === b.providerID && a.id === b.id && (a.variant ?? "default") === (b.variant ?? "default")
-  )
+  return a.providerID === b.providerID && a.id === b.id && (a.variant ?? "default") === (b.variant ?? "default")
 }
 
 function MetaItems(props: { items: MetaItem[]; slot: "user-message" | "text-part" }) {
@@ -467,18 +465,24 @@ export function CurrentUserMessageDisplay(props: {
     <span data-slot="user-message-actions">
       <Show when={props.actions?.pending}>
         <UserMessageTransition active={pending()}>
-          <MessageActionButton
-            icon="arrow-down-to-line"
-            size="small"
-            label={i18n.t("ui.message.moveToQueue")}
-            disabled={state.updating}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={(event) => {
-              event.stopPropagation()
-              void updatePending("queue")
-            }}
-            aria-label={i18n.t("ui.message.moveToQueue")}
-          />
+          <Show
+            when={
+              props.actions?.pending?.canQueue?.({ sessionID: props.sessionID, messageID: props.message.id }) !== false
+            }
+          >
+            <MessageActionButton
+              icon="arrow-down-to-line"
+              size="small"
+              label={i18n.t("ui.message.moveToQueue")}
+              disabled={state.updating}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation()
+                void updatePending("queue")
+              }}
+              aria-label={i18n.t("ui.message.moveToQueue")}
+            />
+          </Show>
           <MessageActionButton
             icon="outline-trash"
             size="small"

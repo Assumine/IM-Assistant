@@ -47,6 +47,8 @@ export type SessionUserActions = {
    */
   pending?: {
     status: (messageID: string) => "starting" | "steering" | "stranded" | "queued" | undefined
+    /** A guarded continuation belongs to its active input and cannot become another queued task. */
+    canQueue?: (input: { sessionID: string; messageID: string }) => boolean
     queue: (input: { sessionID: string; messageID: string }) => Promise<void>
     remove: (input: { sessionID: string; messageID: string }) => Promise<void>
   }

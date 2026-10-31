@@ -225,6 +225,7 @@ export const InboxEnqueued = Event.durable({
   schema: {
     ...InboxRef,
     item: SessionInbox.Item,
+    continuation: Schema.Struct({ expectedInputID: SessionMessage.ID, requestHash: Schema.String }).pipe(optional),
   },
 })
 export type InboxEnqueued = typeof InboxEnqueued.Type
@@ -249,6 +250,14 @@ export const InboxTextAppended = Event.durable({
   schema: { ...InboxRef, amendmentID: SessionMessage.ID, text: Schema.String.check(Schema.isPattern(/\S/)) },
 })
 export type InboxTextAppended = typeof InboxTextAppended.Type
+
+/** A native input boundary, independent of the longer coalesced execution busy period. */
+export const InputClosed = Event.durable({
+  type: "session.input.closed",
+  ...options,
+  schema: { ...Base, rootID: SessionMessage.ID },
+})
+export type InputClosed = typeof InputClosed.Type
 
 export namespace Execution {
   export const Started = Event.durable({ type: "session.execution.started", ...options, schema: Base })
@@ -679,6 +688,7 @@ export const Definitions = Event.inventory(
   InboxCancelled,
   InboxDeliveryChanged,
   InboxTextAppended,
+  InputClosed,
   Execution.Started,
   Execution.Succeeded,
   Execution.Failed,

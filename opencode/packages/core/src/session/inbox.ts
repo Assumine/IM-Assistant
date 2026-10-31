@@ -32,6 +32,7 @@ import { SessionHistory } from "./history.js"
 import { KVTable } from "../kv/sql.js"
 import { Hash } from "@opencode/util/hash"
 import { Amendment } from "@opencode/schema/session-inbox"
+import { SessionInput } from "./input.js"
 
 type DatabaseService = Database.Interface["db"]
 
@@ -108,6 +109,12 @@ export const serialized = <A, E, R>(sessionID: SessionSchema.ID, effect: Effect.
 export class LifecycleConflict extends Schema.TaggedError<LifecycleConflict>()("SessionInbox.LifecycleConflict", {
   id: SessionMessage.ID,
 }) {}
+class PromotionBoundaryChanged extends Schema.TaggedError<PromotionBoundaryChanged>()(
+  "SessionInbox.PromotionBoundaryChanged",
+  {
+    id: SessionMessage.ID,
+  },
+) {}
 
 function matches<Type extends Item["type"]>(
   stored: Info,
@@ -349,6 +356,54 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     ),
   )
 
+  const continuation = Effect.fn("SessionInbox.continuation")(function* (
+    input: SessionInput.Ref & { readonly requestHash?: string },
+  ) {
+    const record = yield* SessionInput.recorded(db, input.sessionID, input.id)
+    if (
+      record &&
+      (record.sessionID !== input.sessionID ||
+        record.inboxID !== input.id ||
+        record.expectedInputID !== input.expectedInputID ||
+        (input.requestHash !== undefined && record.requestHash !== input.requestHash))
+    )
+      return yield* new LifecycleConflict({ id: input.id })
+    return SessionInput.receipt(input, record)
+  })
+  const continueInput = Effect.fn("SessionInbox.continueInput")(
+    (
+      input: SessionInput.Ref & {
+        readonly requestHash: string
+        readonly item: Extract<Item, { type: "user" }>
+      },
+    ) =>
+      serialized(
+        input.sessionID,
+        Effect.gen(function* () {
+          if (!input.item.payload.text.trim() || input.item.delivery !== "steer" || input.id === input.expectedInputID)
+            return yield* new LifecycleConflict({ id: input.id })
+          const prior = yield* continuation(input)
+          if (prior.status !== "unknown") return prior
+          yield* bus
+            .publish(SessionEvent.InboxEnqueued, {
+              sessionID: input.sessionID,
+              inboxID: input.id,
+              item: input.item,
+              continuation: { expectedInputID: input.expectedInputID, requestHash: input.requestHash },
+            })
+            .pipe(
+              Effect.catchDefect((defect) => {
+                if (!(defect instanceof LifecycleConflict)) return Effect.die(defect)
+                return continuation(input).pipe(
+                  Effect.flatMap((value) => (value.status === "unknown" ? Effect.fail(defect) : Effect.void)),
+                )
+              }),
+            )
+          return yield* continuation(input)
+        }),
+      ),
+  )
+
   return {
     list: (sessionID: SessionSchema.ID) => list(db, sessionID),
     reconcile,
@@ -359,6 +414,8 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     queue,
     append,
     amendment,
+    continuation,
+    continueInput,
   }
 })
 
@@ -374,6 +431,7 @@ export const projectAdmitted = Effect.fn("SessionInbox.projectAdmitted")(functio
     readonly sessionID: SessionSchema.ID
     readonly item: Item
     readonly timeCreated: number
+    readonly continuation?: { readonly expectedInputID: SessionMessage.ID; readonly requestHash: string }
   },
 ) {
   const message = yield* db
@@ -383,9 +441,28 @@ export const projectAdmitted = Effect.fn("SessionInbox.projectAdmitted")(functio
     .get()
     .pipe(Effect.orDie)
   if (message !== undefined) return yield* Effect.die(new LifecycleConflict({ id: request.id }))
+  if (request.continuation) {
+    if (
+      request.item.type !== "user" ||
+      request.item.delivery !== "steer" ||
+      !(yield* SessionInput.projectAdmitted(db, { ...request, ...request.continuation }))
+    )
+      return yield* Effect.die(new LifecycleConflict({ id: request.id }))
+  } else if (
+    (request.item.type === "user" && request.item.payload.continuationOf) ||
+    (yield* SessionInput.recorded(db, request.sessionID, request.id))
+  )
+    return yield* Effect.die(new LifecycleConflict({ id: request.id }))
   const payload =
     request.item.type === "user"
-      ? encodeStoredUser(yield* SessionBlob.externalizePayload(db, request.item.payload))
+      ? encodeStoredUser(
+          yield* SessionBlob.externalizePayload(
+            db,
+            request.continuation
+              ? { ...request.item.payload, continuationOf: request.continuation.expectedInputID }
+              : request.item.payload,
+          ),
+        )
       : request.item.type === "synthetic"
         ? encodeSynthetic(request.item.payload)
         : request.item.type === "compaction"
@@ -423,6 +500,14 @@ export const projectDelivered = Effect.fn("SessionInbox.projectDelivered")(funct
   db: DatabaseService,
   input: PendingRef,
 ) {
+  const queued = yield* db
+    .select({ type: SessionInboxTable.type, delivery: SessionInboxTable.delivery })
+    .from(SessionInboxTable)
+    .where(and(eq(SessionInboxTable.id, input.id), eq(SessionInboxTable.session_id, input.sessionID)))
+    .get()
+    .pipe(Effect.orDie)
+  if (queued?.type === "user" && queued.delivery === "queue" && (yield* has(db, input.sessionID, "steer")))
+    return yield* Effect.die(new PromotionBoundaryChanged({ id: input.id }))
   const deleted = yield* db
     .delete(SessionInboxTable)
     .where(and(eq(SessionInboxTable.id, input.id), eq(SessionInboxTable.session_id, input.sessionID)))
@@ -430,6 +515,8 @@ export const projectDelivered = Effect.fn("SessionInbox.projectDelivered")(funct
     .get()
     .pipe(Effect.orDie)
   if (!deleted) return yield* Effect.die(new LifecycleConflict({ id: input.id }))
+  if (deleted.type === "user" && !(yield* SessionInput.projectDelivered(db, { ...input, delivery: deleted.delivery })))
+    return yield* Effect.die(new LifecycleConflict({ id: input.id }))
   return delivered(deleted)
 })
 
@@ -506,6 +593,7 @@ export const projectCancelled = Effect.fn("SessionInbox.projectCancelled")(funct
     .get()
     .pipe(Effect.orDie)
   if (!deleted) return yield* Effect.die(new LifecycleConflict({ id: input.id }))
+  yield* SessionInput.projectCancelled(db, input.sessionID, input.id)
   yield* SessionBlob.releaseMessage(db, input.sessionID, input.id)
 })
 
@@ -513,6 +601,8 @@ const projectDelivery = Effect.fn("SessionInbox.projectDelivery")(function* (
   db: DatabaseService,
   input: PendingRef & { readonly from: Delivery; readonly to: Delivery },
 ) {
+  if (input.to === "queue" && (yield* SessionInput.recorded(db, input.sessionID, input.id)))
+    return yield* Effect.die(new LifecycleConflict({ id: input.id }))
   const updated = yield* db
     .update(SessionInboxTable)
     .set({ delivery: input.to })
@@ -640,6 +730,31 @@ export const has = Effect.fn("SessionInbox.has")(function* (
   return row !== undefined
 })
 
+/** Only called at a native safe boundary. A racing admission aborts the close transaction, then the runner rechecks. */
+export const projectFinished = Effect.fn("SessionInbox.projectFinished")(function* (
+  db: DatabaseService,
+  sessionID: SessionSchema.ID,
+  rootID: SessionMessage.ID,
+) {
+  const active = yield* SessionInput.current(db, sessionID)
+  if (active?.rootID !== rootID) return
+  if (yield* has(db, sessionID, "steer")) return yield* Effect.die(new LifecycleConflict({ id: rootID }))
+  yield* SessionInput.projectClosed(db, sessionID, rootID)
+})
+/** Caller owns `serialized`; do not acquire the non-reentrant Inbox lock a second time. */
+export const finish = Effect.fn("SessionInbox.finish")(function* (
+  db: DatabaseService,
+  bus: Bus.Interface,
+  sessionID: SessionSchema.ID,
+) {
+  if (yield* has(db, sessionID, "steer")) return
+  const active = yield* SessionInput.current(db, sessionID)
+  if (active)
+    yield* bus
+      .publish(SessionEvent.InputClosed, { sessionID, rootID: active.rootID })
+      .pipe(Effect.catchDefect((defect) => (defect instanceof LifecycleConflict ? Effect.void : Effect.die(defect))))
+})
+
 const publishMutation = <A, E, R>(input: PendingRef, effect: Effect.Effect<A, E, R>) =>
   serialized(input.sessionID, effect).pipe(
     Effect.asVoid,
@@ -719,6 +834,10 @@ export const promote = Effect.fn("SessionInbox.promote")(function* (
         (yield* publish(db, bus, sessionID, control === -1 ? arrivedSteers : arrivedSteers.slice(0, control)))
       )
     }),
+  ).pipe(
+    Effect.catchDefect((defect) =>
+      defect instanceof PromotionBoundaryChanged ? Effect.succeed(undefined) : Effect.die(defect),
+    ),
   )
 })
 

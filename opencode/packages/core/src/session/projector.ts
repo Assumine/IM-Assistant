@@ -11,6 +11,7 @@ import { SessionEvent } from "./event.js"
 import { SessionMessage } from "./message.js"
 import { SessionMessageUpdater } from "./message-updater.js"
 import { SessionInbox } from "./inbox.js"
+import { SessionInput } from "./input.js"
 import { InstructionState } from "./instruction-state.js"
 import { SessionBlob } from "./blob.js"
 import { SessionInboxTable, SessionMessageTable, SessionPartTable, SessionTable, type SessionPartData } from "./sql.js"
@@ -516,6 +517,7 @@ function projectIdle(
   return Effect.gen(function* () {
     yield* run(db, event)
     if (event.type === SessionEvent.Execution.Interrupted.type && event.data.reason === "shutdown") return
+    yield* SessionInput.projectTerminal(db, event.data.sessionID)
     const time = event.created
     const outcome =
       event.type === SessionEvent.Execution.Succeeded.type
@@ -768,6 +770,7 @@ const layer = Layer.effectDiscard(
           sessionID: event.data.sessionID,
           item: event.data.item,
           timeCreated: event.created,
+          continuation: event.data.continuation,
         })
         yield* db
           .update(SessionTable)
@@ -793,6 +796,9 @@ const layer = Layer.effectDiscard(
           .run()
           .pipe(Effect.orDie)
       }),
+    )
+    yield* bus.project(SessionEvent.InputClosed, (event) =>
+      SessionInbox.projectFinished(db, event.data.sessionID, event.data.rootID),
     )
     yield* bus.project(SessionEvent.InboxDeliveryChanged, (event) =>
       SessionInbox.projectDeliveryChanged(db, {

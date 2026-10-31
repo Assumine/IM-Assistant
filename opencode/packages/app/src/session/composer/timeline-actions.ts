@@ -28,6 +28,7 @@ export function createTimelineActions(
       return id ? actions.pending.status(id, messageID) : undefined
     },
     queue: actions.pending.queue,
+    canQueue: actions.pending.canQueue,
     remove: actions.pending.remove,
   }
 

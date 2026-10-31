@@ -344,7 +344,15 @@
         "opencode/packages/schema/src/session-event.ts",
         "opencode/packages/schema/src/session-inbox.ts",
         "opencode/packages/server/script/qq-portal-smoke.ts",
-        "opencode/packages/server/src/handlers/session.ts"
+        "opencode/packages/server/src/handlers/session.ts",
+        "opencode/packages/app/src/session/composer/region.tsx",
+        "opencode/packages/app/src/session/composer/timeline-actions.ts",
+        "opencode/packages/core/src/session/execution.ts",
+        "opencode/packages/core/src/session/input.ts",
+        "opencode/packages/core/src/session/runner/llm.ts",
+        "opencode/packages/core/test/session-input.test.ts",
+        "opencode/packages/session-ui/src/actions.ts",
+        "opencode/packages/session-ui/src/message/message-content.tsx"
       ],
       "verification": [
         {
@@ -362,7 +370,7 @@
           "command": "python tools/run_runtime_checks.py --task R3-01",
           "evidence": "upstream/codex-verification.json",
           "scope": "isolated_feasibility",
-          "native_related_tests": 326,
+          "native_related_tests": 337,
           "native_http_checks": 19,
           "publication": "disabled"
         }
@@ -423,7 +431,21 @@
         "opencode/packages/schema/src/session-inbox.ts",
         "opencode/packages/server/src/handlers/session.ts",
         "modules/qq-portal/src/sources.ts",
-        "modules/qq-portal/test/sources.test.ts"
+        "modules/qq-portal/test/sources.test.ts",
+        "modules/qq-portal/test/continuation.test.ts",
+        "opencode/packages/app/src/session/composer/region.tsx",
+        "opencode/packages/app/src/session/composer/timeline-actions.ts",
+        "opencode/packages/core/src/session/execution.ts",
+        "opencode/packages/core/src/session/input.ts",
+        "opencode/packages/core/src/session/runner/llm.ts",
+        "opencode/packages/core/test/session-execution.test.ts",
+        "opencode/packages/core/test/session-input.test.ts",
+        "opencode/packages/core/test/session-native-compaction.test.ts",
+        "opencode/packages/core/test/session-native.test.ts",
+        "opencode/packages/core/test/session-runner.test.ts",
+        "opencode/packages/server/script/qq-continuation-smoke.ts",
+        "opencode/packages/session-ui/src/actions.ts",
+        "opencode/packages/session-ui/src/message/message-content.tsx"
       ],
       "verification": [
         {
@@ -431,12 +453,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 151,
+          "tests_run": 460,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 25,
+          "http_checks": 32,
           "publication": "disabled"
         }
       ],

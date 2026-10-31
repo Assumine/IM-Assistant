@@ -97,6 +97,10 @@ const layer = Layer.effect(
                     sessionID,
                     entering || !continuing ? "input" : "steer",
                   )
+                  // A queued task opens a new input boundary. Leave the original input open through the
+                  // native idle hook, which may admit more steering work for that same intent.
+                  if (!continuing && stepped && next?.delivery === "queue")
+                    yield* SessionInbox.finish(db, bus, sessionID)
                   if (next?.type === "compaction")
                     yield* bus.publishAll([
                       [SessionEvent.InboxDelivered, { sessionID, inboxID: next.id }],
@@ -175,10 +179,20 @@ const layer = Layer.effect(
                 // The Session would go idle; a plugin may admit input to keep this execution working.
                 yield* restore(
                   SessionBackground.outstanding(jobs, store, sessionID).pipe(
-                    Effect.flatMap((background) => hooks.trigger("session", "experimental.idle", { sessionID, background })),
+                    Effect.flatMap((background) =>
+                      hooks.trigger("session", "experimental.idle", { sessionID, background }),
+                    ),
                   ),
                 )
-                if (!(yield* SessionInbox.has(db, sessionID, "input"))) return DrainResult.Complete()
+                const pendingAfterIdle = yield* SessionInbox.serialized(
+                  sessionID,
+                  Effect.gen(function* () {
+                    if (yield* SessionInbox.has(db, sessionID, "input")) return true
+                    yield* SessionInbox.finish(db, bus, sessionID)
+                    return yield* SessionInbox.has(db, sessionID, "input")
+                  }),
+                )
+                if (!pendingAfterIdle) return DrainResult.Complete()
                 continue
               }
               const ready = yield* restore(

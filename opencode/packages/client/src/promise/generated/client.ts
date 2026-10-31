@@ -67,6 +67,10 @@ import type {
   SessionInboxAppendOutput,
   SessionInboxAmendmentInput,
   SessionInboxAmendmentOutput,
+  SessionInputContinueInput,
+  SessionInputContinueOutput,
+  SessionInputContinuationInput,
+  SessionInputContinuationOutput,
   SessionGenerateInput,
   SessionGenerateOutput,
   SessionInterruptInput,
@@ -925,6 +929,31 @@ export function make(options: ClientOptions) {
             {
               method: "GET",
               path: `/api/session/${encodeURIComponent(input.sessionID)}/inbox/${encodeURIComponent(input.inboxID)}/append/${encodeURIComponent(input.amendmentID)}`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
+      input: {
+        continue: (input: SessionInputContinueInput, requestOptions?: RequestOptions) =>
+          request<SessionInputContinueOutput>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.expectedInputID)}/continue/${encodeURIComponent(input.inboxID)}`,
+              body: { text: input["text"], metadata: input["metadata"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        continuation: (input: SessionInputContinuationInput, requestOptions?: RequestOptions) =>
+          request<SessionInputContinuationOutput>(
+            {
+              method: "GET",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.expectedInputID)}/continue/${encodeURIComponent(input.inboxID)}`,
               successStatus: 200,
               declaredStatuses: [400, 401, 404, 409],
               empty: false,

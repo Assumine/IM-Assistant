@@ -3,9 +3,9 @@ import type { ConversationBackend } from "../../../opencode/packages/schema/src/
 import { isConflictError } from "../../../opencode/packages/client/src/promise"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
-export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">> }
+export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> }
 export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query">
-export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict"
+export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled"
 const id = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value)
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 
@@ -34,8 +34,23 @@ export function targets(session: Native, backend?: Backend) {
       throw new Error("Native QQ admission identity mismatch")
     return value.status
   }
+  const continued = (value: Awaited<ReturnType<SessionApi["input"]["continuation"]>>, destination: Extract<Target, { kind: "session" }>, inputID: string, continuationID: string): Evidence => {
+    if (value.sessionID !== destination.sessionID || value.expectedInputID !== inputID || value.inboxID !== continuationID || value.status !== "unknown" && !value.rootID)
+      throw new Error("Wrong native continuation receipt")
+    return value.status === "unknown" ? "uncertain" : `continuation-${value.status}`
+  }
   return {
     canAppend(destination: Target) { return destination.kind === "session" && !!session.inbox.append && !!session.inbox.amendment },
+    canContinue(destination: Target) { return destination.kind === "session" && !!session.input?.continue && !!session.input?.continuation },
+    async continueInput(destination: Target, inputID: string, continuationID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"]): Promise<Evidence> {
+      if (destination.kind !== "session" || !session.input) return "uncertain"
+      try { return continued(await session.input.continue({ sessionID: destination.sessionID, expectedInputID: inputID, inboxID: continuationID, text, metadata }), destination, inputID, continuationID) }
+      catch (error) { if (isConflictError(error)) return "conflict"; throw error }
+    },
+    async continuation(destination: Target, inputID: string, continuationID: string): Promise<Evidence> {
+      if (destination.kind !== "session" || !session.input) return "uncertain"
+      return continued(await session.input.continuation({ sessionID: destination.sessionID, expectedInputID: inputID, inboxID: continuationID }), destination, inputID, continuationID)
+    },
     async pending(destination: Target, inputID: string) {
       return destination.kind === "session" && (await session.inbox.list({ sessionID: destination.sessionID })).some((item) => item.id === inputID && item.type === "user")
     },

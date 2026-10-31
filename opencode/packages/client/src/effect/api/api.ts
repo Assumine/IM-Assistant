@@ -345,6 +345,28 @@ export type SessionInboxAmendmentOperation<E = never> = (
   input: SessionInboxAmendmentInput,
 ) => Effect.Effect<SessionInboxAmendmentOutput, E>
 
+export type SessionInputContinueInput = {
+  readonly sessionID: Session.ID
+  readonly expectedInputID: SessionMessage.ID
+  readonly inboxID: SessionMessage.ID
+  readonly text: string
+  readonly metadata?: { readonly [x: string]: unknown } | undefined
+}
+export type SessionInputContinueOutput = SessionInbox.Continuation
+export type SessionInputContinueOperation<E = never> = (
+  input: SessionInputContinueInput,
+) => Effect.Effect<SessionInputContinueOutput, E>
+
+export type SessionInputContinuationInput = {
+  readonly sessionID: Session.ID
+  readonly expectedInputID: SessionMessage.ID
+  readonly inboxID: SessionMessage.ID
+}
+export type SessionInputContinuationOutput = SessionInbox.Continuation
+export type SessionInputContinuationOperation<E = never> = (
+  input: SessionInputContinuationInput,
+) => Effect.Effect<SessionInputContinuationOutput, E>
+
 export type SessionGenerateInput = { readonly sessionID: Session.ID; readonly prompt: string }
 export type SessionGenerateOutput = { readonly text: string }
 export type SessionGenerateOperation<E = never> = (
@@ -453,6 +475,10 @@ export interface SessionApi<E = never> {
     readonly update: SessionInboxUpdateOperation<E>
     readonly append: SessionInboxAppendOperation<E>
     readonly amendment: SessionInboxAmendmentOperation<E>
+  }
+  readonly input: {
+    readonly continue: SessionInputContinueOperation<E>
+    readonly continuation: SessionInputContinuationOperation<E>
   }
   readonly generate: SessionGenerateOperation<E>
   readonly interrupt: SessionInterruptOperation<E>
@@ -884,6 +910,9 @@ export type ExperimentalSessionLogOutput =
             readonly sessionID: Session.ID
             readonly inboxID: SessionMessage.ID
             readonly item: SessionInbox.Item
+            readonly continuation?:
+              | { readonly expectedInputID: SessionMessage.ID; readonly requestHash: string }
+              | undefined
           }
         }
       | {
@@ -927,6 +956,17 @@ export type ExperimentalSessionLogOutput =
             readonly amendmentID: SessionMessage.ID
             readonly text: string
           }
+        }
+      | {
+          readonly id: Event.ID
+          readonly created: number
+          readonly metadata?: { readonly [x: string]: unknown } | undefined
+          readonly type: "session.input.closed"
+          readonly durable: { readonly aggregateID: string; readonly seq: Event.Seq; readonly version: Event.Version }
+          readonly location?:
+            | { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
+            | undefined
+          readonly data: { readonly sessionID: Session.ID; readonly rootID: SessionMessage.ID }
         }
       | {
           readonly id: Event.ID
@@ -2227,6 +2267,7 @@ export type EventSubscribeInput = {
         | "session.inbox.cancelled"
         | "session.inbox.delivery.changed"
         | "session.inbox.text.appended"
+        | "session.input.closed"
         | "session.execution.started"
         | "session.execution.succeeded"
         | "session.execution.failed"

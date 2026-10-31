@@ -611,6 +611,46 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
       ),
     )
     .add(
+      HttpApiEndpoint.post(
+        "session.input.continue",
+        "/api/session/:sessionID/input/:expectedInputID/continue/:inboxID",
+        {
+          params: { sessionID: Session.ID, expectedInputID: SessionMessage.ID, inboxID: SessionMessage.ID },
+          payload: Schema.Struct({
+            text: Schema.String.check(Schema.isPattern(/\S/)),
+            metadata: Schema.Record(Schema.String, Schema.Unknown).pipe(Schema.optional),
+          }),
+          success: SessionInbox.Continuation,
+          error: [ConflictError, SessionNotFoundError, InvalidRequestError, LocationNotFoundError],
+        },
+      ).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.input.continue",
+          summary: "Continue the referenced active input",
+          description:
+            "Admit text once as a native steer only while the referenced delivered input still belongs to the current input boundary. Handoff and eventual delivery are separate facts; a terminal expires unconsumed continuations instead of moving them into a successor task.",
+        }),
+      ),
+    )
+    .add(
+      HttpApiEndpoint.get(
+        "session.input.continuation",
+        "/api/session/:sessionID/input/:expectedInputID/continue/:inboxID",
+        {
+          params: { sessionID: Session.ID, expectedInputID: SessionMessage.ID, inboxID: SessionMessage.ID },
+          success: SessionInbox.Continuation,
+          error: [ConflictError, SessionNotFoundError],
+        },
+      ).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.input.continuation",
+          summary: "Read a guarded continuation receipt",
+          description:
+            "Read only historical Inbox handoff evidence. Unknown never admits, resumes or redirects work; delivered does not imply model completion.",
+        }),
+      ),
+    )
+    .add(
       HttpApiEndpoint.get(
         "session.instructions.entry.list",
         "/api/experimental/session/:sessionID/instructions/entries",

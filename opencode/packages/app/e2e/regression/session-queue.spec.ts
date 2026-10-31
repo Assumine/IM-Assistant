@@ -819,6 +819,7 @@ type InboxRow = {
     metadata?: typeof PromptBody.Type.metadata
     files?: Extract<SessionInboxInfo, { type: "user" }>["payload"]["files"]
     agents?: Extract<SessionInboxInfo, { type: "user" }>["payload"]["agents"]
+    continuationOf?: Extract<SessionInboxInfo, { type: "user" }>["payload"]["continuationOf"]
   }
   delivery: SessionInbox.Delivery
 }
@@ -1914,6 +1915,26 @@ for (const [action, status] of [
     if (action === "Move to queue") await expect(view.rows).toContainText("U2: Also check the retry path.")
   })
 }
+
+test("a guarded continuation cannot move into a later queued task", async ({ page }) => {
+  const mock = createQueueMock(
+    ["Guarded input adjustment"],
+    [{ id: "msg_parent", type: "user", text: "Original task", time: { created: 1 } }],
+  )
+
+  mock.rows[0].delivery = "steer"
+  mock.rows[0].payload.continuationOf = "msg_parent"
+  const inboxID = mock.rows[0].id
+  const view = await openQueue(page, mock)
+  const pending = userRow(page, inboxID)
+  await expect(pending).toContainText("Guarded input adjustment")
+  await pending.hover()
+  await expect(pending.getByRole("button", { name: "Move to queue" })).toHaveCount(0)
+  await pending.getByRole("button", { name: "Delete", exact: true }).click()
+  await expect(pending).toHaveCount(0)
+  await expect(view.input).toHaveText("")
+  expect(mock.changes).toEqual([{ inboxID, action: "cancel" }])
+})
 
 test("waiting steers group under one Pending line, each keeping its own actions beside its bubble", async ({
   page,

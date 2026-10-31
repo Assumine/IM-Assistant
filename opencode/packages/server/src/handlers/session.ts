@@ -586,6 +586,44 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
         }),
       )
       .handle(
+        "session.input.continue",
+        Effect.fn(function* (ctx) {
+          return yield* session.continueInput({ ...ctx.params, id: ctx.params.inboxID, ...ctx.payload }).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag(
+              "Session.InboxConflictError",
+              (error) =>
+                new ConflictError({
+                  resource: error.inboxID,
+                  message: "Referenced input is no longer the active native input, or the continuation ID conflicts",
+                }),
+            ),
+            Effect.catchTag(
+              "Session.AttachmentError",
+              (error) => new InvalidRequestError({ message: error.message, field: "files" }),
+            ),
+            Effect.catchTag(
+              "Session.SkillNotFoundError",
+              (error) => new InvalidRequestError({ message: `Skill not found: ${error.skill}`, field: "skills" }),
+            ),
+            locationErrors,
+          )
+        }),
+      )
+      .handle(
+        "session.input.continuation",
+        Effect.fn(function* (ctx) {
+          return yield* session.inputContinuation(ctx.params).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag(
+              "Session.InboxConflictError",
+              (error) =>
+                new ConflictError({ resource: error.inboxID, message: "Continuation belongs to another input" }),
+            ),
+          )
+        }),
+      )
+      .handle(
         "session.instructions.entry.list",
         Effect.fn(function* (ctx) {
           yield* requireSession(ctx.params.sessionID)

@@ -20,10 +20,22 @@ export const Amendment = Schema.Struct({
 }).annotate({ identifier: "Session.Inbox.Amendment" })
 export type Amendment = typeof Amendment.Type
 
+/** Historical Inbox handoff evidence. Delivered does not mean that model execution completed. */
+export interface Continuation extends Schema.Schema.Type<typeof Continuation> {}
+export const Continuation = Schema.Struct({
+  sessionID: SessionID,
+  inboxID: SessionMessage.ID,
+  expectedInputID: SessionMessage.ID,
+  rootID: SessionMessage.ID.pipe(optional),
+  status: Schema.Literals(["pending", "delivered", "cancelled", "expired", "unknown"]),
+}).annotate({ identifier: "Session.Inbox.Continuation" })
+
 export interface UserPayload extends Schema.Schema.Type<typeof UserPayload> {}
 export const UserPayload = Schema.Struct({
   ...Prompt.fields,
   metadata: Schema.Record(Schema.String, Schema.Unknown).pipe(optional),
+  /** Server-owned fence for a continuation. It cannot be moved into a later queued task. */
+  continuationOf: SessionMessage.ID.pipe(optional),
 }).annotate({ identifier: "Session.Inbox.UserPayload" })
 
 /** A {@link UserPayload} whose files may stay on the server, for clients that opt into `experimental-media-uri`. */

@@ -470,6 +470,14 @@ export type SessionInboxAmendment = {
   status: "applied" | "unknown"
 }
 
+export type SessionInboxContinuation = {
+  sessionID: SessionID
+  inboxID: SessionMessageID
+  expectedInputID: SessionMessageID
+  rootID?: SessionMessageID
+  status: "pending" | "delivered" | "cancelled" | "expired" | "unknown"
+}
+
 export type UsageLimitsBudgetModel = { providerID: ProviderID; modelID: string; name: string; spent?: MoneyUSD }
 
 export type FileSystemEntry = { path: RelativePath; type: "file" | "directory" }
@@ -1089,6 +1097,7 @@ export type SessionInboxUserPayload = {
   agents?: Array<PromptAgentAttachment>
   skills?: Array<PromptSkillAttachment>
   metadata?: { [x: string]: JsonValue }
+  continuationOf?: SessionMessageID
 }
 
 export type SessionMessageUser = {
@@ -1108,6 +1117,7 @@ export type SessionInboxUserPayload1 = {
   agents?: Array<PromptAgentAttachment>
   skills?: Array<PromptSkillAttachment>
   metadata?: { [x: string]: any }
+  continuationOf?: SessionMessageID
 }
 
 export type SessionMessageToolStateCompleted = {
@@ -1284,6 +1294,16 @@ export type SessionInboxTextAppended = {
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
   data: { sessionID: SessionID; inboxID: SessionMessageID; amendmentID: SessionMessageID; text: string }
+}
+
+export type SessionInputClosed = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "session.input.closed"
+  durable: { aggregateID: string; seq: EventSeq; version: 1 }
+  location?: LocationRef
+  data: { sessionID: SessionID; rootID: SessionMessageID }
 }
 
 export type SessionExecutionStarted = {
@@ -2688,7 +2708,12 @@ export type SessionInboxEnqueued = {
   type: "session.inbox.enqueued"
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
-  data: { sessionID: SessionID; inboxID: SessionMessageID; item: SessionInboxItem }
+  data: {
+    sessionID: SessionID
+    inboxID: SessionMessageID
+    item: SessionInboxItem
+    continuation?: { expectedInputID: SessionMessageID; requestHash: string }
+  }
 }
 
 export type SessionMessageAssistantContentEncoded =
@@ -2772,6 +2797,7 @@ export type SessionEventDurable =
   | SessionInboxCancelled
   | SessionInboxDeliveryChanged
   | SessionInboxTextAppended
+  | SessionInputClosed
   | SessionExecutionStarted
   | SessionExecutionSucceeded
   | SessionExecutionFailed
@@ -2831,6 +2857,7 @@ export type V2Event =
   | SessionInboxCancelled
   | SessionInboxDeliveryChanged
   | SessionInboxTextAppended
+  | SessionInputClosed
   | SessionExecutionStarted
   | SessionExecutionSucceeded
   | SessionExecutionFailed
@@ -3481,6 +3508,24 @@ export type SessionInboxAmendmentInput = {
 }
 
 export type SessionInboxAmendmentOutput = SessionInboxAmendment
+
+export type SessionInputContinueInput = {
+  readonly sessionID: string
+  readonly expectedInputID: string
+  readonly inboxID: string
+  readonly text: string
+  readonly metadata?: { readonly [x: string]: unknown } | undefined
+}
+
+export type SessionInputContinueOutput = SessionInboxContinuation
+
+export type SessionInputContinuationInput = {
+  readonly sessionID: string
+  readonly expectedInputID: string
+  readonly inboxID: string
+}
+
+export type SessionInputContinuationOutput = SessionInboxContinuation
 
 export type SessionGenerateInput = { readonly sessionID: string; readonly prompt: string }
 
@@ -4329,6 +4374,7 @@ export type EventSubscribeInput = {
         | "session.inbox.cancelled"
         | "session.inbox.delivery.changed"
         | "session.inbox.text.appended"
+        | "session.input.closed"
         | "session.execution.started"
         | "session.execution.succeeded"
         | "session.execution.failed"

@@ -322,7 +322,10 @@ export function createData(config: CreateDataInput) {
   const stored = (message: SessionMessageInfo) => (config.omitToolFileData ? omitMessageFileData(message) : message)
   const sync = createSync()
   let activeUpdates: Map<string, DataSessionStatus | undefined> | undefined
-  const pendingUpdates = new Map<string, Map<string, SessionInboxInfo | SessionInbox.Delivery | undefined>>()
+  type PendingUpdates = Map<string, SessionInboxInfo | SessionInbox.Delivery | undefined>
+  const pendingUpdates = new Map<string, PendingUpdates>()
+  // Scoped to an existing read, so a pre-terminal snapshot cannot resurrect expired guarded input.
+  const expiredInboxReads = new WeakSet<PendingUpdates>()
 
   function setSessionActive(sessionID: string, status: DataSessionStatus) {
     activeUpdates?.set(sessionID, status)
@@ -916,6 +919,8 @@ export function createData(config: CreateDataInput) {
           time: { created: event.created },
           ...event.data.item,
         }
+        if (item.type === "user" && event.data.continuation)
+          item.payload = { ...item.payload, continuationOf: event.data.continuation.expectedInputID }
         pendingUpdates.get(item.sessionID)?.set(item.id, item)
         admitLocal(item)
         if (event.data.item.type === "compaction") {
@@ -1180,6 +1185,13 @@ export function createData(config: CreateDataInput) {
           if (currentAssistant) currentAssistant.retry = undefined
         })
         if (event.type === "session.execution.interrupted" && event.data.reason === "shutdown") return
+        const pendingRead = pendingUpdates.get(event.data.sessionID)
+        if (pendingRead) expiredInboxReads.add(pendingRead)
+        for (const item of store.session.pending[event.data.sessionID] ?? [])
+          if (item.type === "user" && item.payload.continuationOf) retractLocal(event.data.sessionID, item.id)
+        // The terminal atomically expires guarded, unconsumed steers. Read the original Inbox, never move them to the next input.
+        result.session.pending.invalidate(event.data.sessionID)
+        refresh(() => result.session.pending.sync(event.data.sessionID))
         // Mirror the projected idle marker so turn boundaries match before the next message read.
         message.insert(event.data.sessionID, {
           id: SessionMessage.ID.fromEvent(event.id),
@@ -1602,7 +1614,13 @@ export function createData(config: CreateDataInput) {
               if ((deletedAt.get(sessionID) ?? 0) > started) return
               // Events can overtake this HTTP response on a remote connection.
               // Reconcile them before an older snapshot can resurrect delivered input.
-              const current = new Map(snapshot.map((item) => [item.id, item]))
+              const current = new Map(
+                snapshot
+                  .filter(
+                    (item) => !(expiredInboxReads.has(updates) && item.type === "user" && item.payload.continuationOf),
+                  )
+                  .map((item) => [item.id, item]),
+              )
               updates.forEach((item, id) => {
                 if (item === undefined) current.delete(id)
                 else if (typeof item === "string") {

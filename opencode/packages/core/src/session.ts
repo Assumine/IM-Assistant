@@ -188,6 +188,14 @@ export interface Interface {
   readonly inboxAmendment: (
     input: InboxItemRef & { amendmentID: SessionMessage.ID },
   ) => Effect.Effect<import("@opencode/schema/session-inbox").Amendment, NotFoundError | InboxConflictError>
+  readonly continueInput: (
+    input: Parameters<Session.Handle["continueInput"]>[0] & { sessionID: SessionSchema.ID },
+  ) => ReturnType<Session.Handle["continueInput"]>
+  readonly inputContinuation: (input: {
+    sessionID: SessionSchema.ID
+    expectedInputID: SessionMessage.ID
+    inboxID: SessionMessage.ID
+  }) => ReturnType<Session.Handle["inputContinuation"]>
   /**
    * Durable, ordered session log read. Replays durable session bus after
    * the exclusive `after` cursor, emits a `Synced` marker at the captured
@@ -475,6 +483,9 @@ const layer = Layer.effect(
       queueInbox: (input) => sessions.forSession(input.sessionID).queueInbox(input.inboxID),
       appendInbox: (input) => sessions.forSession(input.sessionID).appendInbox(input.inboxID, input),
       inboxAmendment: (input) => sessions.forSession(input.sessionID).inboxAmendment(input.inboxID, input.amendmentID),
+      continueInput: (input) => sessions.forSession(input.sessionID).continueInput(input),
+      inputContinuation: (input) =>
+        sessions.forSession(input.sessionID).inputContinuation(input.expectedInputID, input.inboxID),
       log: (input) =>
         Stream.unwrap(
           result

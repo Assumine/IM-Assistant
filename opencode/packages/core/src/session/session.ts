@@ -6,6 +6,7 @@ import type { Model } from "@opencode/schema/model"
 import type { Permission } from "@opencode/schema/permission"
 import { Event } from "@opencode/schema/event"
 import { FSUtil } from "@opencode/util/fs-util"
+import { Hash } from "@opencode/util/hash"
 import { RuntimePolicy } from "../runtime-policy.js"
 import { Bus } from "../bus.js"
 import { Database } from "../database/database.js"
@@ -174,6 +175,59 @@ export const make = Effect.fn("Session.make")(function* () {
       .amendment({ sessionID, id: inboxID, amendmentID })
       .pipe(Effect.catchTag("SessionInbox.LifecycleConflict", () => new InboxConflictError({ sessionID, inboxID })))
   })
+  const inputContinuation = Effect.fn("Session.inputContinuation")(function* (
+    sessionID: SessionSchema.ID,
+    expectedInputID: SessionMessage.ID,
+    id: SessionMessage.ID,
+  ) {
+    yield* get(sessionID)
+    return yield* admission
+      .continuation({ sessionID, id, expectedInputID })
+      .pipe(Effect.catchTag("SessionInbox.LifecycleConflict", () => new InboxConflictError({ sessionID, inboxID: id })))
+  })
+  const continueInput = Effect.fn("Session.continueInput")(
+    (
+      sessionID: SessionSchema.ID,
+      input: {
+        id: SessionMessage.ID
+        expectedInputID: SessionMessage.ID
+        text: string
+        metadata?: Record<string, unknown>
+      },
+    ) =>
+      Effect.uninterruptibleMask((restore) =>
+        Effect.gen(function* () {
+          const session = yield* get(sessionID)
+          const requestHash = Hash.sha256(JSON.stringify([input.expectedInputID, input.text, input.metadata ?? null]))
+          return yield* Effect.gen(function* () {
+            const prior = yield* admission.continuation({ sessionID, ...input, requestHash })
+            if (prior.status !== "unknown") return prior
+            if (!input.text.trim() || !(yield* execution.isActive(sessionID)))
+              return yield* new InboxConflictError({ sessionID, inboxID: input.id })
+            const item = yield* restore(
+              SessionPrompt.prepare({
+                session,
+                messageID: input.id,
+                input: { text: input.text, metadata: input.metadata, delivery: "steer" },
+              }).pipe(
+                instances.provide(session),
+                Effect.provideService(Database.Service, database),
+                Effect.provideService(FSUtil.Service, fs),
+                Effect.provideService(RuntimePolicy.Service, policy),
+              ),
+            )
+            const receipt = yield* admission.continueInput({ sessionID, ...input, requestHash, item })
+            if (receipt.status === "pending") yield* execution.wake(sessionID, "steer")
+            return receipt
+          }).pipe(
+            Effect.catchTag(
+              "SessionInbox.LifecycleConflict",
+              () => new InboxConflictError({ sessionID, inboxID: input.id }),
+            ),
+          )
+        }),
+      ),
+  )
   const prompt = Effect.fn("Session.prompt")((sessionID: SessionSchema.ID, input: PromptRequest) =>
     Effect.uninterruptibleMask((restore) =>
       Effect.gen(function* () {
@@ -405,6 +459,8 @@ export const make = Effect.fn("Session.make")(function* () {
     queueInbox,
     appendInbox,
     inboxAmendment,
+    continueInput,
+    inputContinuation,
     revert,
   }
 
@@ -433,6 +489,8 @@ export const make = Effect.fn("Session.make")(function* () {
     const queueInbox = operations.queueInbox.bind(undefined, sessionID)
     const appendInbox = operations.appendInbox.bind(undefined, sessionID)
     const inboxAmendment = operations.inboxAmendment.bind(undefined, sessionID)
+    const continueInput = operations.continueInput.bind(undefined, sessionID)
+    const inputContinuation = operations.inputContinuation.bind(undefined, sessionID)
     const stage = operations.revert.stage.bind(undefined, sessionID)
     const clear = operations.revert.clear.bind(undefined, sessionID)
     const commit = operations.revert.commit.bind(undefined, sessionID)
@@ -464,6 +522,8 @@ export const make = Effect.fn("Session.make")(function* () {
       queueInbox,
       appendInbox,
       inboxAmendment,
+      continueInput,
+      inputContinuation,
       revert,
     }
   }

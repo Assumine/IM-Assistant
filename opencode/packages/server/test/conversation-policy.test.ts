@@ -34,4 +34,9 @@ test("managed conversation backend RPC does not open generic plugin or file capa
   expect(allows("POST", amendment)).toBe(true)
   expect(allows("GET", amendment)).toBe(true)
   expect(allows("DELETE", amendment)).toBe(false)
+  const continuation = "/api/session/ses_1/input/msg_1/continue/msg_2"
+  expect(allows("POST", continuation)).toBe(true)
+  expect(allows("GET", continuation)).toBe(true)
+  expect(allows("DELETE", continuation)).toBe(false)
+  expect(allows("POST", continuation + "/shell")).toBe(false)
 })
