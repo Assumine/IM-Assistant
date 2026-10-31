@@ -1,0 +1,17 @@
+{
+  "name": "@im-assistant/codex-native",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "test": "bun test --timeout 60000",
+    "check": "bun ../../opencode/node_modules/typescript/bin/tsc6 --noEmit"
+  },
+  "imAssistant": {
+    "kind": "conversation-backend",
+    "publication": "disabled",
+    "experimental": true,
+    "stateOwner": "codex-app-server"
+  }
+}

@@ -3,5 +3,7 @@
 *.py text eol=lf
 *.json text eol=lf
 *.txt text eol=lf
+# Keep module source fingerprints reproducible across Windows checkouts.
+modules/**/*.ts text eol=lf
 # Preserve the imported archive bytes, including upstream fixture line endings.
 opencode/** -text

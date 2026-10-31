@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "task": "R3-01",
+  "status": "partial_verified",
+  "publication": "disabled",
+  "native_cli_version": "codex-cli 0.166.0-alpha.5.1",
+  "native_cli_sha256": "3097c909fb6d5cd63510d44aceb1d42df9f6e85722a3e447e477def1ecf60e16",
+  "local_fixture_only": true,
+  "production_credentials_used": false,
+  "native_state_owner": "codex-app-server",
+  "steps": [
+    {
+      "label": "r3-native-types",
+      "exit_code": 0,
+      "passed": null,
+      "failed": null,
+      "skipped": 0,
+      "log": ".reports/native/r3-native-types.log"
+    },
+    {
+      "label": "r3-native-tests",
+      "exit_code": 0,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".reports/native/r3-native-tests.log"
+    }
+  ],
+  "sources": {
+    "modules/codex-native/package.json": "c7f2fa05ce9ff3bfb44ebc2bd4d7678dd63307bd293e67777adbc23cf3103f09",
+    "modules/codex-native/src/index.ts": "04695a31fc8dafa6f762b5b0018b05085c2e66557539a28bf4efc248eaf93617",
+    "modules/codex-native/src/profile.ts": "25056c247706713418ff9f253863aee62efcc43a2d77d4f5b5c8ae0da1594ad1",
+    "modules/codex-native/src/session-adapter.ts": "c12864d1eb8aeb4c3eff830db91f9f77261b5b1742cc72b6e733679dab45e367",
+    "modules/codex-native/src/transport.ts": "96a1f0423ec3a1e395c72e080127496e701e682b7b44762fe31a624c40714972",
+    "modules/codex-native/test/native.test.ts": "4eeca9732fd18561562f4782392238b851d6cea01c337a831b477b3bc7b15703",
+    "modules/codex-native/tsconfig.json": "6bdec6041d61f39890056d01ac1c90b4e200e866dca04bef9c57b67231326fe8",
+    "tools/codex_native_smoke.py": "23bb59269f447d40d500066ce133ce6315b9dcd30880140c421a6b34aae414c5"
+  },
+  "duration_seconds": 22.76,
+  "remaining": [
+    "application whole-backend public host and native UI binding",
+    "cross-process single ownership via native application service",
+    "native queue/add is not idempotent by clientUserMessageId; host acceptance must prevent duplicate admission",
+    "real account connection and capability revalidation before publication"
+  ]
+}

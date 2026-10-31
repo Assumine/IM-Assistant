@@ -206,9 +206,34 @@
       "blocked_reason": null
     },
     "R3-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "in_progress",
+      "artifacts": [
+        "modules/codex-native/package.json",
+        "modules/codex-native/tsconfig.json",
+        "modules/codex-native/src/index.ts",
+        "modules/codex-native/src/session-adapter.ts",
+        "modules/codex-native/src/transport.ts",
+        "modules/codex-native/src/profile.ts",
+        "modules/codex-native/test/native.test.ts",
+        "modules/codex-native/README.md",
+        "tools/codex_native_smoke.py",
+        "upstream/codex-checkpoint.json",
+        "docs/handoff/Codex原生接入边界.md"
+      ],
+      "verification": [
+        {
+          "kind": "checkpoint",
+          "plan_id": "opencode-app-base-v2",
+          "status": "partial_verified",
+          "exit_code": 0,
+          "tests_run": 6,
+          "skipped": 0,
+          "acceptance_ids": [],
+          "command": "python -m tools.codex_native_smoke",
+          "evidence": "upstream/codex-checkpoint.json",
+          "publication": "disabled"
+        }
+      ],
       "blocked_reason": null
     },
     "R3-02": {
