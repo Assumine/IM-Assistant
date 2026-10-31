@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "5cc0ba37aa4bc529ef5deb11a2301adbb199ce78b83eef19bb1aead025669b86"
+          "sha256": "034810dccf08c57d9e949193efc83a544508c7139f809957e9237e0636307269"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "ca65d277f497f6a236f85772d6ff12e62e8790986058495a6aa1125b37015962"
+          "sha256": "4a29eb8cbf749a8fa9222870631564e806ce9fe2c3540c6f01f0fc6cee096e67"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,7 +641,7 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "edb6ca9ebc542cc4753a300f3aecaa1002e5a807e5400df82bc30a97c97c9c15"
+          "sha256": "24b9b0f44edfb123acd48b6abd241d67b970a9a6582ce3aee571fe6e8d528fea"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
@@ -656,7 +656,7 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "71cc3fd8f2f05e26366499334381d406d558f239b2a9e1d00e8ef2221a0d4d8e"
+          "sha256": "789e93e2fb18b2dc7d0b824160105e342db01ee6d87a529fae979f4353270edd"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
@@ -666,7 +666,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "9e6d2a119e0755cc88d3f0dbbd2835b344c3008bb218a062a0da1f11c420b9ad"
+          "sha256": "ef462f9b91faa566433f3fdcffe70e49eff9b1d6ec1d52346fb206ce04c8dd76"
         }
       ]
     },
@@ -1096,6 +1096,21 @@
           "path": "packages/simulation/test/simulated-provider.test.ts",
           "action": "modified",
           "sha256": "58ae9918e390d2645d4c6a8770dcd8fc9193fff96a98cfb01f4535b8b6f22ae3"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-explicit-qq-targets",
+      "reason": "QQ显式区分原生Session和整套后端；公共RPC只读核对既有接纳回执，不接纳、恢复或重放输入。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-backend-smoke.ts",
+          "action": "added",
+          "sha256": "7b09678199b81ce0c1d26fd927ce07734592d5df276adfe746f9acc3af54b78e"
         }
       ]
     }

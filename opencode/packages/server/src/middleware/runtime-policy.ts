@@ -4,17 +4,30 @@ import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http"
 
 // The conversation host publishes only this API surface. New integrations must opt in through a controlled host.
 export function allows(method: string, pathname: string) {
-  if (/^\/api\/rpc\/experimental\.conversation\/(list|status|threads|history|execution|login|cancelLogin|create|query|control|send)$/.test(pathname)) return method === "POST"
+  if (
+    /^\/api\/rpc\/experimental\.conversation\/(list|status|threads|history|execution|login|cancelLogin|create|query|control|send|reconcile)$/.test(
+      pathname,
+    )
+  )
+    return method === "POST"
   if (pathname === "/api/experimental/config/provider") return method === "POST"
-  if (method === "GET" && /^\/api\/(info|event|config|location|project|agent|model|provider|integration|credential|command|plugin|skill|reference|form)(\/[^/]+)?$/.test(pathname))
+  if (
+    method === "GET" &&
+    /^\/api\/(info|event|config|location|project|agent|model|provider|integration|credential|command|plugin|skill|reference|form)(\/[^/]+)?$/.test(
+      pathname,
+    )
+  )
     return !/^\/api\/(config|plugin)\//.test(pathname)
   if (/^\/api\/credential(?:\/[^/]+(?:\/activate)?)?$/.test(pathname))
     return ["GET", "POST", "PATCH", "DELETE"].includes(method)
   if (/^\/api\/integration\/[^/]+\/connect\/(key|oauth)(?:\/[^/]+(?:\/complete)?)?$/.test(pathname))
     return ["GET", "POST", "DELETE"].includes(method)
-  if (/^\/api\/session(?:\/[^/]+)?$/.test(pathname))
-    return ["GET", "POST", "PATCH", "DELETE"].includes(method)
-  if (/^\/api\/session\/[^/]+\/(fork|agent|model|prompt|synthetic|compact|generate|interrupt|background|view)$/.test(pathname))
+  if (/^\/api\/session(?:\/[^/]+)?$/.test(pathname)) return ["GET", "POST", "PATCH", "DELETE"].includes(method)
+  if (
+    /^\/api\/session\/[^/]+\/(fork|agent|model|prompt|synthetic|compact|generate|interrupt|background|view)$/.test(
+      pathname,
+    )
+  )
     return method === "POST"
   if (/^\/api\/session\/[^/]+\/(context|inbox|message(?:\/[^/]+)?|form)$/.test(pathname)) return method === "GET"
   if (/^\/api\/session\/[^/]+\/inbox\/[^/]+$/.test(pathname)) return method === "PATCH" || method === "DELETE"
@@ -34,12 +47,20 @@ export function allows(method: string, pathname: string) {
 }
 
 export function middleware(options: RuntimePolicy.Options = {}) {
-  return HttpRouter.middleware((app) => Effect.gen(function* () {
-    if (options.managedDirectory === undefined) return yield* app
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const url = new URL(request.url, "http://localhost")
-    if (!allows(request.method, url.pathname))
-      return HttpServerResponse.jsonUnsafe({ code: "runtime_capability_disabled", message: "This capability is unavailable in the conversation runtime" }, { status: 403 })
-    return yield* app
-  })).layer
+  return HttpRouter.middleware((app) =>
+    Effect.gen(function* () {
+      if (options.managedDirectory === undefined) return yield* app
+      const request = yield* HttpServerRequest.HttpServerRequest
+      const url = new URL(request.url, "http://localhost")
+      if (!allows(request.method, url.pathname))
+        return HttpServerResponse.jsonUnsafe(
+          {
+            code: "runtime_capability_disabled",
+            message: "This capability is unavailable in the conversation runtime",
+          },
+          { status: 403 },
+        )
+      return yield* app
+    }),
+  ).layer
 }

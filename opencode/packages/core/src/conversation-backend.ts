@@ -216,6 +216,33 @@ const layer = Layer.effect(
             catch: () => ctx.error("failed", "Control result unknown; reconcile native state before retrying"),
           })
         },
+        reconcile: (input, ctx) =>
+          Effect.gen(function* () {
+            const key = `conversation:admission:${Hash.sha256(input.inputID)}`
+            const unknown = { status: "uncertain" as const, ref: input.ref, inputID: input.inputID }
+            const value = yield* kv.get(key)
+            // No first-writer insert here: observing an unknown input must not claim it or send anything.
+            if (value === undefined) return unknown
+            const stored = yield* Schema.decodeUnknownEffect(Stored)(value).pipe(Effect.orDie)
+            if (
+              stored.inputID !== input.inputID ||
+              stored.ref.backendID !== input.ref.backendID ||
+              stored.ref.threadID !== input.ref.threadID
+            )
+              return yield* Effect.fail(ctx.error("conflict", "Input ID belongs to a different request"))
+            if (stored.receipt) return { ...unknown, status: "accepted" as const, receipt: stored.receipt }
+            if (stored.rejection) return { ...stored.rejection, ref: input.ref, inputID: input.inputID }
+            const backend = get(input.ref.backendID)
+            if (!backend) return unknown
+            const result = yield* Effect.tryPromise({
+              try: () => backend.reconcile(input.ref, input.inputID),
+              catch: () => undefined,
+            }).pipe(Effect.catch(() => Effect.succeed(undefined)))
+            if (!result || get(input.ref.backendID) !== backend) return unknown
+            const receipt = yield* Schema.decodeUnknownEffect(ConversationBackend.Receipt)(result).pipe(Effect.orDie)
+            yield* kv.set(key, { ...stored, receipt })
+            return { ...unknown, status: "accepted" as const, receipt }
+          }),
         send: (input, ctx) =>
           Effect.gen(function* () {
             const key = `conversation:admission:${Hash.sha256(input.inputID)}`

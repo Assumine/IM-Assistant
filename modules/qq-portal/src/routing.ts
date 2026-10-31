@@ -63,5 +63,5 @@ export function command(text: string) {
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex")
 export const scopeKey = (scope: Scope) => hash([scope.botID, scope.kind, scope.peerID])
 export const originKey = (scope: Scope, id: string) => hash([scope.botID, scope.kind, scope.peerID, id])
-export const inputID = (event: Message) => "msg_qq_" + originKey(event.scope, event.messageID)
+export const inputID = (event: Pick<Message, "scope" | "messageID">) => "msg_qq_" + originKey(event.scope, event.messageID)
 export const fingerprint = (event: Message) => hash([event.actorID, event.text, event.quoteID ?? null, event.mentions])

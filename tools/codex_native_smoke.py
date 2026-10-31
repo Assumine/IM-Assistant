@@ -64,7 +64,7 @@ def _run(checkpoint):
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 20),
+        ("packages/core", core_files, "r3-host-unit", 23),
         ("packages/server", server_files, "r3-host-server-unit", 3),
         ("packages/im-assistant", ["src/storage.test.ts", "src/providers.test.ts"], "r3-profile-unit", 7),
         ("packages/cli", ["test/import-boundaries.test.ts"], "r3-cli-boundaries", 5),

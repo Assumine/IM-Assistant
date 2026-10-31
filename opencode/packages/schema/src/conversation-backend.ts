@@ -236,6 +236,12 @@ export const Api = Rpc.define({
       errors,
     },
     send: { input: Schema.toStandardSchemaV1(Input), output: Schema.toStandardSchemaV1(Admission), errors },
+    // Receipt-only observation. Never admits, resumes or replays an input, even if no admission fact exists.
+    reconcile: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, inputID: ID })),
+      output: Schema.toStandardSchemaV1(Admission),
+      errors,
+    },
   },
   events: {
     content: { schema: Schema.toStandardSchemaV1(Content) },

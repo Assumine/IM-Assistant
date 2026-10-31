@@ -1,27 +1,30 @@
-import type { SessionApi } from "../../../opencode/packages/client/src/promise/api"
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
 import { command, decode, fingerprint, inputID, originKey, scopeKey, type Message, type Policy, type Scope } from "./routing"
+import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence } from "./target"
 
 type Storage = Pick<StorageDomain, "get" | "set" | "insert">
-type Native = Pick<SessionApi, "get" | "prompt" | "inbox" | "message">
-type Origin = { sessionID: string; inputID: string; actorID: string; fingerprint: string }
+type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string }
 export type Result =
   | { status: "ignored" | "unsupported" | "unbound" | "recalled" | "uncertain" | "unchanged" | "withdrawn" | "conflict" }
   | { status: "command"; action: string; arguments: string }
   | { status: "blocked"; reason: "cross-session-confirmation-required" | "quoted-adjustment-unavailable" }
-  | { status: "accepted"; sessionID: string; inputID: string; duplicate: boolean; reference?: "unresolved" }
+  | { status: "rejected"; reason: "not-accepted" }
+  | { status: "accepted"; target: Target; sessionID?: string; inputID: string; duplicate: boolean; reference?: "unresolved" }
 
 const origin = (value: unknown): Origin | undefined => {
   if (value === undefined) return undefined
-  if (!value || typeof value !== "object" || !("sessionID" in value) || typeof value.sessionID !== "string" ||
+  if (!value || typeof value !== "object" ||
     !("inputID" in value) || typeof value.inputID !== "string" || !("actorID" in value) || typeof value.actorID !== "string" ||
     !("fingerprint" in value) || typeof value.fingerprint !== "string") throw new Error("Invalid QQ origin metadata")
-  return value as Origin
+  const destination = target("target" in value ? value.target : "sessionID" in value ? value.sessionID : undefined)
+  if ("target" in value && "sessionID" in value && !sameTarget(destination, target(value.sessionID))) throw new Error("Conflicting QQ origin target")
+  return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint }
 }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
-export function createPortal(options: { storage: Storage; session: Native; policy: Policy }) {
+export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy }) {
   const { storage, session, policy } = options
+  const native = targets(session, options.backend)
   const key = (scope: Scope, id: string) => "origin:" + originKey(scope, id)
   const tombstone = (scope: Scope, id: string) => "recall:" + originKey(scope, id)
   const recalled = async (input: Message) => (await storage.get(tombstone(input.scope, input.messageID))) === input.actorID
@@ -29,28 +32,27 @@ export function createPortal(options: { storage: Storage; session: Native; polic
   const binding = async (scope: Scope) => {
     const value = await storage.get("binding:" + scopeKey(scope))
     if (value === undefined || value === null) return undefined
-    if (typeof value !== "string") throw new Error("Invalid QQ binding metadata")
-    return value
+    return target(value)
   }
-  const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", sessionID: record.sessionID, inputID: record.inputID, duplicate })
-  const evidence = async (record: Origin) => {
-    if ((await session.inbox.list({ sessionID: record.sessionID })).some((entry) => entry.id === record.inputID)) return true
-    // A failed read is unknown, never evidence that the model did not receive the input.
-    return session.message.get({ sessionID: record.sessionID, messageID: record.inputID }).then((entry) => entry.type === "user", () => false)
+  const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", target: record.target,
+    ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
+  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => evidence === "accepted" ? accepted(record, duplicate)
+    : evidence === "rejected" ? { status: "rejected", reason: "not-accepted" } : { status: "uncertain" }
+  const evidence = async (record: Origin): Promise<Evidence> => {
+    try { return await native.reconcile(record.target, record.inputID) }
+    catch { return "uncertain" }
   }
   const withdraw = async (record: Origin): Promise<Result> => {
-    if (!(await session.inbox.list({ sessionID: record.sessionID })).some((entry) => entry.id === record.inputID)) return { status: "unchanged" }
-    try {
-      await session.inbox.cancel({ sessionID: record.sessionID, inboxID: record.inputID })
-      return { status: "withdrawn" }
-    } catch { return { status: "uncertain" } }
+    try { return { status: await native.withdraw(record.target, record.inputID) } }
+    catch { return { status: "uncertain" } }
   }
   return {
     /** Trusted host control API; remote transports must authorize controls before calling it. */
-    async bind(scope: Scope, sessionID?: string) {
+    async bind(scope: Scope, value?: string | Target) {
       if (scope.botID !== policy.botID) throw new Error("Wrong QQ bot")
-      if (sessionID) await session.get({ sessionID })
-      await storage.set("binding:" + scopeKey(scope), sessionID ?? null)
+      const destination = value === undefined ? undefined : target(value)
+      if (destination) await native.validate(destination)
+      await storage.set("binding:" + scopeKey(scope), destination ?? null)
     },
     async linkReply(source: Message, outgoingMessageID: string) {
       const record = await lookup(source.scope, source.messageID)
@@ -64,7 +66,8 @@ export function createPortal(options: { storage: Storage; session: Native; polic
       if (event.kind === "recall") {
         const input = event.recall
         const record = await lookup(input.scope, input.messageID)
-        if (record && record.actorID !== input.actorID) return { status: "unchanged" }
+        // A reply/receipt alias belongs to the task but is not its originating user input.
+        if (record && (record.actorID !== input.actorID || record.inputID !== inputID(input))) return { status: "unchanged" }
         await storage.insert(tombstone(input.scope, input.messageID), input.actorID)
         if (!record) return { status: "unchanged" }
         return withdraw(record)
@@ -76,25 +79,25 @@ export function createPortal(options: { storage: Storage; session: Native; polic
       const old = await lookup(input.scope, input.messageID)
       if (old) {
         if (old.fingerprint !== fingerprint(input)) return { status: "conflict" }
-        return await evidence(old) ? accepted(old, true) : { status: "uncertain" }
+        return result(old, await evidence(old), true)
       }
-      const target = await binding(input.scope)
-      if (!target) return { status: "unbound" }
+      const destination = await binding(input.scope)
+      if (!destination) return { status: "unbound" }
       const quoted = input.quoteID ? await lookup(input.scope, input.quoteID) : undefined
-      if (quoted) return { status: "blocked", reason: quoted.sessionID !== target ? "cross-session-confirmation-required" : "quoted-adjustment-unavailable" }
-      const record: Origin = { sessionID: target, inputID: inputID(input), actorID: input.actorID, fingerprint: fingerprint(input) }
+      if (quoted) return { status: "blocked", reason: !sameTarget(quoted.target, destination) ? "cross-session-confirmation-required" : "quoted-adjustment-unavailable" }
+      const record: Origin = { target: destination, inputID: inputID(input), actorID: input.actorID, fingerprint: fingerprint(input) }
       if (!(await storage.insert(key(input.scope, input.messageID), record))) {
         const winner = await lookup(input.scope, input.messageID)
         if (!winner) throw new Error("QQ origin admission was not retained")
         if (winner.fingerprint !== record.fingerprint) return { status: "conflict" }
-        return await evidence(winner) ? accepted(winner, true) : { status: "uncertain" }
+        return result(winner, await evidence(winner), true)
       }
       if (await recalled(input)) return { status: "recalled" }
       try {
-        const receipt = await session.prompt({ sessionID: record.sessionID, id: record.inputID, text: input.text, delivery: "queue",
-          metadata: { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } } })
-        if (receipt.id !== record.inputID || receipt.sessionID !== record.sessionID) throw new Error("Native QQ admission identity mismatch")
-      } catch { return await evidence(record) ? accepted(record, true) : { status: "uncertain" } }
+        const state = await native.send(record.target, record.inputID, input.text,
+          { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } })
+        if (state !== "accepted") return result(record, state, false)
+      } catch { return result(record, await evidence(record), true) }
       if (await recalled(input)) return withdraw(record)
       return { ...accepted(record, false), ...(input.quoteID ? { reference: "unresolved" as const } : {}) }
     },
@@ -102,3 +105,4 @@ export function createPortal(options: { storage: Storage; session: Native; polic
 }
 
 export { decode, command, type Message, type Policy, type Scope } from "./routing"
+export { type Target, type Backend } from "./target"

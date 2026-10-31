@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -11,17 +12,20 @@ from tools.native_baseline import ROOT, environment, provenance, run_command
 
 def run():
     checkpoint = ROOT / "upstream/qq-checkpoint.json"
-    checkpoint.write_text(json.dumps({"task": "R3-02", "status": "running", "publication": "disabled"}) + "\n", encoding="utf-8")
+    checkpoint.write_text(json.dumps({"task": "R3-02", "status": "running", "publication": "disabled"}) + "\n", encoding="utf-8", newline="\n")
     try:
         result = _run()
-        checkpoint.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        checkpoint.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
         return result
     except Exception:
-        checkpoint.write_text(json.dumps({"task": "R3-02", "status": "failed", "publication": "disabled"}) + "\n", encoding="utf-8")
+        checkpoint.write_text(json.dumps({"task": "R3-02", "status": "failed", "publication": "disabled"}) + "\n", encoding="utf-8", newline="\n")
         raise
 
 
 def _run():
+    executable = shutil.which("codex")
+    if not executable:
+        raise RuntimeError("Codex CLI is required; native target acceptance cannot be skipped")
     module = ROOT / "modules/qq-portal"
     reports = ROOT / ".reports/native"
     reports.mkdir(parents=True, exist_ok=True)
@@ -41,7 +45,7 @@ def _run():
         content = log.read_text(encoding="utf-8", errors="replace")
         counts = re.search(r"\b(\d+) pass\s+.*?\b(\d+) fail", content, re.S)
         skipped = sum(map(int, re.findall(r"\b(\d+) (?:skip|skipped)\b", content)))
-        if process.returncode or skipped or label.endswith("tests") and (not counts or (int(counts[1]), int(counts[2])) != (32, 0)):
+        if process.returncode or skipped or label.endswith("tests") and (not counts or (int(counts[1]), int(counts[2])) != (41, 0)):
             raise RuntimeError(f"QQ module check failed: {label}; see {log.relative_to(ROOT)}")
         steps.append({"label": label, "exit_code": process.returncode, "passed": int(counts[1]) if counts else None, "skipped": skipped, "log": log.relative_to(ROOT).as_posix()})
     steps.append(run_command("packages/server", ["run", "script/qq-portal-smoke.ts"], "r3-qq-http", timeout=180,
@@ -50,12 +54,21 @@ def _run():
     http = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
     if http["status"] != "passed" or len(http["checks"]) != 10 or http["model_requests"] != 5 or http["actual_qq_connection"] or http["external_messages_sent"]:
         raise RuntimeError("QQ original SDK/HTTP/SQLite acceptance was incomplete")
+    native_parent = ROOT / "runtime/codex-native"
+    native_parent.mkdir(parents=True, exist_ok=True)
+    native_directory = tempfile.mkdtemp(prefix="qq-backend-", dir=native_parent)
+    steps.append(run_command("packages/server", ["run", "script/qq-backend-smoke.ts"], "r3-qq-native-http", timeout=180,
+                             extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_QQ_BACKEND_TEST_ROOT": native_directory}))
+    lines = (reports / "r3-qq-native-http.log").read_text(encoding="utf-8").splitlines()
+    native = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
+    if native["status"] != "passed" or len(native["checks"]) != 8 or native["model_requests"] != 4 or native["native_admissions"] != 5 or native["actual_qq_connection"] or native["external_messages_sent"] or native["production_credentials_used"]:
+        raise RuntimeError("QQ real native backend target acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
     ]:
         if not all((ROOT / "opencode/packages" / package / name).is_file() for name in files):
             raise RuntimeError("Required original SDK regression file is absent")
-        # Markerless VCS fixtures must be outside this Git checkout, just like the original R1 project regression.
+        # Keep test-only temporary locations outside this Git checkout.
         with tempfile.TemporaryDirectory(prefix="qq-original-regression-") as temporary:
             result = run_command("packages/" + package, ["test", "--timeout", "30000", *files, *filters], label,
                                  extra_env={"TMP": temporary, "TEMP": temporary, "TMPDIR": temporary})
@@ -69,15 +82,19 @@ def _run():
         "opencode/packages/server/test/vcs.test.ts", "tools/qq_portal_smoke.py",
         "opencode/packages/core/test/plugin/host.ts", "opencode/packages/core/test/plugin/goal-watchdog.test.ts",
         "opencode/packages/simulation/test/simulated-provider.test.ts",
+        "opencode/packages/server/script/qq-backend-smoke.ts", "opencode/packages/schema/src/conversation-backend.ts",
+        "opencode/packages/core/src/conversation-backend.ts", "opencode/packages/core/test/conversation-backend.test.ts",
+        "opencode/packages/server/src/middleware/runtime-policy.ts", "opencode/packages/server/test/conversation-policy.test.ts",
     ]
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
-            "steps": steps, "http_acceptance": http, "execution_owner": "original-opencode-session-inbox", "production_credentials_used": False,
+            "steps": steps, "http_acceptance": http, "backend_acceptance": native,
+            "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",
                           "controls are classified only; remote control dispatch and authorization are not implemented",
                           "known quoted adjustments and cross-conversation confirmation remain blocked until native conditional admission/update contracts exist",
-                          "Codex whole-backend targets, outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
+                          "outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}
 

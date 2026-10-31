@@ -563,3 +563,91 @@ it.effect("native acceptance followed by SQLite receipt failure does not report 
     expect(example.admissions).toHaveLength(1)
   }),
 )
+
+it.effect("receipt-only reconciliation never creates an admission and keeps cached receipts across disconnection", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    const kv = yield* KV.Service
+    yield* host.bind(rpc)
+    const client = rpc.client(Api)
+    const request = { ref: input.ref, inputID: input.inputID }
+    expect(yield* client.reconcile(request)).toEqual({ ...request, status: "uncertain" })
+    expect((yield* kv.scan({ prefix: "conversation:admission:" })).entries).toHaveLength(0)
+    const example = fixture()
+    const registered = yield* host.register(example.backend)
+    expect((yield* client.reconcile(request)).status).toBe("uncertain")
+    expect(example.admissions).toEqual([])
+    const admitted = yield* client.send(input)
+    expect(yield* client.reconcile(request)).toEqual(admitted)
+    expect(
+      Exit.isFailure(
+        yield* client.reconcile({ ...request, ref: { ...input.ref, threadID: "other" } }).pipe(Effect.exit),
+      ),
+    ).toBe(true)
+    yield* registered.dispose
+    expect(yield* client.reconcile(request)).toEqual(admitted)
+    expect(example.admissions).toHaveLength(1)
+  }),
+)
+
+it.effect("receipt-only reconciliation repairs lost acknowledgments and retains definitive refusal", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    yield* host.bind(rpc)
+    const example = fixture()
+    yield* host.register({
+      ...example.backend,
+      enqueue: async (request) => {
+        if (request.inputID === "refused") return { status: "rejected", reason: "not-accepted" }
+        await example.backend.enqueue(request)
+        throw new Error("Lost acknowledgment")
+      },
+    })
+    const client = rpc.client(Api)
+    expect((yield* client.send(input)).status).toBe("uncertain")
+    const request = { ref: input.ref, inputID: input.inputID }
+    const recovered = yield* client.reconcile(request)
+    expect(recovered.status).toBe("accepted")
+    example.receipts.clear()
+    expect(yield* client.reconcile(request)).toEqual(recovered)
+    const refused = yield* client.send({ ...input, inputID: "refused" })
+    expect(yield* client.reconcile({ ...request, inputID: "refused" })).toEqual(refused)
+    expect(example.admissions).toHaveLength(1)
+  }),
+)
+
+it.effect("receipt-only reconciliation cannot confirm a result from a replaced native connection", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    yield* host.bind(rpc)
+    const entered = yield* Deferred.make<void>()
+    const release = yield* Deferred.make<void>()
+    const run = Effect.runPromiseWith(yield* Effect.context<never>())
+    const example = fixture()
+    const registered = yield* host.register({
+      ...example.backend,
+      enqueue: async () => {
+        throw new Error("Unknown")
+      },
+      reconcile: async () => {
+        await run(Deferred.succeed(entered, undefined))
+        await run(Deferred.await(release))
+        return { nativeID: "stale", kind: "queued" }
+      },
+    })
+    const client = rpc.client(Api)
+    expect((yield* client.send(input)).status).toBe("uncertain")
+    const pending = yield* client
+      .reconcile({ ref: input.ref, inputID: input.inputID })
+      .pipe(Effect.forkChild({ startImmediately: true }))
+    yield* Deferred.await(entered)
+    yield* registered.dispose
+    yield* host.register(example.backend)
+    yield* Deferred.succeed(release, undefined)
+    expect((yield* Fiber.join(pending)).status).toBe("uncertain")
+    expect(example.admissions).toEqual([])
+  }),
+)
