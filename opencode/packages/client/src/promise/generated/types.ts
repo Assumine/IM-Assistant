@@ -463,6 +463,13 @@ export type SessionMessageCompactionRunning = {
   summary: string
 }
 
+export type SessionInboxAmendment = {
+  sessionID: SessionID
+  inboxID: SessionMessageID
+  amendmentID: SessionMessageID
+  status: "applied" | "unknown"
+}
+
 export type UsageLimitsBudgetModel = { providerID: ProviderID; modelID: string; name: string; spent?: MoneyUSD }
 
 export type FileSystemEntry = { path: RelativePath; type: "file" | "directory" }
@@ -1267,6 +1274,16 @@ export type SessionInboxDeliveryChanged = {
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
   data: { sessionID: SessionID; inboxID: SessionMessageID; delivery: SessionInboxDelivery }
+}
+
+export type SessionInboxTextAppended = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "session.inbox.text.appended"
+  durable: { aggregateID: string; seq: EventSeq; version: 1 }
+  location?: LocationRef
+  data: { sessionID: SessionID; inboxID: SessionMessageID; amendmentID: SessionMessageID; text: string }
 }
 
 export type SessionExecutionStarted = {
@@ -2754,6 +2771,7 @@ export type SessionEventDurable =
   | SessionInboxEnqueued
   | SessionInboxCancelled
   | SessionInboxDeliveryChanged
+  | SessionInboxTextAppended
   | SessionExecutionStarted
   | SessionExecutionSucceeded
   | SessionExecutionFailed
@@ -2812,6 +2830,7 @@ export type V2Event =
   | SessionInboxEnqueued
   | SessionInboxCancelled
   | SessionInboxDeliveryChanged
+  | SessionInboxTextAppended
   | SessionExecutionStarted
   | SessionExecutionSucceeded
   | SessionExecutionFailed
@@ -3445,6 +3464,23 @@ export type SessionInboxUpdateInput = {
 }
 
 export type SessionInboxUpdateOutput = void
+
+export type SessionInboxAppendInput = {
+  readonly sessionID: string
+  readonly inboxID: string
+  readonly amendmentID: string
+  readonly text: string
+}
+
+export type SessionInboxAppendOutput = SessionInboxAmendment
+
+export type SessionInboxAmendmentInput = {
+  readonly sessionID: string
+  readonly inboxID: string
+  readonly amendmentID: string
+}
+
+export type SessionInboxAmendmentOutput = SessionInboxAmendment
 
 export type SessionGenerateInput = { readonly sessionID: string; readonly prompt: string }
 
@@ -4292,6 +4328,7 @@ export type EventSubscribeInput = {
         | "session.inbox.enqueued"
         | "session.inbox.cancelled"
         | "session.inbox.delivery.changed"
+        | "session.inbox.text.appended"
         | "session.execution.started"
         | "session.execution.succeeded"
         | "session.execution.failed"

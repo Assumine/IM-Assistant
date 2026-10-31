@@ -61,10 +61,10 @@ def _run(checkpoint):
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
     if steps[-1]["passed"] != 23 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
         raise RuntimeError("Required nineteen native/OS/activation and four wire scenarios did not all execute")
-    core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
+    core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts", "test/session-inbox-append.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 23),
+        ("packages/core", core_files, "r3-host-unit", 29),
         ("packages/server", server_files, "r3-host-server-unit", 3),
         ("packages/im-assistant", ["src/storage.test.ts", "src/providers.test.ts"], "r3-profile-unit", 7),
         ("packages/cli", ["test/import-boundaries.test.ts"], "r3-cli-boundaries", 5),
@@ -101,7 +101,7 @@ def _run(checkpoint):
         "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "e2e/regression/composer.spec.ts",
         "e2e/regression/session-request-docks.spec.ts", "e2e/regression/new-session.spec.ts", "e2e/regression/home.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts|session-request-docks.spec.ts|new-session.spec.ts|home.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 185 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 186 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     components = run_command("packages/app", ["x", "--no-install", "playwright", "test", "--config",
@@ -118,6 +118,15 @@ def _run(checkpoint):
         "packages/core/src/plugin/sdk.ts", "packages/core/src/plugin/supervisor.ts",
         "packages/plugin/src/effect/storage.ts", "packages/plugin/src/promise/storage.ts", "packages/plugin/src/promise/adapter.ts",
         "packages/sdk/src/internal/host.ts", "packages/sdk/src/promise.ts",
+        "packages/app/src/runtime/server/data.ts", "packages/client/src/effect/api/api.ts",
+        "packages/client/src/effect/generated/client.ts", "packages/client/src/promise/generated/client.ts",
+        "packages/client/src/promise/generated/types.ts", "packages/client/src/solid/data.ts",
+        "packages/client/test/solid-inbox-race.test.ts", "packages/core/src/session.ts",
+        "packages/core/src/session/inbox.ts", "packages/core/src/session/message-updater.ts",
+        "packages/core/src/session/projector.ts", "packages/core/src/session/session.ts",
+        "packages/core/test/session-inbox-append.test.ts", "packages/protocol/src/groups/session.ts",
+        "packages/schema/src/session-event.ts", "packages/schema/src/session-inbox.ts",
+        "packages/server/script/qq-portal-smoke.ts", "packages/server/src/handlers/session.ts",
         "packages/core/test/conversation-backend.test.ts", "packages/core/test/plugin/fixture.ts",
         "packages/server/src/middleware/runtime-policy.ts", "packages/server/src/routes.ts",
         "packages/server/src/backend-modules.ts", "packages/server/src/fetch.ts", "packages/server/src/process.ts",

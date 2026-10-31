@@ -3,13 +3,14 @@ import { command, decode, fingerprint, inputID, originKey, scopeKey, type Messag
 import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence } from "./target"
 
 type Storage = Pick<StorageDomain, "get" | "set" | "insert">
-type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string }
+type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string }
 export type Result =
   | { status: "ignored" | "unsupported" | "unbound" | "recalled" | "uncertain" | "unchanged" | "withdrawn" | "conflict" }
   | { status: "command"; action: string; arguments: string }
-  | { status: "blocked"; reason: "cross-session-confirmation-required" | "quoted-adjustment-unavailable" }
+  | { status: "blocked"; reason: "cross-session-confirmation-required" | "quoted-adjustment-unavailable" | "quoted-task-not-pending" }
   | { status: "rejected"; reason: "not-accepted" }
   | { status: "accepted"; target: Target; sessionID?: string; inputID: string; duplicate: boolean; reference?: "unresolved" }
+  | { status: "amended"; target: Target; inputID: string; amendmentID: string; duplicate: boolean }
 
 const origin = (value: unknown): Origin | undefined => {
   if (value === undefined) return undefined
@@ -18,7 +19,9 @@ const origin = (value: unknown): Origin | undefined => {
     !("fingerprint" in value) || typeof value.fingerprint !== "string") throw new Error("Invalid QQ origin metadata")
   const destination = target("target" in value ? value.target : "sessionID" in value ? value.sessionID : undefined)
   if ("target" in value && "sessionID" in value && !sameTarget(destination, target(value.sessionID))) throw new Error("Conflicting QQ origin target")
-  return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint }
+  if ("amendmentID" in value && (typeof value.amendmentID !== "string" || !/^msg_[A-Za-z0-9_-]+$/.test(value.amendmentID))) throw new Error("Invalid QQ amendment metadata")
+  return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint,
+    ...("amendmentID" in value ? { amendmentID: value.amendmentID as string } : {}) }
 }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
@@ -36,10 +39,12 @@ export function createPortal(options: { storage: Storage; session: Native; backe
   }
   const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", target: record.target,
     ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
-  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => evidence === "accepted" ? accepted(record, duplicate)
+  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => evidence === "amended" && record.amendmentID
+    ? { status: "amended", target: record.target, inputID: record.inputID, amendmentID: record.amendmentID, duplicate }
+    : evidence === "conflict" ? { status: "blocked", reason: "quoted-task-not-pending" } : evidence === "accepted" ? accepted(record, duplicate)
     : evidence === "rejected" ? { status: "rejected", reason: "not-accepted" } : { status: "uncertain" }
   const evidence = async (record: Origin): Promise<Evidence> => {
-    try { return await native.reconcile(record.target, record.inputID) }
+    try { return record.amendmentID ? await native.amendment(record.target, record.inputID, record.amendmentID) : await native.reconcile(record.target, record.inputID) }
     catch { return "uncertain" }
   }
   const withdraw = async (record: Origin): Promise<Result> => {
@@ -84,8 +89,14 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       const destination = await binding(input.scope)
       if (!destination) return { status: "unbound" }
       const quoted = input.quoteID ? await lookup(input.scope, input.quoteID) : undefined
-      if (quoted) return { status: "blocked", reason: !sameTarget(quoted.target, destination) ? "cross-session-confirmation-required" : "quoted-adjustment-unavailable" }
-      const record: Origin = { target: destination, inputID: inputID(input), actorID: input.actorID, fingerprint: fingerprint(input) }
+      if (quoted) {
+        if (!sameTarget(quoted.target, destination)) return { status: "blocked", reason: "cross-session-confirmation-required" }
+        if (!native.canAppend(destination)) return { status: "blocked", reason: "quoted-adjustment-unavailable" }
+        try { if (!await native.pending(destination, quoted.inputID)) return { status: "blocked", reason: "quoted-task-not-pending" } }
+        catch { return { status: "uncertain" } }
+      }
+      const record: Origin = { target: destination, inputID: quoted?.inputID ?? inputID(input), actorID: input.actorID, fingerprint: fingerprint(input),
+        ...(quoted ? { amendmentID: inputID(input) } : {}) }
       if (!(await storage.insert(key(input.scope, input.messageID), record))) {
         const winner = await lookup(input.scope, input.messageID)
         if (!winner) throw new Error("QQ origin admission was not retained")
@@ -94,7 +105,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       }
       if (await recalled(input)) return { status: "recalled" }
       try {
-        const state = await native.send(record.target, record.inputID, input.text,
+        const state = record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text,
           { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } })
         if (state !== "accepted") return result(record, state, false)
       } catch { return result(record, await evidence(record), true) }

@@ -63,6 +63,10 @@ import type {
   SessionInboxCancelOutput,
   SessionInboxUpdateInput,
   SessionInboxUpdateOutput,
+  SessionInboxAppendInput,
+  SessionInboxAppendOutput,
+  SessionInboxAmendmentInput,
+  SessionInboxAmendmentOutput,
   SessionGenerateInput,
   SessionGenerateOutput,
   SessionInterruptInput,
@@ -901,6 +905,29 @@ export function make(options: ClientOptions) {
               successStatus: 204,
               declaredStatuses: [400, 401, 404, 409],
               empty: true,
+            },
+            requestOptions,
+          ),
+        append: (input: SessionInboxAppendInput, requestOptions?: RequestOptions) =>
+          request<SessionInboxAppendOutput>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/inbox/${encodeURIComponent(input.inboxID)}/append/${encodeURIComponent(input.amendmentID)}`,
+              body: { text: input["text"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        amendment: (input: SessionInboxAmendmentInput, requestOptions?: RequestOptions) =>
+          request<SessionInboxAmendmentOutput>(
+            {
+              method: "GET",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/inbox/${encodeURIComponent(input.inboxID)}/append/${encodeURIComponent(input.amendmentID)}`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
             },
             requestOptions,
           ),

@@ -238,7 +238,7 @@
         {
           "path": "packages/core/src/session/session.ts",
           "action": "modified",
-          "sha256": "ac6e9897f0a8602bc0255177dec6e19ecc6660cab5e87173dfca003af074fa7d"
+          "sha256": "915368370850d2884f6ac779155218b5de75bf142f5b7d32c28d6a43d9bcb3fd"
         },
         {
           "path": "packages/core/src/session/shell.ts",
@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "d077aeb754e55d9d0bc10e4a60bd4db0aa825010cbe1ecbb8a6e1b149a38649e"
+          "sha256": "962936c52243293f9d87bff855135e861139236072232b069ebadce2bdf497b1"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -496,12 +496,12 @@
         {
           "path": "packages/client/src/effect/generated/client.ts",
           "action": "modified",
-          "sha256": "7047e6bb3ea5c765578b271042653a7fefef2f19f6d740d10665387754dd0437"
+          "sha256": "1fd618210cbdecf7cb5d902aa7609f6a8f2dc63257ee9f3d6197b3861ddc4b04"
         },
         {
           "path": "packages/client/src/promise/generated/client.ts",
           "action": "modified",
-          "sha256": "936a30ba93631e013570184de957c07fa52c84ed440aba204b8dcaf706537a8d"
+          "sha256": "a1cbc056a100716c70bbb6d660b85b2014f0c5d13e007054d62a78b2419eb254"
         },
         {
           "path": "packages/client/test/promise.test.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "034810dccf08c57d9e949193efc83a544508c7139f809957e9237e0636307269"
+          "sha256": "e363bc6cc171f83218d3b06d05a12a2636b08509f257a98391fd741c6e112605"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -551,12 +551,12 @@
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "008fdd1749788887104b6d787eeebb7adaab607778152ddbe831df78c1582ccf"
+          "sha256": "6914d78ebf08aa2af17a870ebdf5029d490aee719a10f241b8d38a2c7f3ad245"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "1914d56f05a0f6b416e4300ea04ead57e8e38debe0da3671b9d02d9d3b5e5dfb"
+          "sha256": "331fbafe0e9c9fbbb0e8165fb908555d20e52a7f8b9b55fc024ea378fcaebd8d"
         },
         {
           "path": "packages/core/src/bus.ts",
@@ -566,7 +566,7 @@
         {
           "path": "packages/core/src/session.ts",
           "action": "modified",
-          "sha256": "34196f693a8acecccc5234b479558dfdc5ae2f6fac5fe645b574638f3cbd4fc0"
+          "sha256": "99691679dd596a4d2f9dd3ec33e9a6219642edacc6475e916fcadd731f2a6ac4"
         },
         {
           "path": "packages/core/src/session/compaction.ts",
@@ -606,7 +606,7 @@
         {
           "path": "packages/schema/src/session-event.ts",
           "action": "modified",
-          "sha256": "8fb02bd2e1adac070a185570c42099e294a36689a378f104fb4291a54c2c27fb"
+          "sha256": "d17eb6c0f3dc552352e644652345bc1d406bad9e2c18de0613912a6928584fd0"
         },
         {
           "path": "packages/server/src/routes.ts",
@@ -666,7 +666,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "ef462f9b91faa566433f3fdcffe70e49eff9b1d6ec1d52346fb206ce04c8dd76"
+          "sha256": "565881aed89cf41be98a3c2e8509131b1340e853b65c3b23dac6fd88fc390c10"
         }
       ]
     },
@@ -1085,7 +1085,7 @@
         {
           "path": "packages/server/script/qq-portal-smoke.ts",
           "action": "added",
-          "sha256": "109e1d03ddab52f78bc1cea511d55412c21cbf5326ac2324b78ceea196e8cfb5"
+          "sha256": "4849594f785f93da99401b82e401a938ab96a0f34bad6280cd0954c241ab8a2a"
         },
         {
           "path": "packages/server/test/vcs.test.ts",
@@ -1111,6 +1111,66 @@
           "path": "packages/server/script/qq-backend-smoke.ts",
           "action": "added",
           "sha256": "7b09678199b81ce0c1d26fd927ce07734592d5df276adfe746f9acc3af54b78e"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-native-inbox-append",
+      "reason": "原生Inbox正文追加与持久去重回执在同一事件事务提交；QQ引用待办只调用公共接口，保留原ID/序位/附件/投递方式；生成客户端及原生缓存刷新同步接入。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/src/runtime/server/data.ts",
+          "action": "modified",
+          "sha256": "852d7d04f0962357e857fc05b291d8319e2d743a0447bc5da7479ee2d8adc3ab"
+        },
+        {
+          "path": "packages/client/src/solid/data.ts",
+          "action": "modified",
+          "sha256": "0e92974f1106ba5eace6812710a8699423b2a3f45ba41641a2302999637978fb"
+        },
+        {
+          "path": "packages/client/test/solid-inbox-race.test.ts",
+          "action": "modified",
+          "sha256": "d8b3315e5da6bcf72b01bf4993f82947b424ad094aa81cb51e5858a8baea7a64"
+        },
+        {
+          "path": "packages/core/src/session/inbox.ts",
+          "action": "modified",
+          "sha256": "0e6ddd954d0721a56a5ac48f297a0413a651eb335a963d9206a307cc99129bcb"
+        },
+        {
+          "path": "packages/core/src/session/message-updater.ts",
+          "action": "modified",
+          "sha256": "a66d780fa0ccfa941c462a72c532c2c360581e630ef2337ae972b841b8f164f1"
+        },
+        {
+          "path": "packages/core/src/session/projector.ts",
+          "action": "modified",
+          "sha256": "bd0650beb49ab7c9298ab74869da061927401d934d054dd29dfc9f134834a4a6"
+        },
+        {
+          "path": "packages/core/test/session-inbox-append.test.ts",
+          "action": "added",
+          "sha256": "08a1af1128cfb0d710c734781ff5d965552d0c4f79a1a4fb9b8ae9bd911698cf"
+        },
+        {
+          "path": "packages/protocol/src/groups/session.ts",
+          "action": "modified",
+          "sha256": "33c69fc9403093e33a2956cbcd4271c9143ad15d1f0d6debb2b23a216b44a853"
+        },
+        {
+          "path": "packages/schema/src/session-inbox.ts",
+          "action": "modified",
+          "sha256": "a439841126c822995b37c4f036cdee97272040a157979ee37976f8b5a4b6d118"
+        },
+        {
+          "path": "packages/server/src/handlers/session.ts",
+          "action": "modified",
+          "sha256": "6ab5601c1372b3557c9499914d71d4e14bcf96898c2fe72572fd4e2193112761"
         }
       ]
     }

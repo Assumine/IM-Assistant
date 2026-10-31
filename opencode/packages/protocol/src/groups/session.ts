@@ -582,6 +582,35 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
       ),
     )
     .add(
+      HttpApiEndpoint.post("session.inbox.append", "/api/session/:sessionID/inbox/:inboxID/append/:amendmentID", {
+        params: { sessionID: Session.ID, inboxID: SessionMessage.ID, amendmentID: SessionMessage.ID },
+        payload: Schema.Struct({ text: Schema.String.check(Schema.isPattern(/\S/)) }),
+        success: SessionInbox.Amendment,
+        error: [ConflictError, SessionNotFoundError],
+      }).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.inbox.append",
+          summary: "Append pending input text",
+          description:
+            "Atomically append text once to a pending user input without changing its ID, enqueue order, attachments or delivery mode. A stable amendment ID deduplicates retries, including after delivery. Conflicting IDs and unavailable inputs are rejected.",
+        }),
+      ),
+    )
+    .add(
+      HttpApiEndpoint.get("session.inbox.amendment", "/api/session/:sessionID/inbox/:inboxID/append/:amendmentID", {
+        params: { sessionID: Session.ID, inboxID: SessionMessage.ID, amendmentID: SessionMessage.ID },
+        success: SessionInbox.Amendment,
+        error: [ConflictError, SessionNotFoundError],
+      }).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.inbox.amendment",
+          summary: "Read input amendment receipt",
+          description:
+            "Read an existing amendment acknowledgement without appending, admitting or resuming work. Unknown means no confirmed receipt.",
+        }),
+      ),
+    )
+    .add(
       HttpApiEndpoint.get(
         "session.instructions.entry.list",
         "/api/experimental/session/:sessionID/instructions/entries",

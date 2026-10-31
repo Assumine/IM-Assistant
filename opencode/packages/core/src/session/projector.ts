@@ -209,7 +209,10 @@ const projectFork = Effect.fn("SessionProjector.projectFork")(function* (
       .orderBy(asc(SessionMessageTable.seq))
       .limit(ForkBatchSize)
       .all()
-      .pipe(Effect.orDie, Effect.flatMap((rows) => SessionHistory.withParts(db, rows)))
+      .pipe(
+        Effect.orDie,
+        Effect.flatMap((rows) => SessionHistory.withParts(db, rows)),
+      )
     if (rows.length === 0) break
 
     const values = yield* Effect.forEach(rows, (row) =>
@@ -778,6 +781,17 @@ const layer = Layer.effectDiscard(
       SessionInbox.projectCancelled(db, {
         id: event.data.inboxID,
         sessionID: event.data.sessionID,
+      }),
+    )
+    yield* bus.project(SessionEvent.InboxTextAppended, (event) =>
+      Effect.gen(function* () {
+        yield* SessionInbox.projectTextAppended(db, { ...event.data, id: event.data.inboxID })
+        yield* db
+          .update(SessionTable)
+          .set({ time_updated: event.created })
+          .where(eq(SessionTable.id, event.data.sessionID))
+          .run()
+          .pipe(Effect.orDie)
       }),
     )
     yield* bus.project(SessionEvent.InboxDeliveryChanged, (event) =>

@@ -182,6 +182,12 @@ export interface Interface {
   readonly cancelInbox: (input: InboxItemRef) => Effect.Effect<void, NotFoundError | InboxConflictError>
   readonly steerInbox: (input: InboxItemRef) => Effect.Effect<void, NotFoundError | InboxConflictError>
   readonly queueInbox: (input: InboxItemRef) => Effect.Effect<void, NotFoundError | InboxConflictError>
+  readonly appendInbox: (
+    input: InboxItemRef & { amendmentID: SessionMessage.ID; text: string },
+  ) => Effect.Effect<import("@opencode/schema/session-inbox").Amendment, NotFoundError | InboxConflictError>
+  readonly inboxAmendment: (
+    input: InboxItemRef & { amendmentID: SessionMessage.ID },
+  ) => Effect.Effect<import("@opencode/schema/session-inbox").Amendment, NotFoundError | InboxConflictError>
   /**
    * Durable, ordered session log read. Replays durable session bus after
    * the exclusive `after` cursor, emits a `Synced` marker at the captured
@@ -467,6 +473,8 @@ const layer = Layer.effect(
       cancelInbox: (input) => sessions.forSession(input.sessionID).cancelInbox(input.inboxID),
       steerInbox: (input) => sessions.forSession(input.sessionID).steerInbox(input.inboxID),
       queueInbox: (input) => sessions.forSession(input.sessionID).queueInbox(input.inboxID),
+      appendInbox: (input) => sessions.forSession(input.sessionID).appendInbox(input.inboxID, input),
+      inboxAmendment: (input) => sessions.forSession(input.sessionID).inboxAmendment(input.inboxID, input.amendmentID),
       log: (input) =>
         Stream.unwrap(
           result

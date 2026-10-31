@@ -243,6 +243,13 @@ export const InboxDeliveryChanged = Event.durable({
 })
 export type InboxDeliveryChanged = typeof InboxDeliveryChanged.Type
 
+export const InboxTextAppended = Event.durable({
+  type: "session.inbox.text.appended",
+  ...options,
+  schema: { ...InboxRef, amendmentID: SessionMessage.ID, text: Schema.String.check(Schema.isPattern(/\S/)) },
+})
+export type InboxTextAppended = typeof InboxTextAppended.Type
+
 export namespace Execution {
   export const Started = Event.durable({ type: "session.execution.started", ...options, schema: Base })
   export type Started = typeof Started.Type
@@ -671,6 +678,7 @@ export const Definitions = Event.inventory(
   InboxEnqueued,
   InboxCancelled,
   InboxDeliveryChanged,
+  InboxTextAppended,
   Execution.Started,
   Execution.Succeeded,
   Execution.Failed,

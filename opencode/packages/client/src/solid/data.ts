@@ -898,6 +898,11 @@ export function createData(config: CreateDataInput) {
       case "session.inbox.delivery.changed":
         updatePending(event.data.sessionID, event.data.inboxID, event.data.delivery)
         return
+      case "session.inbox.text.appended":
+        // Reuse serialized native cache revalidation; an append can overtake an older Inbox read.
+        result.session.pending.invalidate(event.data.sessionID)
+        refresh(() => result.session.pending.sync(event.data.sessionID))
+        return
       case "session.inbox.cancelled": {
         retractLocal(event.data.sessionID, event.data.inboxID)
         compacting.get(event.data.sessionID)?.observed.add(event.data.inboxID)

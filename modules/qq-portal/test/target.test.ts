@@ -135,3 +135,66 @@ test("recalling an acknowledged reply alias cannot cancel its originating pendin
   expect(await portal.receive({ ...recall, message_id: "original" })).toEqual({ status: "withdrawn" })
   expect(f.controls).toHaveLength(1)
 })
+
+function sessionFixture() {
+  const f = fixture(), rootID = inputID(decoded("parent")), applied = new Set<string>()
+  const calls: { sessionID: string; inboxID: string; amendmentID: string; text: string }[] = []
+  const original = { target: { kind: "session" as const, sessionID: "ses_pending" }, inputID: rootID, actorID: "20001", fingerprint: fingerprint(decoded("parent")) }
+  f.values.set("binding:" + scopeKey(scope), "ses_pending")
+  f.values.set("origin:" + originKey(scope, "parent"), original)
+  let pending = true, fail = false, acknowledge = true, conflict = false
+  const session = { ...f.session, inbox: { ...f.session.inbox,
+    list: async () => pending ? [{ id: rootID, sessionID: "ses_pending", time: { created: 1 }, type: "user" as const, payload: { text: "parent" }, delivery: "queue" as const }] : [],
+    append: async (input: typeof calls[number]) => {
+      calls.push(input)
+      if (conflict) throw { _tag: "ConflictError", message: "Pending input changed" }
+      if (acknowledge) applied.add(input.amendmentID)
+      if (fail) throw new Error("Lost append receipt")
+      return { sessionID: input.sessionID, inboxID: input.inboxID, amendmentID: input.amendmentID, status: "applied" as const }
+    },
+    amendment: async (input: { sessionID: string; inboxID: string; amendmentID: string }) => ({ ...input, status: applied.has(input.amendmentID) ? "applied" as const : "unknown" as const }),
+  } }
+  return { ...f, rootID, original, calls, portal: createPortal({ policy, storage: f.storage, session }),
+    configure: (state: { pending?: boolean; fail?: boolean; acknowledge?: boolean; conflict?: boolean }) => {
+      pending = state.pending ?? pending; fail = state.fail ?? fail; acknowledge = state.acknowledge ?? acknowledge; conflict = state.conflict ?? conflict
+    } }
+}
+
+test("a quoted pending Session input appends under the parent ID instead of sending a new task", async () => {
+  const f = sessionFixture()
+  const result = await f.portal.receive(raw("extra", "parent"))
+  expect(result).toMatchObject({ status: "amended", inputID: f.rootID, amendmentID: inputID(decoded("extra")), duplicate: false })
+  expect(f.calls).toEqual([{ sessionID: "ses_pending", inboxID: f.rootID, amendmentID: inputID(decoded("extra")), text: "Body extra" }])
+  expect(f.reads()).toBe(0)
+  expect(f.sends).toEqual([])
+})
+
+test("a lost amendment acknowledgement reconciles the frozen Session after rebinding without appending twice", async () => {
+  const f = sessionFixture()
+  f.configure({ fail: true })
+  expect((await f.portal.receive(raw("extra", "parent"))).status).toBe("amended")
+  f.values.set("binding:" + scopeKey(scope), { kind: "backend", ref: { backendID: "other", threadID: "another" } })
+  expect(await f.portal.receive(raw("extra", "parent"))).toMatchObject({ status: "amended", target: f.original.target, duplicate: true })
+  expect(f.calls).toHaveLength(1)
+})
+
+test("delivered parents and native append conflicts never route a quote to another task", async () => {
+  const f = sessionFixture()
+  f.configure({ pending: false })
+  expect(await f.portal.receive(raw("extra", "parent"))).toEqual({ status: "blocked", reason: "quoted-task-not-pending" })
+  expect(f.calls).toEqual([])
+  f.configure({ pending: true, conflict: true })
+  expect(await f.portal.receive(raw("extra", "parent"))).toEqual({ status: "blocked", reason: "quoted-task-not-pending" })
+  expect(f.calls).toHaveLength(1)
+  expect(f.reads()).toBe(0)
+})
+
+test("an unknown append is not repeated and recalling its supplement never cancels the parent", async () => {
+  const f = sessionFixture()
+  f.configure({ fail: true, acknowledge: false })
+  expect((await f.portal.receive(raw("extra", "parent"))).status).toBe("uncertain")
+  expect((await f.portal.receive(raw("extra", "parent"))).status).toBe("uncertain")
+  expect(f.calls).toHaveLength(1)
+  expect(await f.portal.receive({ post_type: "notice", notice_type: "friend_recall", self_id: "10001", user_id: "20001", message_id: "extra" })).toEqual({ status: "unchanged" })
+  expect(f.reads()).toBe(0)
+})

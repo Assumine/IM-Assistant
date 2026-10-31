@@ -1008,6 +1008,31 @@ function userRow(page: Page, messageID: string) {
   )
 }
 
+test("remote pending text append refreshes the same queue row and survives reload without resubmission", async ({
+  page,
+}) => {
+  const mock = createQueueMock(["First pending", "Second pending"])
+  const view = await openQueue(page, mock, "queue")
+  await expect(view.rows).toHaveCount(2)
+  await expect(view.rows.nth(0)).toContainText("First pending")
+  const first = mock.rows[0]
+  first.payload.text += "\n\nMore detail"
+  mock.emit("session.inbox.text.appended", {
+    sessionID,
+    inboxID: first.id,
+    amendmentID: "msg_append_ui",
+    text: "More detail",
+  })
+  await expect(view.rows.nth(0)).toContainText("More detail")
+  await expect(view.rows.nth(1)).toContainText("Second pending")
+  await expect(view.rows).toHaveCount(2)
+  await page.reload()
+  await expect(view.rows.nth(0)).toContainText("More detail")
+  await expect(view.rows.nth(1)).toContainText("Second pending")
+  expect(mock.prompts).toEqual([])
+  expect(mock.changes).toEqual([])
+})
+
 test("follow-up preference controls Enter while Mod+Enter uses the alternate delivery", async ({ page }) => {
   const mock = createQueueMock([])
   const view = await openQueue(page, mock, "queue")

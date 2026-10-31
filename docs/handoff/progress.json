@@ -326,7 +326,25 @@
         "opencode/packages/plugin/src/promise/adapter.ts",
         "opencode/packages/plugin/src/promise/storage.ts",
         "opencode/packages/sdk/src/internal/host.ts",
-        "opencode/packages/sdk/src/promise.ts"
+        "opencode/packages/sdk/src/promise.ts",
+        "opencode/packages/app/src/runtime/server/data.ts",
+        "opencode/packages/client/src/effect/api/api.ts",
+        "opencode/packages/client/src/effect/generated/client.ts",
+        "opencode/packages/client/src/promise/generated/client.ts",
+        "opencode/packages/client/src/promise/generated/types.ts",
+        "opencode/packages/client/src/solid/data.ts",
+        "opencode/packages/client/test/solid-inbox-race.test.ts",
+        "opencode/packages/core/src/session/inbox.ts",
+        "opencode/packages/core/src/session/message-updater.ts",
+        "opencode/packages/core/src/session/projector.ts",
+        "opencode/packages/core/src/session/session.ts",
+        "opencode/packages/core/src/session.ts",
+        "opencode/packages/core/test/session-inbox-append.test.ts",
+        "opencode/packages/protocol/src/groups/session.ts",
+        "opencode/packages/schema/src/session-event.ts",
+        "opencode/packages/schema/src/session-inbox.ts",
+        "opencode/packages/server/script/qq-portal-smoke.ts",
+        "opencode/packages/server/src/handlers/session.ts"
       ],
       "verification": [
         {
@@ -344,7 +362,7 @@
           "command": "python tools/run_runtime_checks.py --task R3-01",
           "evidence": "upstream/codex-verification.json",
           "scope": "isolated_feasibility",
-          "native_related_tests": 319,
+          "native_related_tests": 326,
           "native_http_checks": 19,
           "publication": "disabled"
         }
@@ -383,7 +401,27 @@
         "opencode/packages/schema/src/conversation-backend.ts",
         "opencode/packages/server/script/qq-backend-smoke.ts",
         "opencode/packages/server/src/middleware/runtime-policy.ts",
-        "opencode/packages/server/test/conversation-policy.test.ts"
+        "opencode/packages/server/test/conversation-policy.test.ts",
+        "opencode/packages/app/e2e/regression/session-queue.spec.ts",
+        "opencode/packages/app/src/runtime/server/data.ts",
+        "opencode/packages/client/src/effect/api/api.ts",
+        "opencode/packages/client/src/effect/generated/client.ts",
+        "opencode/packages/client/src/promise/generated/client.ts",
+        "opencode/packages/client/src/promise/generated/types.ts",
+        "opencode/packages/client/src/solid/data.ts",
+        "opencode/packages/client/test/solid-inbox-race.test.ts",
+        "opencode/packages/core/src/session/inbox.ts",
+        "opencode/packages/core/src/session/message-updater.ts",
+        "opencode/packages/core/src/session/projector.ts",
+        "opencode/packages/core/src/session/session.ts",
+        "opencode/packages/core/src/session.ts",
+        "opencode/packages/core/test/session-inbox-append.test.ts",
+        "opencode/packages/core/test/session-owned.test.ts",
+        "opencode/packages/core/test/session-prompt.test.ts",
+        "opencode/packages/protocol/src/groups/session.ts",
+        "opencode/packages/schema/src/session-event.ts",
+        "opencode/packages/schema/src/session-inbox.ts",
+        "opencode/packages/server/src/handlers/session.ts"
       ],
       "verification": [
         {
@@ -391,12 +429,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 49,
+          "tests_run": 137,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 18,
+          "http_checks": 20,
           "publication": "disabled"
         }
       ],

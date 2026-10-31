@@ -160,3 +160,37 @@ test("hydration coalesces a concurrent optimistic compaction even if its POST fa
     setup.dispose()
   }
 })
+
+test("a remote append revalidates after an older Inbox read without moving or duplicating the input", async () => {
+  const old = Promise.withResolvers<Response>()
+  const reloaded = Promise.withResolvers<void>()
+  let reads = 0
+  const amended = { ...item, payload: { ...item.payload, text: item.payload.text + "\n\nMore detail" } }
+  const setup = fixture(async () => {
+    reads++
+    if (reads === 1) return old.promise
+    reloaded.resolve()
+    return Response.json({ data: [amended] })
+  })
+  try {
+    setup.emit(enqueued)
+    const reading = setup.data.session.pending.sync(item.sessionID)
+    setup.emit({
+      id: "evt_append",
+      type: "session.inbox.text.appended",
+      created: 2,
+      durable: { aggregateID: item.sessionID, seq: 2, version: 1 },
+      data: { sessionID: item.sessionID, inboxID: item.id, amendmentID: "msg_append", text: "More detail" },
+    })
+    old.resolve(Response.json({ data: [item] }))
+    await reading
+    await reloaded.promise
+    await setup.data.session.pending.sync(item.sessionID)
+    expect(reads).toBe(2)
+    expect(setup.data.session.pending.list(item.sessionID)).toEqual([amended])
+    expect(setup.data.session.message.get(item.sessionID, item.id)).toMatchObject({ text: amended.payload.text })
+  } finally {
+    old.resolve(Response.json({ data: [] }))
+    setup.dispose()
+  }
+})

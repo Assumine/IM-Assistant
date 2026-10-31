@@ -324,6 +324,27 @@ export type SessionInboxUpdateOperation<E = never> = (
   input: SessionInboxUpdateInput,
 ) => Effect.Effect<SessionInboxUpdateOutput, E>
 
+export type SessionInboxAppendInput = {
+  readonly sessionID: Session.ID
+  readonly inboxID: SessionMessage.ID
+  readonly amendmentID: SessionMessage.ID
+  readonly text: string
+}
+export type SessionInboxAppendOutput = SessionInbox.Amendment
+export type SessionInboxAppendOperation<E = never> = (
+  input: SessionInboxAppendInput,
+) => Effect.Effect<SessionInboxAppendOutput, E>
+
+export type SessionInboxAmendmentInput = {
+  readonly sessionID: Session.ID
+  readonly inboxID: SessionMessage.ID
+  readonly amendmentID: SessionMessage.ID
+}
+export type SessionInboxAmendmentOutput = SessionInbox.Amendment
+export type SessionInboxAmendmentOperation<E = never> = (
+  input: SessionInboxAmendmentInput,
+) => Effect.Effect<SessionInboxAmendmentOutput, E>
+
 export type SessionGenerateInput = { readonly sessionID: Session.ID; readonly prompt: string }
 export type SessionGenerateOutput = { readonly text: string }
 export type SessionGenerateOperation<E = never> = (
@@ -430,6 +451,8 @@ export interface SessionApi<E = never> {
     readonly list: SessionInboxListOperation<E>
     readonly cancel: SessionInboxCancelOperation<E>
     readonly update: SessionInboxUpdateOperation<E>
+    readonly append: SessionInboxAppendOperation<E>
+    readonly amendment: SessionInboxAmendmentOperation<E>
   }
   readonly generate: SessionGenerateOperation<E>
   readonly interrupt: SessionInterruptOperation<E>
@@ -887,6 +910,22 @@ export type ExperimentalSessionLogOutput =
             readonly sessionID: Session.ID
             readonly inboxID: SessionMessage.ID
             readonly delivery: SessionInbox.Delivery
+          }
+        }
+      | {
+          readonly id: Event.ID
+          readonly created: number
+          readonly metadata?: { readonly [x: string]: unknown } | undefined
+          readonly type: "session.inbox.text.appended"
+          readonly durable: { readonly aggregateID: string; readonly seq: Event.Seq; readonly version: Event.Version }
+          readonly location?:
+            | { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
+            | undefined
+          readonly data: {
+            readonly sessionID: Session.ID
+            readonly inboxID: SessionMessage.ID
+            readonly amendmentID: SessionMessage.ID
+            readonly text: string
           }
         }
       | {
@@ -2187,6 +2226,7 @@ export type EventSubscribeInput = {
         | "session.inbox.enqueued"
         | "session.inbox.cancelled"
         | "session.inbox.delivery.changed"
+        | "session.inbox.text.appended"
         | "session.execution.started"
         | "session.execution.succeeded"
         | "session.execution.failed"

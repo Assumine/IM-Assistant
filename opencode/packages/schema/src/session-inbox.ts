@@ -11,6 +11,15 @@ import { SessionMessage } from "./session-message.js"
 export const Delivery = Schema.Literals(["steer", "queue"]).annotate({ identifier: "Session.Inbox.Delivery" })
 export type Delivery = typeof Delivery.Type
 
+/** A durable append acknowledgement, not a task execution status. */
+export const Amendment = Schema.Struct({
+  sessionID: SessionID,
+  inboxID: SessionMessage.ID,
+  amendmentID: SessionMessage.ID,
+  status: Schema.Literals(["applied", "unknown"]),
+}).annotate({ identifier: "Session.Inbox.Amendment" })
+export type Amendment = typeof Amendment.Type
+
 export interface UserPayload extends Schema.Schema.Type<typeof UserPayload> {}
 export const UserPayload = Schema.Struct({
   ...Prompt.fields,

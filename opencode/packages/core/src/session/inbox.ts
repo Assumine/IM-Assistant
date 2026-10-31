@@ -29,6 +29,9 @@ import { SessionSchema } from "./schema.js"
 import { SessionStored } from "./stored.js"
 import { SessionInboxTable, SessionMessageTable } from "./sql.js"
 import { SessionHistory } from "./history.js"
+import { KVTable } from "../kv/sql.js"
+import { Hash } from "@opencode/util/hash"
+import { Amendment } from "@opencode/schema/session-inbox"
 
 type DatabaseService = Database.Interface["db"]
 
@@ -68,6 +71,36 @@ const decodeMove = Schema.decodeUnknownSync(MovePayload)
 const encodeMove = Schema.encodeSync(MovePayload)
 const inboxLocks = KeyedMutex.makeUnsafe<SessionSchema.ID>()
 type PendingRef = { readonly id: SessionMessage.ID; readonly sessionID: SessionSchema.ID }
+export type AppendRef = PendingRef & { readonly amendmentID: SessionMessage.ID }
+const amendmentKey = (id: SessionMessage.ID) => `session:inbox-amendment:${Hash.sha256(id)}`
+const AmendmentRecord = Schema.Struct({
+  sessionID: SessionSchema.ID,
+  inboxID: SessionMessage.ID,
+  textHash: Schema.String,
+})
+const recordedAmendment = Effect.fn("SessionInbox.recordedAmendment")(function* (
+  db: DatabaseService,
+  input: AppendRef,
+) {
+  const row = yield* db
+    .select({ value: KVTable.value })
+    .from(KVTable)
+    .where(eq(KVTable.key, amendmentKey(input.amendmentID)))
+    .get()
+    .pipe(Effect.orDie)
+  if (!row) return undefined
+  const record = yield* Schema.decodeUnknownEffect(AmendmentRecord)(row.value).pipe(Effect.orDie)
+  if (record.sessionID !== input.sessionID || record.inboxID !== input.id)
+    return yield* new LifecycleConflict({ id: input.id })
+  return record
+})
+const amendmentReceipt = (input: AppendRef, status: Amendment["status"]) =>
+  Amendment.make({
+    sessionID: input.sessionID,
+    inboxID: input.id,
+    amendmentID: input.amendmentID,
+    status,
+  })
 
 export const serialized = <A, E, R>(sessionID: SessionSchema.ID, effect: Effect.Effect<A, E, R>) =>
   inboxLocks.withLock(sessionID)(effect)
@@ -281,6 +314,41 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     ),
   )
 
+  const amendment = Effect.fn("SessionInbox.amendment")(function* (input: AppendRef) {
+    return amendmentReceipt(input, (yield* recordedAmendment(db, input)) ? "applied" : "unknown")
+  })
+  const append = Effect.fn("SessionInbox.append")((input: AppendRef & { readonly text: string }) =>
+    serialized(
+      input.sessionID,
+      Effect.gen(function* () {
+        if (!input.text.trim() || input.amendmentID === input.id) return yield* new LifecycleConflict({ id: input.id })
+        const matching = Effect.gen(function* () {
+          const record = yield* recordedAmendment(db, input)
+          if (record && record.textHash !== Hash.sha256(input.text))
+            return yield* new LifecycleConflict({ id: input.id })
+          return record ? amendmentReceipt(input, "applied") : undefined
+        })
+        const prior = yield* matching
+        if (prior) return prior
+        yield* bus
+          .publish(SessionEvent.InboxTextAppended, {
+            sessionID: input.sessionID,
+            inboxID: input.id,
+            amendmentID: input.amendmentID,
+            text: input.text,
+          })
+          .pipe(
+            Effect.catchDefect((defect) => {
+              if (!(defect instanceof LifecycleConflict)) return Effect.die(defect)
+              // Another process can commit the same amendment while this process waits for SQLite's writer.
+              return matching.pipe(Effect.flatMap((confirmed) => (confirmed ? Effect.void : Effect.fail(defect))))
+            }),
+          )
+        return amendmentReceipt(input, "applied")
+      }),
+    ),
+  )
+
   return {
     list: (sessionID: SessionSchema.ID) => list(db, sessionID),
     reconcile,
@@ -289,6 +357,8 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     cancel,
     steer,
     queue,
+    append,
+    amendment,
   }
 })
 
@@ -374,6 +444,50 @@ const delivered = (row: typeof SessionInboxTable.$inferSelect): Delivered => {
   if (row.type === "synthetic") return { id: row.id, type: "synthetic", payload: decodeSynthetic(row.payload) }
   return { id: row.id, type: row.type }
 }
+
+/** Called inside the Bus event transaction. The receipt and original pending payload commit or roll back together. */
+export const projectTextAppended = Effect.fn("SessionInbox.projectTextAppended")(function* (
+  db: DatabaseService,
+  input: AppendRef & { readonly text: string },
+) {
+  if (!input.text.trim() || input.amendmentID === input.id)
+    return yield* Effect.die(new LifecycleConflict({ id: input.id }))
+  const row = yield* db
+    .select()
+    .from(SessionInboxTable)
+    .where(
+      and(
+        eq(SessionInboxTable.id, input.id),
+        eq(SessionInboxTable.session_id, input.sessionID),
+        eq(SessionInboxTable.type, "user"),
+      ),
+    )
+    .get()
+    .pipe(Effect.orDie)
+  if (!row) return yield* Effect.die(new LifecycleConflict({ id: input.id }))
+  const claimed = yield* db
+    .insert(KVTable)
+    .values({
+      key: amendmentKey(input.amendmentID),
+      value: {
+        sessionID: input.sessionID,
+        inboxID: input.id,
+        textHash: Hash.sha256(input.text),
+      },
+    })
+    .onConflictDoNothing()
+    .returning({ key: KVTable.key })
+    .get()
+    .pipe(Effect.orDie)
+  if (!claimed) return yield* Effect.die(new LifecycleConflict({ id: input.id }))
+  const payload = decodeStoredUser(row.payload)
+  yield* db
+    .update(SessionInboxTable)
+    .set({ payload: encodeStoredUser({ ...payload, text: `${payload.text}\n\n${input.text}` }) })
+    .where(and(eq(SessionInboxTable.id, input.id), eq(SessionInboxTable.session_id, input.sessionID)))
+    .run()
+    .pipe(Effect.orDie)
+})
 
 export const projectCancelled = Effect.fn("SessionInbox.projectCancelled")(function* (
   db: DatabaseService,

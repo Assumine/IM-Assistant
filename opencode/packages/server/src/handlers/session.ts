@@ -558,6 +558,34 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
         }),
       )
       .handle(
+        "session.inbox.append",
+        Effect.fn(function* (ctx) {
+          return yield* session.appendInbox({ ...ctx.params, ...ctx.payload }).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag(
+              "Session.InboxConflictError",
+              (error) =>
+                new ConflictError({
+                  resource: error.inboxID,
+                  message: "Pending input amendment conflicts with native state",
+                }),
+            ),
+          )
+        }),
+      )
+      .handle(
+        "session.inbox.amendment",
+        Effect.fn(function* (ctx) {
+          return yield* session.inboxAmendment(ctx.params).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag(
+              "Session.InboxConflictError",
+              (error) => new ConflictError({ resource: error.inboxID, message: "Amendment belongs to another input" }),
+            ),
+          )
+        }),
+      )
+      .handle(
         "session.instructions.entry.list",
         Effect.fn(function* (ctx) {
           yield* requireSession(ctx.params.sessionID)

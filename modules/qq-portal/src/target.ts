@@ -1,10 +1,11 @@
 import type { SessionApi, RpcClient } from "../../../opencode/packages/client/src/promise/api"
 import type { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
+import { isConflictError } from "../../../opencode/packages/client/src/promise"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
-export type Native = Pick<SessionApi, "get" | "prompt" | "inbox" | "message">
+export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">> }
 export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query">
-export type Evidence = "accepted" | "uncertain" | "rejected"
+export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict"
 const id = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value)
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 
@@ -34,6 +35,24 @@ export function targets(session: Native, backend?: Backend) {
     return value.status
   }
   return {
+    canAppend(destination: Target) { return destination.kind === "session" && !!session.inbox.append && !!session.inbox.amendment },
+    async pending(destination: Target, inputID: string) {
+      return destination.kind === "session" && (await session.inbox.list({ sessionID: destination.sessionID })).some((item) => item.id === inputID && item.type === "user")
+    },
+    async append(destination: Target, inputID: string, amendmentID: string, text: string): Promise<Evidence> {
+      if (destination.kind !== "session" || !session.inbox.append) return "uncertain"
+      try {
+        const receipt = await session.inbox.append({ sessionID: destination.sessionID, inboxID: inputID, amendmentID, text })
+        if (receipt.sessionID !== destination.sessionID || receipt.inboxID !== inputID || receipt.amendmentID !== amendmentID) throw new Error("Wrong native amendment receipt")
+        return receipt.status === "applied" ? "amended" : "uncertain"
+      } catch (error) { if (isConflictError(error)) return "conflict"; throw error }
+    },
+    async amendment(destination: Target, inputID: string, amendmentID: string): Promise<Evidence> {
+      if (destination.kind !== "session" || !session.inbox.amendment) return "uncertain"
+      const receipt = await session.inbox.amendment({ sessionID: destination.sessionID, inboxID: inputID, amendmentID })
+      if (receipt.sessionID !== destination.sessionID || receipt.inboxID !== inputID || receipt.amendmentID !== amendmentID) throw new Error("Wrong native amendment receipt")
+      return receipt.status === "applied" ? "amended" : "uncertain"
+    },
     async validate(destination: Target) {
       if (destination.kind === "session") {
         if ((await session.get({ sessionID: destination.sessionID })).id !== destination.sessionID) throw new Error("Wrong native Session")

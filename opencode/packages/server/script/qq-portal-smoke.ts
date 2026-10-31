@@ -4,6 +4,7 @@ import { mkdtemp, mkdir } from "node:fs/promises"
 import path from "node:path"
 import { create } from "../../sdk/src/opencode"
 import type { StorageDomain } from "../../plugin/src/promise/storage"
+import { isConflictError } from "@opencode/client"
 import { createPortal, type Message, type Scope } from "../../../../modules/qq-portal/src"
 
 const root = process.env.IM_QQ_TEST_ROOT
@@ -187,6 +188,18 @@ try {
   if (pending[0].type !== "user") throw new Error("User input expected")
   assert.equal(pending[0].payload.text, "Unique QQ queued body")
   assert.equal(pending[0].payload.metadata?.qq && typeof pending[0].payload.metadata.qq === "object", true)
+  assert.equal(
+    (
+      await app.session.inbox.amendment({
+        sessionID: first.id,
+        inboxID: pending[0].id,
+        amendmentID: "msg_never_appended",
+      })
+    ).status,
+    "unknown",
+  )
+  assert.equal((await app.session.inbox.list({ sessionID: first.id }))[0].id, pending[0].id)
+  checks.push("unknown amendment receipt reads never append text, admit work or replace the pending input")
   const desktop = await app.session.prompt({ sessionID: first.id, text: "Desktop pending input", delivery: "queue" })
   assert.deepEqual(
     (await app.session.inbox.list({ sessionID: first.id })).map((input) => input.id),
@@ -244,10 +257,28 @@ try {
   const decoded = (await import("../../../../modules/qq-portal/src/routing")).decode(queued, policy)
   if (decoded.kind !== "message") throw new Error("Message expected")
   await portal.linkReply(decoded.message as Message, "reply-to-queued")
-  assert.deepEqual(await portal.receive(message("adjust", "Add more", "reply-to-queued")), {
-    status: "blocked",
-    reason: "quoted-adjustment-unavailable",
+  const adjustment = message("adjust", "Add more", "reply-to-queued")
+  assert.equal((await portal.receive(adjustment)).status, "amended")
+  assert.equal((await portal.receive(adjustment)).status, "amended")
+  const lostAppend = createPortal({
+    policy,
+    storage,
+    session: {
+      ...app.session,
+      inbox: {
+        ...app.session.inbox,
+        append: async (input) => {
+          await app.session.inbox.append(input)
+          throw new Error("Lost append acknowledgment")
+        },
+      },
+    },
   })
+  const recoveredAppend = message("lost-append", "Lost append acknowledgment recovered", "reply-to-queued")
+  assert.equal((await lostAppend.receive(recoveredAppend)).status, "amended")
+  assert.equal((await portal.receive(recoveredAppend)).status, "amended")
+  assert.equal((await portal.receive(recall("adjust"))).status, "unchanged")
+  assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 3)
   await portal.bind(peer, second.id)
   const duplicate = await portal.receive(queued)
   assert(duplicate.status === "accepted" && duplicate.sessionID === first.id)
@@ -257,7 +288,7 @@ try {
   })
   assert.equal((await portal.receive(message("queued", "Changed body"))).status, "conflict")
   checks.push(
-    "source and acknowledged reply IDs retain their frozen target through rebinding; unsupported quote paths do not silently enqueue or steer",
+    "quoted pending input appends once in place, including lost acknowledgments; source and reply IDs retain their frozen target through rebinding",
   )
   const failedStorage = createPortal({
     policy,
@@ -296,7 +327,12 @@ try {
   const history = await app.session.context({ sessionID: first.id })
   assert.deepEqual(
     history.filter((item) => item.type === "user").map((item) => item.text),
-    ["Desktop active input", "Unique QQ queued body", "Desktop pending input", "QQ recovered acknowledgment"],
+    [
+      "Desktop active input",
+      "Unique QQ queued body\n\nAdd more\n\nLost append acknowledgment recovered",
+      "Desktop pending input",
+      "QQ recovered acknowledgment",
+    ],
   )
   assert.equal(history.filter((item) => item.id === active.id).length, 1)
   assert(!JSON.stringify(requests).includes("Must never reach the model"))
@@ -310,6 +346,30 @@ try {
   portal = createPortal({ policy, storage, session: app.session })
   const restored = await portal.receive(queued)
   assert(restored.status === "accepted" && restored.sessionID === first.id && restored.duplicate)
+  assert.equal((await portal.receive(adjustment)).status, "amended")
+  assert.equal((await portal.receive(recoveredAppend)).status, "amended")
+  const decodedAdjustment = (await import("../../../../modules/qq-portal/src/routing")).decode(adjustment, policy)
+  if (decodedAdjustment.kind !== "message") throw new Error("Adjustment expected")
+  const amendmentID = (await import("../../../../modules/qq-portal/src/routing")).inputID(decodedAdjustment.message)
+  assert.equal(
+    (await app.session.inbox.append({ sessionID: first.id, inboxID: pending[0].id, amendmentID, text: "Add more" }))
+      .status,
+    "applied",
+  )
+  await assert.rejects(
+    () =>
+      app.session.inbox.append({
+        sessionID: first.id,
+        inboxID: pending[0].id,
+        amendmentID: "msg_too_late",
+        text: "Must not alter delivered history",
+      }),
+    isConflictError,
+  )
+  assert.equal(requests.length, 5)
+  checks.push(
+    "SQLite restart restores append receipts; consumed parents reject new amendments without creating a follow-up task",
+  )
   assert.equal((await portal.receive(message("unknown", "Unknown must not replay"))).status, "uncertain")
   assert.deepEqual(await portal.receive(message("cross-restart", "Keep frozen target", "reply-to-queued")), {
     status: "blocked",

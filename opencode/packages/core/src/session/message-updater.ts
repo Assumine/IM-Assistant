@@ -82,6 +82,7 @@ export function update(adapter: Adapter, event: SessionEvent.DurableEvent) {
     Match.type<SessionEvent.DurableEvent>(),
     Match.discriminatorsExhaustive("type")({
       "session.created": () => Effect.void,
+      "session.inbox.text.appended": () => Effect.void,
       "session.viewed": () => Effect.void,
       "session.archived": () => Effect.void,
       "session.unarchived": () => Effect.void,

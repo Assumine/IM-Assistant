@@ -154,6 +154,26 @@ export const make = Effect.fn("Session.make")(function* () {
     (sessionID: SessionSchema.ID, inboxID: SessionMessage.ID) => mutatePending(sessionID, inboxID, admission.queue),
     Effect.uninterruptible,
   )
+  const appendInbox = Effect.fn("Session.appendInbox")(function* (
+    sessionID: SessionSchema.ID,
+    inboxID: SessionMessage.ID,
+    input: { amendmentID: SessionMessage.ID; text: string },
+  ) {
+    yield* get(sessionID)
+    return yield* admission
+      .append({ sessionID, id: inboxID, ...input })
+      .pipe(Effect.catchTag("SessionInbox.LifecycleConflict", () => new InboxConflictError({ sessionID, inboxID })))
+  }, Effect.uninterruptible)
+  const inboxAmendment = Effect.fn("Session.inboxAmendment")(function* (
+    sessionID: SessionSchema.ID,
+    inboxID: SessionMessage.ID,
+    amendmentID: SessionMessage.ID,
+  ) {
+    yield* get(sessionID)
+    return yield* admission
+      .amendment({ sessionID, id: inboxID, amendmentID })
+      .pipe(Effect.catchTag("SessionInbox.LifecycleConflict", () => new InboxConflictError({ sessionID, inboxID })))
+  })
   const prompt = Effect.fn("Session.prompt")((sessionID: SessionSchema.ID, input: PromptRequest) =>
     Effect.uninterruptibleMask((restore) =>
       Effect.gen(function* () {
@@ -383,6 +403,8 @@ export const make = Effect.fn("Session.make")(function* () {
     cancelInbox,
     steerInbox,
     queueInbox,
+    appendInbox,
+    inboxAmendment,
     revert,
   }
 
@@ -409,6 +431,8 @@ export const make = Effect.fn("Session.make")(function* () {
     const cancelInbox = operations.cancelInbox.bind(undefined, sessionID)
     const steerInbox = operations.steerInbox.bind(undefined, sessionID)
     const queueInbox = operations.queueInbox.bind(undefined, sessionID)
+    const appendInbox = operations.appendInbox.bind(undefined, sessionID)
+    const inboxAmendment = operations.inboxAmendment.bind(undefined, sessionID)
     const stage = operations.revert.stage.bind(undefined, sessionID)
     const clear = operations.revert.clear.bind(undefined, sessionID)
     const commit = operations.revert.commit.bind(undefined, sessionID)
@@ -438,6 +462,8 @@ export const make = Effect.fn("Session.make")(function* () {
       cancelInbox,
       steerInbox,
       queueInbox,
+      appendInbox,
+      inboxAmendment,
       revert,
     }
   }
