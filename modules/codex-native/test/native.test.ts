@@ -188,6 +188,8 @@ describe("real Codex App Server (local synthetic model, no user credentials)", (
     const active = await observer.wait((event) => event.method === "turn/started")
     const turnId = (active.params.turn as { id: string }).id
     await expect(adapter.steer(thread.id, "stale-turn", "stale", "must-not-apply")).rejects.toBeInstanceOf(NativeError)
+    await expect(adapter.interrupt(thread.id, "stale-turn")).rejects.toBeInstanceOf(NativeError)
+    expect((await adapter.execution(thread.id, {})).turn?.status).toBe("inProgress")
     expect(await adapter.steer(thread.id, turnId, "adjustment", "valid-native-adjustment")).toEqual({ turnId })
     await adapter.interrupt(thread.id, turnId)
     const end = await observer.wait(completed)
@@ -355,7 +357,8 @@ describe("shared native service ownership", () => {
     expect(next.queue[0].nativeID).toBe(third.nativeID)
     await backend.control({ action: "update", threadID: thread.id, nativeID: second.nativeID, text: "Second edited" })
     await backend.control({ action: "reorder", threadID: thread.id, nativeIDs: [third.nativeID, second.nativeID, cancelled.nativeID] })
-    await backend.control({ action: "withdraw", threadID: thread.id, nativeID: cancelled.nativeID })
+    expect(await backend.control({ action: "withdraw", threadID: thread.id, nativeID: cancelled.nativeID })).toEqual({ status: "applied" })
+    expect(await backend.control({ action: "withdraw", threadID: thread.id, nativeID: cancelled.nativeID })).toEqual({ status: "not-found" })
     const pending = await execution.read(ref, { limit: 10 })
     expect(pending.queue.map((entry) => entry.nativeID)).toEqual([third.nativeID, second.nativeID])
     expect(pending.queue.map((entry) => entry.text)).toEqual(["Third original", "Second edited"])

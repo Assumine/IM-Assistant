@@ -186,7 +186,10 @@ const layer = Layer.effect(
           const backend = get(input.backendID)
           if (!backend) return Effect.fail(ctx.error("unavailable", "Conversation backend is unavailable"))
           return Effect.tryPromise({
-            try: () => backend.control(input.control),
+            try: async () =>
+              Schema.decodeUnknownSync(Schema.toType(ConversationBackend.ControlResult))(
+                await backend.control(input.control),
+              ),
             catch: () => ctx.error("failed", "Control result unknown; reconcile native state before retrying"),
           })
         },

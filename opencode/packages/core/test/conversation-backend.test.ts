@@ -27,7 +27,7 @@ function fixture() {
     descriptor: { id: "example", label: "Example native backend" },
     create: async () => ({ nativeThread: "native-thread" }),
     query: async () => ({ nativeHistory: [] }),
-    control: async () => ({}),
+    control: async () => ({ status: "applied" }),
     enqueue: async (input) => {
       admissions.push(input)
       const receipt = { nativeID: `native-${admissions.length}`, kind: "queued" as const }
@@ -145,7 +145,9 @@ it.effect("execution observations and invalidations retain native ownership acro
       },
       subscribe: (listener) => {
         emit = listener
-        return () => { unsubscribed++ }
+        return () => {
+          unsubscribed++
+        }
       },
     }
     const registered = yield* host.register({ ...example.backend, execution })
@@ -157,9 +159,9 @@ it.effect("execution observations and invalidations retain native ownership acro
     expect(calls).toEqual([{ ref: input.ref, page: { cursor: "native-cursor", limit: 1 } }])
     mismatch = true
     expect(Exit.isFailure(yield* client.execution({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
-    const observed = yield* client.events.subscribe("activity").pipe(
-      Stream.take(2), Stream.runCollect, Effect.forkScoped({ startImmediately: true }),
-    )
+    const observed = yield* client.events
+      .subscribe("activity")
+      .pipe(Stream.take(2), Stream.runCollect, Effect.forkScoped({ startImmediately: true }))
     emit({ ref: { ...input.ref, backendID: "another" }, change: "execution" })
     emit({ ref: input.ref, change: "execution" })
     const old = emit
@@ -328,8 +330,28 @@ it.effect("steering shares durable admission and cannot bypass it through the co
     const rpc = yield* Rpc.Service
     yield* host.bind(rpc)
     const example = fixture()
-    yield* host.register(example.backend)
+    let status: "applied" | "not-found" = "applied"
+    let failing = false
+    const controls: object[] = []
+    yield* host.register({
+      ...example.backend,
+      control: async (request) => {
+        controls.push(request)
+        if (failing) throw new Error("Private native failure must not escape")
+        return { status, privatePayload: "must-stay-native" }
+      },
+    })
     const client = rpc.client(Api)
+    const withdrawal = {
+      backendID: "example",
+      control: { action: "withdraw" as const, threadID: "native-thread", nativeID: "native-pending" },
+    }
+    expect(yield* client.control(withdrawal)).toEqual({ status: "applied" })
+    status = "not-found"
+    expect(yield* client.control(withdrawal)).toEqual({ status: "not-found" })
+    failing = true
+    expect(Exit.isFailure(yield* client.control(withdrawal).pipe(Effect.exit))).toBe(true)
+    expect(controls).toEqual([withdrawal.control, withdrawal.control, withdrawal.control])
     const steer = { ...input, delivery: "steer" as const, expectedTurnID: "active-native-turn" }
     yield* client.send(steer)
     yield* client.send(steer)

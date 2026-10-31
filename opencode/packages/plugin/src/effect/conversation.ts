@@ -8,7 +8,7 @@ export interface Definition {
   readonly descriptor: ConversationBackend.Descriptor
   readonly create: () => Promise<Schema.Json>
   readonly query: (query: ConversationBackend.Query) => Promise<Schema.Json>
-  readonly control: (control: ConversationBackend.Control) => Promise<Schema.Json>
+  readonly control: (control: ConversationBackend.Control) => Promise<ConversationBackend.ControlResult>
   readonly enqueue: (input: ConversationBackend.Input) => Promise<ConversationBackend.Receipt>
   readonly reconcile: (
     ref: ConversationBackend.Ref,

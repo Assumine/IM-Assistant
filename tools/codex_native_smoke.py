@@ -92,7 +92,7 @@ def _run(checkpoint):
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
         "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "e2e/regression/composer.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 126 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 127 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))

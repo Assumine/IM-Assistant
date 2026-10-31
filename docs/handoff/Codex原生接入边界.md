@@ -101,11 +101,17 @@ ctx.ui.BackendComposer复用ComposerEditor、createComposerEditor、原生草稿
 
 真实CLI确认notLoaded线程虽接受queue/add但不执行，明确新queue输入现在先原生resume再入队；仅发生在首次send的enqueue，不发生在浏览或reconcile。原只读场景增加真实恢复输入和native-reply-4断言，读取依然不增加模型请求。主界面在接纳后及原生完成活动后读取历史，旧消息阅读期间保留锚点并提示最新内容，不做逐token轮询。
 
-本轮234项相关测试（77原生＋157浏览器/组件）及10项HTTP通过，完整check通过；正式R3文件、桌面全链路/真人账号/权限验收仍缺。性能基准是既有输入的小样本，不是整应用性能完成证明。
+当前235项相关测试（77原生＋158浏览器/组件）及10项HTTP通过，完整check通过；正式R3文件、桌面全链路/真人账号/权限验收仍缺。性能基准是既有输入的小样本，不是整应用性能完成证明。
+
+## 控制回执与原轮次停止
+
+control返回ControlResult：applied只表示后端确认操作，not-found表示待办目标已不在队列。Codex的withdraw根据deleted返回结果；不是从UI缺失猜测撤回成功。核心校验类型、剔除私有字段；异常/断线仍是未知，不能自动重试或恢复成待发送正文。HTTP和真实CLI检查第一次withdraw为applied，第二次为not-found，其他队列项未受影响。
+
+Stop仅在原生thread/turn均running时提供，携带点击时的原始turn ID，底层拒绝过期ID而不是停止后来的turn。真实CLI证明旧turn ID停止请求被拒绝且原任务仍在运行，再以正确ID中断；浏览器覆盖慢回执期间轮次变化、未知结果/人工核对、成功回执不伪造空闲，以及同thread ID跨backend的迟到回包隔离。已派发控制不使用视图的AbortSignal，读取/订阅照常清理，旧UI结果丢弃。尚未实现队列编辑/恢复及直接文本Steer，不以这些控制回执宣称完整交互完成。
 
 ## 真实验证
 
-`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、13个真实Codex场景、19个核心/RPC/KV单测、3个服务端权限/错误回归、42个原生标签/路由/持久化单测、126个生产构建设置/历史/完整标签/完整队列/原生编辑器浏览器回归、10项真实原生应用HTTP/SQLite检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
+`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、13个真实Codex场景、19个核心/RPC/KV单测、3个服务端权限/错误回归、42个原生标签/路由/持久化单测、127个生产构建设置/历史/完整标签/完整队列/原生编辑器浏览器回归、10项真实原生应用HTTP/SQLite检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
 
 - 原生队列自动启动、忙碌时编辑/排序/撤回、FIFO 和历史分页；额外确认重复 clientUserMessageId 并不去重。
 - 进程退出后的 native pending/历史恢复，原生 ID 和只读账号结果保持，不补发已交付输入。

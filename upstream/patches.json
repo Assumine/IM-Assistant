@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "dde817c4aba6a3b82f0d6397d80bc6fd2748f4eb4342fb408f7516056ada3a6c"
+          "sha256": "dbdfb65d158c640c69b4824668093839a115de6e032af29a96536cd659fb0668"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "9a157639e5a78179a16941aba97109d2dc658bb96153dffb65ce23050ce45d47"
+          "sha256": "6a9c1dde8f361f1b139d1a358b3f1b60d2804ebc0e1a6ffc1749b04147a3f19e"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "25a8b6bd0f2da01e2345f28ceb7d7bd183121166ecaba97d5d953d0aee1db246"
+          "sha256": "88880fb0a444131e5b76c18b018cdae667010e035ba7733228ac73d7e7081c32"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "6616fb50a995305b8440951bc0b50777aafa5bd2c54ce3765ec027fd6381289b"
+          "sha256": "00bcb9c63cd11f45ca50c8a2cfd36a76481bce6e0b0e6e04a235759629829bfe"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -656,12 +656,12 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "b481f2cfd19cb0a171d24b52febbedaad9e40c6f8f020958136a19cd9dccb30a"
+          "sha256": "d5bd36d358e6b650e1e3ea3cf6a28bcb47cf7d56bd9244e83b72c0f35e9ebada"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "3963adfcd2d01fb28e64540f174668ef5d5532e715dc33b44f0096f46aebce16"
+          "sha256": "32c63fc9065bbd7e963f97bde998923f754e8718e981751a5dd70f955e6f2914"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",
@@ -680,17 +680,17 @@
         {
           "path": "packages/app/e2e/utils/backends.ts",
           "action": "added",
-          "sha256": "eed513836a264d397b682a261e9fd396ebe79e32b60c763221279e105e3f3121"
+          "sha256": "57f10f71426b7e2573cee9f77c3618784fe00268bd3654a7eb42dcb08fd922df"
         },
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "cff1a96c3be7f5e850efd7e898fa114c8fdebd811fea969e124be717a849f3b9"
+          "sha256": "6d822b3590a650bfb57d229c94723f20957419ea74b337bac82dd3bf2525cc47"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "32b589a71303a181844433f3c8446656a2ee5ed0d37758a7a0719fb602de3c98"
+          "sha256": "b18c79eb0091c653ea8ff271f27fac1c4b090e7152f4ef36e42b4356588704e0"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -857,7 +857,7 @@
         {
           "path": "packages/gui-plugins/src/backends/execution.tsx",
           "action": "added",
-          "sha256": "bc689feefc88e786afa5e447c3268f43a3a15180a4b9f41a359fca5981e593a0"
+          "sha256": "ab0d637c48be6241f2257120fa0a72d8b862b21c54a96dd35b11bc7e9cd14978"
         }
       ]
     },

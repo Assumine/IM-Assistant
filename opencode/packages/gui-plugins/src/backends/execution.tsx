@@ -101,7 +101,8 @@ export function Execution(props: {
       control = async (action) => {
         if (lifetime.signal.aborted || queue.busy()) return
         setState({ controlling: true, error: undefined })
-        await rpc.control({ backendID: props.threadRef.backendID, control: action }, options).catch(() => {
+        // Once dispatched, a native write survives navigation. Only this view's late UI result is discarded.
+        await rpc.control({ backendID: props.threadRef.backendID, control: action }).catch(() => {
           if (!lifetime.signal.aborted) setState("error", "controlUnknown")
         })
 
@@ -169,6 +170,22 @@ export function Execution(props: {
             <Spinner />
           </Show>
           <span class="flex-1">{ctx.t(`browse.state.${state.value?.thread.state ?? "unknown"}`)}</span>
+          <Show when={state.value?.thread.state === "running" && state.value.turn?.state === "running"}>
+            <ctx.ui.Button
+              size="small"
+              variant="ghost"
+              disabled={queue.busy()}
+              busy={state.controlling}
+              onClick={() => {
+                const turn = state.value?.turn
+
+                if (!turn || turn.state !== "running" || state.value?.thread.state !== "running") return
+                void control({ action: "interrupt", threadID: props.threadRef.threadID, turnID: turn.id })
+              }}
+            >
+              {ctx.t("execution.stop")}
+            </ctx.ui.Button>
+          </Show>
           <ctx.ui.Button
             size="small"
             variant="ghost"

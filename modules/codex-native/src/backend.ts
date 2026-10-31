@@ -95,13 +95,14 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
     control: async (control) => {
       await adapter.readOwned(control.threadID)
       switch (control.action) {
-        case "withdraw": return json(adapter.withdraw(control.threadID, control.nativeID))
-        case "guide": return json(adapter.guide(control.threadID, control.nativeID))
-        case "update": return json(adapter.update(control.threadID, control.nativeID, control.text))
-        case "reorder": return json(adapter.reorder(control.threadID, [...control.nativeIDs]))
-        case "interrupt": return json(adapter.interrupt(control.threadID, control.turnID))
-        case "compact": return json(adapter.compact(control.threadID))
+        case "withdraw": return { status: (await adapter.withdraw(control.threadID, control.nativeID)).deleted ? "applied" : "not-found" }
+        case "guide": await adapter.guide(control.threadID, control.nativeID); break
+        case "update": await adapter.update(control.threadID, control.nativeID, control.text); break
+        case "reorder": await adapter.reorder(control.threadID, [...control.nativeIDs]); break
+        case "interrupt": await adapter.interrupt(control.threadID, control.turnID); break
+        case "compact": await adapter.compact(control.threadID); break
       }
+      return { status: "applied" }
     },
     enqueue: async (input) => {
       const thread = await owned(input.ref)

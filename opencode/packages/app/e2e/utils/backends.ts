@@ -40,7 +40,10 @@ type Fixture = {
     cursor?: string
     limit?: number
   }) => ConversationBackend.Execution | Promise<ConversationBackend.Execution>
-  control?: (backendID: string, control: ConversationBackend.Control) => Schema.Json | Promise<Schema.Json>
+  control?: (
+    backendID: string,
+    control: ConversationBackend.Control,
+  ) => ConversationBackend.ControlResult | Promise<ConversationBackend.ControlResult>
   send?: (input: ConversationBackend.Input) => ConversationBackend.Admission | Promise<ConversationBackend.Admission>
 }
 

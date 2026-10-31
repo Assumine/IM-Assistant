@@ -205,6 +205,11 @@ rows and optional actions; absent edit/undo/steer/reorder actions are omitted. T
 by Session, without importing a Session queue controller into the plugin. Pass `attached: true` only when a composer
 follows it; standalone strips do not overlap the next surface. Reordering requires a complete native queue page.
 Native controls are explicit user actions, followed by observation; failed/unknown controls are never retried automatically.
+The whole-backend control acknowledgement is `applied` or `not-found`; it never replaces the execution snapshot.
+For withdrawal, `not-found` means the input already left the pending queue, not that its text can safely be restored.
+The native Stop action carries the observed turn ID. A different turn must reject it in the backend rather than
+silently stopping newer work. Dispatched writes survive view navigation, while late UI results belong only to the
+original live view. Read requests and subscriptions still end with that view.
 `ctx.ui.BackendComposer` delegates to the app's real `ComposerEditor`, text interaction and submission capture.
 It keeps drafts through the native persistence layer, keyed by server and the original backend/thread reference.
 The `send(input)` callback goes to the public whole-backend admission service. Enter queues text; Shift+Enter inserts

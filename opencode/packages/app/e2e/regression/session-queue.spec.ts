@@ -238,7 +238,7 @@ test("whole backend: native queue actions reconcile observations without Session
 
         if (action.action === "withdraw") throw new Error("Response lost after native withdrawal")
 
-        return null
+        return { status: "applied" }
       },
     }),
   })
@@ -266,7 +266,7 @@ test("whole backend: native queue actions reconcile observations without Session
   await rows.filter({ hasText: "Third" }).hover()
   await rows.filter({ hasText: "Third" }).locator('[data-action="session-queue-remove"]').click()
   await expect(texts).toHaveText(["First"])
-  await expect(panel.getByRole("alert")).toContainText("Could not confirm the queue action")
+  await expect(panel.getByRole("alert")).toContainText("Could not confirm the action")
   await expect(rows.getByRole("button", { name: "Reorder queued prompt" })).toBeDisabled()
   await panel.getByRole("button", { name: "Refresh execution" }).click()
   await expect(panel.getByRole("alert")).toHaveCount(0)
@@ -285,6 +285,107 @@ test("whole backend: native queue actions reconcile observations without Session
   await expect(panel.getByText("Idle", { exact: true })).toBeVisible()
   await page.screenshot({ path: test.info().outputPath("whole-backend-queue.png"), fullPage: true })
   expect(admissions).toEqual([])
+})
+
+test("whole backend: stop targets the observed turn and late controls cannot cross native tabs", async ({ page }) => {
+  const alpha: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "same-thread" },
+    title: "Stop Alpha",
+    state: "running",
+  }
+
+  const beta: ConversationBackend.Thread = { ...alpha, ref: { ...alpha.ref, backendID: "beta" }, title: "Stop Beta" }
+  let value: ConversationBackend.Execution = { thread: alpha, turn: { id: "first-turn", state: "running" }, queue: [] }
+  const actions: { backendID: string; control: ConversationBackend.Control }[] = []
+
+  let pending:
+    | {
+        entered: ReturnType<typeof Promise.withResolvers<void>>
+        release: ReturnType<typeof Promise.withResolvers<void>>
+      }
+    | undefined = {
+    entered: Promise.withResolvers<void>(),
+    release: Promise.withResolvers<void>(),
+  }
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeStop",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [alpha, beta]),
+    rpc: backendRpc({
+      list: () => [alpha, beta].map((thread) => ({ id: thread.ref.backendID, label: thread.title, execution: true })),
+      status: () => ({ authentication: null }),
+      history: ({ ref }) => ({ thread: ref.backendID === "alpha" ? alpha : beta, items: [] }),
+      execution: ({ ref }) =>
+        ref.backendID === "alpha" ? value : { thread: beta, turn: { id: "first-turn", state: "running" }, queue: [] },
+      control: async (backendID, control) => {
+        actions.push({ backendID, control })
+        const held = pending
+
+        if (held) {
+          held.entered.resolve()
+          await held.release.promise
+          throw new Error("Native response not confirmed")
+        }
+
+        return { status: "applied" }
+      },
+    }),
+  })
+
+  await page.goto(backendHref(alpha.ref))
+  const panel = page.getByRole("region", { name: "Native execution and queue" })
+  const stop = panel.getByRole("button", { name: "Stop", exact: true })
+  await expect(stop).toBeEnabled()
+  await stop.click()
+  await pending.entered.promise
+  await expect(stop).toBeDisabled()
+  value = { ...value, turn: { id: "next-turn", state: "running" } }
+  await workspace.push([backendEvent("activity", { ref: alpha.ref, change: "execution" }, workspace.directory)])
+  pending.release.resolve()
+  await expect(panel.getByRole("alert")).toContainText("Could not confirm the action")
+  await expect(stop).toBeDisabled()
+  expect(actions).toEqual([
+    { backendID: "alpha", control: { action: "interrupt", threadID: "same-thread", turnID: "first-turn" } },
+  ])
+  pending = undefined
+  await panel.getByRole("button", { name: "Refresh execution" }).click()
+  await expect(stop).toBeEnabled()
+  await stop.click()
+  await expect(stop).toBeEnabled()
+  // The acknowledgement alone does not mark the backend idle or erase its native queue.
+  await expect(panel.getByText("Running", { exact: true })).toBeVisible()
+  expect(actions.at(-1)).toEqual({
+    backendID: "alpha",
+    control: { action: "interrupt", threadID: "same-thread", turnID: "next-turn" },
+  })
+  value = { thread: { ...alpha, state: "idle" }, turn: { id: "next-turn", state: "interrupted" }, queue: [] }
+  await workspace.push([backendEvent("activity", { ref: alpha.ref, change: "execution" }, workspace.directory)])
+  await expect(stop).toHaveCount(0)
+  value = { thread: alpha, turn: { id: "last-turn", state: "running" }, queue: [] }
+  await workspace.push([backendEvent("activity", { ref: alpha.ref, change: "execution" }, workspace.directory)])
+  await expect(stop).toBeEnabled()
+  pending = { entered: Promise.withResolvers<void>(), release: Promise.withResolvers<void>() }
+  await stop.click()
+  await pending.entered.promise
+  await page
+    .locator("[data-titlebar-tab-slot]")
+    .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: "Stop Beta" }) })
+    .locator("[data-titlebar-tab-link]")
+    .click()
+  await expect(stop).toBeEnabled()
+  pending.release.resolve()
+  await workspace.push([backendEvent("activity", { ref: beta.ref, change: "execution" }, workspace.directory)])
+  await expect(panel.getByRole("button", { name: "Refresh execution" })).toBeEnabled()
+  await expect(panel.getByRole("alert")).toHaveCount(0)
+  await expect(stop).toBeEnabled()
+  expect(actions).toHaveLength(3)
+  expect(actions.at(-1)).toEqual({
+    backendID: "alpha",
+    control: { action: "interrupt", threadID: "same-thread", turnID: "last-turn" },
+  })
+  await page.screenshot({ path: test.info().outputPath("whole-backend-stop.png"), fullPage: true })
 })
 
 test("whole backend: incomplete queues cannot reorder and late reads cannot cross native tabs", async ({ page }) => {

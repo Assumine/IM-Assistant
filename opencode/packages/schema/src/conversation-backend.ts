@@ -38,6 +38,10 @@ export const Control = Schema.Union([
   Schema.Struct({ action: Schema.Literal("compact"), threadID: ID }),
 ])
 export type Control = typeof Control.Type
+// An acknowledgement, never a replacement execution snapshot. Missing means a pending input already left the queue.
+// Transport/backend failures remain errors with unknown effect; callers must not infer success or automatically retry.
+export const ControlResult = Schema.Struct({ status: Schema.Literals(["applied", "not-found"]) })
+export type ControlResult = typeof ControlResult.Type
 export const Descriptor = Schema.Struct({
   id: ID,
   label: Schema.String,
@@ -177,7 +181,7 @@ export const Api = Rpc.define({
     },
     control: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID, control: Control })),
-      output: Schema.toStandardSchemaV1(Schema.Json),
+      output: Schema.toStandardSchemaV1(ControlResult),
       errors,
     },
     send: { input: Schema.toStandardSchemaV1(Input), output: Schema.toStandardSchemaV1(Admission), errors },

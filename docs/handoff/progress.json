@@ -290,7 +290,7 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 234,
+          "tests_run": 235,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
@@ -298,7 +298,7 @@
           "publication": "disabled",
           "native_http_checks": 10,
           "native_unit_tests": 77,
-          "browser_tests": 157
+          "browser_tests": 158
         }
       ],
       "blocked_reason": null
