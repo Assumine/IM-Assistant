@@ -303,7 +303,7 @@
         {
           "path": "packages/gui-plugins/src/conversation.ts",
           "action": "added",
-          "sha256": "68bad33f57ce887b40f373d43a97d69134548c501ce076d234150d3a7000ea7e"
+          "sha256": "69d472e0fdf18f8cf3a652fbe0890c0c8eaa6f5361449a2a47eece3468eff5dc"
         },
         {
           "path": "packages/im-assistant/package.json",
@@ -471,7 +471,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "95658a7cbaa11e36aa371044392eed2773712289afde86a8d2958eda2d82d22f"
+          "sha256": "edc4a38fde0fd670164c162310132349e7acf3cd071d29e30b7628e25b863a0c"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -481,7 +481,7 @@
         {
           "path": "packages/app/e2e/utils/mock-server.ts",
           "action": "modified",
-          "sha256": "b58a20c4bf46e5d3303504faa06aeb2f81c2e15fb0358be993b688cac0ed83c4"
+          "sha256": "b6ee65ef245014b1adf6d7d956442b18aab5fb38ce9ec410eff134d97fba8dac"
         },
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "fb6268737c30335c23fbb17a029302eee3f30451b2ada8d890fcf034b99bcf01"
+          "sha256": "d18f932d5155d2689e0c7f5cc045a3cdb56ba262fe9c2237954d80a02cdb2f24"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "c02fa0bd9693c822ac0191da828fb444c666fddb53532874f791ea0879cb3745"
+          "sha256": "b00f3c835f67d7a328874ca5292e7758328bccec1f6bcb7bdd638efcf2a16eea"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "713811fa383f9a67ea4add02b686f9eca52371b8b0965b3fe6517d220e5229f7"
+          "sha256": "40c8d06c74ce1bd95f80e822613b96a2c77c5b8b6c37cf09b9b617b48d58889d"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "ff8cc503d676bd4147d1d1f2e81241f1c472c588ae4f4b2f9f3d19f311f58be4"
+          "sha256": "692799ae9b5d72be7798a691ffc701faf8088c34a6a8bd4cc495847544fccb05"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -656,17 +656,66 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "17b3a50f700e5729e2ac13196d6bb81edaec03b9956b8518af783b99e3a8becb"
+          "sha256": "74c8a372cd8f995bb822e93d5d12eca6f0f8e3f4a65ea8f0243d245c6978c89b"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "fc7e7e37de3aba2674906e0712b63c3eb9a9864d972e7df331fba50b67d8c27b"
+          "sha256": "5ce42dcc08a6b9ae2e6421f5860cba515d8e9b45bd7d799b781d01681b7b7699"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "88f2c8fc44311a30bea4e8f41487f237becc03b62823dea391bf447f1a83eca9"
+          "sha256": "a4d2948dfda156a0d1a3eb262d1d1dde3ca7008ac5bc716a48b9a9760342221a"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-backend-settings",
+      "reason": "复用原生GUI设置页贡献位置展示完整后端连接与可选原生认证；不接管会话或队列，默认不激活Codex。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/utils/backends.ts",
+          "action": "added",
+          "sha256": "1e92b3d0bc6229bac88cff7a779afe46b71fef73fdf6761c4e1b8ed93c924908"
+        },
+        {
+          "path": "packages/gui-plugins/README.md",
+          "action": "modified",
+          "sha256": "6e611c1eca68f7c67d25f93ebf763dec9eb85ab2902136d98cd81347e569ff95"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/i18n/en.ts",
+          "action": "added",
+          "sha256": "11f90118a624631ea1e9642afbf13f2647029105f07a8a531415fe11f6804abe"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/index.ts",
+          "action": "added",
+          "sha256": "c1c64131448aae4e08f4aa3e1ef9de7abce0ade4d068af9ecb00bd159d14f2e2"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/page.tsx",
+          "action": "added",
+          "sha256": "310116ae719367f2b016396664990f29b377e71b4f48eccd451f7c9dec9be945"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/renderer.tsx",
+          "action": "added",
+          "sha256": "42391665d5ff74f2b0a4c9434c2d9e1c355ef66e7289bd1825e1cde038db76b1"
+        },
+        {
+          "path": "packages/gui-plugins/src/main.ts",
+          "action": "modified",
+          "sha256": "d84f0f9ad3385fd36235129073f9a2212de0da3629268da72efaaf264f0da50b"
+        },
+        {
+          "path": "packages/gui-plugins/src/renderer.ts",
+          "action": "modified",
+          "sha256": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f"
         }
       ]
     }

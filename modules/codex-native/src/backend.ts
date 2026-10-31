@@ -8,6 +8,30 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
   if (adapter.runtimeInfo().mode !== "shared") throw new Error("Managed backend requires the shared native service")
   return {
     descriptor: { id: "codex-native", label: "Codex" },
+    authentication: {
+      read: async () => {
+        const current = await adapter.account()
+        if (!current.account) return { state: current.requiresOpenaiAuth ? "signed-out" : "not-required" }
+        return {
+          state: "signed-in",
+          ...(current.account.email ? { label: current.account.email } : {}),
+          ...(current.account.planType ? { plan: current.account.planType } : {}),
+        }
+      },
+      start: async () => {
+        const current = await adapter.account()
+        if (!current.requiresOpenaiAuth) throw new Error("The configured provider does not use native sign-in")
+        const login = await adapter.login()
+        return { id: login.loginId, url: login.authUrl }
+      },
+      cancel: async (loginID) => (await adapter.cancelLogin(loginID)).status === "canceled" ? "canceled" : "not-found",
+      subscribe: (listener) => adapter.subscribe((event) => {
+        if (event.method === "account/updated") listener({ type: "updated" })
+        if (event.method === "account/login/completed" && typeof event.params.loginId === "string" && typeof event.params.success === "boolean") {
+          listener({ type: "completed", loginID: event.params.loginId, success: event.params.success })
+        }
+      }),
+    },
     create: () => json(adapter.create()),
     query: (query) => {
       switch (query.action) {

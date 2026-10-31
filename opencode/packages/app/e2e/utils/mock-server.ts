@@ -59,6 +59,8 @@ export interface MockServerConfig {
   onCredentialUpdate?: (credentialID: string, body: { label?: string }) => void
   onConnectKey?: (input: { integrationID: string; body: unknown }) => void
   onConfigProviderCreate?: (input: Config.ProviderConnection) => void
+  // Whole-backend RPC fixtures use the same envelope and event stream as the native server.
+  rpc?: (input: { id: string; method: string; body: Schema.Json }) => Schema.Json | Promise<Schema.Json>
   // Terminal shells the settings offer (`/api/config/shell`).
   shells?: unknown[]
   // Background shell commands (`GET /api/shell`).
@@ -144,6 +146,8 @@ export interface MockServerConfig {
   // Paths become directory entries.
   findFiles?: (input: { query: string; dirs?: string; limit?: number; directory: string }) => unknown[]
   sessionStatus?: Resolvable<Record<string, { type: string }>>
+  // SAFETY: the mock API's Json encoder normalizes fixture metadata before it becomes an HTTP response.
+  // oxlint-disable-next-line anti-slop/no-unknown-returns
   sessionStats?: (query: Record<string, string | undefined>) => unknown | Promise<unknown>
   inbox?: unknown[] | (() => unknown[])
   onPrompt?: (input: { sessionID: string; body: Schema.JsonObject }) => void
@@ -220,19 +224,27 @@ type MockStreamWindow = Window & {
 
 export async function mockOpenCodeServer(page: Page, config: MockServerConfig) {
   const server = config.server ?? SERVER
-  if (config.workspace === false) await page.addInitScript(() => {
-    const attach = () => {
-      if (!document.documentElement) return false
-      const meta = document.createElement("meta")
-      meta.name = "opencode-workspace"
-      meta.content = "disabled"
-      document.documentElement.append(meta)
-      return true
-    }
-    if (attach()) return
-    const observer = new MutationObserver(() => { if (attach()) observer.disconnect() })
-    observer.observe(document, { childList: true, subtree: true })
-  })
+
+  if (config.workspace === false)
+    await page.addInitScript(() => {
+      const attach = () => {
+        if (!document.documentElement) return false
+        const meta = document.createElement("meta")
+        meta.name = "opencode-workspace"
+        meta.content = "disabled"
+        document.documentElement.append(meta)
+
+        return true
+      }
+
+      if (attach()) return
+
+      const observer = new MutationObserver(() => {
+        if (attach()) observer.disconnect()
+      })
+
+      observer.observe(document, { childList: true, subtree: true })
+    })
 
   mockedOrigins(page).add(server)
 
@@ -936,8 +948,10 @@ function mockHandlers(
             hostname: config.hostname,
             urls: config.server ? [config.server] : [],
             paths: { tmp: "/tmp/opencode" },
-            capabilities: { persistentPty: state.persistentPty.capability,
-              experimental: { projectWorkspace: config.workspace } },
+            capabilities: {
+              persistentPty: state.persistentPty.capability,
+              experimental: { projectWorkspace: config.workspace },
+            },
           }),
         config: () => Effect.succeed(configEntries),
         reference: () => Effect.succeed({ location: location(config), data: [] }),
@@ -1061,6 +1075,7 @@ function mockHandlers(
         configUpdate: () => noContent,
         configProviderCreate: (ctx) => {
           if (!config.onConfigProviderCreate) return unsupported("create API connections", "onConfigProviderCreate")
+
           return Effect.sync(() => config.onConfigProviderCreate?.(ctx.payload)).pipe(Effect.andThen(noContent))
         },
         websearchProviders: () => Effect.succeed({ location: location(config), data: [] }),
@@ -1389,14 +1404,26 @@ function mockHandlers(
           })
         },
         // The goal plugin's pill reads each routed session's goal; no scenario sets one.
-        rpcCall: (ctx) =>
-          ctx.params.rpcID === "opencode.goal" && ctx.params.method === "get"
-            ? Effect.succeed({ output: null })
-            : Effect.fail(
-                new MockUnsupported({
-                  message: `The mock server has no ${ctx.params.rpcID}.${ctx.params.method} RPC`,
-                }),
-              ),
+        rpcCall: (ctx) => {
+          if (ctx.params.rpcID === "opencode.goal" && ctx.params.method === "get")
+            return Effect.succeed({ output: null })
+          const handle = config.rpc
+
+          if (handle)
+            return Effect.promise(async () => ({
+              output: await handle({
+                id: ctx.params.rpcID,
+                method: ctx.params.method,
+                body: Schema.decodeUnknownSync(Schema.Struct({ input: Schema.Json }))(ctx.payload).input,
+              }),
+            }))
+
+          return Effect.fail(
+            new MockUnsupported({
+              message: `The mock server has no ${ctx.params.rpcID}.${ctx.params.method} RPC`,
+            }),
+          )
+        },
         sessionActive: () => {
           const status = resolve(config.sessionStatus ?? {})
 

@@ -334,6 +334,11 @@ describe("shared native service ownership", () => {
     expect(upstream.requests).toHaveLength(1)
     expect((await second.queue(thread.id)).data).toEqual([])
     expect(await second.account()).toMatchObject({ requiresOpenaiAuth: false })
+    const authentication = nativeBackend(second).authentication
+    if (!authentication) throw new Error("Native authentication adapter missing")
+    expect(await authentication.read()).toEqual({ state: "not-required" })
+    await expect(authentication.start()).rejects.toThrow("does not use native sign-in")
+    expect(await authentication.cancel("00000000-0000-0000-0000-000000000001")).toBe("not-found")
   })
 
   test("independent processes race to one native PID; client crash and explicit stop/restart retain native history", async () => {

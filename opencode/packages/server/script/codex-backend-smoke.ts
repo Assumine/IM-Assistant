@@ -78,6 +78,9 @@ async function round(resume: boolean) {
       },
     })
     assert.deepEqual(yield* Effect.promise(() => call("list", {})), [{ id: "codex-native", label: "Codex" }])
+    assert.deepEqual(yield* Effect.promise(() => call("status", { backendID: "codex-native" })), { authentication: { state: "not-required" } })
+    assert.equal(yield* Effect.promise(() => call("cancelLogin", { backendID: "codex-native", loginID: "00000000-0000-0000-0000-000000000001" })), "not-found")
+    if (!resume) checks.push("native account projection and scoped login cancellation use the real application RPC")
     if (resume) {
       const retried = yield* Effect.promise(() => call("send", { ref, inputID: "host-pending", text: "native-pending" }))
       assert.deepEqual(retried, receipt)

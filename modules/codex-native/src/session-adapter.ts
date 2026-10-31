@@ -21,6 +21,10 @@ export interface ItemEntry {
   [key: string]: unknown
 }
 interface Pagination { cursor?: string; limit?: number }
+export interface Account {
+  account: { type: string; email?: string | null; planType?: string } | null
+  requiresOpenaiAuth: boolean
+}
 
 function id(value: string) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value)) throw new Error("Invalid native identifier")
@@ -112,7 +116,15 @@ export class CodexSessionAdapter {
   compact(threadId: string) {
     return this.native.request<Record<string, never>>("thread/compact/start", { threadId: id(threadId) })
   }
-  account() { return this.native.request<Record<string, unknown>>("account/read", { refreshToken: false }) }
+  account() { return this.native.request<Account>("account/read", { refreshToken: false }) }
+  login() {
+    return this.native.request<{ type: "chatgpt"; loginId: string; authUrl: string }>("account/login/start", {
+      type: "chatgpt", useHostedLoginSuccessPage: true, appBrand: "codex",
+    })
+  }
+  cancelLogin(loginId: string) {
+    return this.native.request<{ status: "canceled" | "notFound" }>("account/login/cancel", { loginId: id(loginId) })
+  }
   models(pagination: Pagination = {}) {
     return this.native.request<Page<Record<string, unknown>>>("model/list", page(pagination))
   }

@@ -236,7 +236,18 @@
         "modules/codex-native/src/connection.ts",
         "modules/codex-native/src/launch.ts",
         "modules/codex-native/src/shared.ts",
-        "modules/codex-native/test/fixture/shared-client.ts"
+        "modules/codex-native/test/fixture/shared-client.ts",
+        "opencode/packages/app/e2e/regression/settings.spec.ts",
+        "opencode/packages/app/e2e/utils/backends.ts",
+        "opencode/packages/app/e2e/utils/mock-server.ts",
+        "opencode/packages/gui-plugins/README.md",
+        "opencode/packages/gui-plugins/src/backends/i18n/en.ts",
+        "opencode/packages/gui-plugins/src/backends/index.ts",
+        "opencode/packages/gui-plugins/src/backends/page.tsx",
+        "opencode/packages/gui-plugins/src/backends/renderer.tsx",
+        "opencode/packages/gui-plugins/src/conversation.ts",
+        "opencode/packages/gui-plugins/src/main.ts",
+        "opencode/packages/gui-plugins/src/renderer.ts"
       ],
       "verification": [
         {
@@ -244,13 +255,15 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 29,
+          "tests_run": 68,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
           "publication": "disabled",
-          "native_http_checks": 7
+          "native_http_checks": 8,
+          "native_unit_tests": 31,
+          "browser_tests": 37
         }
       ],
       "blocked_reason": null

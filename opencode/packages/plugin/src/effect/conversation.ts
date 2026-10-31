@@ -10,9 +10,19 @@ export interface Definition {
   readonly query: (query: ConversationBackend.Query) => Promise<Schema.Json>
   readonly control: (control: ConversationBackend.Control) => Promise<Schema.Json>
   readonly enqueue: (input: ConversationBackend.Input) => Promise<ConversationBackend.Receipt>
-  readonly reconcile: (ref: ConversationBackend.Ref, inputID: string) => Promise<ConversationBackend.Receipt | undefined>
+  readonly reconcile: (
+    ref: ConversationBackend.Ref,
+    inputID: string,
+  ) => Promise<ConversationBackend.Receipt | undefined>
   readonly subscribe: (listener: (notification: Schema.Json) => void) => () => void
   readonly onClose?: (listener: () => void) => () => void
+  // Optional native sign-in ceremony. The backend retains all tokens and refresh/expiry logic.
+  readonly authentication?: {
+    readonly read: () => Promise<ConversationBackend.Account>
+    readonly start: () => Promise<ConversationBackend.BrowserLogin>
+    readonly cancel: (loginID: string) => Promise<"canceled" | "not-found">
+    readonly subscribe: (listener: (event: ConversationBackend.AuthenticationEvent) => void) => () => void
+  }
 }
 
 export interface ConversationDomain {

@@ -5,6 +5,241 @@ import { mockMissingLocation, mockOpenCodeServer } from "../utils/mock-server"
 import { mockRemoteServer, mockWorkspace, openSession, openSettings, type WorkspaceInput } from "../utils/workspace"
 import { recordNotifications } from "../utils/notifications"
 import { installSseTransport } from "../utils/sse-transport"
+import { backendEvent, backendRpc } from "../utils/backends"
+
+test("backends: registration changes preserve an offline selection without polling", async ({ page }) => {
+  await page.clock.install()
+  let reads = 0
+
+  let listed = [
+    { id: "alpha", label: "Alpha native" },
+    { id: "beta", label: "Beta native" },
+  ]
+
+  const { settings, push, directory } = await openSettings(page, {
+    name: "Backend registration",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => {
+        reads++
+
+        return listed
+      },
+      status: () => ({ authentication: null }),
+    }),
+  })
+
+  expect(reads).toBe(0)
+  await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+  const alpha = settings.getByRole("region", { name: "Alpha native", exact: true })
+  await expect(alpha.getByText("This backend does not expose sign-in controls.", { exact: true })).toBeVisible()
+  await page.clock.fastForward(15_000)
+  expect(reads).toBe(1)
+  listed = [listed[1]]
+  await push([backendEvent("changed", {}, directory)])
+  await expect(alpha.getByText("Unavailable", { exact: true })).toBeVisible()
+  await expect(settings.getByRole("button", { name: "Beta native beta", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  )
+  await settings.getByRole("button", { name: "Beta native beta", exact: true }).click()
+  await expect(settings.getByRole("region", { name: "Beta native", exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("backend-settings.png"), fullPage: true })
+  await settings.getByRole("tab", { name: "Preferences", exact: true }).click()
+  await push([backendEvent("changed", {}, directory)])
+  await page.clock.fastForward(15_000)
+  expect(reads).toBe(2)
+})
+
+test("backends: native browser sign-in completes from an account event", async ({ page, context }) => {
+  await context.route("https://auth.example.test/**", (route) => route.fulfill({ body: "Fixture sign-in" }))
+  const starts: string[] = []
+  let signedIn = false
+
+  const { settings, push, directory } = await openSettings(page, {
+    name: "Backend sign-in",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native" }],
+      status: () => ({
+        authentication: signedIn
+          ? { state: "signed-in", label: "fixture@example.test", plan: "Fixture plan" }
+          : { state: "signed-out" },
+      }),
+      login: (id) => {
+        starts.push(id)
+
+        return { id: "login-1", url: "https://auth.example.test/authorize" }
+      },
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+  await settings.getByRole("button", { name: "Sign in", exact: true }).click()
+  await expect(settings.getByText("Complete sign-in in your browser.", { exact: true })).toBeVisible()
+  const popup = page.waitForEvent("popup")
+  await settings.getByRole("button", { name: "Open sign-in page", exact: true }).click()
+  const browser = await popup
+  await expect(browser).toHaveURL("https://auth.example.test/authorize")
+  await browser.close()
+  signedIn = true
+  await push([
+    backendEvent(
+      "authentication",
+      { backendID: "alpha", event: { type: "completed", loginID: "login-1", success: true } },
+      directory,
+    ),
+  ])
+  await expect(settings.getByText("fixture@example.test", { exact: true })).toBeVisible()
+  await expect(settings.getByText("Fixture plan", { exact: true })).toBeVisible()
+  await expect(settings.getByRole("button", { name: "Open sign-in page", exact: true })).toBeHidden()
+  expect(starts).toEqual(["alpha"])
+})
+
+test("backends: cancellation names the pending attempt and allows a new sign-in", async ({ page }) => {
+  const canceled: string[][] = []
+  let starts = 0
+
+  const { settings } = await openSettings(page, {
+    name: "Backend cancellation",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native" }],
+      status: () => ({ authentication: { state: "signed-out" } }),
+      login: () => ({ id: `login-${++starts}`, url: "https://auth.example.test/authorize" }),
+      cancel: (id, loginID) => {
+        canceled.push([id, loginID])
+
+        return "canceled"
+      },
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+  await settings.getByRole("button", { name: "Sign in", exact: true }).click()
+  await settings.getByRole("button", { name: "Cancel sign-in", exact: true }).click()
+  await expect(settings.getByText("Sign-in canceled.", { exact: true })).toBeVisible()
+  await settings.getByRole("button", { name: "Sign in", exact: true }).click()
+  await expect(settings.getByText("Complete sign-in in your browser.", { exact: true })).toBeVisible()
+  expect(canceled).toEqual([["alpha", "login-1"]])
+  expect(starts).toBe(2)
+})
+
+test("backends: selecting another backend ignores the older account response", async ({ page }) => {
+  const delayed = Promise.withResolvers<void>()
+  const started = Promise.withResolvers<void>()
+
+  const { settings } = await openSettings(page, {
+    name: "Backend stale status",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [
+        { id: "alpha", label: "Alpha native" },
+        { id: "beta", label: "Beta native" },
+      ],
+      status: async (id) => {
+        if (id === "alpha") {
+          started.resolve()
+          await delayed.promise
+        }
+
+        return { authentication: { state: "signed-in", label: `${id}@example.test` } }
+      },
+    }),
+  })
+
+  try {
+    await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+    await started.promise
+    await settings.getByRole("button", { name: "Beta native beta", exact: true }).click()
+    await expect(settings.getByText("beta@example.test", { exact: true })).toBeVisible()
+
+    const answered = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/experimental.conversation/status") &&
+        response.request().postDataJSON().input.backendID === "alpha",
+    )
+
+    delayed.resolve()
+    await answered
+    await expect(settings.getByText("beta@example.test", { exact: true })).toBeVisible()
+    await expect(settings.getByText("alpha@example.test", { exact: true })).toBeHidden()
+  } finally {
+    delayed.resolve()
+  }
+})
+
+test("backends: a completion before the login response cannot leave a pending ceremony", async ({ page }) => {
+  const delayed = Promise.withResolvers<void>()
+  const started = Promise.withResolvers<void>()
+  let signedIn = false
+
+  const { settings, push, directory } = await openSettings(page, {
+    name: "Backend early completion",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native" }],
+      status: () => ({
+        authentication: signedIn ? { state: "signed-in", label: "signed@example.test" } : { state: "signed-out" },
+      }),
+      login: async () => {
+        started.resolve()
+        await delayed.promise
+
+        return { id: "early-login", url: "https://auth.example.test/authorize" }
+      },
+    }),
+  })
+
+  try {
+    await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+    await settings.getByRole("button", { name: "Sign in", exact: true }).click()
+    await started.promise
+    signedIn = true
+    await push([
+      backendEvent(
+        "authentication",
+        { backendID: "alpha", event: { type: "completed", loginID: "early-login", success: true } },
+        directory,
+      ),
+    ])
+    await expect(settings.getByText("signed@example.test", { exact: true })).toBeVisible()
+    delayed.resolve()
+    await expect(settings.getByRole("button", { name: "Refresh account status", exact: true })).toBeEnabled()
+    await expect(settings.getByRole("button", { name: "Open sign-in page", exact: true })).toBeHidden()
+  } finally {
+    delayed.resolve()
+  }
+})
+
+test("backends: a failed native ceremony clears the pending controls without automatic retry", async ({ page }) => {
+  let starts = 0
+
+  const { settings, push, directory } = await openSettings(page, {
+    name: "Backend failed sign-in",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native" }],
+      status: () => ({ authentication: { state: "signed-out" } }),
+      login: () => ({ id: `login-${++starts}`, url: "https://auth.example.test/authorize" }),
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+  await settings.getByRole("button", { name: "Sign in", exact: true }).click()
+  await expect(settings.getByRole("button", { name: "Cancel sign-in", exact: true })).toBeVisible()
+  await push([
+    backendEvent(
+      "authentication",
+      { backendID: "alpha", event: { type: "completed", loginID: "login-1", success: false } },
+      directory,
+    ),
+  ])
+  await expect(settings.getByText("Sign-in was not completed.", { exact: true })).toBeVisible()
+  await expect(settings.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled()
+  await expect(settings.getByRole("button", { name: "Open sign-in page", exact: true })).toBeHidden()
+  expect(starts).toBe(1)
+})
 
 const directory = "C:/Projects/settings-demo"
 
@@ -24,6 +259,7 @@ test("providers: custom API metadata connects through the native key dialog", as
   const keys: unknown[] = []
   const state = { created: false, connected: false }
   const entry = { id: "test-api", name: "My API", models: { test: { id: "test", name: "test" } } }
+
   const { settings } = await openSettings(page, {
     name: "Custom API",
     workspace: false,
@@ -50,6 +286,7 @@ test("providers: custom API metadata connects through the native key dialog", as
       state.connected = true
     },
   })
+
   await settings.getByRole("tab", { name: "Providers", exact: true }).click()
   await settings.getByRole("button", { name: "Add compatible API", exact: true }).click()
   await settings.getByLabel("Connection ID", { exact: true }).fill("test-api")
@@ -58,6 +295,7 @@ test("providers: custom API metadata connects through the native key dialog", as
   await settings.getByLabel("Model ID", { exact: true }).fill("test")
   await settings.getByLabel("Context limit (tokens)", { exact: true }).fill("32000")
   await settings.getByLabel("Output limit (tokens)", { exact: true }).fill("1024")
+
   if (test.info().repeatEachIndex === 0)
     await page.screenshot({ path: test.info().outputPath("custom-api-form.png"), fullPage: true })
   await settings.getByRole("button", { name: "Save and connect key", exact: true }).click()
@@ -83,21 +321,57 @@ test("providers: custom API metadata connects through the native key dialog", as
 test("usage shows honest reporting by period and only refreshes on demand", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-10-30T12:00:00Z") })
   const queries: Record<string, string | undefined>[] = []
+
   const value = {
-    range: { from: 1, to: 2 }, sessions: 1, subagents: 0, prompts: 1, steps: 1,
-    tokens: { input: 10, output: 5, reasoning: 0, cache: { read: 30, write: 0 } }, cost: 100,
-    tools: { mode: "none" }, activeDays: 1, streak: 1, activity: [], models: [],
-    reporting: { records: 1, complete: 1, fields: { input: 1, output: 1, reasoning: 1, cacheRead: 1, cacheWrite: 1 },
-      cost: { reported: { records: 1, amount: 0 }, catalog: { records: 0, amount: 0 }, mixed: { records: 0, amount: 0 },
-        unavailable: { records: 0, amount: 0 }, unknown: { records: 0, amount: 0 } } },
+    range: { from: 1, to: 2 },
+    sessions: 1,
+    subagents: 0,
+    prompts: 1,
+    steps: 1,
+    tokens: { input: 10, output: 5, reasoning: 0, cache: { read: 30, write: 0 } },
+    cost: 100,
+    tools: { mode: "none" },
+    activeDays: 1,
+    streak: 1,
+    activity: [],
+    models: [],
+    reporting: {
+      records: 1,
+      complete: 1,
+      fields: { input: 1, output: 1, reasoning: 1, cacheRead: 1, cacheWrite: 1 },
+      cost: {
+        reported: { records: 1, amount: 0 },
+        catalog: { records: 0, amount: 0 },
+        mixed: { records: 0, amount: 0 },
+        unavailable: { records: 0, amount: 0 },
+        unknown: { records: 0, amount: 0 },
+      },
+    },
   }
-  const { settings } = await openSettings(page, { name: "Usage periods", workspace: false, sessionStats: query => {
-    queries.push(query)
-    if (!query.from) return { ...value, reporting: undefined }
-    if (queries.length === 1) return value
-    return { ...value, reporting: { ...value.reporting, complete: 0, fields: { ...value.reporting.fields, cacheWrite: 0 } } }
-  } })
-  const control = (title: string) => settings.locator("dl > div").filter({ has: page.getByText(title, { exact: true }) }).getByRole("definition")
+
+  const { settings } = await openSettings(page, {
+    name: "Usage periods",
+    workspace: false,
+    sessionStats: (query) => {
+      queries.push(query)
+
+      if (!query.from) return { ...value, reporting: undefined }
+
+      if (queries.length === 1) return value
+
+      return {
+        ...value,
+        reporting: { ...value.reporting, complete: 0, fields: { ...value.reporting.fields, cacheWrite: 0 } },
+      }
+    },
+  })
+
+  const control = (title: string) =>
+    settings
+      .locator("dl > div")
+      .filter({ has: page.getByText(title, { exact: true }) })
+      .getByRole("definition")
+
   expect(queries).toEqual([])
   await settings.getByRole("tab", { name: "Usage", exact: true }).click()
   await expect(control("Recorded tokens")).toHaveText("45")
@@ -105,17 +379,34 @@ test("usage shows honest reporting by period and only refreshes on demand", asyn
   await expect(control("Reporting coverage")).toHaveText("1 / 1 record")
   await expect(control("Upstream-reported amount")).toContainText("$0")
   await expect(control("Catalog estimate")).toHaveText("Unknown")
-  if (test.info().repeatEachIndex === 0) await page.screenshot({ path: test.info().outputPath("usage-today.png"), fullPage: true })
+
+  if (test.info().repeatEachIndex === 0)
+    await page.screenshot({ path: test.info().outputPath("usage-today.png"), fullPage: true })
   expect(queries).toHaveLength(1)
   expect(queries[0].tools).toBe("none")
   const today = Number(queries[0].from)
-  expect(today).toBe(await page.evaluate(() => { const date = new Date(); date.setHours(0, 0, 0, 0); return date.getTime() }))
+  expect(today).toBe(
+    await page.evaluate(() => {
+      const date = new Date()
+      date.setHours(0, 0, 0, 0)
+
+      return date.getTime()
+    }),
+  )
   await page.clock.fastForward(15_000)
   expect(queries).toHaveLength(1)
   await settings.getByRole("button", { name: "Last 7 days", exact: true }).click()
   await expect(control("Reporting coverage")).toHaveText("0 / 1 record")
   await expect(control("Cache hit rate")).toHaveText("Unknown")
-  expect(Number(queries[1].from)).toBe(await page.evaluate(() => { const date = new Date(); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - 6); return date.getTime() }))
+  expect(Number(queries[1].from)).toBe(
+    await page.evaluate(() => {
+      const date = new Date()
+      date.setHours(0, 0, 0, 0)
+      date.setDate(date.getDate() - 6)
+
+      return date.getTime()
+    }),
+  )
   await settings.getByRole("button", { name: "All time", exact: true }).click()
   await expect(control("Reporting coverage")).toHaveText("Unknown")
   await expect(control("Fresh input")).toHaveText("Unknown")
@@ -132,25 +423,59 @@ test("usage shows honest reporting by period and only refreshes on demand", asyn
 test("usage ignores a late response after selecting another period", async ({ page }) => {
   const delayed = Promise.withResolvers<void>()
   let requests = 0
-  const { settings } = await openSettings(page, { name: "Usage race", workspace: false, sessionStats: async query => {
-    requests++
-    if (query.from) await delayed.promise
-    return { range: { from: 1, to: 2 }, sessions: 0, subagents: 0, prompts: 0, steps: 0,
-      tokens: { input: query.from ? 9999 : 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }, cost: 0,
-      tools: { mode: "none" }, activeDays: 0, streak: 0, activity: [], models: [] }
-  } })
+
+  const { settings } = await openSettings(page, {
+    name: "Usage race",
+    workspace: false,
+    sessionStats: async (query) => {
+      requests++
+
+      if (query.from) await delayed.promise
+
+      return {
+        range: { from: 1, to: 2 },
+        sessions: 0,
+        subagents: 0,
+        prompts: 0,
+        steps: 0,
+        tokens: { input: query.from ? 9999 : 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+        cost: 0,
+        tools: { mode: "none" },
+        activeDays: 0,
+        streak: 0,
+        activity: [],
+        models: [],
+      }
+    },
+  })
+
   try {
     await settings.getByRole("tab", { name: "Usage", exact: true }).click()
     await expect.poll(() => requests).toBe(1)
     await settings.getByRole("button", { name: "All time", exact: true }).click()
-    const total = settings.locator("dl > div").filter({ has: page.getByText("Recorded tokens", { exact: true }) }).getByRole("definition")
+
+    const total = settings
+      .locator("dl > div")
+      .filter({ has: page.getByText("Recorded tokens", { exact: true }) })
+      .getByRole("definition")
+
     await expect(total).toHaveText("0")
-    const finished = page.waitForResponse(response => response.url().includes("/api/experimental/session/stats?") && new URL(response.url()).searchParams.has("from"))
+
+    const finished = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/experimental/session/stats?") && new URL(response.url()).searchParams.has("from"),
+    )
+
     delayed.resolve()
     await finished
     await expect(total).toHaveText("0")
-    await expect(settings.getByRole("button", { name: "All time", exact: true })).toHaveAttribute("aria-pressed", "true")
-  } finally { delayed.resolve() }
+    await expect(settings.getByRole("button", { name: "All time", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    )
+  } finally {
+    delayed.resolve()
+  }
 })
 
 // One project with 12 worktrees, each with one session, and a configured zsh shell.
