@@ -34,18 +34,19 @@ def _run():
     directory = tempfile.mkdtemp(prefix="qq-acceptance-", dir=parent)
     bun = str(ROOT / provenance()["runtime"]["bun"])
     steps = []
-    for label, args in [
-        ("r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"]),
-        ("r3-qq-module-tests", [bun, "test"]),
+    for module_directory, label, args, expected_count in [
+        (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
+        (module, "r3-qq-module-tests", [bun, "test"], 71),
+        (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 3),
     ]:
         log = reports / (label + ".log")
         with log.open("wb") as output:
-            process = subprocess.run(args, cwd=module, env=environment("qq-ingress"), stdout=output, stderr=subprocess.STDOUT,
+            process = subprocess.run(args, cwd=module_directory, env=environment("qq-ingress"), stdout=output, stderr=subprocess.STDOUT,
                                      timeout=120, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         content = log.read_text(encoding="utf-8", errors="replace")
         counts = re.search(r"\b(\d+) pass\s+.*?\b(\d+) fail", content, re.S)
         skipped = sum(map(int, re.findall(r"\b(\d+) (?:skip|skipped)\b", content)))
-        if process.returncode or skipped or label.endswith("tests") and (not counts or (int(counts[1]), int(counts[2])) != (65, 0)):
+        if process.returncode or skipped or expected_count is not None and (not counts or (int(counts[1]), int(counts[2])) != (expected_count, 0)):
             raise RuntimeError(f"QQ module check failed: {label}; see {log.relative_to(ROOT)}")
         steps.append({"label": label, "exit_code": process.returncode, "passed": int(counts[1]) if counts else None, "skipped": skipped, "log": log.relative_to(ROOT).as_posix()})
     steps.append(run_command("packages/server", ["run", "script/qq-portal-smoke.ts"], "r3-qq-http", timeout=180,
@@ -70,6 +71,13 @@ def _run():
     continuation = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
     if continuation["status"] != "passed" or len(continuation["checks"]) != 7 or continuation["model_requests"] != 6 or continuation["actual_qq_connection"] or continuation["external_messages_sent"] or continuation["production_credentials_used"]:
         raise RuntimeError("Native guarded continuation acceptance was incomplete")
+    guidance_directory = tempfile.mkdtemp(prefix="qq-guidance-", dir=native_parent)
+    steps.append(run_command("packages/server", ["run", "script/qq-backend-continuation-smoke.ts"], "r3-qq-native-guidance-http", timeout=180,
+                             extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_QQ_GUIDANCE_TEST_ROOT": guidance_directory}))
+    lines = (reports / "r3-qq-native-guidance-http.log").read_text(encoding="utf-8").splitlines()
+    guidance = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
+    if guidance["status"] != "passed" or len(guidance["checks"]) != 7 or guidance["model_requests"] != 3 or guidance["native_admissions"] != 5 or guidance["actual_qq_connection"] or guidance["external_messages_sent"] or guidance["production_credentials_used"]:
+        raise RuntimeError("Real native guarded guidance acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
         ("core", ["test/session-input.test.ts", "test/session-inbox-append.test.ts", "test/session-owned.test.ts", "test/session-prompt.test.ts"], "r3-qq-append-session-regression", 87, []),
@@ -85,6 +93,9 @@ def _run():
         if result["native_tests_passed"] != count or result["native_tests_failed"] or result["native_tests_skipped"]:
             raise RuntimeError("Required original SDK regression scenarios did not all execute")
         steps.append(result)
+    steps.append(run_command("packages/core", ["test", "test/conversation-backend.test.ts"], "r3-qq-native-guidance-core"))
+    if steps[-1]["native_tests_passed"] != 17 or steps[-1]["native_tests_failed"] or steps[-1]["native_tests_skipped"]:
+        raise RuntimeError("Required native input identity checks did not all execute")
     names = [
         "opencode/packages/core/src/plugin/host.ts", "opencode/packages/core/src/plugin/sdk.ts", "opencode/packages/core/src/plugin/supervisor.ts",
         "opencode/packages/plugin/src/effect/storage.ts", "opencode/packages/plugin/src/promise/storage.ts", "opencode/packages/plugin/src/promise/adapter.ts",
@@ -109,9 +120,11 @@ def _run():
         "opencode/packages/core/test/session-native.test.ts", "opencode/packages/core/test/session-native-compaction.test.ts", "opencode/packages/server/script/qq-continuation-smoke.ts",
         "opencode/packages/session-ui/src/actions.ts", "opencode/packages/session-ui/src/message/message-content.tsx",
         "opencode/packages/app/src/session/composer/region.tsx", "opencode/packages/app/src/session/composer/timeline-actions.ts",
+        "opencode/packages/server/script/qq-backend-continuation-smoke.ts", "opencode/packages/plugin/src/effect/conversation.ts",
+        "modules/codex-native/src/backend.ts", "modules/codex-native/src/session-adapter.ts", "modules/codex-native/test/input.test.ts",
     ]
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
-            "steps": steps, "http_acceptance": http, "backend_acceptance": native, "continuation_acceptance": continuation,
+            "steps": steps, "http_acceptance": http, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance,
             "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
             "source_routing": {"owner": "original-plugin-kv", "frozen_envelope": True,
                                "reverse_lookup_requires_native_admission": True, "legacy_missing_source_is_not_inferred": True,
@@ -120,7 +133,7 @@ def _run():
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",
                           "controls are classified only; remote control dispatch and authorization are not implemented",
-                          "ordinary Session pending append and guarded active continuation are supported; completed quotes, whole-backend adjustments and cross-conversation confirmation remain blocked",
+                          "ordinary Session pending append and guarded active continuation plus whole-backend current-turn guidance are supported; native pending append, completed quotes and cross-conversation confirmation remain blocked",
                           "outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}

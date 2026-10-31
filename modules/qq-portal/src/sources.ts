@@ -5,7 +5,7 @@ import { target, sameTarget, type Target } from "./target"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
 export type Source = { scope: Scope; messageID: string; actorID: string }
-export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; continuationID?: string; source?: Source }
+export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; continuationID?: string; expectedTurnID?: string; source?: Source }
 export type SourceResult = { status: "found"; source: Source } | { status: "missing" | "forbidden" | "uncertain" | "not-accepted" }
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 const account = (value: unknown): value is string => typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value)
@@ -37,11 +37,13 @@ export const origin = (value: unknown): Origin | undefined => {
   if ("target" in value && "sessionID" in value && !sameTarget(destination, target(value.sessionID))) throw new Error("Conflicting QQ origin target")
   if ("amendmentID" in value && !controlledID(value.amendmentID)) throw new Error("Invalid QQ amendment metadata")
   if ("continuationID" in value && (!controlledID(value.continuationID) || "amendmentID" in value)) throw new Error("Invalid QQ continuation metadata")
+  if ("expectedTurnID" in value && (destination.kind !== "backend" || !value.continuationID || typeof value.expectedTurnID !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.expectedTurnID))) throw new Error("Invalid native continuation fence")
+  if (destination.kind === "backend" && value.continuationID && !value.expectedTurnID) throw new Error("Missing native continuation fence")
   const envelope = "source" in value ? source(value.source) : undefined
   if (envelope && (envelope.actorID !== value.actorID || inputID(envelope) !== (value.continuationID ?? value.amendmentID ?? value.inputID)))
     throw new Error("Conflicting QQ source envelope")
   return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint,
-    ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(value.continuationID ? { continuationID: value.continuationID as string } : {}), ...(envelope ? { source: envelope } : {}) }
+    ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(value.continuationID ? { continuationID: value.continuationID as string } : {}), ...(value.expectedTurnID ? { expectedTurnID: value.expectedTurnID as string } : {}), ...(envelope ? { source: envelope } : {}) }
 }
 
 /** Only immutable routing metadata in the original plugin KV. No message bodies, execution state or delivery queue. */

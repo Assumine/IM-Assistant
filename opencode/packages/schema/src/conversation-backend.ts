@@ -24,6 +24,13 @@ export const Admission = Schema.Union([
   Schema.Struct({ ...Rejection.fields, ref: Ref, inputID: ID }),
 ])
 export type Admission = typeof Admission.Type
+// Fresh native identity observation, independent of cached admission receipts. It is not an active-turn claim.
+export const InputPosition = Schema.Union([
+  Schema.Struct({ ref: Ref, inputID: ID, status: Schema.Literal("unknown") }),
+  Schema.Struct({ ref: Ref, inputID: ID, status: Schema.Literal("queued"), nativeID: ID }),
+  Schema.Struct({ ref: Ref, inputID: ID, status: Schema.Literal("delivered"), nativeID: ID, turnID: ID }),
+])
+export type InputPosition = typeof InputPosition.Type
 export const Page = {
   cursor: Schema.optional(Schema.String),
   limit: Schema.optional(Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 }))),
@@ -240,6 +247,11 @@ export const Api = Rpc.define({
     reconcile: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, inputID: ID })),
       output: Schema.toStandardSchemaV1(Admission),
+      errors,
+    },
+    input: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, inputID: ID })),
+      output: Schema.toStandardSchemaV1(InputPosition),
       errors,
     },
   },

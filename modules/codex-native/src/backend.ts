@@ -17,8 +17,36 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
     if (ref.backendID !== descriptor.id) throw new Error("Different native backend")
     return adapter.readOwned(ref.threadID)
   }
+  const input = async (ref: ConversationBackend.Ref, inputID: string): Promise<ConversationBackend.InputPosition> => {
+    await owned(ref)
+    const positions: ConversationBackend.InputPosition[] = []
+    const pages = async <T>(read: (cursor?: string) => Promise<{ data: T[]; nextCursor: string | null }>, each: (item: T) => void) => {
+      const seen = new Set<string>()
+      let cursor: string | undefined
+      do {
+        const page = await read(cursor)
+        page.data.forEach(each)
+        cursor = page.nextCursor ?? undefined
+        if (cursor && seen.has(cursor)) throw new Error("Repeated native input cursor")
+        if (cursor) seen.add(cursor)
+      } while (cursor)
+    }
+    await pages((cursor) => adapter.queue(ref.threadID, { cursor, limit: 100 }), (item) => {
+      if (item.clientUserMessageId === inputID) positions.push({ ref, inputID, status: "queued", nativeID: item.id })
+    })
+    if (positions.length > 1) throw new Error("Ambiguous native input identity")
+    // A pending observation never authorizes steering; preserve the cheap original queue receipt lookup.
+    if (positions[0]) return positions[0]
+    await pages((cursor) => adapter.items(ref.threadID, undefined, { cursor, limit: 100 }), (entry) => {
+      if (entry.item.type === "userMessage" && entry.item.clientId === inputID && typeof entry.item.id === "string")
+        positions.push({ ref, inputID, status: "delivered", nativeID: entry.item.id, turnID: entry.turnId })
+    })
+    if (positions.length > 1) throw new Error("Ambiguous native input identity")
+    return positions[0] ?? { ref, inputID, status: "unknown" }
+  }
   return {
     descriptor,
+    input,
     content: { subscribe: content.subscribe },
     execution: {
       read: async (ref, pagination) => {
@@ -134,24 +162,8 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       return { nativeID: result.queuedSubmission.id, kind: "queued" }
     },
     reconcile: async (ref, inputID) => {
-      await owned(ref)
-      const queued = []
-      let cursor: string | undefined
-      do {
-        const page = await adapter.queue(ref.threadID, { cursor, limit: 100 })
-        queued.push(...page.data.filter((item) => item.clientUserMessageId === inputID))
-        cursor = page.nextCursor ?? undefined
-      } while (cursor)
-      if (queued.length > 1) throw new Error("Ambiguous native submissions")
-      if (queued[0]) return { nativeID: queued[0].id, kind: "queued" }
-      const messages = []
-      do {
-        const page = await adapter.items(ref.threadID, undefined, { cursor, limit: 100 })
-        messages.push(...page.data.map((entry) => entry.item).filter((item) => item.type === "userMessage" && item.clientId === inputID))
-        cursor = page.nextCursor ?? undefined
-      } while (cursor)
-      if (messages.length > 1) throw new Error("Ambiguous native messages")
-      if (typeof messages[0]?.id === "string") return { nativeID: messages[0].id, kind: "message" }
+      const position = await input(ref, inputID)
+      if (position.status !== "unknown") return { nativeID: position.nativeID, kind: position.status === "queued" ? "queued" : "message" }
     },
     subscribe: (listener) => adapter.subscribe((event) => {
       // Text fragments have their own scoped, offset-aware projection, not a duplicate raw public event.

@@ -57,6 +57,87 @@ const input = {
   text: "private-input-not-stored-in-receipts",
 }
 
+it.effect("native input lookup is fresh, read-only and independent of cached queue admissions", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    const kv = yield* KV.Service
+    const example = fixture()
+    let delivered = false
+    yield* host.bind(rpc)
+    yield* host.register({
+      ...example.backend,
+      input: async (ref, inputID) =>
+        inputID === "unknown"
+          ? { ref, inputID, status: "unknown", privateBody: "not-public" }
+          : delivered
+            ? { ref, inputID, status: "delivered", nativeID: "message", turnID: "original-turn" }
+            : { ref, inputID, status: "queued", nativeID: "pending" },
+    })
+    const client = rpc.client(Api)
+    expect(yield* client.input({ ref: input.ref, inputID: "unknown" })).toEqual({
+      ref: input.ref,
+      inputID: "unknown",
+      status: "unknown",
+    })
+    expect((yield* kv.scan({ prefix: "conversation:admission:" })).entries).toEqual([])
+    const admitted = yield* client.send(input)
+    expect((yield* client.input({ ref: input.ref, inputID: input.inputID })).status).toBe("queued")
+    delivered = true
+    expect(yield* client.reconcile(input)).toEqual(admitted)
+    expect(yield* client.input(input)).toEqual({
+      ref: input.ref,
+      inputID: input.inputID,
+      status: "delivered",
+      nativeID: "message",
+      turnID: "original-turn",
+    })
+    expect(example.admissions).toHaveLength(1)
+  }),
+)
+
+it.effect("input lookup refuses missing capability, wrong identity and a replaced registration", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    const example = fixture()
+    yield* host.bind(rpc)
+    const client = rpc.client(Api)
+    const missing = yield* host.register(example.backend)
+    expect(Exit.isFailure(yield* client.input(input).pipe(Effect.exit))).toBe(true)
+    yield* missing.dispose
+    for (const identity of [
+      { ref: { ...input.ref, threadID: "other" }, inputID: input.inputID },
+      { ref: input.ref, inputID: "other-input" },
+    ]) {
+      const wrong = yield* host.register({
+        ...example.backend,
+        input: async () => ({ ...identity, status: "unknown" }),
+      })
+      expect(Exit.isFailure(yield* client.input(input).pipe(Effect.exit))).toBe(true)
+      yield* wrong.dispose
+    }
+    const entered = yield* Deferred.make<void>()
+    const release = yield* Deferred.make<void>()
+    const run = Effect.runPromiseWith(yield* Effect.context<never>())
+    const original = yield* host.register({
+      ...example.backend,
+      input: async (ref, inputID) => {
+        await run(Deferred.succeed(entered, undefined))
+        await run(Deferred.await(release))
+        return { ref, inputID, status: "delivered", nativeID: "message", turnID: "old-turn" }
+      },
+    })
+    const request = yield* client.input(input).pipe(Effect.exit, Effect.forkChild({ startImmediately: true }))
+    yield* Deferred.await(entered)
+    yield* original.dispose
+    yield* host.register(fixture().backend)
+    yield* Deferred.succeed(release, undefined)
+    expect(Exit.isFailure(yield* Fiber.join(request))).toBe(true)
+    expect(example.admissions).toEqual([])
+  }),
+)
+
 it.effect("public native RPC is optional, and backend registration is scoped and unique", () =>
   Effect.gen(function* () {
     const host = yield* ConversationBackend.Service

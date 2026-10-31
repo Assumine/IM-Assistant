@@ -5,7 +5,7 @@ import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http"
 // The conversation host publishes only this API surface. New integrations must opt in through a controlled host.
 export function allows(method: string, pathname: string) {
   if (
-    /^\/api\/rpc\/experimental\.conversation\/(list|status|threads|history|execution|login|cancelLogin|create|query|control|send|reconcile)$/.test(
+    /^\/api\/rpc\/experimental\.conversation\/(list|status|threads|history|execution|login|cancelLogin|create|query|control|send|reconcile|input)$/.test(
       pathname,
     )
   )

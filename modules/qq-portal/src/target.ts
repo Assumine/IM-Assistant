@@ -4,8 +4,8 @@ import { isConflictError } from "../../../opencode/packages/client/src/promise"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
 export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> }
-export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query">
-export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled"
+export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input">>
+export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-accepted" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled"
 const id = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value)
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 
@@ -39,20 +39,46 @@ export function targets(session: Native, backend?: Backend) {
       throw new Error("Wrong native continuation receipt")
     return value.status === "unknown" ? "uncertain" : `continuation-${value.status}`
   }
+  const position = async (destination: Extract<Target, { kind: "backend" }>, inputID: string) => {
+    const read = required().input
+    if (!read) throw new Error("Native input identity is unavailable")
+    const value = await read({ ref: destination.ref, inputID })
+    if (value.inputID !== inputID || !sameTarget({ kind: "backend", ref: value.ref }, destination)) throw new Error("Wrong native input identity")
+    return value
+  }
+  const guided = async (value: ConversationBackend.Admission, destination: Extract<Target, { kind: "backend" }>, continuationID: string, expectedTurnID: string): Promise<Evidence> => {
+    const state = receipt(value, destination, continuationID)
+    if (state !== "accepted") return state === "rejected" ? "conflict" : state
+    if (value.status !== "accepted") return "uncertain"
+    if (value.receipt.kind === "steered") return value.receipt.nativeID === expectedTurnID ? "continuation-accepted" : "uncertain"
+    if (value.receipt.kind !== "message") return "uncertain"
+    const found = await position(destination, continuationID)
+    return found.status === "delivered" && found.turnID === expectedTurnID && found.nativeID === value.receipt.nativeID ? "continuation-delivered" : "uncertain"
+  }
   return {
     canAppend(destination: Target) { return destination.kind === "session" && !!session.inbox.append && !!session.inbox.amendment },
-    canContinue(destination: Target) { return destination.kind === "session" && !!session.input?.continue && !!session.input?.continuation },
-    async continueInput(destination: Target, inputID: string, continuationID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"]): Promise<Evidence> {
+    canContinue(destination: Target) { return destination.kind === "session" ? !!session.input?.continue && !!session.input?.continuation : !!backend?.input },
+    async continueInput(destination: Target, inputID: string, continuationID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"], expectedTurnID?: string): Promise<Evidence> {
+      if (destination.kind === "backend") {
+        if (!expectedTurnID) return "uncertain"
+        return guided(await required().send({ ref: destination.ref, inputID: continuationID, text, delivery: "steer", expectedTurnID }), destination, continuationID, expectedTurnID)
+      }
       if (destination.kind !== "session" || !session.input) return "uncertain"
       try { return continued(await session.input.continue({ sessionID: destination.sessionID, expectedInputID: inputID, inboxID: continuationID, text, metadata }), destination, inputID, continuationID) }
       catch (error) { if (isConflictError(error)) return "conflict"; throw error }
     },
-    async continuation(destination: Target, inputID: string, continuationID: string): Promise<Evidence> {
+    async continuation(destination: Target, inputID: string, continuationID: string, expectedTurnID?: string): Promise<Evidence> {
+      if (destination.kind === "backend") {
+        if (!expectedTurnID) return "uncertain"
+        return guided(await required().reconcile({ ref: destination.ref, inputID: continuationID }), destination, continuationID, expectedTurnID)
+      }
       if (destination.kind !== "session" || !session.input) return "uncertain"
       return continued(await session.input.continuation({ sessionID: destination.sessionID, expectedInputID: inputID, inboxID: continuationID }), destination, inputID, continuationID)
     },
-    async pending(destination: Target, inputID: string) {
-      return destination.kind === "session" && (await session.inbox.list({ sessionID: destination.sessionID })).some((item) => item.id === inputID && item.type === "user")
+    async quote(destination: Target, inputID: string): Promise<{ status: "pending" | "delivered" | "unknown"; expectedTurnID?: string }> {
+      if (destination.kind === "session") return { status: (await session.inbox.list({ sessionID: destination.sessionID })).some((item) => item.id === inputID && item.type === "user") ? "pending" : "delivered" }
+      const found = await position(destination, inputID)
+      return found.status === "queued" ? { status: "pending" } : found.status === "delivered" ? { status: "delivered", expectedTurnID: found.turnID } : { status: "unknown" }
     },
     async append(destination: Target, inputID: string, amendmentID: string, text: string): Promise<Evidence> {
       if (destination.kind !== "session" || !session.inbox.append) return "uncertain"

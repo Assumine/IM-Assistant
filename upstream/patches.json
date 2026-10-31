@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "caa326681f2854a509c2e2388243a0188fd6132273ebc5c8cfcaffebebb6d5ac"
+          "sha256": "f0ed05e5a9dada9a4a14080fd8f4acd66bacd8b940048e604e4b67899cdf3b2f"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "4a29eb8cbf749a8fa9222870631564e806ce9fe2c3540c6f01f0fc6cee096e67"
+          "sha256": "14ea6d9a9afbf654beef6fc5c35e8f6cec58a8c0a3d3f6db7601ae6befede7e5"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "24b9b0f44edfb123acd48b6abd241d67b970a9a6582ce3aee571fe6e8d528fea"
+          "sha256": "8eaf0b88bfb449fa79cdb11bc2b83ba684dece06ffd8eb2cbc1350275c379c77"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "2d910bafe8507249e9542e441603c8673f009b2f1f5855a1495a3860777a6bd1"
+          "sha256": "057154872addbe8d9ba66272ce034734cb47565b40ff74ea7ca42b3a5e7bd912"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -656,7 +656,7 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "789e93e2fb18b2dc7d0b824160105e342db01ee6d87a529fae979f4353270edd"
+          "sha256": "6f34b86fa67e9107f2c9653125c4da51127502854a47c2e47faf88c5759bad72"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
@@ -666,7 +666,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "9c2950bfa2499ca7d4270c5ce3bd5318acd0ff60981ae425c85f1a4107f16333"
+          "sha256": "7683f597662037d804fb37a05a31fe76c85b33553dd5a4fcee0fc5e0f54c94e2"
         }
       ]
     },
@@ -1226,6 +1226,21 @@
           "path": "packages/session-ui/src/message/message-content.tsx",
           "action": "modified",
           "sha256": "903e9a563b7f55abe6130a3b89f974c446403c07faa7a0050c72fb85781864e4"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-native-input-location",
+      "reason": "通用整后端原生输入归属只读接口，独立于持久接纳回执；核对注册生命周期和完整目标，不创建任务或唤醒执行器。QQ通过原生期望轮次提交调整。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-backend-continuation-smoke.ts",
+          "action": "added",
+          "sha256": "74b8eedc9849d50fe7a26976800044b2034af5aff4dbf3898dccfccd6fedc238"
         }
       ]
     }

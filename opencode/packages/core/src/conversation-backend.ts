@@ -216,6 +216,25 @@ const layer = Layer.effect(
             catch: () => ctx.error("failed", "Control result unknown; reconcile native state before retrying"),
           })
         },
+        input: (input, ctx) => {
+          const backend = get(input.ref.backendID)
+          if (!backend?.input) return Effect.fail(ctx.error("unavailable", "Backend input identity is unavailable"))
+          return Effect.tryPromise({
+            try: () => backend.input!(input.ref, input.inputID),
+            catch: () => ctx.error("failed", "Unable to locate backend input"),
+          }).pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.InputPosition))),
+            Effect.flatMap((position) =>
+              get(input.ref.backendID) === backend &&
+              position.inputID === input.inputID &&
+              position.ref.backendID === input.ref.backendID &&
+              position.ref.threadID === input.ref.threadID
+                ? Effect.succeed(position)
+                : Effect.fail(ctx.error("failed", "Backend returned a different input owner")),
+            ),
+            Effect.mapError(() => ctx.error("failed", "Unable to locate backend input")),
+          )
+        },
         reconcile: (input, ctx) =>
           Effect.gen(function* () {
             const key = `conversation:admission:${Hash.sha256(input.inputID)}`

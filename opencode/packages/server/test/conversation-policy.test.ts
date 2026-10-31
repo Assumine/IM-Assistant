@@ -15,6 +15,7 @@ test("managed conversation backend RPC does not open generic plugin or file capa
     "control",
     "send",
     "reconcile",
+    "input",
   ]) {
     expect(allows("POST", `/api/rpc/experimental.conversation/${action}`)).toBe(true)
     expect(allows("GET", `/api/rpc/experimental.conversation/${action}`)).toBe(false)
