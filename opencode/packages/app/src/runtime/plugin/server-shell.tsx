@@ -21,6 +21,7 @@ export function PluginServerCover(props: ParentProps) {
 
     const key = Match.value(current).pipe(
       Match.when({ type: "session" }, (session) => session.server),
+      Match.when({ type: "backend" }, (thread) => thread.server),
       Match.when(
         { type: "draft" },
         (draft) => tabs.store.find((tab) => tab.type === "draft" && tab.draftID === draft.draftID)?.server,
@@ -40,6 +41,8 @@ export function PluginServerCover(props: ParentProps) {
     const current = route()
 
     if (current.type === "session") return `${current.server}:${current.sessionId}`
+
+    if (current.type === "backend") return `${current.server}:${current.ref.backendID}:${current.ref.threadID}`
 
     if (current.type === "draft") return current.draftID
 

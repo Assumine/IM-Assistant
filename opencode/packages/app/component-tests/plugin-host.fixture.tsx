@@ -125,7 +125,7 @@ function fakeApis(storage: (plugin: string) => Storage): HostApiFactories {
     system: () => ({ copy: async () => {}, save: async () => false, openExternal() {} }),
     embeds: () => ({ View: () => null, capture: async () => undefined }),
     toast: () => ({ show: () => ({ dismiss() {} }) }),
-    tabs: () => ({ list: () => [], open() {}, focus() {}, move() {}, close() {} }),
+    tabs: () => ({ list: () => [], open() {}, openBackend() {}, focus() {}, move() {}, close() {} }),
     attention: () => ({ notify: async () => ({ notification: false, sound: false }) }),
     commands: () => ({ run: () => false }),
     ui: () => ui,
@@ -368,7 +368,7 @@ function standIn(overrides: Partial<Interface>): Interface {
   return {
     sessions: () => [],
     current: () => undefined,
-    tabs: { list: () => [], open() {}, focus() {}, move() {}, close() {} },
+    tabs: { list: () => [], open() {}, openBackend() {}, focus() {}, move() {}, close() {} },
     screen: () => undefined,
     scope: () => ServerScope.local,
     scoped: () => undefined,

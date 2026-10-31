@@ -24,6 +24,22 @@ function sessionTab(sessionId: string): SessionTab {
 }
 
 describe("tab migration", () => {
+  test("whole-backend storage preserves original references and salvages other tabs from an invalid reference", () => {
+    const native: Tab = {
+      type: "backend",
+      server,
+      ref: { backendID: "native", threadID: "original-id" },
+      title: "Native title",
+    }
+
+    const legacy = sessionTab("original-id")
+    expect(decodeTabs(Schema.encodeSync(TabStorage.Tabs)([native, legacy]))).toEqual([native, legacy])
+    expect(decodeTabs([{ ...native, ref: { backendID: "native", threadID: "../invalid" } }, legacy])).toEqual([legacy])
+    expect(
+      Schema.decodeUnknownSync(Persistence.withInitial(TabStorage.Closed, []))([{ tab: native, index: 0 }]),
+    ).toEqual([{ tab: native, index: 0 }])
+    expect(removeClosedTabs([{ tab: native, index: 0 }], server, ["original-id"])).toEqual([{ tab: native, index: 0 }])
+  })
   test("round trips draft MCP choices without changing older drafts", () => {
     const legacy: Tab = { type: "draft", draftID: "legacy-draft", server, directory: "/project" }
 
@@ -181,8 +197,8 @@ describe("closed tab stack", () => {
     )
 
     expect(stack).toHaveLength(100)
-    expect(stack[0]?.tab.sessionId).toBe("s5")
-    expect(stack.at(-1)?.tab.sessionId).toBe("s104")
+    expect(stack[0]?.tab).toMatchObject({ type: "session", sessionId: "s5" })
+    expect(stack.at(-1)?.tab).toMatchObject({ type: "session", sessionId: "s104" })
   })
 
   test("keeps only the newest close record for a session", () => {
@@ -206,7 +222,7 @@ describe("closed tab stack", () => {
 
     const result = takeClosedTab(stack, [])
 
-    expect(result.entry?.tab.sessionId).toBe("b")
+    expect(result.entry?.tab).toMatchObject({ type: "session", sessionId: "b" })
     expect(result.stack).toEqual([{ tab: sessionTab("a"), index: 0 }])
   })
 
@@ -218,7 +234,7 @@ describe("closed tab stack", () => {
 
     const result = takeClosedTab(stack, [sessionTab("b")])
 
-    expect(result.entry?.tab.sessionId).toBe("a")
+    expect(result.entry?.tab).toMatchObject({ type: "session", sessionId: "a" })
     expect(result.stack).toEqual([])
   })
 
@@ -229,7 +245,11 @@ describe("closed tab stack", () => {
       { tab: sessionTab("c"), index: 2 },
     ]
 
-    expect(listClosedTabs(stack, [sessionTab("b")]).map((entry) => entry.tab.sessionId)).toEqual(["c", "a"])
+    expect(
+      listClosedTabs(stack, [sessionTab("b")]).map((entry) =>
+        entry.tab.type === "session" ? entry.tab.sessionId : undefined,
+      ),
+    ).toEqual(["c", "a"])
   })
 
   test("deduplicates previously stored close records", () => {
@@ -239,7 +259,12 @@ describe("closed tab stack", () => {
       { tab: sessionTab("a"), index: 2 },
     ]
 
-    expect(listClosedTabs(stack, []).map((entry) => [entry.tab.sessionId, entry.index])).toEqual([
+    expect(
+      listClosedTabs(stack, []).map((entry) => [
+        entry.tab.type === "session" ? entry.tab.sessionId : undefined,
+        entry.index,
+      ]),
+    ).toEqual([
       ["a", 2],
       ["b", 1],
     ])
@@ -254,8 +279,11 @@ describe("closed tab stack", () => {
 
     const result = takeClosedTab(stack, [], sessionTab("a"))
 
-    expect(result.entry?.tab.sessionId).toBe("a")
-    expect(result.stack.map((entry) => entry.tab.sessionId)).toEqual(["b", "c"])
+    expect(result.entry?.tab).toMatchObject({ type: "session", sessionId: "a" })
+    expect(result.stack.map((entry) => (entry.tab.type === "session" ? entry.tab.sessionId : undefined))).toEqual([
+      "b",
+      "c",
+    ])
   })
 
   test("returns no entry when everything is open or empty", () => {

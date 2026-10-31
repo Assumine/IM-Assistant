@@ -17,8 +17,10 @@ import {
 import { openFileLauncher, reviewTabs } from "../utils/side-panel"
 import { mockServers } from "../utils/mock-server"
 import { fixture, mockStressTimeline } from "../utils/session-fixture"
-import { fileNode, mockWorkspace, openSession } from "../utils/workspace"
+import { fileNode, mockWorkspace, openSession, openSettings } from "../utils/workspace"
 import { expectSessionTitle } from "../utils/waits"
+import { backendRpc, backendHref, backendTabs } from "../utils/backends"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 
 const a = { id: "ses_tab_a", title: "Tab A session" }
 
@@ -27,6 +29,102 @@ const b = { id: "ses_tab_b", title: "Tab B session" }
 const c = { id: "ses_tab_c", title: "Tab C session" }
 
 test.use({ serviceWorkers: "block" })
+
+test("whole backend: original references survive tab switching, reload and reopening without Session admission", async ({
+  page,
+}) => {
+  const alpha: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "shared-thread" },
+    title: "Alpha thread",
+    state: "unloaded",
+  }
+
+  const beta: ConversationBackend.Thread = { ...alpha, ref: { ...alpha.ref, backendID: "beta" }, title: "Beta thread" }
+  let offline = false
+  const mutations: string[] = []
+  page.on("request", (request) => {
+    if (request.method() !== "POST") return
+    const path = new URL(request.url()).pathname
+
+    if (path === "/api/session" || /\/experimental\.conversation\/(create|send|control|query)$/.test(path))
+      mutations.push(path)
+  })
+
+  const { settings } = await openSettings(page, {
+    name: "NativeTabs",
+    workspace: false,
+    sessions: [{ id: alpha.ref.threadID, title: "Core session" }],
+    seed: backendTabs([alpha.ref.threadID], [beta]),
+    rpc: backendRpc({
+      list: () => [
+        { id: "alpha", label: "Alpha backend", browse: true },
+        { id: "beta", label: "Beta backend", browse: true },
+      ],
+      status: () => ({ authentication: null }),
+      threads: () => ({ items: [alpha] }),
+      history: ({ ref }) => {
+        if (ref.backendID === "alpha" && offline) throw new Error("Fixture unavailable")
+        const thread = ref.backendID === "alpha" ? alpha : beta
+
+        return {
+          thread,
+          items: [
+            {
+              id: "same-item",
+              turnID: "same-turn",
+              kind: "assistant",
+              text: `${thread.title} original history`,
+              partial: false,
+            },
+          ],
+        }
+      },
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+  await settings.getByRole("button", { name: "View conversations", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "Alpha backend", exact: true })
+  await dialog.getByRole("button", { name: alpha.title, exact: true }).click()
+  await expect(dialog.getByText("Alpha thread original history", { exact: true })).toBeVisible()
+  await dialog.getByRole("button", { name: "Open as tab", exact: true }).click()
+  await expect(dialog).toBeHidden()
+  await expectPath(page, backendHref(alpha.ref))
+  const titles = page.locator("[data-titlebar-tab-title]")
+  await expect(titles).toHaveText(["Core session", "Beta thread", "Alpha thread"])
+  await expect(page.getByRole("heading", { name: alpha.title, exact: true })).toBeVisible()
+
+  const tab = (title: string) =>
+    page
+      .locator("[data-titlebar-tab-slot]")
+      .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: title }) })
+
+  await tab(beta.title).locator("[data-titlebar-tab-link]").click()
+  await expectPath(page, backendHref(beta.ref))
+  await expect(page.getByText("Beta thread original history", { exact: true })).toBeVisible()
+  await expect(page.getByText("Alpha thread original history", { exact: true })).toBeHidden()
+  await tab(alpha.title).locator("[data-titlebar-tab-link]").click()
+  await expect(page.getByText("Alpha thread original history", { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText("Alpha thread original history", { exact: true })).toBeVisible()
+  await expect(titles).toHaveText(["Core session", "Beta thread", "Alpha thread"])
+  await tab(alpha.title).getByRole("button", { name: "Close tab", exact: true }).click()
+  await expectPath(page, backendHref(beta.ref))
+  await expect(page.getByText("Beta thread original history", { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "New session", exact: true }).click({ button: "right" })
+  await page.getByRole("menuitem", { name: alpha.title, exact: true }).click()
+  await expectPath(page, backendHref(alpha.ref))
+  await expect(page.getByText("Alpha thread original history", { exact: true })).toBeVisible()
+  await expect(titles).toHaveText(["Core session", "Beta thread", "Alpha thread"])
+  await page.screenshot({ path: test.info().outputPath("whole-backend-tabs.png"), fullPage: true })
+  offline = true
+  await page.reload()
+  await expect(page.getByRole("alert")).toHaveText("Could not load history. Refresh the records to try again.")
+  await expectPath(page, backendHref(alpha.ref))
+  await expect(titles).toHaveText(["Core session", "Beta thread", "Alpha thread"])
+  await expect(page.getByText("No recorded history.", { exact: true })).toBeHidden()
+  expect(mutations).toEqual([])
+})
 
 test("recently closed shows ten sessions and searches older closures in close order", async ({ page }) => {
   const sessions = Array.from({ length: 100 }, (_, index) => ({

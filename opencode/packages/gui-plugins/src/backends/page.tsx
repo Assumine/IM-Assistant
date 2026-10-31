@@ -310,7 +310,23 @@ function BackendCatalog(props: { server: () => ServerRef | undefined }) {
                     const backend = state.selected
 
                     if (!backend || !available()) return
-                    ctx.dialogs.open(() => <ConversationBrowser server={props.server} backend={backend} />)
+
+                    const dialog = ctx.dialogs.open(() => (
+                      <ConversationBrowser
+                        server={props.server}
+                        backend={backend}
+                        onOpen={(thread) => {
+                          const server = props.server()
+
+                          if (!server) return
+                          ctx.tabs.openBackend(
+                            { server: server.id, ref: thread.ref, title: thread.title },
+                            { focus: true },
+                          )
+                          dialog.close()
+                        }}
+                      />
+                    ))
                   }}
                 >
                   {ctx.t("browse.open")}

@@ -1,6 +1,6 @@
 # Codex 原生会话后端切片
 
-这是完整Codex App Server的适配器，不是OpenCode模型provider。线程、历史、队列、上下文、压缩和账号仍由Codex原生系统拥有，没有自己的任务库、执行循环或输入自动重放。已验证公共后端位置、HTTP调用及Windows/Bun下的跨进程共享实例；已有通用后端设置页，当前publication=disabled，默认不注册或启动Codex。
+这是完整Codex App Server的适配器，不是OpenCode模型provider。线程、历史、队列、上下文、压缩和账号仍由Codex原生系统拥有，没有自己的任务库、执行循环或输入自动重放。已验证公共后端位置、HTTP调用及Windows/Bun下的跨进程共享实例；已有通用后端设置页和只读主会话标签，当前publication=disabled，默认不注册或启动Codex。
 
 支持原生创建/续接、历史分页、入站队列的查看/修改/排序/撤回、显式引导、带 turn ID 前提的调整、中断、压缩以及只读账号/模型查询。可选authentication域投影账号状态、启动原生浏览器登录及按login ID取消；凭据保存和刷新仍归native home。结果和通知保留原生 ID。发送仅接收文本，不接收文件路径、任意配置、原始 RPC、动态工具或用户指定工作目录。
 
@@ -25,3 +25,5 @@ python -m tools.codex_native_smoke
 已确认的限制：裸原生queue/add不按clientUserMessageId去重，必须使用公共send。未知交付且native也查不到时保留uncertain，不自动重发；这不是跨系统exactly-once保证。共享WebSocket在官方仍属实验性，完整原生会话标签/发送/队列界面、真人认证及正式宿主激活未完成；多用户ACL和其他OS未验收。只读浏览器不是原生主会话页的正式接入。设置页浏览器登录交互只用合成夹具验证，真实CLI仅验证无凭据账号状态和不存在登录ID的取消，不把它算真人登录验收。受控助手模式继续禁用任意SDK插件，不为此放宽通用插件加载或真实系统权限。
 
 详细证据、发布门槛和下一步见 [Codex 原生接入边界](../../docs/handoff/Codex原生接入边界.md)。
+
+GUI通过公共BackendView承载整套后端。原生标签存server＋原始Ref和标题，沿用shell的持久化/切换/排序/关闭/重开，不创建OpenCode Session或Inbox。从设置历史预览选择“Open as tab”进入主区域；它与预览共用同一只读历史读取器。当前不能在该主区域发送或操作队列，不把只读入口算作正式会话接入。后端不可用时保留引用并提示读取错误，不把它改绑到普通Session；关闭或重开标签不启动/停止/续接任务。

@@ -29,6 +29,7 @@ export default {
   refreshAccount: "Refresh account status",
   localOnly: "Open this server on its own machine to sign in.",
   "browse.open": "View conversations",
+  "browse.openTab": "Open as tab",
   "browse.description": "Read-only history snapshot. Viewing does not start or resume a conversation.",
   "browse.list": "Conversations",
   "browse.history": "Conversation history",

@@ -35,9 +35,11 @@ export function RecentlyClosedTabsMenu(props: {
     const query = state.query.trim().toLocaleLowerCase()
 
     return listClosedTabs(tabs.closed, tabs.store)
-      .filter((entry) => entry.info?.prompted === true)
+      .filter((entry) => entry.tab.type === "backend" || entry.info?.prompted === true)
       .filter((entry) => {
         if (!query) return true
+
+        if (entry.tab.type === "backend") return entry.tab.title.toLocaleLowerCase().includes(query)
         const title = global.serverCtx(entry.tab.server)?.data.session.get(entry.tab.sessionId)?.title
 
         return sessionTabTitle(title ?? entry.info?.title, language.t("session.tab.session"))
@@ -48,6 +50,7 @@ export function RecentlyClosedTabsMenu(props: {
   })
 
   const servers = createMemo(() => global.servers.list())
+
   const sessions = useQueries(() => ({
     queries: servers().map((conn) => {
       const ctx = global.serverCtx(ServerConnection.key(conn))
@@ -74,7 +77,11 @@ export function RecentlyClosedTabsMenu(props: {
           .apply(mergeHomeSessionIndex(sessions[index]?.data?.() ?? [], ctx.data.session.list()))
           .filter((session) => !sessionIDHasOpenTab(tabs.store, server, session.id))
           .filter(
-            (session) => !recent().some((entry) => entry.tab.server === server && entry.tab.sessionId === session.id),
+            (session) =>
+              !recent().some(
+                (entry) =>
+                  entry.tab.type === "session" && entry.tab.server === server && entry.tab.sessionId === session.id,
+              ),
           )
           .filter((session) =>
             sessionTabTitle(session.title, language.t("session.tab.session")).toLocaleLowerCase().includes(query),
@@ -216,7 +223,12 @@ function RecentlyClosedTabItem(props: { entry: Pick<ClosedTab, "tab" | "info">; 
     global.servers.list().find((item) => ServerConnection.key(item) === props.entry.tab.server),
   )
 
-  const session = createMemo(() => serverCtx()?.data.session.get(props.entry.tab.sessionId))
+  const session = createMemo(() => {
+    const tab = props.entry.tab
+
+    return tab.type === "session" ? serverCtx()?.data.session.get(tab.sessionId) : undefined
+  })
+
   const directory = () => props.entry.info?.directory ?? session()?.location.directory ?? ""
 
   const project = createMemo(() => {
@@ -229,12 +241,17 @@ function RecentlyClosedTabItem(props: { entry: Pick<ClosedTab, "tab" | "info">; 
     return serverCtx()?.projects.forDirectory(directory()) ?? { worktree: directory() }
   })
 
-  const title = () => sessionTabTitle(session()?.title ?? props.entry.info?.title, language.t("session.tab.session"))
+  const title = () =>
+    props.entry.tab.type === "backend"
+      ? props.entry.tab.title
+      : sessionTabTitle(session()?.title ?? props.entry.info?.title, language.t("session.tab.session"))
 
   return (
     <Menu.Item class="max-w-56" onSelect={props.onSelect}>
       <span class="flex size-4 shrink-0 items-center justify-center">
-        <SessionTabAvatarView project={project()} directory={directory()} unread={false} />
+        <Show when={props.entry.tab.type === "session"} fallback={<Icon name="server" />}>
+          <SessionTabAvatarView project={project()} directory={directory()} unread={false} />
+        </Show>
       </span>
       <Tooltip
         placement={placement}

@@ -2,6 +2,23 @@ import type { OpenCodeEvent } from "@opencode/client/promise"
 import { ConversationBackend } from "@opencode/schema/conversation-backend"
 import { Schema } from "effect"
 import type { MockServerConfig } from "./mock-server"
+import { SERVER, type SeedInput } from "./app"
+import { base64Encode } from "@opencode/util/encode"
+
+export function backendHref(ref: ConversationBackend.Ref, server = SERVER) {
+  return `/server/${base64Encode(server)}/backend/${ref.backendID}/thread/${ref.threadID}`
+}
+
+export function backendTabs(sessions: readonly string[], threads: readonly ConversationBackend.Thread[]): SeedInput {
+  return {
+    storage: {
+      "opencode.window.browser.dat:tabs": [
+        ...sessions.map((sessionId) => ({ type: "session", server: SERVER, sessionId })),
+        ...threads.map((thread) => ({ type: "backend", server: SERVER, ref: thread.ref, title: thread.title })),
+      ],
+    },
+  }
+}
 
 type Fixture = {
   list: () => readonly ConversationBackend.Descriptor[] | Promise<readonly ConversationBackend.Descriptor[]>

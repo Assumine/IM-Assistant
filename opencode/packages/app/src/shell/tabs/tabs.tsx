@@ -10,7 +10,7 @@ import { useLocation, useNavigate } from "@solidjs/router"
 import { usePlatform } from "@/runtime/platform/platform"
 import { uuid } from "@opencode/util/uuid"
 import { SessionTabsRemovedDetail } from "@/shell/titlebar/session-events"
-import { sessionHref } from "@/shell/routes/session"
+import { backendHref, sessionHref } from "@/shell/routes/session"
 import { createTabMemory } from "./memory"
 import { nextTabAfterClose, pushClosedTab, removeClosedTabs, takeClosedTab, type ClosedTab } from "./closed"
 import {
@@ -26,6 +26,8 @@ import { useCurrentRoute } from "@/shell/state/layout"
 export type SessionTab = typeof TabStorage.Session.Type
 
 export type DraftTab = typeof TabStorage.Draft.Type
+
+export type BackendTab = typeof TabStorage.Backend.Type
 
 export type Tab = typeof TabStorage.Tab.Type
 
@@ -44,11 +46,21 @@ export type TabRegionSize = "sessionWidth" | "bottomHeight" | "splitRatio"
 
 export const draftHref = (draftID: string) => `/new-session?draftId=${encodeURIComponent(draftID)}`
 
-export const tabHref = (tab: Tab) =>
-  tab.type === "draft" ? draftHref(tab.draftID) : sessionHref(tab.server, tab.routeSessionId ?? tab.sessionId)
+export function tabHref(tab: Tab) {
+  switch (tab.type) {
+    case "draft":
+      return draftHref(tab.draftID)
+    case "backend":
+      return backendHref(tab.server, tab.ref)
+    case "session":
+      return sessionHref(tab.server, tab.routeSessionId ?? tab.sessionId)
+  }
+}
 
 export const tabKey = (tab: Tab) =>
-  tab.type === "draft" ? `draft:${tab.draftID}` : `${tab.server}\n${sessionHref(tab.server, tab.sessionId)}`
+  tab.type === "draft"
+    ? `draft:${tab.draftID}`
+    : `${tab.server}\n${tab.type === "backend" ? backendHref(tab.server, tab.ref) : sessionHref(tab.server, tab.sessionId)}`
 
 export function sessionHasOpenTab(tabs: Tab[], server: ServerConnection.Key, session: SessionInfo) {
   return sessionIDHasOpenTab(tabs, server, session.id)
@@ -229,23 +241,36 @@ export const { use: useTabs, provider: TabsProvider } = createSimpleContext({
       if (draftID) removeDraftPersisted(draftID)
     }
 
-    const actions = {
-      addSessionTab: (tab: Omit<SessionTab, "type">) => {
-        const next = { type: "session" as const, ...tab }
-        const existing = store.find((item) => tabKey(item) === tabKey(next))
+    const addConversationTab = (next: SessionTab | BackendTab) => {
+      const existing = store.find((item) => tabKey(item) === tabKey(next))
 
-        if (existing) return existing
-        void startTransition(() => {
+      if (existing) {
+        if (existing.type === "backend" && next.type === "backend" && existing.title !== next.title)
           setStore(
-            produce((tabs) => {
-              if (tabs.some((item) => tabKey(item) === tabKey(next))) return
-              tabs.push(next)
+            (item) => tabKey(item) === tabKey(next),
+            produce((item) => {
+              if (item.type === "backend" && next.type === "backend") item.title = next.title
             }),
           )
-        })
 
-        return next
-      },
+        return existing
+      }
+
+      void startTransition(() => {
+        setStore(
+          produce((tabs) => {
+            if (tabs.some((item) => tabKey(item) === tabKey(next))) return
+            tabs.push(next)
+          }),
+        )
+      })
+
+      return next
+    }
+
+    const actions = {
+      addBackendTab: (tab: Omit<BackendTab, "type">) => addConversationTab({ type: "backend", ...tab }),
+      addSessionTab: (tab: Omit<SessionTab, "type">) => addConversationTab({ type: "session", ...tab }),
       reorder(keys: string[]) {
         setStore(
           produce((tabs) => {
@@ -416,10 +441,10 @@ export const { use: useTabs, provider: TabsProvider } = createSimpleContext({
 
         if (!tab) return
 
-        if (tab.type === "session") updateClosed((stack) => pushClosedTab(stack, tab, index, info[tabKey(tab)]))
+        if (tab.type !== "draft") updateClosed((stack) => pushClosedTab(stack, tab, index, info[tabKey(tab)]))
         removeTab(index)
       },
-      reopenClosedTab(target?: SessionTab, options?: { append?: boolean }) {
+      reopenClosedTab(target?: SessionTab | BackendTab, options?: { append?: boolean }) {
         if (!closedReady()) {
           void closedReady.promise?.then(() => actions.reopenClosedTab(target, options))
 

@@ -79,13 +79,20 @@ def _run(checkpoint):
     host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
     if host["status"] != "passed" or len(host["checks"]) != 10 or host["model_requests"] != 4:
         raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
+    tabs = run_command("packages/app", ["test", "--conditions=solid", "--preload", "../ui/test/solid-jsx.ts",
+        "--preload", "./happydom.ts", "./src/shell/tabs/tabs.test.ts", "./src/shell/state/layout.test.ts",
+        "./src/shell/routes/session.test.ts", "./src/shell/notifications/notification.test.ts",
+        "./src/shell/titlebar/tab-order.test.ts"], "r3-tabs-unit")
+    if tabs["native_tests_passed"] != 42 or tabs["native_tests_failed"] or tabs["native_tests_skipped"]:
+        raise RuntimeError("Required native shell tab scenarios did not execute")
+    steps.append(tabs)
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
-        "--grep", "backends:", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
+        "e2e/regression/tabs.spec.ts", "--grep", "backends:|tabs.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 9 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 50 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
@@ -103,6 +110,19 @@ def _run(checkpoint):
         "packages/gui-plugins/src/backends/browser.tsx",
         "packages/app/e2e/utils/backends.ts", "packages/app/e2e/utils/mock-server.ts",
         "packages/app/e2e/regression/settings.spec.ts",
+        "packages/app/e2e/regression/tabs.spec.ts", "packages/app/component-tests/plugin-host.fixture.tsx",
+        "packages/plugin/src/gui/host-apis.ts", "packages/plugin/src/gui/registries.ts",
+        "packages/gui-plugins/src/backends/room.tsx", "packages/gui-plugins/src/main.ts", "packages/gui-plugins/README.md",
+        "packages/app/src/runtime/i18n/en.ts", "packages/app/src/runtime/plugin/backend-view.tsx",
+        "packages/app/src/runtime/plugin/host-apis.tsx", "packages/app/src/runtime/plugin/server-shell.tsx",
+        "packages/app/src/shell/tabs/schema.ts", "packages/app/src/shell/tabs/tabs.tsx",
+        "packages/app/src/shell/tabs/tabs.test.ts", "packages/app/src/shell/tabs/closed.ts",
+        "packages/app/src/shell/state/layout.tsx", "packages/app/src/shell/state/layout.test.ts",
+        "packages/app/src/shell/routes/session.ts", "packages/app/src/shell/routes/session.test.ts",
+        "packages/app/src/shell/routes/routes.tsx", "packages/app/src/shell/notifications/notification.test.ts",
+        "packages/app/src/shell/titlebar/tab-strip.tsx", "packages/app/src/shell/titlebar/tab-nav.tsx",
+        "packages/app/src/shell/titlebar/titlebar.tsx", "packages/app/src/shell/titlebar/recently-closed-tabs-menu.tsx",
+        "packages/app/src/shell/titlebar/tab-order.test.ts",
     ]
     receipt = {
         "schema_version": 1, "task": "R3-01", "status": "partial_verified",
@@ -116,7 +136,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["full native tab/composer/queue UI binding and production host activation; settings selection/sign-in and read-only history UI verified with fixtures",
+        "remaining": ["native composer/queue/live-text UI and production host activation; native-ref shell tabs and read-only main history verified with fixtures",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

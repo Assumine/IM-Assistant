@@ -1,6 +1,11 @@
 import { base64Encode } from "@opencode/util/encode"
 import { ServerConnection } from "@/runtime/server/registry"
 import { decode64 } from "@/runtime/persistence/base64"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+
+export function backendHref(server: ServerConnection.Key, ref: ConversationBackend.Ref) {
+  return `/server/${base64Encode(server)}/backend/${ref.backendID}/thread/${ref.threadID}`
+}
 
 export function sessionHref(server: ServerConnection.Key, sessionID: string) {
   return `/server/${base64Encode(server)}/session/${sessionID}`

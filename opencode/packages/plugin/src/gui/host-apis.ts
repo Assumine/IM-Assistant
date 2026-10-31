@@ -5,6 +5,7 @@ import type { JSX } from "solid-js"
 import type { Store } from "solid-js/store"
 import type { Cleanup, OS, Persisted, StoreFrom } from "./core.js"
 import type { IconName, Link, SessionPanelMenuItem } from "./registries.js"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 
 /**
  * A server the app lists. One ref per id that follows the live connection: read `client`, `data` and `url` from it
@@ -1556,8 +1557,15 @@ export interface Commands {
 export interface ShellTab {
   /** The tab's key, `SessionRef.tab` for a session's tab. Stays the same while the tab is open. */
   readonly key: string
-  /** The session the tab shows; undefined for a draft. */
+  /** The OpenCode session the tab shows; undefined for drafts and whole-backend threads. */
   readonly session: SessionRef | undefined
+  /** The whole backend's original reference; absent for OpenCode sessions and drafts. */
+  readonly backend?: {
+    /** The server's `ServerRef.id`. */
+    readonly server: string
+    /** The backend and its original thread id. */
+    readonly ref: ConversationBackend.Ref
+  }
   /** The tab is the one on screen. */
   readonly active: boolean
 }
@@ -1569,6 +1577,31 @@ export interface ShellTab {
 export interface Tabs {
   /** The open tabs, in strip order. Reactive. */
   list(): readonly ShellTab[]
+  /**
+   * Opens a whole backend's thread without creating an OpenCode session, resuming or sending input. An existing tab
+   * keeps its position and takes the supplied title. Invalid references and unlisted servers do nothing.
+   *
+   * @param thread - The original backend reference and its display title.
+   * @param options - Whether to focus the tab; defaults to opening in the background.
+   * @example
+   * ```ts
+   * ctx.tabs.openBackend({ server: server.id, ref: thread.ref, title: thread.title }, { focus: true })
+   * ```
+   */
+  openBackend(
+    thread: {
+      /** The server's `ServerRef.id`. */
+      readonly server: string
+      /** The whole backend's original reference. */
+      readonly ref: ConversationBackend.Ref
+      /** The displayed title; opening the tab does not rename the native thread. */
+      readonly title: string
+    },
+    options?: {
+      /** Also shows the tab. Defaults to false. */
+      readonly focus?: boolean
+    },
+  ): void
   /**
    * Opens a session as a tab at the end of the strip, or keeps its open tab where it is. A tab that shows the session
    * already, such as a subagent opened from its parent's tab, is its tab. Does nothing when the app does not list the

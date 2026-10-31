@@ -11,6 +11,10 @@ import type definition from "./index"
 export function ConversationBrowser(props: {
   server: () => ServerRef | undefined
   backend: ConversationBackend.Descriptor
+  thread?: ConversationBackend.Thread
+  embedded?: boolean
+  onOpen?: (thread: ConversationBackend.Thread) => void
+  onThread?: (thread: ConversationBackend.Thread) => void
 }) {
   const ctx = usePlugin<typeof definition>()
 
@@ -23,7 +27,7 @@ export function ConversationBrowser(props: {
     reading: boolean
     connected: boolean
     error?: "listFailed" | "historyFailed"
-  }>({ threads: [], listing: false, reading: false, connected: false })
+  }>({ threads: [], selected: props.thread, listing: false, reading: false, connected: false })
 
   let viewport: HTMLDivElement | undefined
   let list = (_more = false) => {}
@@ -70,6 +74,7 @@ export function ConversationBrowser(props: {
               : page.items
 
             setState({ selected: page.thread, history: { ...page, items }, reading: false })
+            props.onThread?.(page.thread)
             // Text records have synchronous layout; preserve the visible record when prepending an older page.
             queueMicrotask(() => {
               if (!current() || !element || viewport !== element) return
@@ -112,12 +117,14 @@ export function ConversationBrowser(props: {
         rpc.events.on(
           "changed",
           () => {
-            list()
+            if (props.thread && state.selected) read(state.selected)
+            else list()
           },
           options,
         ),
       )
-      list()
+
+      if (!props.thread) list()
 
       if (state.selected) read(state.selected)
     },
@@ -127,66 +134,83 @@ export function ConversationBrowser(props: {
   const selected = () => state.selected
   const history = () => (state.history?.thread.ref.threadID === selected()?.ref.threadID ? state.history : undefined)
 
-  return (
-    <Dialog size="x-large">
-      <DialogHeader>
-        <DialogTitleGroup title={props.backend.label} description={ctx.t("browse.description")} />
-      </DialogHeader>
-      <div class="flex h-[min(70vh,720px)] min-h-0 w-full flex-col border-t border-v2-border-border-muted md:flex-row">
-        <aside
-          class="flex max-h-48 min-h-0 flex-col border-b border-v2-border-border-muted md:max-h-none md:w-64 md:shrink-0 md:border-b-0 md:border-r"
-          aria-label={ctx.t("browse.list")}
-        >
-          <div class="flex items-center justify-between gap-2 px-4 py-3">
-            <h3 class="text-13-regular font-medium">{ctx.t("browse.list")}</h3>
-            <Button size="small" variant="ghost" disabled={!state.connected || state.listing} onClick={() => list()}>
-              {ctx.t("browse.refreshList")}
-            </Button>
-          </div>
-          <div data-scrollable class="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-            <For each={state.threads}>
-              {(thread) => (
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-2 rounded-md px-2 py-3 text-start hover:bg-v2-background-bg-layer-01 aria-pressed:bg-v2-background-bg-layer-01"
-                  aria-label={thread.title}
-                  aria-pressed={selected()?.ref.threadID === thread.ref.threadID}
-                  disabled={!state.connected}
-                  onClick={() => read(thread)}
-                >
-                  <Show when={thread.state === "running" || thread.state === "waiting"}>
-                    <Spinner />
-                  </Show>
-                  <span class="flex min-w-0 flex-1 flex-col gap-1">
-                    <span class="truncate text-13-regular" title={thread.title}>
-                      {thread.title}
-                    </span>
-                    <span class="text-11-regular text-v2-text-text-muted">{ctx.t(`browse.state.${thread.state}`)}</span>
-                  </span>
-                </button>
-              )}
-            </For>
-            <Show when={state.listing}>
-              <p role="status" class="flex items-center gap-2 px-2 py-3">
-                <Loader />
-                {ctx.t("browse.loadingList")}
-              </p>
-            </Show>
-            <Show when={!state.listing && !state.threads.length && !state.error && state.connected}>
-              <p class="p-2 text-13-regular text-v2-text-text-muted">{ctx.t("browse.empty")}</p>
-            </Show>
-            <Show when={state.listCursor}>
-              <Button
-                size="small"
-                variant="ghost"
-                disabled={state.listing || !state.connected}
-                onClick={() => list(true)}
-              >
-                {ctx.t("browse.more")}
+  const content = () => (
+    <>
+      <Show
+        when={!props.embedded}
+        fallback={
+          <header class="flex shrink-0 flex-col gap-1 px-5 py-4">
+            <h2 class="text-16-medium">{selected()?.title ?? props.backend.label}</h2>
+            <p class="text-13-regular text-v2-text-text-muted">{ctx.t("browse.description")}</p>
+          </header>
+        }
+      >
+        <DialogHeader>
+          <DialogTitleGroup title={props.backend.label} description={ctx.t("browse.description")} />
+        </DialogHeader>
+      </Show>
+      <div
+        class="flex min-h-0 w-full flex-col border-t border-v2-border-border-muted md:flex-row"
+        classList={{ "h-[min(70vh,720px)]": !props.embedded, "flex-1": props.embedded }}
+      >
+        <Show when={!props.thread}>
+          <aside
+            class="flex max-h-48 min-h-0 flex-col border-b border-v2-border-border-muted md:max-h-none md:w-64 md:shrink-0 md:border-b-0 md:border-r"
+            aria-label={ctx.t("browse.list")}
+          >
+            <div class="flex items-center justify-between gap-2 px-4 py-3">
+              <h3 class="text-13-regular font-medium">{ctx.t("browse.list")}</h3>
+              <Button size="small" variant="ghost" disabled={!state.connected || state.listing} onClick={() => list()}>
+                {ctx.t("browse.refreshList")}
               </Button>
-            </Show>
-          </div>
-        </aside>
+            </div>
+            <div data-scrollable class="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+              <For each={state.threads}>
+                {(thread) => (
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 rounded-md px-2 py-3 text-start hover:bg-v2-background-bg-layer-01 aria-pressed:bg-v2-background-bg-layer-01"
+                    aria-label={thread.title}
+                    aria-pressed={selected()?.ref.threadID === thread.ref.threadID}
+                    disabled={!state.connected}
+                    onClick={() => read(thread)}
+                  >
+                    <Show when={thread.state === "running" || thread.state === "waiting"}>
+                      <Spinner />
+                    </Show>
+                    <span class="flex min-w-0 flex-1 flex-col gap-1">
+                      <span class="truncate text-13-regular" title={thread.title}>
+                        {thread.title}
+                      </span>
+                      <span class="text-11-regular text-v2-text-text-muted">
+                        {ctx.t(`browse.state.${thread.state}`)}
+                      </span>
+                    </span>
+                  </button>
+                )}
+              </For>
+              <Show when={state.listing}>
+                <p role="status" class="flex items-center gap-2 px-2 py-3">
+                  <Loader />
+                  {ctx.t("browse.loadingList")}
+                </p>
+              </Show>
+              <Show when={!state.listing && !state.threads.length && !state.error && state.connected}>
+                <p class="p-2 text-13-regular text-v2-text-text-muted">{ctx.t("browse.empty")}</p>
+              </Show>
+              <Show when={state.listCursor}>
+                <Button
+                  size="small"
+                  variant="ghost"
+                  disabled={state.listing || !state.connected}
+                  onClick={() => list(true)}
+                >
+                  {ctx.t("browse.more")}
+                </Button>
+              </Show>
+            </div>
+          </aside>
+        </Show>
         <section class="flex min-h-0 min-w-0 flex-1 flex-col" aria-label={ctx.t("browse.history")}>
           <Show when={!state.connected}>
             <p role="alert" class="px-5 py-3 text-13-regular text-v2-text-text-muted">
@@ -207,12 +231,20 @@ export function ConversationBrowser(props: {
             {(thread) => (
               <>
                 <div class="flex items-center justify-between gap-3 border-b border-v2-border-border-muted px-5 py-3">
-                  <h3 class="min-w-0 truncate text-13-regular font-medium" title={thread().title}>
-                    {thread().title}
-                  </h3>
+                  <Show when={!props.embedded}>
+                    <h3 class="min-w-0 truncate text-13-regular font-medium" title={thread().title}>
+                      {thread().title}
+                    </h3>
+                  </Show>
+                  <Show when={props.onOpen}>
+                    <Button size="small" variant="outline" onClick={() => props.onOpen?.(thread())}>
+                      {ctx.t("browse.openTab")}
+                    </Button>
+                  </Show>
                   <Button
                     size="small"
                     variant="ghost"
+                    class="ms-auto"
                     disabled={state.reading || !state.connected}
                     onClick={() => read(thread())}
                   >
@@ -279,6 +311,12 @@ export function ConversationBrowser(props: {
           </Show>
         </section>
       </div>
-    </Dialog>
+    </>
+  )
+
+  return props.embedded ? (
+    <div class="flex size-full min-h-0 flex-col">{content()}</div>
+  ) : (
+    <Dialog size="x-large">{content()}</Dialog>
   )
 }

@@ -11,7 +11,8 @@ import {
   type Accessor,
 } from "solid-js"
 import { createStore, produce, type Store } from "solid-js/store"
-import type { Schema } from "effect"
+import { Schema } from "effect"
+import { ConversationBackend } from "@opencode/schema/conversation-backend"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { useTheme } from "@opencode/ui/theme/context"
 import { toaster } from "@opencode/ui/toast"
@@ -351,6 +352,7 @@ export function createHostApis() {
     tabs: () => ({
       list: () => current()?.tabs.list() ?? [],
       open: (session, options) => write((value) => value.tabs.open(session, options)),
+      openBackend: (thread, options) => write((value) => value.tabs.openBackend(thread, options)),
       focus: (key) => write((value) => value.tabs.focus(key)),
       move: (key, index) => write((value) => value.tabs.move(key, index)),
       close: (key) => write((value) => value.tabs.close(key)),
@@ -943,6 +945,15 @@ export function createPluginAttachment(apis: HostApis) {
 
     if (value.type === "session") return findSessionTab(tabs.store, value.server, value.sessionId)
 
+    if (value.type === "backend")
+      return tabs.store.find(
+        (tab) =>
+          tab.type === "backend" &&
+          tab.server === value.server &&
+          tab.ref.backendID === value.ref.backendID &&
+          tab.ref.threadID === value.ref.threadID,
+      )
+
     if (value.type !== "draft") return
 
     return tabs.store.find((tab) => tab.type === "draft" && tab.draftID === value.draftID)
@@ -955,6 +966,7 @@ export function createPluginAttachment(apis: HostApis) {
     return tabs.store.map((tab) => ({
       key: tabKey(tab),
       session: tab.type === "session" ? refs.get(`${tab.server}\n${tab.sessionId}`) : undefined,
+      backend: tab.type === "backend" ? { server: tab.server, ref: tab.ref } : undefined,
       active: tab === active,
     }))
   })
@@ -983,6 +995,29 @@ export function createPluginAttachment(apis: HostApis) {
   const shell: Tabs = {
     list: shellTabs,
     open: openSession,
+    openBackend(thread, options) {
+      let value: typeof thread
+
+      try {
+        value = Schema.decodeUnknownSync(
+          Schema.Struct({ server: Schema.String, ref: ConversationBackend.Ref, title: Schema.String }),
+        )(thread)
+      } catch {
+        return
+      }
+
+      const conn = servers.list.find((item) => ServerConnection.key(item) === value.server)
+
+      if (!conn || value.ref.backendID === "opencode") return
+
+      const tab = tabs.addBackendTab({
+        server: ServerConnection.key(conn),
+        ref: value.ref,
+        title: value.title || value.ref.threadID,
+      })
+
+      if (options?.focus) tabs.select(tab)
+    },
     focus(key) {
       const tab = findTab(key)
 

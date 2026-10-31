@@ -185,6 +185,24 @@ anchors the editor to the tile, as clicking that tile does. To quote without ope
 The built-in terminal follows manual scrolling until new output or a grid resize invalidates the captured source.
 It then falls back to the quote's composer tile without closing the editor or discarding its unsaved comment.
 
+### Whole conversation backends
+
+`ctx.tabs.openBackend({ server, ref, title }, { focus: true })` opens an original `{ backendID, threadID }` reference
+in the shell's own tab strip. It does not create an OpenCode Session, resume a thread or send input. Opening the same
+server/backend/thread again preserves its position and updates the displayed title; this does not rename the native
+thread. Switching, sorting, closing, reopening and reload use the shell's existing tab persistence. A missing backend
+or renderer keeps the original reference and shows unavailable state rather than opening another executor.
+
+Contribute `BackendView` to render a whole-backend thread on the main surface. An exact `backendID` match takes
+precedence over the first generic fallback. Render with the plugin context and error isolation; a new native identity
+starts a new view lifetime, while `props.title` is reactive. Resolve the current server with `ctx.servers.get(props.server)`
+where it is used. `ctx.tabs.list()` exposes a separate optional `backend` reference, never a fake `SessionRef`.
+
+The shipping `backends` plugin uses the same read-only history reader in settings and on the main surface. It uses
+the public whole-backend RPC, not private Session/Inbox controllers. The main view is currently read-only; native
+composer/queue interaction and production host activation have not been delivered. Closing a view must only release
+its requests and subscriptions, never stop or reschedule backend work.
+
 ## Primitives
 
 | Primitive                                        | Use it for                                                                     |

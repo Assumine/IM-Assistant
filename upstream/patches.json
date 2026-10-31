@@ -173,7 +173,7 @@
         {
           "path": "packages/app/src/shell/titlebar/titlebar.tsx",
           "action": "modified",
-          "sha256": "640fc6700d91e1667f3cd3f2bdc5ba04587d3b4680991cc480ea806fb861b456"
+          "sha256": "61969bc063699f52d1ed8d47fcbf2d6e9f4d166844dabe4fc6a353fab949b589"
         },
         {
           "path": "packages/cli/src/index.ts",
@@ -486,7 +486,7 @@
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
           "action": "modified",
-          "sha256": "36cea6cd5ede016934193068fe17a4fe616b6b04d8ff214a8f245adbe78dbd1e"
+          "sha256": "9f72696c2ddc0f105310ecd1f6865276d987e8b4480dbc768fbc1667d7bbb26a"
         },
         {
           "path": "packages/app/src/settings/providers/providers.tsx",
@@ -680,17 +680,17 @@
         {
           "path": "packages/app/e2e/utils/backends.ts",
           "action": "added",
-          "sha256": "60bac4e2769ff76ff6b6c3f82fdaf15a7e12414907a60bbf00389d9c8935ca78"
+          "sha256": "00b1dbf857f84253179ee269d0979a7cd2bcd62bf52a2f8b5b1250c8c28be0b7"
         },
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "6e611c1eca68f7c67d25f93ebf763dec9eb85ab2902136d98cd81347e569ff95"
+          "sha256": "2c8f96be5be049263b00b0d52ea2f85ef832c3584a0996901fea19ce10d88094"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "39fc2d7d5deb8751895e80f10e48fcff48e4cee00a21c37bf7e6ce5bc273bbb6"
+          "sha256": "5863e0398c83f3d80d41b3e0715d6d8e112a04509b5538f26a9942aef291d2c5"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -700,12 +700,12 @@
         {
           "path": "packages/gui-plugins/src/backends/page.tsx",
           "action": "added",
-          "sha256": "c3306d701f65384238010476d27db608296abc87a6b827a5493a1bc41521c77a"
+          "sha256": "923f0656e61320722c549fa3ab3096a5384a507b79f652e0ef1627d3bbf551df"
         },
         {
           "path": "packages/gui-plugins/src/backends/renderer.tsx",
           "action": "added",
-          "sha256": "42391665d5ff74f2b0a4c9434c2d9e1c355ef66e7289bd1825e1cde038db76b1"
+          "sha256": "def510b2eb2b4a6b3d10b9612b7530d6f85939f54f37a80700639d15705d94de"
         },
         {
           "path": "packages/gui-plugins/src/main.ts",
@@ -729,7 +729,111 @@
         {
           "path": "packages/gui-plugins/src/backends/browser.tsx",
           "action": "added",
-          "sha256": "9d29d300700cadf8940d6a8d6695c900119615bc3ee59e7971c0185d2a1575de"
+          "sha256": "898c99d8fb177e2f49ae2413e3f02de145b0ec91eac476bbcce194d8c626f7b7"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-backend-tabs",
+      "reason": "通过公共整套后端视图和原始Ref扩展原生shell标签/路由/持久化；复用只读历史，不创建Session/Inbox或第二套标签/执行状态机。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/app/component-tests/plugin-host.fixture.tsx",
+          "action": "modified",
+          "sha256": "7a87aebbc18d47eead93e080269ed0bc1d848a449922b204b90fbf655e3fa33c"
+        },
+        {
+          "path": "packages/app/e2e/regression/tabs.spec.ts",
+          "action": "modified",
+          "sha256": "ff6273dce7b35f45a7a528d751d1e77a1c38792160b7354565f7253598bdd5ff"
+        },
+        {
+          "path": "packages/app/src/runtime/plugin/backend-view.tsx",
+          "action": "added",
+          "sha256": "cf77fe3809268af828988f2bcf00da3c369f4dc5c26ed59cf08aba4c2df0d82c"
+        },
+        {
+          "path": "packages/app/src/runtime/plugin/host-apis.tsx",
+          "action": "modified",
+          "sha256": "50915fb56bd250b8b98752e87be67d6fbb42c00011974d6cf23d2117fdb82c7f"
+        },
+        {
+          "path": "packages/app/src/runtime/plugin/server-shell.tsx",
+          "action": "modified",
+          "sha256": "b312903123f4f904efefb56230525b43520d0b1d862fdaea041876ecb6698d09"
+        },
+        {
+          "path": "packages/app/src/shell/notifications/notification.test.ts",
+          "action": "modified",
+          "sha256": "760a88e87e6bf6cb56699a5ef00740d96b592ccb7c6605f29a8a21451a3a1889"
+        },
+        {
+          "path": "packages/app/src/shell/routes/routes.tsx",
+          "action": "modified",
+          "sha256": "0fcabbb22d1387ecd57ddb756795c8a878a9d02be7790717297cd5656a51701a"
+        },
+        {
+          "path": "packages/app/src/shell/routes/session.ts",
+          "action": "modified",
+          "sha256": "35e5137dd5c26047e449c3be3c51ec39e62b81f099c32dce253691919a96915c"
+        },
+        {
+          "path": "packages/app/src/shell/state/layout.tsx",
+          "action": "modified",
+          "sha256": "b95c69f9ee7ed45fc6d4a053ec9ebf71a24b950ed6c8422b8f6d9db3efb1a020"
+        },
+        {
+          "path": "packages/app/src/shell/tabs/closed.ts",
+          "action": "modified",
+          "sha256": "f289ff72a2339f1f4af9b2afa8f039705ccf8cea0657f1861c25e52ff5611ce5"
+        },
+        {
+          "path": "packages/app/src/shell/tabs/schema.ts",
+          "action": "modified",
+          "sha256": "65cd9a74ff071a5d68aa56cd58ae1f29006e368cac034627fed7844dfe76df83"
+        },
+        {
+          "path": "packages/app/src/shell/tabs/tabs.test.ts",
+          "action": "modified",
+          "sha256": "eab94db943896f4badec0f773ad7e0a1b2eb790612c5c74a7fc0df1d6481ffdf"
+        },
+        {
+          "path": "packages/app/src/shell/tabs/tabs.tsx",
+          "action": "modified",
+          "sha256": "1cb121328b69c3cdcd155cc4319daa9b7b8e2055e935a24a0a943d1a5feebebf"
+        },
+        {
+          "path": "packages/app/src/shell/titlebar/recently-closed-tabs-menu.tsx",
+          "action": "modified",
+          "sha256": "d79b24f6888a8369d83652ba2914d7a68036c3c2188a1cc058c3e8bd653a9d9c"
+        },
+        {
+          "path": "packages/app/src/shell/titlebar/tab-nav.tsx",
+          "action": "modified",
+          "sha256": "9df066f90792734dcbeaa7a3330c90aafa83d808365d96dac01f75fbe8b8f496"
+        },
+        {
+          "path": "packages/app/src/shell/titlebar/tab-strip.tsx",
+          "action": "modified",
+          "sha256": "a3651b0659f8b757b68e5cd1f16b98b63782e2b8f506e1915b1b3125bcd1112e"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/room.tsx",
+          "action": "added",
+          "sha256": "4c057327fbd3164368dc015ad476f404d70c7e669317ada46310b2dfe1404c3b"
+        },
+        {
+          "path": "packages/plugin/src/gui/host-apis.ts",
+          "action": "modified",
+          "sha256": "a23542a2967167e8754aab9f9eb44b1d22185b5bad8a44d1344d7876e5520828"
+        },
+        {
+          "path": "packages/plugin/src/gui/registries.ts",
+          "action": "modified",
+          "sha256": "a538f1cda08ab7ef8cebb99786ea05b97dfb18298d50b65fbe7b0b80731846bc"
         }
       ]
     }

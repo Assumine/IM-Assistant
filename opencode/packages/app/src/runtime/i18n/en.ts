@@ -1,6 +1,7 @@
 import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
+  "backend.view.unavailable": "This conversation view is unavailable. Its original backend reference has been kept.",
   "settings.providers.connection.add": "Add compatible API",
   "settings.providers.connection.description":
     "Add an OpenAI-compatible endpoint and one model. Enter its documented limits; an API key is connected separately. Existing connections and sessions stay unchanged.",
@@ -32,17 +33,20 @@ export const dict = {
   "settings.usage.cacheRead": "Cache read",
   "settings.usage.cacheWrite": "Cache write",
   "settings.usage.cacheHit": "Cache hit rate",
-  "settings.usage.cacheHint": "Cache reads divided by all input tokens; shown only when every input breakdown was reported.",
+  "settings.usage.cacheHint":
+    "Cache reads divided by all input tokens; shown only when every input breakdown was reported.",
   "settings.usage.coverage": "Reporting coverage",
   "settings.usage.coverageValue.one": "{{reported}} / {{total}} record",
   "settings.usage.coverageValue.other": "{{reported}} / {{total}} records",
-  "settings.usage.coverageHint": "Records with all token fields reported. Missing fields and older records are not verified zeros.",
+  "settings.usage.coverageHint":
+    "Records with all token fields reported. Missing fields and older records are not verified zeros.",
   "settings.usage.unknown": "Unknown",
   "settings.usage.empty": "No usage recorded in this period.",
   "settings.usage.reportedCost": "Upstream-reported amount",
   "settings.usage.estimatedCost": "Catalog estimate",
   "settings.usage.unclassifiedCost": "Unclassified amount",
-  "settings.usage.costHint": "Reference amounts in USD, not a subscription bill. Older or mixed sources stay unclassified.",
+  "settings.usage.costHint":
+    "Reference amounts in USD, not a subscription bill. Older or mixed sources stay unclassified.",
   "experiment.voiceCalls": "Voice calls",
   "voice.call": "Call",
   "voice.mute": "Mute",
@@ -835,7 +839,8 @@ export const dict = {
   "settings.experimental.row.newIcons.title": "New icons",
   "settings.experimental.row.newIcons.description": "Preview the updated icon set",
   "settings.experimental.row.foldUserMessages.title": "Fold long messages",
-  "settings.experimental.row.foldUserMessages.description": "Fold your messages past 12 lines behind a Read more button",
+  "settings.experimental.row.foldUserMessages.description":
+    "Fold your messages past 12 lines behind a Read more button",
   "settings.experimental.row.newQuestionUI.title": "New question UI",
   "settings.experimental.row.newQuestionUI.description": "Preview the keyboard-first question dock",
   "settings.plugins.reload": "Reload",

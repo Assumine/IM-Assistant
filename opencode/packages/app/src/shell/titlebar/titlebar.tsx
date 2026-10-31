@@ -268,6 +268,16 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 return tabsStore.find((item) => item.type === "draft" && item.draftID === route.draftID)
               }
 
+              if (route.type === "backend") {
+                return tabsStore.find(
+                  (item) =>
+                    item.type === "backend" &&
+                    item.server === route.server &&
+                    item.ref.backendID === route.ref.backendID &&
+                    item.ref.threadID === route.ref.threadID,
+                )
+              }
+
               if (route.type === "session") {
                 const main = tabsStore.find(
                   (item) =>
@@ -333,6 +343,10 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 const next = { server: route.server, sessionId }
                 tabsStoreActions.addSessionTab(next)
               }
+
+              if (route.type === "backend") {
+                tabs.addBackendTab({ server: route.server, ref: route.ref, title: route.ref.threadID })
+              }
             })
 
             makeEventListener(window, SESSION_TABS_REMOVED_EVENT, (event) => {
@@ -347,6 +361,8 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
               const route = layout.route()
 
               switch (route.type) {
+                case "backend":
+                  return false
                 case "session": {
                   const pending = tabs.pendingSession(route.server, route.sessionId)
 
@@ -609,6 +625,8 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
               if (!tab) return language.t("home.title")
 
               if (tab.type === "draft") return language.t("session.tab.session")
+
+              if (tab.type === "backend") return tab.title
               const value = session()
 
               return sessionTabTitle(

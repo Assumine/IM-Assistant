@@ -1,10 +1,25 @@
 import { lazy, onCleanup, Suspense } from "solid-js"
-import { SettingsPage, type Plugin } from "@opencode/plugin/gui"
+import { BackendView, SettingsPage, type Plugin } from "@opencode/plugin/gui"
+import { Loader } from "@opencode/ui/loader"
 import { onIdle } from "@opencode/plugin/gui/builtin"
 import type definition from "./index"
 
 const setup: Plugin.Setup<typeof definition> = (ctx) => {
   const Page = lazy(() => import("./page"))
+  const Room = lazy(() => import("./room"))
+  ctx.add(BackendView, {
+    render: (props) => (
+      <Suspense
+        fallback={
+          <div role="status" class="m-auto">
+            <Loader />
+          </div>
+        }
+      >
+        <Room {...props} />
+      </Suspense>
+    ),
+  })
   onCleanup(onIdle(() => void Page.preload()))
   ctx.add(SettingsPage, {
     id: "conversation-backends",

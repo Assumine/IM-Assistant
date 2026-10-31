@@ -15,6 +15,7 @@ import type { ClosedSideTab } from "@/runtime/plugin/closed-tabs"
 import { SessionStateKey } from "@/runtime/server/scope"
 import { createSessionKeyReader, ensureSessionKey, pruneSessionKeys } from "./helpers"
 import { requireServerKey } from "@/shell/routes/session"
+import { ConversationBackend } from "@opencode/schema/conversation-backend"
 import {
   closeSessionTab,
   moveSessionTab,
@@ -60,6 +61,7 @@ export type LayoutRoute =
   | { type: "components" }
   | { type: "draft"; draftID: string }
   | { type: "session"; sessionId: string; server: ServerConnection.Key }
+  | { type: "backend"; ref: ConversationBackend.Ref; server: ServerConnection.Key }
 
 export const currentRoute = (pathname: string, search: string): LayoutRoute => {
   const parts = pathname.split("/").filter(Boolean)
@@ -85,6 +87,14 @@ export const currentRoute = (pathname: string, search: string): LayoutRoute => {
       type: "session",
       sessionId: parts[3],
       server: requireServerKey(parts[1]),
+    }
+  }
+
+  if (parts.length === 6 && parts[0] === "server" && parts[2] === "backend" && parts[4] === "thread") {
+    return {
+      type: "backend",
+      server: requireServerKey(parts[1]),
+      ref: Schema.decodeUnknownSync(ConversationBackend.Ref)({ backendID: parts[3], threadID: parts[5] }),
     }
   }
 

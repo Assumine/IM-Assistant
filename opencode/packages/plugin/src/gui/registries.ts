@@ -2,6 +2,37 @@ import type { JSX } from "solid-js"
 import type { IconName } from "./icon-name.js"
 import { Registry } from "./core.js"
 import type { SessionRef, MountedSession, SessionScreen } from "./host-apis.js"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+
+/** A whole-backend thread on the main surface. A different native identity remounts the view; its title is reactive. */
+export interface BackendViewProps {
+  /** The server's `ServerRef.id`; the server can be offline. */
+  readonly server: string
+  /** The backend's original reference, never an OpenCode Session id. */
+  readonly ref: ConversationBackend.Ref
+  /** The stored tab title, available before history loads. */
+  readonly title: string
+}
+
+/** A main conversation surface for a whole backend, independent of Session/Inbox. */
+export interface BackendView {
+  /** A specific backend id, or absent for the generic fallback. The first exact match wins, then the first fallback. */
+  readonly backendID?: string
+  /**
+   * Renders the thread. Opening or closing the view must not start or stop the backend's tasks.
+   * @param props - The server, original thread reference and reactive stored title.
+   */
+  render(props: BackendViewProps): JSX.Element
+}
+
+/**
+ * Main surfaces for whole conversation backends. No contribution shows an unavailable view, never a different session.
+ * @example
+ * ```tsx
+ * ctx.add(BackendView, { render: (props) => <Conversation server={props.server} ref={props.ref} /> })
+ * ```
+ */
+export const BackendView = Registry.define<BackendView>("backend-view")
 
 /** The name of a shared icon; derived from the dependency-free UI artwork catalog, not a component's props. */
 export type { IconName }

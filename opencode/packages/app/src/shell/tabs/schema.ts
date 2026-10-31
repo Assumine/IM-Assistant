@@ -3,6 +3,7 @@ export * as TabStorage from "./schema"
 import { Schema, SchemaGetter } from "effect"
 import { ServerKey } from "@/runtime/server/persistence"
 import { Persistence } from "@/runtime/persistence/schema"
+import { ConversationBackend } from "@opencode/schema/conversation-backend"
 
 export { ServerKey }
 
@@ -24,6 +25,13 @@ export const Draft = Persistence.struct({
   mcp: Persistence.optional(Persistence.struct({ target: Schema.String, states: Persistence.record(Schema.Boolean) })),
 })
 
+export const Backend = Persistence.struct({
+  type: Schema.Literal("backend"),
+  server: ServerKey,
+  ref: ConversationBackend.Ref,
+  title: Schema.String,
+})
+
 const SessionCodec = Session.pipe(
   Schema.decodeTo(Schema.toType(Session), {
     decode: SchemaGetter.transform(withRoute),
@@ -31,9 +39,9 @@ const SessionCodec = Session.pipe(
   }),
 )
 
-export const Tab = Schema.Union([Session, Draft])
+export const Tab = Schema.Union([Session, Draft, Backend])
 
-export const Tabs = Persistence.array(Schema.Union([SessionCodec, Draft]))
+export const Tabs = Persistence.array(Schema.Union([SessionCodec, Draft, Backend]))
 
 export const Recent = Persistence.struct({
   key: Schema.optional(Schema.String),
@@ -62,7 +70,7 @@ export const Regions = Schema.Record(
 )
 
 export const ClosedTab = Persistence.struct({
-  tab: SessionCodec,
+  tab: Schema.Union([SessionCodec, Backend]),
   index: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   info: Persistence.optional(Info),
 })

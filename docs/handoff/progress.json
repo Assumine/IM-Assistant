@@ -248,7 +248,31 @@
         "opencode/packages/gui-plugins/src/conversation.ts",
         "opencode/packages/gui-plugins/src/main.ts",
         "opencode/packages/gui-plugins/src/renderer.ts",
-        "opencode/packages/gui-plugins/src/backends/browser.tsx"
+        "opencode/packages/gui-plugins/src/backends/browser.tsx",
+        "opencode/packages/app/component-tests/plugin-host.fixture.tsx",
+        "opencode/packages/app/e2e/regression/tabs.spec.ts",
+        "opencode/packages/app/src/runtime/i18n/en.ts",
+        "opencode/packages/app/src/runtime/plugin/backend-view.tsx",
+        "opencode/packages/app/src/runtime/plugin/host-apis.tsx",
+        "opencode/packages/app/src/runtime/plugin/server-shell.tsx",
+        "opencode/packages/app/src/shell/notifications/notification.test.ts",
+        "opencode/packages/app/src/shell/routes/routes.tsx",
+        "opencode/packages/app/src/shell/routes/session.test.ts",
+        "opencode/packages/app/src/shell/routes/session.ts",
+        "opencode/packages/app/src/shell/state/layout.test.ts",
+        "opencode/packages/app/src/shell/state/layout.tsx",
+        "opencode/packages/app/src/shell/tabs/closed.ts",
+        "opencode/packages/app/src/shell/tabs/schema.ts",
+        "opencode/packages/app/src/shell/tabs/tabs.test.ts",
+        "opencode/packages/app/src/shell/tabs/tabs.tsx",
+        "opencode/packages/app/src/shell/titlebar/recently-closed-tabs-menu.tsx",
+        "opencode/packages/app/src/shell/titlebar/tab-nav.tsx",
+        "opencode/packages/app/src/shell/titlebar/tab-order.test.ts",
+        "opencode/packages/app/src/shell/titlebar/tab-strip.tsx",
+        "opencode/packages/app/src/shell/titlebar/titlebar.tsx",
+        "opencode/packages/gui-plugins/src/backends/room.tsx",
+        "opencode/packages/plugin/src/gui/host-apis.ts",
+        "opencode/packages/plugin/src/gui/registries.ts"
       ],
       "verification": [
         {
@@ -256,15 +280,15 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 44,
+          "tests_run": 158,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
           "publication": "disabled",
           "native_http_checks": 10,
-          "native_unit_tests": 35,
-          "browser_tests": 9
+          "native_unit_tests": 77,
+          "browser_tests": 81
         }
       ],
       "blocked_reason": null
