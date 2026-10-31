@@ -12,6 +12,7 @@ export interface Definition {
   readonly enqueue: (input: ConversationBackend.Input) => Promise<ConversationBackend.Receipt>
   readonly reconcile: (ref: ConversationBackend.Ref, inputID: string) => Promise<ConversationBackend.Receipt | undefined>
   readonly subscribe: (listener: (notification: Schema.Json) => void) => () => void
+  readonly onClose?: (listener: () => void) => () => void
 }
 
 export interface ConversationDomain {

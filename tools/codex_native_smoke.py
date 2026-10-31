@@ -58,12 +58,12 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 6 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
-        raise RuntimeError("Required six real-native scenarios did not all execute")
+    if steps[-1]["passed"] != 11 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+        raise RuntimeError("Required eleven real-native scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 14),
+        ("packages/core", core_files, "r3-host-unit", 15),
         ("packages/server", server_files, "r3-host-server-unit", 3),
     ]:
         if not all((ROOT / "opencode" / directory / name).is_file() for name in files):
@@ -76,7 +76,7 @@ def _run(checkpoint):
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_CODEX_TEST_ROOT": str(test_root)}))
     output = (reports / "r3-host-http.log").read_text(encoding="utf-8")
     host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
-    if host["status"] != "passed" or len(host["checks"]) != 6 or host["model_requests"] != 4:
+    if host["status"] != "passed" or len(host["checks"]) != 7 or host["model_requests"] != 4:
         raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
     version = subprocess.check_output([executable, "--version"], env=env, encoding="utf-8").strip()
@@ -96,12 +96,12 @@ def _run(checkpoint):
         "native_state_owner": "codex-app-server", "steps": steps,
         "host_acceptance": host,
         "sources": {file.relative_to(ROOT).as_posix(): hashlib.sha256(file.read_bytes()).hexdigest()
-                    for file in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"),
+                    for file in sorted([*module.glob("src/*.ts"), *module.rglob("test/**/*.ts"),
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
         "remaining": ["native UI binding and production host activation",
-                      "cross-process single ownership via native application service",
+                      "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],
     }

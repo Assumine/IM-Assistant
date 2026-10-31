@@ -9,7 +9,7 @@ import { SessionTable, SessionInboxTable } from "@opencode/core/session/sql"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
 import { Admission, type Ref } from "@opencode/schema/conversation-backend"
 import { createEmbeddedRoutes } from "../src/routes"
-import { CodexSessionAdapter, createProfile, nativeBackend } from "../../../../modules/codex-native/src"
+import { CodexSessionAdapter, createSharedProfile, nativeBackend, stopSharedService } from "../../../../modules/codex-native/src"
 
 const executable = process.env.IM_CODEX_EXECUTABLE
 const root = process.env.IM_CODEX_TEST_ROOT
@@ -37,7 +37,7 @@ const upstream = Bun.serve({
   },
 })
 const home = await mkdtemp(path.join(root, "host-"))
-const profile = await createProfile(path.join(home, "codex"), { id: "fixture", model: "local-fixture", baseURL: `http://127.0.0.1:${upstream.port}/v1`, keyName: "IM_FIXTURE_KEY" })
+const profile = await createSharedProfile(path.join(home, "codex"), { id: "fixture", model: "local-fixture", baseURL: `http://127.0.0.1:${upstream.port}/v1`, keyName: "IM_FIXTURE_KEY" })
 const adapter = await CodexSessionAdapter.open({ executable, profile, apiKey: "fixture-only" })
 let completions = 0
 let activeTurnID: string | undefined
@@ -83,6 +83,13 @@ async function round(resume: boolean) {
       assert.deepEqual(retried, receipt)
       assert.equal(requests.length, 4)
       checks.push("application SQLite restart returns the same receipt without native re-admission")
+      const disconnected = Promise.withResolvers<void>()
+      const unsubscribe = adapter.onClose(() => disconnected.resolve())
+      yield* Effect.promise(() => stopSharedService({ executable: executable!, profile, apiKey: "fixture-only" }))
+      yield* Effect.promise(() => disconnected.promise)
+      unsubscribe()
+      assert.deepEqual(yield* Effect.promise(() => call("list", {})), [])
+      checks.push("native disconnection unregisters the backend from the real application RPC")
       return
     }
     const created = Schema.decodeUnknownSync(Schema.Struct({ thread: Schema.Struct({ id: Schema.String }) }))(
@@ -135,5 +142,6 @@ try {
 } finally {
   release.resolve()
   await adapter.close()
+  await stopSharedService({ executable, profile, apiKey: "fixture-only" })
   upstream.stop(true)
 }

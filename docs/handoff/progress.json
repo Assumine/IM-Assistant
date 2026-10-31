@@ -232,7 +232,11 @@
         "opencode/packages/server/src/routes.ts",
         "opencode/packages/server/test/conversation-policy.test.ts",
         "opencode/packages/server/script/codex-backend-smoke.ts",
-        "upstream/patches.json"
+        "upstream/patches.json",
+        "modules/codex-native/src/connection.ts",
+        "modules/codex-native/src/launch.ts",
+        "modules/codex-native/src/shared.ts",
+        "modules/codex-native/test/fixture/shared-client.ts"
       ],
       "verification": [
         {
@@ -240,13 +244,13 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 23,
+          "tests_run": 29,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
           "publication": "disabled",
-          "native_http_checks": 6
+          "native_http_checks": 7
         }
       ],
       "blocked_reason": null

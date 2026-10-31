@@ -5,6 +5,7 @@ import type { CodexSessionAdapter } from "./session-adapter"
 const json = async (response: Promise<unknown>) => await response as Awaited<ReturnType<Definition["create"]>>
 
 export function nativeBackend(adapter: CodexSessionAdapter): Definition {
+  if (adapter.runtimeInfo().mode !== "shared") throw new Error("Managed backend requires the shared native service")
   return {
     descriptor: { id: "codex-native", label: "Codex" },
     create: () => json(adapter.create()),
@@ -57,5 +58,6 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       if (typeof messages[0]?.id === "string") return { nativeID: messages[0].id, kind: "message" }
     },
     subscribe: (listener) => adapter.subscribe((event) => listener(event as unknown as Awaited<ReturnType<Definition["create"]>>)),
+    onClose: (listener) => adapter.onClose(listener),
   }
 }

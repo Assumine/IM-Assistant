@@ -28,12 +28,20 @@ const layer = Layer.effect(Service, Effect.gen(function* () {
     const unsubscribe = backend.subscribe((notification) => {
       for (const listener of listeners) listener(descriptor.id, notification)
     })
-    const dispose = Effect.sync(() => {
-      if (backends.get(descriptor.id) !== backend) return
-      backends.delete(descriptor.id)
+    let stopped = false
+    let unsubscribeClose = () => {}
+    const remove = () => {
+      if (stopped) return
+      stopped = true
+      if (backends.get(descriptor.id) === backend) backends.delete(descriptor.id)
       unsubscribe()
-    })
-    yield* Effect.acquireRelease(Effect.sync(() => backends.set(descriptor.id, backend)), () => dispose)
+      unsubscribeClose()
+    }
+    const dispose = Effect.sync(remove)
+    yield* Effect.acquireRelease(Effect.sync(() => {
+      backends.set(descriptor.id, backend)
+      unsubscribeClose = backend.onClose?.(remove) ?? (() => {})
+    }), () => dispose)
     return { dispose }
   })
 

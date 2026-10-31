@@ -1,4 +1,5 @@
-import { createHash } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
+import { createServer } from "node:net"
 import { mkdir, readFile, readdir, realpath, writeFile } from "node:fs/promises"
 import path from "node:path"
 
@@ -9,6 +10,7 @@ export interface Profile {
   home: string
   workspace: string
   keyName?: string
+  service?: { port: number; tokenFile: string; tokenHash: string }
 }
 
 export interface Connection {
@@ -39,6 +41,12 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 const marker = ".im-assistant-profile.json"
 
 export async function createProfile(root: string, connection?: Connection): Promise<Profile> {
+  return create(root, connection, false)
+}
+export async function createSharedProfile(root: string, connection?: Connection): Promise<Profile> {
+  return create(root, connection, true)
+}
+async function create(root: string, connection: Connection | undefined, shared: boolean): Promise<Profile> {
   if (!path.isAbsolute(root)) throw new Error("Profile path must be absolute")
   if (connection) {
     if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(connection.id) || !/^IM_[A-Z0-9_]{1,60}$/.test(connection.keyName)) {
@@ -69,8 +77,29 @@ export async function createProfile(root: string, connection?: Connection): Prom
   }
   const config = lines.join("\n") + "\n"
   await writeFile(path.join(home, "config.toml"), config, { flag: "wx" })
-  const profile = { home, workspace, keyName: connection?.keyName }
+  const profile: Profile = { home, workspace, keyName: connection?.keyName }
+  if (shared) {
+    const reservation = createServer()
+    await new Promise<void>((resolve, reject) => {
+      reservation.once("error", reject)
+      reservation.listen(0, "127.0.0.1", resolve)
+    })
+    const port = (reservation.address() as { port: number }).port
+    await new Promise<void>((resolve, reject) => reservation.close((error) => error ? reject(error) : resolve()))
+    const token = randomBytes(32).toString("hex")
+    const tokenFile = path.join(home, "app-server-token")
+    await writeFile(tokenFile, token, { flag: "wx", mode: 0o600 })
+    profile.service = { port, tokenFile, tokenHash: digest(token) }
+  }
   await writeFile(path.join(home, marker), JSON.stringify({ ...profile, configHash: digest(config), version: verifiedVersion }), { flag: "wx" })
+  return profile
+}
+
+export async function loadProfile(root: string): Promise<Profile> {
+  const stored = JSON.parse(await readFile(path.join(root, marker), "utf8"))
+  const profile: Profile = { home: stored.home, workspace: stored.workspace, keyName: stored.keyName, service: stored.service }
+  if (path.resolve(root) !== profile.home) throw new Error("Managed profile path changed")
+  await verifyProfile(profile)
   return profile
 }
 
@@ -82,7 +111,15 @@ export async function verifyProfile(profile: Profile) {
   const stored = JSON.parse(await readFile(path.join(home, marker), "utf8"))
   const config = await readFile(path.join(home, "config.toml"), "utf8")
   if (stored.home !== home || stored.workspace !== profile.workspace || stored.keyName !== profile.keyName ||
-    stored.version !== verifiedVersion || stored.configHash !== digest(config)) {
+    stored.version !== verifiedVersion || stored.configHash !== digest(config) || JSON.stringify(stored.service) !== JSON.stringify(profile.service)) {
     throw new Error("Managed profile changed; revalidation required")
+  }
+  if (profile.service) {
+    const service = profile.service
+    if (!Number.isInteger(service.port) || service.port < 1 || service.port > 65535 ||
+      service.tokenFile !== path.join(home, "app-server-token") || await realpath(service.tokenFile) !== service.tokenFile ||
+      digest(await readFile(service.tokenFile, "utf8")) !== service.tokenHash) {
+      throw new Error("Managed service connection changed; revalidation required")
+    }
   }
 }

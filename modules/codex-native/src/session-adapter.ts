@@ -1,4 +1,5 @@
 import { Transport, type Launch, type Notification } from "./transport"
+import type { Connection } from "./connection"
 
 export interface Thread {
   id: string
@@ -37,13 +38,14 @@ function page(value: Pagination) {
 
 // A whole native backend. Nothing is passed to OpenCode Session.prompt, Inbox or model providers.
 export class CodexSessionAdapter {
-  private constructor(private native: Transport, private workspace: string) {}
+  private constructor(private native: Connection, private workspace: string) {}
 
   static async open(options: Launch) {
     return new CodexSessionAdapter(await Transport.open(options), options.profile.workspace)
   }
 
   subscribe(listener: (event: Notification) => void) { return this.native.subscribe(listener) }
+  runtimeInfo() { return this.native.info() }
   onClose(listener: () => void) { return this.native.onClose(listener) }
   close() { return this.native.close() }
 

@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "51134ef251420595f629373ad7bb4b3bae6241ca0115ed501626b969988da2fe"
+          "sha256": "c02fa0bd9693c822ac0191da828fb444c666fddb53532874f791ea0879cb3745"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "6bfe2ccf0cdfc6d9d2899d263290904bb610c6e38016e9853f9bb9ba91b0f6e5"
+          "sha256": "713811fa383f9a67ea4add02b686f9eca52371b8b0965b3fe6517d220e5229f7"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "d587d1c7ebde63bc72f23904632ac78ff3ee2d8620ff6ee002f4dc3e355b8ca0"
+          "sha256": "ff8cc503d676bd4147d1d1f2e81241f1c472c588ae4f4b2f9f3d19f311f58be4"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -661,7 +661,7 @@
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "6f84e14e41acff6628d566de7ee53bfb9140f12e17e8b67442729670dd8ffa8f"
+          "sha256": "fc7e7e37de3aba2674906e0712b63c3eb9a9864d972e7df331fba50b67d8c27b"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",

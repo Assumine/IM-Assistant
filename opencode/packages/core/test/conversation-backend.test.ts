@@ -77,6 +77,21 @@ it.effect("concurrent copies admit once; retries use the durable receipt without
   expect(example.admissions).toHaveLength(1)
 }))
 
+it.effect("a closed native connection unregisters itself without removing its replacement", () => Effect.gen(function* () {
+  const host = yield* ConversationBackend.Service
+  const rpc = yield* Rpc.Service
+  yield* host.bind(rpc)
+  const example = fixture()
+  let closed = () => {}
+  const old = yield* host.register({ ...example.backend, onClose: (listener) => { closed = listener; return () => {} } })
+  closed()
+  expect(yield* rpc.client(Api).list({})).toEqual([])
+  yield* host.register(example.backend)
+  yield* old.dispose
+  expect(yield* rpc.client(Api).list({})).toEqual([example.backend.descriptor])
+  expect(example.closed()).toBe(1)
+}))
+
 it.effect("lost acknowledgment reconciles native state and never resends", () => Effect.gen(function* () {
   const host = yield* ConversationBackend.Service
   const rpc = yield* Rpc.Service
