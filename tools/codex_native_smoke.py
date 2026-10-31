@@ -59,12 +59,12 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 12 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
-        raise RuntimeError("Required twelve real-native scenarios did not all execute")
+    if steps[-1]["passed"] != 13 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+        raise RuntimeError("Required thirteen real-native scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 18),
+        ("packages/core", core_files, "r3-host-unit", 19),
         ("packages/server", server_files, "r3-host-server-unit", 3),
     ]:
         if not all((ROOT / "opencode" / directory / name).is_file() for name in files):
@@ -77,7 +77,7 @@ def _run(checkpoint):
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_CODEX_TEST_ROOT": str(test_root)}))
     output = (reports / "r3-host-http.log").read_text(encoding="utf-8")
     host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
-    if host["status"] != "passed" or len(host["checks"]) != 9 or host["model_requests"] != 4:
+    if host["status"] != "passed" or len(host["checks"]) != 10 or host["model_requests"] != 4:
         raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))

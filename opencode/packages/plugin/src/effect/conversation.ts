@@ -16,6 +16,14 @@ export interface Definition {
   ) => Promise<ConversationBackend.Receipt | undefined>
   readonly subscribe: (listener: (notification: Schema.Json) => void) => () => void
   readonly onClose?: (listener: () => void) => () => void
+  // Optional native run/queue projection; observers never own execution or automatically replay controls.
+  readonly execution?: {
+    readonly read: (
+      ref: ConversationBackend.Ref,
+      page: { cursor?: string; limit?: number },
+    ) => Promise<ConversationBackend.Execution>
+    readonly subscribe: (listener: (event: ConversationBackend.Activity) => void) => () => void
+  }
   // Optional read-only UI projection. Reading must not resume a thread or admit work.
   readonly browse?: {
     readonly threads: (page: { cursor?: string; limit?: number }) => Promise<ConversationBackend.Threads>

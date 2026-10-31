@@ -20,7 +20,7 @@
     {
       "label": "r3-native-tests",
       "exit_code": 0,
-      "passed": 12,
+      "passed": 13,
       "failed": 0,
       "skipped": 0,
       "log": ".reports/native/r3-native-tests.log"
@@ -36,10 +36,10 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.99,
+      "duration_seconds": 1.0,
       "isolated_home": true,
       "log": ".reports/native/r3-host-unit.log",
-      "native_tests_passed": 18,
+      "native_tests_passed": 19,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     },
@@ -53,7 +53,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.42,
+      "duration_seconds": 2.37,
       "isolated_home": true,
       "log": ".reports/native/r3-host-server-unit.log",
       "native_tests_passed": 3,
@@ -69,7 +69,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.98,
+      "duration_seconds": 2.32,
       "isolated_home": true,
       "log": ".reports/native/r3-host-http.log",
       "native_tests_passed": null,
@@ -96,7 +96,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 35.1,
+      "duration_seconds": 35.04,
       "isolated_home": true,
       "log": ".reports/native/r3-backend-browser.log",
       "native_tests_passed": 9,
@@ -112,7 +112,7 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 34.91,
+      "duration_seconds": 6.89,
       "isolated_home": true,
       "log": ".reports/native/r3-host-check.log",
       "native_tests_passed": null,
@@ -127,6 +127,7 @@
       "steering uses the same admission ID and the native active-turn guard",
       "eight concurrent HTTP copies create exactly one native queued submission",
       "unknown native acknowledgment reconciles the real queue instead of re-sending",
+      "typed execution distinguishes active work from pending pages and native controls edit, reorder and withdraw only the original queue",
       "read-only native projections preserve references without a second admission or model request",
       "Codex inputs create no OpenCode Session or Inbox rows",
       "after queue consumption, native clientId resolves to the persisted user message",
@@ -138,24 +139,24 @@
   },
   "sources": {
     "modules/codex-native/package.json": "c7f2fa05ce9ff3bfb44ebc2bd4d7678dd63307bd293e67777adbc23cf3103f09",
-    "modules/codex-native/src/backend.ts": "31e2e4a912d21f712b5d6c0b4e1e32dfbb5e27e32f1eea4e112550778a1884fd",
+    "modules/codex-native/src/backend.ts": "86a18c5bb27124858abaeb5722a09164d30a2247af18f6478cbb1face3700e97",
     "modules/codex-native/src/connection.ts": "3d83e5298301db9e47be4a918f53cc25f8f1485b1ae45f4f652617f3ae3e584d",
     "modules/codex-native/src/index.ts": "6cefa3db74b9eb976fda1eee399514de8f7f7a9ce484968618d5ebeb0a922229",
     "modules/codex-native/src/launch.ts": "f26c9910629f110c4e7f57a278564fe04248388c1858f03cf7c375b3033b5c2f",
     "modules/codex-native/src/profile.ts": "708ce2d6014d8b388b7a074b9ca3991503513ba80f5e262b1794e6c5f1021344",
-    "modules/codex-native/src/session-adapter.ts": "de82cc564c4267eb94e561a44e78c073d0ca84bb4c5b78abe350b79e4266c7d9",
+    "modules/codex-native/src/session-adapter.ts": "fa0949959cd6856c120c9081a4d58800ea8679f8188156c74db08c61b687aa35",
     "modules/codex-native/src/shared.ts": "8703de972b5e59937e3f7ae992e02179cca5ea79c70e38e2b2c71fca44816f67",
     "modules/codex-native/src/transport.ts": "4c6df81cd6923f73f82f411a90579c4f1ca302f54e86006485c54007ed7072bd",
     "modules/codex-native/test/fixture/shared-client.ts": "961aa8114b3ff02e3b77689c58f7572dfcd0627930e8420b3365a87e08c71268",
-    "modules/codex-native/test/native.test.ts": "6f83250220f4ec2f04136a643ac6e04a7d1b2841454e0ee9554b5254011c5e38",
+    "modules/codex-native/test/native.test.ts": "e911d3233f6d2c0067e92f109e3e3c479c141336d011e794e3ef98421130f5ed",
     "modules/codex-native/tsconfig.json": "6bdec6041d61f39890056d01ac1c90b4e200e866dca04bef9c57b67231326fe8",
     "opencode/packages/app/e2e/regression/settings.spec.ts": "eeaebd0e007a0790a347e704cd85ab9e84c95442dc1ef6c4e744b876d42374ac",
     "opencode/packages/app/e2e/utils/backends.ts": "60bac4e2769ff76ff6b6c3f82fdaf15a7e12414907a60bbf00389d9c8935ca78",
     "opencode/packages/app/e2e/utils/mock-server.ts": "b6ee65ef245014b1adf6d7d956442b18aab5fb38ce9ec410eff134d97fba8dac",
-    "opencode/packages/core/src/conversation-backend.ts": "00b54bf1aa011d74755fb6f91dc3b6773eb58fb5e231119d07b909f3152b8fd2",
+    "opencode/packages/core/src/conversation-backend.ts": "9a157639e5a78179a16941aba97109d2dc658bb96153dffb65ce23050ce45d47",
     "opencode/packages/core/src/kv.ts": "bcb6601fbf4d0dec0f8e7ecd403db9059c88bfe3a8d94eae50a7f04baa6053eb",
     "opencode/packages/core/src/plugin/host.ts": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5",
-    "opencode/packages/core/test/conversation-backend.test.ts": "b072e97a68e6901c39626fa6b610e63e8d2f264ed800636b7ca88dc3ae8c9e93",
+    "opencode/packages/core/test/conversation-backend.test.ts": "25a8b6bd0f2da01e2345f28ceb7d7bd183121166ecaba97d5d953d0aee1db246",
     "opencode/packages/core/test/plugin/fixture.ts": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8",
     "opencode/packages/gui-plugins/README.md": "6e611c1eca68f7c67d25f93ebf763dec9eb85ab2902136d98cd81347e569ff95",
     "opencode/packages/gui-plugins/src/backends/browser.tsx": "9d29d300700cadf8940d6a8d6695c900119615bc3ee59e7971c0185d2a1575de",
@@ -166,16 +167,16 @@
     "opencode/packages/gui-plugins/src/conversation.ts": "69d472e0fdf18f8cf3a652fbe0890c0c8eaa6f5361449a2a47eece3468eff5dc",
     "opencode/packages/gui-plugins/src/main.ts": "d84f0f9ad3385fd36235129073f9a2212de0da3629268da72efaaf264f0da50b",
     "opencode/packages/gui-plugins/src/renderer.ts": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f",
-    "opencode/packages/plugin/src/effect/conversation.ts": "adbcaa1dc321b5dfd09e55416a2f15d3d4c63b7f9cb371916e2e59adbf2e2b17",
+    "opencode/packages/plugin/src/effect/conversation.ts": "6616fb50a995305b8440951bc0b50777aafa5bd2c54ce3765ec027fd6381289b",
     "opencode/packages/plugin/src/effect/plugin.ts": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917",
-    "opencode/packages/schema/src/conversation-backend.ts": "21bc40274057f0511be7047c6d94cfe1da545b8153bd295fd0af08e92f98dcbd",
-    "opencode/packages/server/script/codex-backend-smoke.ts": "37618b5e49d5f379ab5f5be73ad39cb06fae256600f183bdc510867d8b64ad97",
-    "opencode/packages/server/src/middleware/runtime-policy.ts": "adc61ccd82bb8d659760ec627bd1224183f1ee03ab34fe6d625b3cd84299a341",
+    "opencode/packages/schema/src/conversation-backend.ts": "b481f2cfd19cb0a171d24b52febbedaad9e40c6f8f020958136a19cd9dccb30a",
+    "opencode/packages/server/script/codex-backend-smoke.ts": "3963adfcd2d01fb28e64540f174668ef5d5532e715dc33b44f0096f46aebce16",
+    "opencode/packages/server/src/middleware/runtime-policy.ts": "5cc0ba37aa4bc529ef5deb11a2301adbb199ce78b83eef19bb1aead025669b86",
     "opencode/packages/server/src/routes.ts": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22",
-    "opencode/packages/server/test/conversation-policy.test.ts": "d16f84d1638e534038f4816bf3739f7b1e7b7ac6a7205646f8d0d5a2b7b717f4",
-    "tools/codex_native_smoke.py": "d76dbe7f1f987f755a93853cbc1a81a2c364c92416755b1f53d1d64104efac37"
+    "opencode/packages/server/test/conversation-policy.test.ts": "9e6d2a119e0755cc88d3f0dbbd2835b344c3008bb218a062a0da1f11c420b9ad",
+    "tools/codex_native_smoke.py": "983da5e306af8d95763a03aef91a3a4b45bc33151fe7c4ee4b1d62c8b7f580e4"
   },
-  "duration_seconds": 119.42,
+  "duration_seconds": 88.88,
   "remaining": [
     "full native tab/composer/queue UI binding and production host activation; settings selection/sign-in and read-only history UI verified with fixtures",
     "shared transport is experimental and not published; production activation and OS matrix remain unverified",
@@ -183,184 +184,35 @@
     "real account connection and capability revalidation before publication"
   ],
   "additional_verification": {
-    "plugin_host": {
-      "args": [
-        "bun",
-        "x",
-        "--no-install",
-        "playwright",
-        "test",
-        "--config",
-        "playwright.components.config.ts",
-        "plugin-",
-        "--workers",
-        "2",
-        "--retries",
-        "0"
-      ],
-      "cwd": "opencode/packages/app",
-      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-      "exit_code": 0,
-      "duration_seconds": 31.39,
-      "isolated_home": true,
-      "log": ".reports/native/r3-browse-plugin-host.log",
-      "native_tests_passed": 31,
-      "native_tests_failed": 0,
-      "native_tests_skipped": 0
-    },
-    "changed_gui_lint": {
-      "args": [
-        "bun",
-        "run",
-        "lint:changed",
-        "HEAD"
-      ],
-      "cwd": "opencode",
-      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-      "exit_code": 0,
-      "duration_seconds": 5.21,
-      "isolated_home": true,
-      "log": ".reports/native/r3-browse-lint-changed.log",
-      "native_tests_passed": null,
-      "native_tests_failed": null,
-      "native_tests_skipped": 0
-    },
     "shared_test_cleanup": {
-      "checked": 50,
+      "checked": 66,
       "stopped": 0,
       "unverified": 0
     }
   },
   "e2e_types_recheck": {
-    "command": "python -m tools.native_baseline --cwd packages/app --label r3-browse-e2e-types -- run typecheck:e2e",
+    "command": "python -m tools.native_baseline --cwd packages/app --label r3-execution-e2e-types -- run typecheck:e2e",
     "exit_code": 1,
     "existing_diagnostics": 14,
     "new_diagnostics": 0,
     "note": "Not passed; same files and diagnostic text after normalizing shifted line numbers."
   },
-  "conversation_benchmark": {
-    "scenario": "upstream conversation composer accepts consecutive input without losing text",
-    "conditions": "Pinned Windows Chromium, production app build, isolated native HTTP fixture, empty history; 3 samples each, no retries. Local config uses the same build/static server as the browser regression suite.",
-    "scope": "Checks existing composer input only; not long native-history or whole-application performance acceptance. Small samples are descriptive, not proof of an improvement.",
-    "runs": {
-      "r3-browse-before": {
-        "receipt": {
-          "args": [
-            "bun",
-            "x",
-            "--no-install",
-            "playwright",
-            "test",
-            "--config",
-            "../../../.reports/r3-browse-benchmark.config.mts",
-            "conversation-composer-benchmark.spec.ts",
-            "--project",
-            "chromium",
-            "--repeat-each",
-            "3",
-            "--retries",
-            "0"
-          ],
-          "cwd": "opencode/packages/app",
-          "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-          "exit_code": 0,
-          "duration_seconds": 30.6,
-          "isolated_home": true,
-          "log": ".reports/native/r3-browse-before.log",
-          "native_tests_passed": 3,
-          "native_tests_failed": 0,
-          "native_tests_skipped": 0
-        },
-        "samples": [
-          {
-            "elapsedMs": 98.25419999999986,
-            "scriptMs": 22.982,
-            "taskMs": 59.949,
-            "nodes": 1403,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 111.46550000000025,
-            "scriptMs": 25.046,
-            "taskMs": 63.955999999999996,
-            "nodes": 1403,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 97.78800000000001,
-            "scriptMs": 25.319,
-            "taskMs": 63.03,
-            "nodes": 1450,
-            "characters": 65
-          }
-        ],
-        "median": {
-          "elapsedMs": 98.25419999999986,
-          "scriptMs": 25.046,
-          "taskMs": 63.03,
-          "nodes": 1403,
-          "characters": 65
-        }
-      },
-      "r3-browse-after": {
-        "receipt": {
-          "args": [
-            "bun",
-            "x",
-            "--no-install",
-            "playwright",
-            "test",
-            "--config",
-            "../../../.reports/r3-browse-benchmark.config.mts",
-            "conversation-composer-benchmark.spec.ts",
-            "--project",
-            "chromium",
-            "--repeat-each",
-            "3",
-            "--retries",
-            "0"
-          ],
-          "cwd": "opencode/packages/app",
-          "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-          "exit_code": 0,
-          "duration_seconds": 30.34,
-          "isolated_home": true,
-          "log": ".reports/native/r3-browse-after.log",
-          "native_tests_passed": 3,
-          "native_tests_failed": 0,
-          "native_tests_skipped": 0
-        },
-        "samples": [
-          {
-            "elapsedMs": 112.16039999999975,
-            "scriptMs": 25.296,
-            "taskMs": 65.342,
-            "nodes": 1405,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 102.96720000000005,
-            "scriptMs": 23.061999999999998,
-            "taskMs": 59.207,
-            "nodes": 1405,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 107.99150000000009,
-            "scriptMs": 26.719,
-            "taskMs": 66.84700000000001,
-            "nodes": 1452,
-            "characters": 65
-          }
-        ],
-        "median": {
-          "elapsedMs": 107.99150000000009,
-          "scriptMs": 25.296,
-          "taskMs": 65.342,
-          "nodes": 1405,
-          "characters": 65
-        }
-      }
+  "prior_gui_verification": {
+    "commit": "da52a269343c01d66c06207242c5c99c9d784efe",
+    "note": "No GUI/session/timeline code changed this stage. Prior 31 plugin-host cases and before/after composer benchmark were not rerun or counted in this stage; the production settings browser suite was rerun.",
+    "unchanged_sources": {
+      "opencode/packages/app/e2e/regression/settings.spec.ts": "eeaebd0e007a0790a347e704cd85ab9e84c95442dc1ef6c4e744b876d42374ac",
+      "opencode/packages/app/e2e/utils/backends.ts": "60bac4e2769ff76ff6b6c3f82fdaf15a7e12414907a60bbf00389d9c8935ca78",
+      "opencode/packages/app/e2e/utils/mock-server.ts": "b6ee65ef245014b1adf6d7d956442b18aab5fb38ce9ec410eff134d97fba8dac",
+      "opencode/packages/gui-plugins/README.md": "6e611c1eca68f7c67d25f93ebf763dec9eb85ab2902136d98cd81347e569ff95",
+      "opencode/packages/gui-plugins/src/backends/browser.tsx": "9d29d300700cadf8940d6a8d6695c900119615bc3ee59e7971c0185d2a1575de",
+      "opencode/packages/gui-plugins/src/backends/i18n/en.ts": "39fc2d7d5deb8751895e80f10e48fcff48e4cee00a21c37bf7e6ce5bc273bbb6",
+      "opencode/packages/gui-plugins/src/backends/index.ts": "c1c64131448aae4e08f4aa3e1ef9de7abce0ade4d068af9ecb00bd159d14f2e2",
+      "opencode/packages/gui-plugins/src/backends/page.tsx": "c3306d701f65384238010476d27db608296abc87a6b827a5493a1bc41521c77a",
+      "opencode/packages/gui-plugins/src/backends/renderer.tsx": "42391665d5ff74f2b0a4c9434c2d9e1c355ef66e7289bd1825e1cde038db76b1",
+      "opencode/packages/gui-plugins/src/conversation.ts": "69d472e0fdf18f8cf3a652fbe0890c0c8eaa6f5361449a2a47eece3468eff5dc",
+      "opencode/packages/gui-plugins/src/main.ts": "d84f0f9ad3385fd36235129073f9a2212de0da3629268da72efaaf264f0da50b",
+      "opencode/packages/gui-plugins/src/renderer.ts": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f"
     }
   }
 }

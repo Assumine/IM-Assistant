@@ -7,6 +7,7 @@ test("managed conversation backend RPC does not open generic plugin or file capa
     "status",
     "threads",
     "history",
+    "execution",
     "login",
     "cancelLogin",
     "create",

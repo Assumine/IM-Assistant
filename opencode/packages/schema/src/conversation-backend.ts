@@ -38,7 +38,12 @@ export const Control = Schema.Union([
   Schema.Struct({ action: Schema.Literal("compact"), threadID: ID }),
 ])
 export type Control = typeof Control.Type
-export const Descriptor = Schema.Struct({ id: ID, label: Schema.String, browse: optional(Schema.Boolean) })
+export const Descriptor = Schema.Struct({
+  id: ID,
+  label: Schema.String,
+  browse: optional(Schema.Boolean),
+  execution: optional(Schema.Boolean),
+})
 export type Descriptor = typeof Descriptor.Type
 
 // Read-only display projections. Native references and ordering remain backend-owned.
@@ -67,6 +72,26 @@ export const History = Schema.Struct({
   nextCursor: optional(Schema.String),
 })
 export type History = typeof History.Type
+
+export interface QueuedInput extends Schema.Schema.Type<typeof QueuedInput> {}
+export const QueuedInput = Schema.Struct({ nativeID: ID, inputID: ID, text: Schema.String, partial: Schema.Boolean })
+export interface Turn extends Schema.Schema.Type<typeof Turn> {}
+export const Turn = Schema.Struct({
+  id: ID,
+  state: Schema.Literals(["running", "completed", "interrupted", "failed"]),
+})
+// Observations, not an atomic snapshot or an admission receipt. The latest turn can already be finished.
+// Queue pages contain only pending inputs, in native order; nextCursor means the page is incomplete.
+export interface Execution extends Schema.Schema.Type<typeof Execution> {}
+export const Execution = Schema.Struct({
+  thread: Thread,
+  turn: optional(Turn),
+  queue: Schema.Array(QueuedInput),
+  nextCursor: optional(Schema.String),
+})
+// Invalidation only. Consumers re-read the relevant visible data; this is not a replayable execution log.
+export interface Activity extends Schema.Schema.Type<typeof Activity> {}
+export const Activity = Schema.Struct({ ref: Ref, change: Schema.Literals(["execution", "history", "both"]) })
 
 // Display projections only: credentials, OAuth tokens and native configuration never cross this surface.
 export const Account = Schema.Struct({
@@ -125,6 +150,11 @@ export const Api = Rpc.define({
       output: Schema.toStandardSchemaV1(History),
       errors,
     },
+    execution: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, ...Page })),
+      output: Schema.toStandardSchemaV1(Execution),
+      errors,
+    },
     login: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID })),
       output: Schema.toStandardSchemaV1(BrowserLogin),
@@ -153,6 +183,7 @@ export const Api = Rpc.define({
     send: { input: Schema.toStandardSchemaV1(Input), output: Schema.toStandardSchemaV1(Admission), errors },
   },
   events: {
+    activity: { schema: Schema.toStandardSchemaV1(Activity) },
     changed: { schema: Schema.toStandardSchemaV1(Schema.Struct({})) },
     authentication: { schema: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID, event: AuthenticationEvent })) },
     notification: { schema: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID, notification: Schema.Json })) },

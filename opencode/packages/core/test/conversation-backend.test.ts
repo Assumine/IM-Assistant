@@ -1,8 +1,8 @@
 import { expect } from "bun:test"
-import { Effect, Layer, Deferred, Fiber, Exit, Logger } from "effect"
+import { Effect, Layer, Deferred, Fiber, Exit, Logger, Stream } from "effect"
 import type { Definition } from "@opencode/plugin/effect/conversation"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
-import { Api, type Input, type Receipt } from "@opencode/schema/conversation-backend"
+import { Api, type Activity, type Input, type Receipt } from "@opencode/schema/conversation-backend"
 import { Database } from "@opencode/core/database/database"
 import { KV } from "@opencode/core/kv"
 import { Rpc } from "@opencode/core/rpc"
@@ -63,6 +63,7 @@ it.effect("public native RPC is optional, and backend registration is scoped and
     expect(Exit.isFailure(yield* client.login({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
     expect(Exit.isFailure(yield* client.threads({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
     expect(Exit.isFailure(yield* client.history({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
+    expect(Exit.isFailure(yield* client.execution({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
     expect(Exit.isFailure(yield* host.register(example.backend).pipe(Effect.exit))).toBe(true)
     yield* registered.dispose
     yield* registered.dispose
@@ -117,6 +118,60 @@ it.effect("read-only projections preserve pagination and reject a different nati
     mismatched = true
     expect(Exit.isFailure(yield* client.threads({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
     expect(Exit.isFailure(yield* client.history({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
+    expect(example.admissions).toEqual([])
+  }),
+)
+
+it.effect("execution observations and invalidations retain native ownership across registration changes", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    yield* host.bind(rpc)
+    const example = fixture()
+    const calls: object[] = []
+    let emit = (_event: Activity) => {}
+    let unsubscribed = 0
+    let mismatch = false
+    const thread = { ref: input.ref, title: "Native task", state: "running" as const }
+    const execution: NonNullable<Definition["execution"]> = {
+      read: async (ref, page) => {
+        calls.push({ ref, page })
+        return {
+          thread: { ...thread, ref: mismatch ? { ...ref, threadID: "other" } : ref },
+          turn: { id: "native-turn", state: "running" },
+          queue: [{ nativeID: "native-pending", inputID: "original-input", text: "Pending input", partial: false }],
+          nextCursor: undefined,
+        }
+      },
+      subscribe: (listener) => {
+        emit = listener
+        return () => { unsubscribed++ }
+      },
+    }
+    const registered = yield* host.register({ ...example.backend, execution })
+    const client = rpc.client(Api)
+    const snapshot = yield* client.execution({ ref: input.ref, cursor: "native-cursor", limit: 1 })
+    expect(snapshot.thread).toEqual(thread)
+    expect(snapshot.queue[0].nativeID).toBe("native-pending")
+    expect("nextCursor" in snapshot).toBe(false)
+    expect(calls).toEqual([{ ref: input.ref, page: { cursor: "native-cursor", limit: 1 } }])
+    mismatch = true
+    expect(Exit.isFailure(yield* client.execution({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
+    const observed = yield* client.events.subscribe("activity").pipe(
+      Stream.take(2), Stream.runCollect, Effect.forkScoped({ startImmediately: true }),
+    )
+    emit({ ref: { ...input.ref, backendID: "another" }, change: "execution" })
+    emit({ ref: input.ref, change: "execution" })
+    const old = emit
+    yield* registered.dispose
+    expect(unsubscribed).toBe(1)
+    yield* host.register({ ...example.backend, execution })
+    old({ ref: input.ref, change: "both" })
+    emit({ ref: input.ref, change: "history" })
+    expect(Array.from(yield* Fiber.join(observed)).map((event) => event.data)).toEqual([
+      { ref: input.ref, change: "execution" },
+      { ref: input.ref, change: "history" },
+    ])
     expect(example.admissions).toEqual([])
   }),
 )

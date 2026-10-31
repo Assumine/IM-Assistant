@@ -28,6 +28,7 @@ const layer = Layer.effect(
     const listeners = new Set<(backendID: string, notification: Schema.Json) => void>()
     const changed = new Set<() => void>()
     const authentication = new Set<(backendID: string, event: ConversationBackend.AuthenticationEvent) => void>()
+    const activity = new Set<(event: ConversationBackend.Activity) => void>()
     const register: ConversationDomain["register"] = Effect.fn("ConversationBackend.register")(function* (backend) {
       const descriptor = yield* Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Descriptor))(
         backend.descriptor,
@@ -42,6 +43,18 @@ const layer = Layer.effect(
           for (const listener of authentication) listener(descriptor.id, event)
         }) ?? (() => {})
       let stopped = false
+      const unsubscribeActivity =
+        backend.execution?.subscribe((event) => {
+          if (stopped || backends.get(descriptor.id) !== backend) return
+          let decoded: ConversationBackend.Activity
+          try {
+            decoded = Schema.decodeUnknownSync(Schema.toType(ConversationBackend.Activity))(event)
+          } catch {
+            return
+          }
+          if (decoded.ref.backendID !== descriptor.id) return
+          for (const listener of activity) listener(decoded)
+        }) ?? (() => {})
       let unsubscribeClose = () => {}
       const remove = () => {
         if (stopped) return
@@ -52,6 +65,7 @@ const layer = Layer.effect(
         }
         unsubscribe()
         unsubscribeAuthentication()
+        unsubscribeActivity()
         unsubscribeClose()
       }
       const dispose = Effect.sync(remove)
@@ -100,6 +114,23 @@ const layer = Layer.effect(
                 : Effect.fail(ctx.error("failed", "Backend returned a different conversation")),
             ),
             Effect.mapError(() => ctx.error("failed", "Unable to read backend history")),
+          )
+        },
+        execution: (input, ctx) => {
+          const execution = get(input.ref.backendID)?.execution
+          if (!execution) return Effect.fail(ctx.error("unavailable", "Backend execution is unavailable"))
+          return Effect.tryPromise({
+            try: () => execution.read(input.ref, { cursor: input.cursor, limit: input.limit }),
+            catch: () => ctx.error("failed", "Unable to read backend execution"),
+          }).pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Execution))),
+            Effect.flatMap((snapshot) =>
+              snapshot.thread.ref.backendID === input.ref.backendID &&
+              snapshot.thread.ref.threadID === input.ref.threadID
+                ? Effect.succeed(snapshot)
+                : Effect.fail(ctx.error("failed", "Backend returned a different conversation")),
+            ),
+            Effect.mapError(() => ctx.error("failed", "Unable to read backend execution")),
           )
         },
         status: (input, ctx) => {
@@ -212,11 +243,16 @@ const layer = Layer.effect(
       }
       changed.add(onChanged)
       authentication.add(onAuthentication)
+      const onActivity = (event: ConversationBackend.Activity) => {
+        void run(registration.events.emit("activity", event)).catch(() => undefined)
+      }
+      activity.add(onActivity)
       yield* Effect.addFinalizer(() =>
         Effect.sync(() => {
           listeners.delete(listener)
           changed.delete(onChanged)
           authentication.delete(onAuthentication)
+          activity.delete(onActivity)
         }),
       )
     })

@@ -17,6 +17,10 @@ export interface Submission {
   clientUserMessageId: string
   input: Record<string, unknown>[]
 }
+export interface Turn {
+  id: string
+  status: "completed" | "interrupted" | "failed" | "inProgress"
+}
 export interface Page<T> {
   data: T[]
   nextCursor: string | null
@@ -74,6 +78,11 @@ export class CodexSessionAdapter {
   read(threadId: string) {
     return this.native.request<{ thread: Thread }>("thread/read", { threadId: id(threadId), includeTurns: false })
   }
+  async readOwned(threadId: string) {
+    const { thread } = await this.read(threadId)
+    if (path.relative(this.workspace, thread.cwd) !== "") throw new Error("Thread belongs to another workspace")
+    return thread
+  }
   list(pagination: Pagination = {}) {
     return this.native.request<Page<Thread>>("thread/list", { ...page(pagination), cwd: this.workspace })
   }
@@ -88,12 +97,21 @@ export class CodexSessionAdapter {
     })
   }
   async history(threadId: string, pagination: Pagination = {}) {
-    const { thread } = await this.read(threadId)
-    if (path.relative(this.workspace, thread.cwd) !== "") throw new Error("Thread belongs to another workspace")
+    const thread = await this.readOwned(threadId)
     const items = await this.native.request<Page<ItemEntry>>("thread/items/list", {
       threadId: id(threadId), ...page(pagination), sortDirection: "desc",
     })
     return { thread, ...items }
+  }
+  async execution(threadId: string, pagination: Pagination = {}) {
+    const thread = await this.readOwned(threadId)
+    const [turns, queue] = await Promise.all([
+      this.native.request<Page<Turn>>("thread/turns/list", {
+        threadId: id(threadId), limit: 1, itemsView: "notLoaded", sortDirection: "desc",
+      }),
+      this.queue(threadId, pagination),
+    ])
+    return { thread, turn: turns.data[0], queue }
   }
   enqueue(threadId: string, clientUserMessageId: string, text: string) {
     return this.native.request<{ queuedSubmission: Submission }>("thread/queue/add", {

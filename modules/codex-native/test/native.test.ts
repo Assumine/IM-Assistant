@@ -312,6 +312,67 @@ function worker(profile: Profile) {
 }
 
 describe("shared native service ownership", () => {
+  test("execution observations follow the native turn and pending queue without scheduling a second copy", async () => {
+    const entered = deferred<void>()
+    const release = deferred<void>()
+    cleanup.push(() => release.resolve())
+    const upstream = fixture(async (_, serial) => {
+      if (serial === 1) { entered.resolve(); await release.promise }
+      return reply(serial)
+    })
+    const options = await managed(upstream.url)
+    const adapter = await open(options.profile)
+    const observer = observe(adapter)
+    const backend = nativeBackend(adapter)
+    const execution = backend.execution
+    if (!execution) throw new Error("Native execution adapter missing")
+    const { thread } = await adapter.create()
+    const ref = { backendID: backend.descriptor.id, threadID: thread.id }
+    const changes: string[] = []
+    const notified = deferred<void>()
+    const unsubscribe = execution.subscribe((event) => {
+      expect(event.ref).toEqual(ref)
+      changes.push(event.change)
+      if (event.change === "both" && observer.events.filter(completed).length === 3) notified.resolve()
+    })
+    cleanup.push(unsubscribe)
+    await backend.enqueue({ ref, inputID: "execution-first", text: "First execution" })
+    await entered.promise
+    const active = await execution.read(ref, { limit: 1 })
+    expect(active.thread.state).toBe("running")
+    expect(active.turn?.state).toBe("running")
+    const started = (await observer.wait((event) => event.method === "turn/started")).params.turn
+    if (!started || typeof started !== "object" || !("id" in started) || typeof started.id !== "string") throw new Error("Native turn ID missing")
+    expect(active.turn?.id).toBe(started.id)
+    expect(active.queue).toEqual([])
+    const second = await backend.enqueue({ ref, inputID: "execution-second", text: "Second original" })
+    const third = await backend.enqueue({ ref, inputID: "execution-third", text: "Third original" })
+    const cancelled = await backend.enqueue({ ref, inputID: "execution-cancelled", text: "Must not execute" })
+    const page = await execution.read(ref, { limit: 1 })
+    expect(page.queue).toEqual([{ nativeID: second.nativeID, inputID: "execution-second", text: "Second original", partial: false }])
+    expect(page.nextCursor).toBeString()
+    const next = await execution.read(ref, { limit: 1, cursor: page.nextCursor })
+    expect(next.queue[0].nativeID).toBe(third.nativeID)
+    await backend.control({ action: "update", threadID: thread.id, nativeID: second.nativeID, text: "Second edited" })
+    await backend.control({ action: "reorder", threadID: thread.id, nativeIDs: [third.nativeID, second.nativeID, cancelled.nativeID] })
+    await backend.control({ action: "withdraw", threadID: thread.id, nativeID: cancelled.nativeID })
+    const pending = await execution.read(ref, { limit: 10 })
+    expect(pending.queue.map((entry) => entry.nativeID)).toEqual([third.nativeID, second.nativeID])
+    expect(pending.queue.map((entry) => entry.text)).toEqual(["Third original", "Second edited"])
+    expect(upstream.requests).toHaveLength(1)
+    release.resolve()
+    await observer.wait((event) => completed(event) && observer.events.filter(completed).length === 3)
+    await notified.promise
+    const finished = await execution.read(ref, {})
+    expect(finished.turn?.state).toBe("completed")
+    expect(finished.queue).toEqual([])
+    expect(changes).toContain("execution")
+    expect(upstream.requests).toHaveLength(3)
+    expect(text(upstream.requests[1].body)).toContain("Third original")
+    expect(text(upstream.requests[2].body)).toContain("Second edited")
+    expect(upstream.requests.every(({ body }) => !text(body).includes("Must not execute"))).toBe(true)
+  })
+
   test("read-only browsing preserves native IDs and page order without resuming or reading another workspace", async () => {
     const upstream = fixture()
     const options = await managed(upstream.url)
@@ -356,6 +417,17 @@ describe("shared native service ownership", () => {
     expect(earlier.items[0].turnID).toBe(original.data.at(-2)!.turnId)
     expect((await reader.read(thread.id)).thread.status.type).toBe("notLoaded")
     await expect(browse.history({ ...ref, threadID: foreign.thread.id }, {})).rejects.toThrow("another workspace")
+    const execution = backend.execution
+    if (!execution) throw new Error("Native execution adapter missing")
+    const stopped = await execution.read(ref, {})
+    expect(stopped.thread.state).toBe("unloaded")
+    expect(stopped.turn?.state).toBe("completed")
+    expect(stopped.queue).toEqual([])
+    expect((await reader.read(thread.id)).thread.status.type).toBe("notLoaded")
+    await expect(execution.read({ ...ref, threadID: foreign.thread.id }, {})).rejects.toThrow("another workspace")
+    await expect(backend.query({ action: "resume", threadID: foreign.thread.id })).rejects.toThrow("another workspace")
+    await expect(backend.control({ action: "compact", threadID: foreign.thread.id })).rejects.toThrow("another workspace")
+    await expect(backend.enqueue({ ref: { ...ref, threadID: foreign.thread.id }, inputID: "foreign-write", text: "Must not run" })).rejects.toThrow("another workspace")
     expect(upstream.requests).toHaveLength(3)
   })
 

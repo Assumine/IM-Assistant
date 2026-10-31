@@ -7,7 +7,7 @@ import { HttpEffect, HttpRouter, HttpServer } from "effect/http"
 import { Database } from "@opencode/core/database/database"
 import { SessionTable, SessionInboxTable } from "@opencode/core/session/sql"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
-import { Admission, type Ref } from "@opencode/schema/conversation-backend"
+import { Admission, Execution, type Ref } from "@opencode/schema/conversation-backend"
 import { createEmbeddedRoutes } from "../src/routes"
 import { CodexSessionAdapter, createSharedProfile, nativeBackend, stopSharedService } from "../../../../modules/codex-native/src"
 
@@ -77,7 +77,7 @@ async function round(resume: boolean) {
         return accepted
       },
     })
-    assert.deepEqual(yield* Effect.promise(() => call("list", {})), [{ id: "codex-native", label: "Codex", browse: true }])
+    assert.deepEqual(yield* Effect.promise(() => call("list", {})), [{ id: "codex-native", label: "Codex", browse: true, execution: true }])
     assert.deepEqual(yield* Effect.promise(() => call("status", { backendID: "codex-native" })), { authentication: { state: "not-required" } })
     assert.equal(yield* Effect.promise(() => call("cancelLogin", { backendID: "codex-native", loginID: "00000000-0000-0000-0000-000000000001" })), "not-found")
     if (!resume) checks.push("native account projection and scoped login cancellation use the real application RPC")
@@ -103,6 +103,11 @@ async function round(resume: boolean) {
     assert.equal(sent.status, "accepted")
     yield* Effect.promise(() => entered.promise)
     assert(activeTurnID)
+    const running = Schema.decodeUnknownSync(Execution)(yield* Effect.promise(() => call("execution", { ref, limit: 1 })))
+    assert.equal(running.thread.state, "running")
+    assert.equal(running.turn?.id, activeTurnID)
+    assert.equal(running.turn?.state, "running")
+    assert.deepEqual(running.queue, [])
     const adjustment = { ref, inputID: "host-steer", text: "native-adjustment", delivery: "steer", expectedTurnID: activeTurnID }
     const steered = Schema.decodeUnknownSync(Admission)(yield* Effect.promise(() => call("send", adjustment)))
     assert.equal(steered.status, "accepted")
@@ -122,6 +127,23 @@ async function round(resume: boolean) {
     assert.equal(Schema.decodeUnknownSync(Admission)(recovered).status, "accepted")
     assert.equal((yield* Effect.promise(() => adapter.queue(ref.threadID))).data.length, 2)
     checks.push("unknown native acknowledgment reconciles the real queue instead of re-sending")
+    const snapshot = Schema.decodeUnknownSync(Execution)(yield* Effect.promise(() => call("execution", { ref, limit: 1 })))
+    assert.equal(snapshot.queue[0].inputID, "host-pending")
+    assert(snapshot.nextCursor)
+    const next = Schema.decodeUnknownSync(Execution)(yield* Effect.promise(() => call("execution", { ref, cursor: snapshot.nextCursor, limit: 1 })))
+    assert.equal(next.queue[0].inputID, "host-lost-ack")
+    const remove = Schema.decodeUnknownSync(Admission)(yield* Effect.promise(() => call("send", { ref, inputID: "host-withdraw", text: "must-not-execute" })))
+    assert.equal(remove.status, "accepted")
+    if (remove.status !== "accepted") throw new Error("Native queue acknowledgment missing")
+    const pending = snapshot.queue[0].nativeID
+    const lostID = next.queue[0].nativeID
+    yield* Effect.promise(() => call("control", { backendID: ref.backendID, control: { action: "update", threadID: ref.threadID, nativeID: pending, text: "native-pending-edited" } }))
+    yield* Effect.promise(() => call("control", { backendID: ref.backendID, control: { action: "reorder", threadID: ref.threadID, nativeIDs: [lostID, pending, remove.receipt.nativeID] } }))
+    yield* Effect.promise(() => call("control", { backendID: ref.backendID, control: { action: "withdraw", threadID: ref.threadID, nativeID: remove.receipt.nativeID } }))
+    const reordered = Schema.decodeUnknownSync(Execution)(yield* Effect.promise(() => call("execution", { ref })))
+    assert.deepEqual(reordered.queue.map((entry) => [entry.nativeID, entry.text]), [[lostID, "native-lost-ack"], [pending, "native-pending-edited"]])
+    assert.equal(requests.length, 1)
+    checks.push("typed execution distinguishes active work from pending pages and native controls edit, reorder and withdraw only the original queue")
     const db = Context.get(context, Database.Service).db
     const browse = yield* Effect.promise(() => call("threads", { backendID: "codex-native", limit: 1 }))
     const threadPage = Schema.decodeUnknownSync(Schema.Struct({ items: Schema.Array(Schema.Struct({ ref: Schema.Struct({ backendID: Schema.String, threadID: Schema.String }) })) }))(browse)

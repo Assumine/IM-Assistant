@@ -18,6 +18,8 @@ python -m tools.codex_native_smoke
 
 `nativeBackend(adapter)` 通过公共后端定义接入。原生应用的 `experimental.conversation` RPC负责注册、路由及原生KV接纳回执，发送和调整都经send，不经过OpenCode Inbox。8份并发HTTP输入只接纳一份；丢失回执时查原生队列/历史，重启后复用原回执。回执只存目标、请求摘要和native ID，不保存消息正文或调度任务。
 
+可选execution域提供主交互需要的运行/队列投影：原生线程状态、最新turn ID/结果、按来源顺序的pending页和不透明游标。执行中的输入不混入待办，空页不代表没有执行中的turn，翻页结果不是总队列计数。读取不resume或生成，多个原生读取也不冒充原子快照；调整仍以原生expectedTurnID为最终校验。activity事件仅通知execution/history失效，不包含正文，不是可重放的任务日志；按原生生命周期事件触发，不按文本delta反复拉取。所有线程查询、续接、发送、回执核对及控制先核对profile工作区。
+
 通用设置页由原生SettingsPage贡献位置加载，不按Codex业务ID硬编码。它检查连接及登录，并可打开只读原生会话浏览器，不改变会话归属、默认执行器或队列。浏览器按需读取列表和历史分页，保留native thread/turn/item ID及来源顺序；向前加载保留阅读位置，切换和关闭后丢弃迟到回包。Codex读取使用thread/read(includeTurns=false)和thread/items/list，不resume或生成；只能读取本profile工作区。当前仅展示文本，未支持的内容保留为未完整展示的活动记录，不伪造回复或读取文件。后端离线后保留原选择；状态只在页面激活、连接变化、后端事件和用户刷新时读取，不后台轮询。浏览器登录URL仅经显式按钮打开；远程页面不提供依赖本机回调的登录入口，取消只影响指定登录尝试。
 
 已确认的限制：裸原生queue/add不按clientUserMessageId去重，必须使用公共send。未知交付且native也查不到时保留uncertain，不自动重发；这不是跨系统exactly-once保证。共享WebSocket在官方仍属实验性，完整原生会话标签/发送/队列界面、真人认证及正式宿主激活未完成；多用户ACL和其他OS未验收。只读浏览器不是原生主会话页的正式接入。设置页浏览器登录交互只用合成夹具验证，真实CLI仅验证无凭据账号状态和不存在登录ID的取消，不把它算真人登录验收。受控助手模式继续禁用任意SDK插件，不为此放宽通用插件加载或真实系统权限。
