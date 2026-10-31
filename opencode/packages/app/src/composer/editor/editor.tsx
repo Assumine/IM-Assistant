@@ -482,7 +482,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               stopping={view.submit.stopping()}
               held={view.submit.held?.() ?? false}
               disabled={!props.controller.canSubmit()}
-              sendLabel={i18n.t("ui.promptInput.send")}
+              sendLabel={view.submit.label?.() ?? i18n.t("ui.promptInput.send")}
               stopLabel={i18n.t("ui.promptInput.stop")}
               onSubmit={() => props.controller.submit()}
               onStop={props.controller.stop}

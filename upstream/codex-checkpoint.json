@@ -53,7 +53,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.36,
+      "duration_seconds": 2.33,
       "isolated_home": true,
       "log": ".reports/native/r3-host-server-unit.log",
       "native_tests_passed": 3,
@@ -69,7 +69,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.35,
+      "duration_seconds": 2.33,
       "isolated_home": true,
       "log": ".reports/native/r3-host-http.log",
       "native_tests_passed": null,
@@ -94,7 +94,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.65,
+      "duration_seconds": 0.69,
       "isolated_home": true,
       "log": ".reports/native/r3-tabs-unit.log",
       "native_tests_passed": 42,
@@ -124,10 +124,10 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 130.69,
+      "duration_seconds": 133.14,
       "isolated_home": true,
       "log": ".reports/native/r3-backend-browser.log",
-      "native_tests_passed": 127,
+      "native_tests_passed": 129,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     },
@@ -140,7 +140,7 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 36.43,
+      "duration_seconds": 35.59,
       "isolated_home": true,
       "log": ".reports/native/r3-host-check.log",
       "native_tests_passed": null,
@@ -180,22 +180,24 @@
     "modules/codex-native/tsconfig.json": "6bdec6041d61f39890056d01ac1c90b4e200e866dca04bef9c57b67231326fe8",
     "opencode/packages/app/component-tests/plugin-host.fixture.tsx": "7a87aebbc18d47eead93e080269ed0bc1d848a449922b204b90fbf655e3fa33c",
     "opencode/packages/app/e2e/regression/composer.spec.ts": "2b05f16c4cf260aea3b17c039fb4594e8832c224f0aae76f82c7fc8a737185c0",
-    "opencode/packages/app/e2e/regression/session-queue.spec.ts": "dbdfb65d158c640c69b4824668093839a115de6e032af29a96536cd659fb0668",
+    "opencode/packages/app/e2e/regression/session-queue.spec.ts": "c70e49d3df5028f5e68ae1238131b0de86866fea688ba7b8c1ddae187aa04e22",
     "opencode/packages/app/e2e/regression/settings.spec.ts": "f2aa2b14a0f7779fb18e5616c902ca258dc1039bfb4d976811944698edfa518d",
     "opencode/packages/app/e2e/regression/tabs.spec.ts": "ff6273dce7b35f45a7a528d751d1e77a1c38792160b7354565f7253598bdd5ff",
     "opencode/packages/app/e2e/utils/backends.ts": "57f10f71426b7e2573cee9f77c3618784fe00268bd3654a7eb42dcb08fd922df",
-    "opencode/packages/app/e2e/utils/drafts.ts": "17541290888453ccc785c68411c320172c0e7d2306ec53cb3d3eadb57a20fdd0",
+    "opencode/packages/app/e2e/utils/drafts.ts": "e8226ef53a414e571ecfba28baf8cfcce9c91dfb919496deb51d5700a7130427",
     "opencode/packages/app/e2e/utils/mock-server.ts": "b6ee65ef245014b1adf6d7d956442b18aab5fb38ce9ec410eff134d97fba8dac",
-    "opencode/packages/app/src/composer/backend.tsx": "11fb04c731f39f83ea71b076f538de370ddeafa0de58492edbd603ea5872059d",
-    "opencode/packages/app/src/composer/editor/editor.tsx": "942496ace7a4b8857364b270853e10bcea068f64af5de462de14a1066638fdba",
-    "opencode/packages/app/src/composer/editor/interaction.ts": "4fa197917032cca29ac290cc2e6534e9bc025869493ea115f37e997c783f0aaa",
+    "opencode/packages/app/src/composer/backend.tsx": "3aa08ecfc54162d6360361e4f2a5fec7bc5bd9bb8ea5ece5fbc2cfbd1d043b4c",
+    "opencode/packages/app/src/composer/editor/editor.tsx": "6a246b8b85562570b9d71d33695c2d9b196cdbb8c8f8695566c81ed2ac126127",
+    "opencode/packages/app/src/composer/editor/interaction.ts": "5fd64e762d98deb2f79c34d6ea4f6c26bd93d851b328be7116d4acf42da9c206",
+    "opencode/packages/app/src/composer/queue-draft.ts": "d707adbd794f0daaf625944145f8ed2f63b5d6895e89655807a31543e8d6486f",
     "opencode/packages/app/src/composer/state.ts": "fee1997b90c7662270b7ff90a697940206e044893ed01f709af56e40ee06c8b6",
-    "opencode/packages/app/src/runtime/i18n/en.ts": "9266771cc17bb4dad6d702fb541a59c643bd9991d3e8eb7d03a9f0c2e86d72e8",
+    "opencode/packages/app/src/runtime/i18n/en.ts": "3a9ef5e05969bd3a5250c181f2d551e36fab16d8a0cbea94dca6cd03cd0b77c0",
     "opencode/packages/app/src/runtime/plugin/backend-view.tsx": "cf77fe3809268af828988f2bcf00da3c369f4dc5c26ed59cf08aba4c2df0d82c",
     "opencode/packages/app/src/runtime/plugin/host-apis.tsx": "50915fb56bd250b8b98752e87be67d6fbb42c00011974d6cf23d2117fdb82c7f",
     "opencode/packages/app/src/runtime/plugin/server-shell.tsx": "b312903123f4f904efefb56230525b43520d0b1d862fdaea041876ecb6698d09",
     "opencode/packages/app/src/runtime/plugin/ui.tsx": "e33f8305d76cdf4fe86bcb41a31d8ef0c6948490b0bc8daf9ea729f78b686475",
     "opencode/packages/app/src/session/composer/queue-panel.tsx": "d97ceb5a7e16d818897e9dbfa2792eae9191b406463f5e967802ba525069abb6",
+    "opencode/packages/app/src/session/composer/queue.ts": "359887b797498d5bdad65a0dcda0d6101d40a1b49f780d97a4f73cbfb16ecf5c",
     "opencode/packages/app/src/shell/notifications/notification.test.ts": "760a88e87e6bf6cb56699a5ef00740d96b592ccb7c6605f29a8a21451a3a1889",
     "opencode/packages/app/src/shell/routes/routes.tsx": "0fcabbb22d1387ecd57ddb756795c8a878a9d02be7790717297cd5656a51701a",
     "opencode/packages/app/src/shell/routes/session.test.ts": "0f27c4ed9bba5c0cdd67d499f205b539318e1165e5613a7103efd3d68aede341",
@@ -216,9 +218,9 @@
     "opencode/packages/core/src/plugin/host.ts": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5",
     "opencode/packages/core/test/conversation-backend.test.ts": "88880fb0a444131e5b76c18b018cdae667010e035ba7733228ac73d7e7081c32",
     "opencode/packages/core/test/plugin/fixture.ts": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8",
-    "opencode/packages/gui-plugins/README.md": "6d822b3590a650bfb57d229c94723f20957419ea74b337bac82dd3bf2525cc47",
+    "opencode/packages/gui-plugins/README.md": "b3f0840b252aeacf75badf829742a33295de9b501d2db4f5ce1db8a5d3561403",
     "opencode/packages/gui-plugins/src/backends/browser.tsx": "b53789a63fb92377209c19aa3b9596aaf0ea8ecdb55aaedbb0744ca44598b1ca",
-    "opencode/packages/gui-plugins/src/backends/execution.tsx": "ab0d637c48be6241f2257120fa0a72d8b862b21c54a96dd35b11bc7e9cd14978",
+    "opencode/packages/gui-plugins/src/backends/execution.tsx": "77ff2b7046935bac7f90483ababf3c581b7d32b4f5241a2ee4b254968366640b",
     "opencode/packages/gui-plugins/src/backends/i18n/en.ts": "b18c79eb0091c653ea8ff271f27fac1c4b090e7152f4ef36e42b4356588704e0",
     "opencode/packages/gui-plugins/src/backends/index.ts": "c1c64131448aae4e08f4aa3e1ef9de7abce0ade4d068af9ecb00bd159d14f2e2",
     "opencode/packages/gui-plugins/src/backends/page.tsx": "923f0656e61320722c549fa3ab3096a5384a507b79f652e0ef1627d3bbf551df",
@@ -229,18 +231,18 @@
     "opencode/packages/gui-plugins/src/renderer.ts": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f",
     "opencode/packages/plugin/src/effect/conversation.ts": "00bcb9c63cd11f45ca50c8a2cfd36a76481bce6e0b0e6e04a235759629829bfe",
     "opencode/packages/plugin/src/effect/plugin.ts": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917",
-    "opencode/packages/plugin/src/gui/host-apis.ts": "6ef1a6ca35604365cd571f3b4712f61d33ac29fe81d957a2ca7a5fce58651af2",
+    "opencode/packages/plugin/src/gui/host-apis.ts": "36067c12d3e6896057a7a10780b001e546b90829df0c610508a8991ff625dd65",
     "opencode/packages/plugin/src/gui/registries.ts": "a538f1cda08ab7ef8cebb99786ea05b97dfb18298d50b65fbe7b0b80731846bc",
     "opencode/packages/schema/src/conversation-backend.ts": "d5bd36d358e6b650e1e3ea3cf6a28bcb47cf7d56bd9244e83b72c0f35e9ebada",
     "opencode/packages/server/script/codex-backend-smoke.ts": "32c63fc9065bbd7e963f97bde998923f754e8718e981751a5dd70f955e6f2914",
     "opencode/packages/server/src/middleware/runtime-policy.ts": "5cc0ba37aa4bc529ef5deb11a2301adbb199ce78b83eef19bb1aead025669b86",
     "opencode/packages/server/src/routes.ts": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22",
     "opencode/packages/server/test/conversation-policy.test.ts": "9e6d2a119e0755cc88d3f0dbbd2835b344c3008bb218a062a0da1f11c420b9ad",
-    "tools/codex_native_smoke.py": "9660e387117fd8c058506930f9ada6679770fc96d62626cea22f4136ea0393c7"
+    "tools/codex_native_smoke.py": "5e5960a527a51d614dc93a6867cd30b9051ed4d04c7b249a94198ae44dfc7144"
   },
-  "duration_seconds": 218.15,
+  "duration_seconds": 219.73,
   "remaining": [
-    "native queue edit/undo/direct-steer, per-token live-text UI and production host activation; native editor queue submission, draft/handoff persistence and lifecycle history observations verified with fixtures",
+    "native direct-steer, per-token live-text UI and production host activation; native queue update/confirmed withdrawal, editor submission and committed draft/handoff recovery verified with fixtures",
     "shared transport is experimental and not published; production activation and OS matrix remain unverified",
     "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
     "real account connection and capability revalidation before publication"
@@ -264,9 +266,9 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 34.24,
+      "duration_seconds": 34.19,
       "isolated_home": true,
-      "log": ".reports/native/r3-controls-plugin-host.log",
+      "log": ".reports/native/r3-queue-editor-plugin-host.log",
       "native_tests_passed": 31,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
@@ -281,17 +283,23 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 5.45,
+      "duration_seconds": 5.49,
       "isolated_home": true,
-      "log": ".reports/native/r3-controls-lint.log",
+      "log": ".reports/native/r3-queue-editor-lint.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
     },
     "shared_test_cleanup": {
-      "checked": 116,
+      "checked": 132,
       "stopped": 0,
       "unverified": 0
+    },
+    "draft_restoration_mutation": {
+      "expected_failure": true,
+      "contract": "Cancel restores the stashed draft rather than resetting it.",
+      "log": ".reports/native/r3-queue-editor-mutation.log",
+      "restored_source_sha256": "d707adbd794f0daaf625944145f8ed2f63b5d6895e89655807a31543e8d6486f"
     }
   },
   "e2e_types_recheck": {
@@ -305,67 +313,67 @@
     "environment": "Windows Chromium production build; native HTTP fixture, empty history. Serial before/after runs, three samples each.",
     "scope": "Existing composer input only. Descriptive samples, not native large-history or whole-app performance acceptance.",
     "runs": {
-      "r3-controls-before": {
+      "r3-queue-editor-before": {
         "samples": [
           {
-            "elapsedMs": 109.96050000000014,
-            "scriptMs": 23.415,
-            "taskMs": 60.293000000000006,
-            "nodes": 1429,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 116.51470000000018,
-            "scriptMs": 25.983,
-            "taskMs": 66.65299999999999,
-            "nodes": 1429,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 101.9648000000002,
-            "scriptMs": 23.024,
-            "taskMs": 61.178000000000004,
-            "nodes": 1429,
-            "characters": 65
-          }
-        ],
-        "median": {
-          "elapsedMs": 109.96050000000014,
-          "scriptMs": 23.415,
-          "taskMs": 61.178000000000004,
-          "nodes": 1429,
-          "characters": 65
-        }
-      },
-      "r3-controls-after": {
-        "samples": [
-          {
-            "elapsedMs": 112.16470000000027,
-            "scriptMs": 25.602,
-            "taskMs": 65.31200000000001,
-            "nodes": 1429,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 90.44250000000011,
-            "scriptMs": 22.466,
-            "taskMs": 57.445,
+            "elapsedMs": 87.27280000000019,
+            "scriptMs": 22.001,
+            "taskMs": 54.856,
             "nodes": 1476,
             "characters": 65
           },
           {
-            "elapsedMs": 107.5338999999999,
-            "scriptMs": 24.034,
-            "taskMs": 63.532999999999994,
+            "elapsedMs": 101.43849999999975,
+            "scriptMs": 22.354000000000003,
+            "taskMs": 59.29900000000001,
             "nodes": 1429,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 91.61310000000003,
+            "scriptMs": 22.949,
+            "taskMs": 58.104000000000006,
+            "nodes": 1427,
             "characters": 65
           }
         ],
         "median": {
-          "elapsedMs": 107.5338999999999,
-          "scriptMs": 24.034,
-          "taskMs": 63.532999999999994,
+          "elapsedMs": 91.61310000000003,
+          "scriptMs": 22.354000000000003,
+          "taskMs": 58.104000000000006,
           "nodes": 1429,
+          "characters": 65
+        }
+      },
+      "r3-queue-editor-after": {
+        "samples": [
+          {
+            "elapsedMs": 90.89519999999993,
+            "scriptMs": 23.150000000000002,
+            "taskMs": 57.529,
+            "nodes": 1461,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 106.89010000000007,
+            "scriptMs": 23.427,
+            "taskMs": 62.484,
+            "nodes": 1430,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 109.85159999999996,
+            "scriptMs": 23.037000000000003,
+            "taskMs": 60.342000000000006,
+            "nodes": 1430,
+            "characters": 65
+          }
+        ],
+        "median": {
+          "elapsedMs": 106.89010000000007,
+          "scriptMs": 23.150000000000002,
+          "taskMs": 60.342000000000006,
+          "nodes": 1430,
           "characters": 65
         }
       }

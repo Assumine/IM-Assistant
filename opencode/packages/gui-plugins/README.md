@@ -211,6 +211,12 @@ The native Stop action carries the observed turn ID. A different turn must rejec
 silently stopping newer work. Dispatched writes survive view navigation, while late UI results belong only to the
 original live view. Read requests and subscriptions still end with that view.
 `ctx.ui.BackendComposer` delegates to the app's real `ComposerEditor`, text interaction and submission capture.
+Pass `execution`, `busy` and `control` to attach the native queue strip to that editor. The app owns the edit stash
+and restores the original draft on cancel; the backend owns queue identity, order and mutation. Edits use `update`
+on the original input ID rather than withdrawal and re-admission. A consumed input never becomes a new task.
+Undo restores text only after `withdraw` returns `applied`, merging it into the latest draft. `not-found` restores
+nothing; unknown or interrupted withdrawals retain the source text for inspection without automatically replaying
+or restoring it. Persisted edits/withdrawals survive reload, and no load, navigation or reconciliation sends them.
 It keeps drafts through the native persistence layer, keyed by server and the original backend/thread reference.
 The `send(input)` callback goes to the public whole-backend admission service. Enter queues text; Shift+Enter inserts
 a newline. No Session/Inbox, model selection, local commands, filesystem context or upload controls are fabricated.

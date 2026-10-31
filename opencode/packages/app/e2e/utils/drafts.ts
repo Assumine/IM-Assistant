@@ -69,9 +69,26 @@ export async function readBackendDraft(page: Page, server: string, ref: Conversa
       Schema.Struct({
         prompt: Schema.Array(Schema.Struct({ type: Schema.Literal("text"), content: Schema.String })),
         handoff: Schema.optional(Schema.NullOr(ConversationBackend.Input)),
+        editing: Schema.optional(
+          Schema.NullOr(
+            Schema.Struct({
+              nativeID: Schema.String,
+              unconfirmed: Schema.optional(Schema.NullOr(Schema.Boolean)),
+              stash: Schema.Struct({
+                prompt: Schema.Array(Schema.Struct({ type: Schema.String, content: Schema.String })),
+              }),
+            }),
+          ),
+        ),
+        withdrawal: Schema.optional(Schema.NullOr(Schema.Struct({ nativeID: Schema.String, text: Schema.String }))),
       }),
     ),
   )(raw)
 
-  return { text: draft.prompt.map((part) => part.content).join(""), handoff: draft.handoff ?? undefined }
+  return {
+    text: draft.prompt.map((part) => part.content).join(""),
+    handoff: draft.handoff ?? undefined,
+    editing: draft.editing ?? undefined,
+    withdrawal: draft.withdrawal ?? undefined,
+  }
 }

@@ -7,7 +7,8 @@ import { SessionMessage } from "@opencode/schema/session-message"
 import type { ComposerDelivery, ComposerSession } from "@/composer/adapter"
 import type { ComposerStateTarget } from "@/composer/submission-state"
 import type { ContextItem, ImageAttachmentPart, PathAttachmentPart, Prompt } from "@/composer/state"
-import { appendPrompt, clonePrompt, isAttachment, promptLength } from "@/composer/prompt-parts"
+import { clonePrompt, isAttachment, promptLength } from "@/composer/prompt-parts"
+import { captureQueueDraft, restoreQueueDraft, mergeQueuePrompt, type QueueDraft } from "@/composer/queue-draft"
 import { buildPromptRequest } from "@/composer/request"
 import { type BlobReference, blobDataUrl, createLegacyBlobReference } from "@/runtime/persistence/drafts"
 import { readPromptPresentation } from "@/composer/comment-note"
@@ -37,13 +38,6 @@ export type SentEdit = {
   admitted: boolean
 }
 
-type EditStash = {
-  prompt: Prompt
-  cursor: number
-  mode: "normal" | "shell"
-  retry: ReturnType<ComposerStateTarget["retry"]["current"]>
-}
-
 export function createSessionQueue(input: {
   sessionID: string
   draft: ComposerStateTarget
@@ -58,7 +52,7 @@ export function createSessionQueue(input: {
   const language = useLanguage()
 
   const [state, setState] = createStore<{
-    editing?: { id: string; stash: EditStash }
+    editing?: { id: string; stash: QueueDraft }
     sent: SentEdit[]
     // Reordering re-admits prompts under new inbox IDs. Keep their existing row keys until the
     // whole rewrite settles so admission and cancellation events cannot grow or shrink the strip.
@@ -115,7 +109,7 @@ export function createSessionQueue(input: {
         })
 
         hide([change.item.id])
-        const prompt = mergePrompt(input.draft.current(), rehydrated)
+        const prompt = mergeQueuePrompt(input.draft.current(), rehydrated)
 
         input.draft.set(prompt, promptLength(prompt))
         change.context.forEach((item) => input.draft.context.add(item))
@@ -214,12 +208,12 @@ export function createSessionQueue(input: {
   // open edit stashed), so nothing typed is lost.
   const restoreEdit = (prompt: Prompt) => {
     if (state.editing) {
-      setState("editing", "stash", "prompt", (stash) => mergePrompt(stash, prompt))
+      setState("editing", "stash", "prompt", (stash) => mergeQueuePrompt(stash, prompt))
 
       return
     }
 
-    const merged = mergePrompt(input.draft.current(), prompt)
+    const merged = mergeQueuePrompt(input.draft.current(), prompt)
     input.draft.set(merged, promptLength(merged))
     input.restoreFocus(promptLength(merged))
   }
@@ -392,15 +386,9 @@ export function createSessionQueue(input: {
     if (!item) return false
 
     if (state.editing) cancelEdit()
-    const draft = input.draft.current()
     setState("editing", {
       id,
-      stash: {
-        prompt: clonePrompt(draft),
-        cursor: input.draft.cursor() ?? promptLength(draft),
-        mode: input.draft.mode.current(),
-        retry: input.draft.retry.current(),
-      },
+      stash: captureQueueDraft(input.draft),
     })
     const text = queuedPromptText(item)
     const attachments = queuedPromptAttachments(item)
@@ -436,12 +424,7 @@ export function createSessionQueue(input: {
 
     if (!editing) return
     setState("editing", undefined)
-    // Mode first, then prompt, then retry: mode and prompt writes both clear
-    // the retry marker.
-    input.draft.mode.set(editing.stash.mode)
-    input.draft.set(editing.stash.prompt, editing.stash.cursor)
-
-    if (editing.stash.retry) input.draft.retry.set(editing.stash.retry)
+    restoreQueueDraft(input.draft, editing.stash)
     input.restoreFocus(editing.stash.cursor)
   }
 
@@ -559,15 +542,6 @@ export function queuedPromptRows(items: QueuedPrompt[], sent: SentEdit[] = [], g
       },
     ]
   })
-}
-
-// A prompt of only comments or attachments adds no text, so it needs no paragraph break.
-function mergePrompt(draft: Prompt, prompt: Prompt) {
-  if (!promptLength(draft)) return [...prompt, ...draft.filter(isAttachment)]
-
-  if (promptLength(prompt)) return appendPrompt(draft, prompt)
-
-  return [...clonePrompt(draft), ...prompt.filter(isAttachment)]
 }
 
 const decodeDisplayText = Schema.decodeUnknownOption(Schema.Struct({ displayText: Schema.NonEmptyString }))

@@ -113,7 +113,7 @@
         {
           "path": "packages/app/src/composer/editor/interaction.ts",
           "action": "modified",
-          "sha256": "4fa197917032cca29ac290cc2e6534e9bc025869493ea115f37e997c783f0aaa"
+          "sha256": "5fd64e762d98deb2f79c34d6ea4f6c26bd93d851b328be7116d4acf42da9c206"
         },
         {
           "path": "packages/app/src/composer/model.ts",
@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "dbdfb65d158c640c69b4824668093839a115de6e032af29a96536cd659fb0668"
+          "sha256": "c70e49d3df5028f5e68ae1238131b0de86866fea688ba7b8c1ddae187aa04e22"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -486,7 +486,7 @@
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
           "action": "modified",
-          "sha256": "9266771cc17bb4dad6d702fb541a59c643bd9991d3e8eb7d03a9f0c2e86d72e8"
+          "sha256": "3a9ef5e05969bd3a5250c181f2d551e36fab16d8a0cbea94dca6cd03cd0b77c0"
         },
         {
           "path": "packages/app/src/settings/providers/providers.tsx",
@@ -685,7 +685,7 @@
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "6d822b3590a650bfb57d229c94723f20957419ea74b337bac82dd3bf2525cc47"
+          "sha256": "b3f0840b252aeacf75badf829742a33295de9b501d2db4f5ce1db8a5d3561403"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
@@ -828,7 +828,7 @@
         {
           "path": "packages/plugin/src/gui/host-apis.ts",
           "action": "modified",
-          "sha256": "6ef1a6ca35604365cd571f3b4712f61d33ac29fe81d957a2ca7a5fce58651af2"
+          "sha256": "36067c12d3e6896057a7a10780b001e546b90829df0c610508a8991ff625dd65"
         },
         {
           "path": "packages/plugin/src/gui/registries.ts",
@@ -857,7 +857,7 @@
         {
           "path": "packages/gui-plugins/src/backends/execution.tsx",
           "action": "added",
-          "sha256": "ab0d637c48be6241f2257120fa0a72d8b862b21c54a96dd35b11bc7e9cd14978"
+          "sha256": "77ff2b7046935bac7f90483ababf3c581b7d32b4f5241a2ee4b254968366640b"
         }
       ]
     },
@@ -871,22 +871,41 @@
         {
           "path": "packages/app/e2e/utils/drafts.ts",
           "action": "modified",
-          "sha256": "17541290888453ccc785c68411c320172c0e7d2306ec53cb3d3eadb57a20fdd0"
+          "sha256": "e8226ef53a414e571ecfba28baf8cfcce9c91dfb919496deb51d5700a7130427"
         },
         {
           "path": "packages/app/src/composer/backend.tsx",
           "action": "added",
-          "sha256": "11fb04c731f39f83ea71b076f538de370ddeafa0de58492edbd603ea5872059d"
+          "sha256": "3aa08ecfc54162d6360361e4f2a5fec7bc5bd9bb8ea5ece5fbc2cfbd1d043b4c"
         },
         {
           "path": "packages/app/src/composer/editor/editor.tsx",
           "action": "modified",
-          "sha256": "942496ace7a4b8857364b270853e10bcea068f64af5de462de14a1066638fdba"
+          "sha256": "6a246b8b85562570b9d71d33695c2d9b196cdbb8c8f8695566c81ed2ac126127"
         },
         {
           "path": "packages/app/src/composer/state.ts",
           "action": "modified",
           "sha256": "fee1997b90c7662270b7ff90a697940206e044893ed01f709af56e40ee06c8b6"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-queue-draft",
+      "reason": "复用原生队列面板和编辑器暂存/恢复逻辑，整套后端经公共control按原ID更新，确认撤回后才合并到草稿；不复制Session Inbox重入队算法或建立本地执行队列。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/app/src/composer/queue-draft.ts",
+          "action": "added",
+          "sha256": "d707adbd794f0daaf625944145f8ed2f63b5d6895e89655807a31543e8d6486f"
+        },
+        {
+          "path": "packages/app/src/session/composer/queue.ts",
+          "action": "modified",
+          "sha256": "359887b797498d5bdad65a0dcda0d6101d40a1b49f780d97a4f73cbfb16ecf5c"
         }
       ]
     }

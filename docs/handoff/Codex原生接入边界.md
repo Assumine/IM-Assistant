@@ -91,7 +91,7 @@ backends内置GUI插件提供通用、按需加载的只读主视图。从设置
 
 ## 主区域队列交互
 
-ctx.ui.QueuePanel经UiQueueView复用Session原面板及拖动、进入/退出展示，不复制SessionQueue控制器。backends插件仅保留可见execution快照，经control调用guide/withdraw/reorder，再读取原生结果。打开视图只观察；不会从本地取任务、自动发下一项或伪造Session。读取串行合并失效，不轮询；server代际/Ref生命周期隔离异步回包。未知操作结果保留提示并阻止下一操作，需人工刷新核对，不自动重试。nextCursor存在时禁用排序；空pending与running独立。未接入的编辑、恢复到输入框和停放队列Send不展示。
+ctx.ui.QueuePanel经UiQueueView复用Session原面板及拖动、进入/退出展示，不复制SessionQueue控制器。backends插件仅保留可见execution快照，经control调用guide/withdraw/reorder，再读取原生结果。打开视图只观察；不会从本地取任务、自动发下一项或伪造Session。读取串行合并失效，不轮询；server代际/Ref生命周期隔离异步回包。未知操作结果保留提示并阻止下一操作，需人工刷新核对，不自动重试。nextCursor存在时禁用排序；空pending与running独立。停放队列Send未接入、不展示；原位编辑/确认撤回后恢复由公共BackendComposer适配原生交互。
 
 上一阶段新增两项生产浏览器用例验证原始身份的操作和迟到回包、不完整页/错误提示，并重跑原Session队列39项；该阶段为199项相关测试及10项HTTP。本轮又加入原生文本发送和生命周期历史更新，当前计数见下节。逐token内容和正式激活仍未交付。
 
@@ -101,17 +101,25 @@ ctx.ui.BackendComposer复用ComposerEditor、createComposerEditor、原生草稿
 
 真实CLI确认notLoaded线程虽接受queue/add但不执行，明确新queue输入现在先原生resume再入队；仅发生在首次send的enqueue，不发生在浏览或reconcile。原只读场景增加真实恢复输入和native-reply-4断言，读取依然不增加模型请求。主界面在接纳后及原生完成活动后读取历史，旧消息阅读期间保留锚点并提示最新内容，不做逐token轮询。
 
-当前235项相关测试（77原生＋158浏览器/组件）及10项HTTP通过，完整check通过；正式R3文件、桌面全链路/真人账号/权限验收仍缺。性能基准是既有输入的小样本，不是整应用性能完成证明。
+当前237项相关测试（77原生＋160浏览器/组件）及10项HTTP通过，完整check通过；正式R3文件、桌面全链路/真人账号/权限验收仍缺。性能基准是既有输入的小样本，不是整应用性能完成证明。
 
 ## 控制回执与原轮次停止
 
 control返回ControlResult：applied只表示后端确认操作，not-found表示待办目标已不在队列。Codex的withdraw根据deleted返回结果；不是从UI缺失猜测撤回成功。核心校验类型、剔除私有字段；异常/断线仍是未知，不能自动重试或恢复成待发送正文。HTTP和真实CLI检查第一次withdraw为applied，第二次为not-found，其他队列项未受影响。
 
-Stop仅在原生thread/turn均running时提供，携带点击时的原始turn ID，底层拒绝过期ID而不是停止后来的turn。真实CLI证明旧turn ID停止请求被拒绝且原任务仍在运行，再以正确ID中断；浏览器覆盖慢回执期间轮次变化、未知结果/人工核对、成功回执不伪造空闲，以及同thread ID跨backend的迟到回包隔离。已派发控制不使用视图的AbortSignal，读取/订阅照常清理，旧UI结果丢弃。尚未实现队列编辑/恢复及直接文本Steer，不以这些控制回执宣称完整交互完成。
+Stop仅在原生thread/turn均running时提供，携带点击时的原始turn ID，底层拒绝过期ID而不是停止后来的turn。真实CLI证明旧turn ID停止请求被拒绝且原任务仍在运行，再以正确ID中断；浏览器覆盖慢回执期间轮次变化、未知结果/人工核对、成功回执不伪造空闲，以及同thread ID跨backend的迟到回包隔离。已派发控制不使用视图的AbortSignal，读取/订阅照常清理，旧UI结果丢弃。队列编辑/确认撤回后恢复已接入，尚未实现直接文本Steer，不以这些控制回执宣称完整交互完成。
+
+## 队列编辑与确认撤回恢复
+
+公共BackendComposer可接execution/busy/control，由宿主复用原生队列面板和编辑器；插件只持有观察及通用RPC回调。共用queue-draft.ts的捕获/模式→正文→retry恢复和追加规则，原Session仍保留其Inbox控制器。Codex编辑只update原native ID，不撤回再接纳。保存时若又打字，旧回执不清新编辑；已消费条目不变成新任务。编辑ID和stash随完整Ref草稿持久化，刷新/加载不自动发送。
+
+撤回到输入框只接受明确applied；合并到等待期间的最新草稿，not-found不恢复。未知结果保留原文/编辑未确认状态供核对，不凭队列缺失恢复，不自动重试。取消编辑和Dismiss只管理本地草稿记录，不能声称回滚native操作。未完整显示的输入不能通过文本编辑/恢复丢掉附件。草稿沿用原生异步持久化，恢复测试等实际IndexedDB提交后刷新，不保证突然关闭前未提交数据或跨进程exactly-once。
+
+两项生产keeper覆盖此交互，并重跑完整原Session队列/编辑器/标签和插件宿主。草稿恢复的故意reset变异被新keeper拒绝，恢复字节后重新完整验收；不是静态源码检查或仅挂假按钮。
 
 ## 真实验证
 
-`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、13个真实Codex场景、19个核心/RPC/KV单测、3个服务端权限/错误回归、42个原生标签/路由/持久化单测、127个生产构建设置/历史/完整标签/完整队列/原生编辑器浏览器回归、10项真实原生应用HTTP/SQLite检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
+`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、13个真实Codex场景、19个核心/RPC/KV单测、3个服务端权限/错误回归、42个原生标签/路由/持久化单测、129个生产构建设置/历史/完整标签/完整队列/原生编辑器浏览器回归、10项真实原生应用HTTP/SQLite检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
 
 - 原生队列自动启动、忙碌时编辑/排序/撤回、FIFO 和历史分页；额外确认重复 clientUserMessageId 并不去重。
 - 进程退出后的 native pending/历史恢复，原生 ID 和只读账号结果保持，不补发已交付输入。
@@ -126,12 +134,12 @@ HTTP验证现使用共享native profile，证明发送/调整共用接纳ID与tu
 
 设置页原6个场景覆盖离线选择保留、离开页面停止订阅、无轮询、原生浏览器完成通知、按login ID取消、切换后端时的迟到快照、完成事件早于login回包、失败后不自动重试。另3项覆盖原生列表/历史分页、跨turn相同item ID、来源顺序、重复边界条目、阅读锚点、切换后的迟到历史、读取失败/重试/部分内容提示和关闭后的无额外读取。HTTP另证明真实CLI的账号投影/取消与读取不二次接纳、不增加模型请求。浏览器认证只使用合成夹具，不冒充真人认证通过。execution场景和核心通知归属/旧注册回归保留；HTTP实际验证空待办但仍在运行、待办分页和编辑/排序/撤回只作用同一原生队列，模型仍4次。前一轮50项浏览器回归包含完整标签keeper和原9项设置，新增主标签用例证明两个backend与普通Session共享同一ID时不串线、刷新恢复、关闭重开、离线不改绑且无发送/续接请求；31项插件宿主回归另重跑通过。性能基准前后各3次仅为小样本描述，不能宣称整个应用性能已验收。
 
-证据只标partial_verified，不能代替正式R3整体验收；队列编辑/恢复到输入框、直接调整、逐token内容、真实账号和正式宿主激活未验收，正式tests/rebase/test_r3_01.py仍未实现。累计产品补丁150个文件，源码最终摘要与台账保存。未改变Protocol/HttpApi，使用现有通用RPC，不手改生成客户端。助手权限仍仅放行此RPC的11个固定方法；任意RPC、MCP、文件和shell入口继续禁用。单独typecheck:e2e仍有原14条诊断，不标通过；既有client全套计时失败仍留R5处理。
+证据只标partial_verified，不能代替正式R3整体验收；直接调整、逐token内容、真实账号和正式宿主激活未验收，正式tests/rebase/test_r3_01.py仍未实现。累计产品补丁152个文件，源码最终摘要与台账保存。未改变Protocol/HttpApi，使用现有通用RPC，不手改生成客户端。助手权限仍仅放行此RPC的11个固定方法；任意RPC、MCP、文件和shell入口继续禁用。单独typecheck:e2e仍有原14条诊断，不标通过；既有client全套计时失败仍留R5处理。
 
 ## 下一步实施边界
 
-公共整套后端位置、Windows/Bun共享实例、设置/登录状态、主会话标签和文本发送已实现。下一步接队列编辑/恢复到输入框、直接调整及逐token内容交互，完善主会话列表的整套后端选择，再做正式宿主激活与真人账号验证；不直接读取或复制旧Codex凭据。保持OpenCode原Session/Inbox不变，不能在设置弹窗长出第二套会话运行层。使用createSharedProfile/loadProfile和nativeBackend，不能回退stdio或把KV首写当成执行锁。遵守窗口关闭只断连、明确停止才终止整实例的区分。设置页选择是检查对象；只有明确Open as tab才打开原始Ref，并不更换默认执行器。
+公共整套后端位置、Windows/Bun共享实例、设置/登录状态、主会话标签和文本发送已实现。下一步接直接调整及逐token内容交互，完善主会话列表的整套后端选择，再做正式宿主激活与真人账号验证；不直接读取或复制旧Codex凭据。保持OpenCode原Session/Inbox不变，不能在设置弹窗长出第二套会话运行层。使用createSharedProfile/loadProfile和nativeBackend，不能回退stdio或把KV首写当成执行锁。遵守窗口关闭只断连、明确停止才终止整实例的区分。设置页选择是检查对象；只有明确Open as tab才打开原始Ref，并不更换默认执行器。
 
 前端可以复用原生展示与交互组件，但不能为复用而向 OpenCode Inbox 再插入 Codex 待执行消息。恢复/重复投递的接纳策略、同 profile 生命周期和 native UI 契约须真实验证，再添加正式 R3 运行验收并考虑开放。QQ 仍是可选转发层，不能解决这些公共框架缺口或成为执行入口所有者。
 
-主标签及队列公共展示契约已补齐，原生编辑器已通过公共BackendComposer适配；不使用要求Session.prompt/ServerSDK的旧adapter。下一步复用原队列编辑/恢复交互，不能复制控制器、伪造Session或从插件导入app私有模块。原生线程输入经send，队列经control，运行/历史从execution/history读取；不因打开、切换、收到完成通知而自行调度下一条。原生编辑器已经接入，不能另加临时表单或本地可执行队列。
+主标签及队列公共展示契约已补齐，原生编辑器已通过公共BackendComposer适配；不使用要求Session.prompt/ServerSDK的旧adapter。队列编辑/恢复已共用原生草稿暂存与恢复，接下来完善直接调整/实时内容，不能复制控制器、伪造Session或从插件导入app私有模块。原生线程输入经send，队列经control，运行/历史从execution/history读取；不因打开、切换、收到完成通知而自行调度下一条。原生编辑器已经接入，不能另加临时表单或本地可执行队列。

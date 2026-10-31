@@ -43,6 +43,8 @@ export type ComposerEditorView = {
   agent?: ComposerSelectControl
   variant?: ComposerSelectControl
   submit: {
+    /** Accessible submit action when saving an existing queued input; defaults to Send. */
+    label?: Accessor<string | undefined>
     available?: Accessor<boolean>
     stopping: Accessor<boolean>
     /** A send pressed while agents and models load, which goes through once they do. */

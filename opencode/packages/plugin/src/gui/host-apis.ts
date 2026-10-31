@@ -2038,6 +2038,16 @@ export interface UiBackendComposerProps {
   threadRef: ConversationBackend.Ref
   /** Whether the owning backend is connected and accepts input. Draft editing remains available while false. */
   available: boolean
+  /** Latest backend-owned queue observation. Omit to render only the editor; never an executable local queue. */
+  execution?: ConversationBackend.Execution
+  /** Disable queue mutations while the owner is reading, disconnected or reconciling an unknown result. Defaults to false. */
+  busy?: boolean
+  /**
+   * Apply an explicit native queue control and refresh the owner's observations. Omit for a read-only queue.
+   * Reject on unavailable or unknown results; never cancel a dispatched write on view navigation or retry it automatically.
+   * @param control - Original native thread/input identity and the requested mutation.
+   */
+  control?(control: ConversationBackend.Control): Promise<ConversationBackend.ControlResult>
   /**
    * Submit one stable input through the public whole-backend admission service. The composer never starts a runner.
    * Only an explicit user action calls this, including retry/reconciliation with the unchanged input id and body.

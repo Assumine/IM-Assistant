@@ -8,6 +8,19 @@ export const dict = {
   "backend.composer.unconfirmed": "Delivery is unconfirmed. Check before sending again.",
   "backend.composer.check": "Retry or check delivery",
   "backend.composer.unavailable": "Backend unavailable. Your draft is kept.",
+  "backend.composer.editing": "Editing queued message",
+  "backend.composer.saveEdit": "Save changes",
+  "backend.composer.cancelEdit": "Cancel edit",
+  "backend.composer.editUnknown": "Update unconfirmed. Check the native queue; cancel this edit before editing again.",
+  "backend.composer.editMissing":
+    "This message is no longer in the visible queue. Your edit is kept and has not been sent as a new message.",
+  "backend.composer.partialInput":
+    "This message contains content the text editor cannot restore. It has not been changed.",
+  "backend.composer.withdrawing": "Withdrawing queued message",
+  "backend.composer.withdrawUnknown":
+    "Withdrawal unconfirmed. Check native execution. The original text is retained below; it has not been restored or resent.",
+  "backend.composer.withdrawMissing": "This message already left the queue. It has not been restored into the draft.",
+  "backend.composer.dismissWithdrawal": "Dismiss withdrawal record",
   "backend.view.unavailable": "This conversation view is unavailable. Its original backend reference has been kept.",
   "settings.providers.connection.add": "Add compatible API",
   "settings.providers.connection.description":

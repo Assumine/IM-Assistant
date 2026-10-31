@@ -248,8 +248,8 @@ test("whole backend: native queue actions reconcile observations without Session
   const rows = panel.locator('[data-component="session-queue-row"]')
   const texts = rows.locator('[data-action="session-queue-edit"]')
   await expect(texts).toHaveText(["First", "Second", "Third"])
-  await expect(texts.filter({ hasText: "First" })).toBeDisabled()
-  await expect(panel.locator('[data-action="session-queue-undo"]')).toHaveCount(0)
+  await expect(texts.filter({ hasText: "First" })).toBeEnabled()
+  await expect(panel.locator('[data-action="session-queue-undo"]')).toHaveCount(3)
   await page.screenshot({ path: test.info().outputPath("whole-backend-pending.png"), fullPage: true })
   const first = rows.filter({ hasText: "First" })
   await first.getByRole("button", { name: "Reorder queued prompt" }).hover()
@@ -285,6 +285,234 @@ test("whole backend: native queue actions reconcile observations without Session
   await expect(panel.getByText("Idle", { exact: true })).toBeVisible()
   await page.screenshot({ path: test.info().outputPath("whole-backend-queue.png"), fullPage: true })
   expect(admissions).toEqual([])
+})
+
+test("whole backend: queue edits preserve native IDs, draft stashes and unconfirmed edits across reload", async ({
+  page,
+}) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "editable" },
+    title: "Editable queue",
+    state: "running",
+  }
+
+  let value: ConversationBackend.Execution = {
+    thread,
+    turn: { id: "active-turn", state: "running" },
+    queue: ["First", "Second"].map((text) => ({ nativeID: text, inputID: text, text, partial: false })),
+  }
+
+  const actions: ConversationBackend.Control[] = []
+  const entered = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  let mode: "normal" | "held" | "unknown" = "normal"
+  let sends = 0
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeQueueEdit",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [thread]),
+    rpc: backendRpc({
+      list: () => [{ id: "native", label: thread.title, execution: true }],
+      status: () => ({ authentication: null }),
+      history: () => ({ thread, items: [] }),
+      execution: () => value,
+      send: (input) => {
+        sends++
+
+        return { status: "uncertain", ref: input.ref, inputID: input.inputID }
+      },
+      control: async (_, action) => {
+        actions.push(action)
+
+        if (action.action !== "update") throw new Error("Edit must update the original native input")
+
+        if (mode === "held") {
+          entered.resolve()
+          await released.promise
+        }
+
+        value = {
+          ...value,
+          queue: value.queue.map((item) => (item.nativeID === action.nativeID ? { ...item, text: action.text } : item)),
+        }
+
+        if (mode === "unknown") throw new Error("Updated, but response lost")
+
+        return { status: "applied" }
+      },
+    }),
+  })
+
+  await page.goto(backendHref(thread.ref))
+  const panel = page.getByRole("region", { name: "Native execution and queue" })
+  const editor = panel.locator('[data-component="composer-editor"]')
+  const rows = panel.locator('[data-component="session-queue-row"]')
+  await expect(editor).toBeEditable()
+  await editor.fill("Keep the original draft")
+  await rows.filter({ hasText: "First" }).locator('[data-action="session-queue-edit"]').click()
+  await expect(editor).toHaveText("First")
+  await editor.fill("First edited")
+  await expect
+    .poll(() => readBackendDraft(page, SERVER, thread.ref))
+    .toMatchObject({
+      text: "First edited",
+      editing: { nativeID: "First", stash: { prompt: [{ content: "Keep the original draft" }] } },
+    })
+  await page.reload()
+  await expect(editor).toHaveText("First edited")
+  await expect(panel.getByText("Editing queued message", { exact: true })).toBeVisible()
+  await editor.press("Escape")
+  await expect(editor).toHaveText("Keep the original draft")
+  await rows.filter({ hasText: "First" }).locator('[data-action="session-queue-edit"]').click()
+  await editor.fill("First saved")
+  await panel.getByRole("button", { name: "Save changes", exact: true }).click()
+  await expect(editor).toHaveText("Keep the original draft")
+  await expect(rows.locator('[data-action="session-queue-edit"]')).toHaveText(["First saved", "Second"])
+  expect(value.queue.map((item) => item.nativeID)).toEqual(["First", "Second"])
+  mode = "held"
+  await rows.filter({ hasText: "First saved" }).locator('[data-action="session-queue-edit"]').click()
+  await editor.fill("First second save")
+  await editor.press("Enter")
+  await entered.promise
+  await editor.fill("A newer edit typed during saving")
+  released.resolve()
+  await expect(panel.getByRole("button", { name: "Save changes", exact: true })).toBeEnabled()
+  await expect(editor).toHaveText("A newer edit typed during saving")
+  await panel.getByRole("button", { name: "Cancel edit" }).click()
+  await expect(editor).toHaveText("Keep the original draft")
+  mode = "unknown"
+  await rows.filter({ hasText: "First second save" }).locator('[data-action="session-queue-edit"]').click()
+  await editor.fill("An uncertain saved edit")
+  await editor.press("Enter")
+  await expect(panel.getByText("Update unconfirmed.", { exact: false })).toBeVisible()
+  await expect
+    .poll(() => readBackendDraft(page, SERVER, thread.ref))
+    .toMatchObject({ text: "An uncertain saved edit", editing: { nativeID: "First", unconfirmed: true } })
+  await page.reload()
+  await expect(editor).toHaveText("An uncertain saved edit")
+  await expect(panel.getByRole("button", { name: "Save changes", exact: true })).toBeDisabled()
+  expect(actions).toHaveLength(3)
+  await panel.getByRole("button", { name: "Cancel edit" }).click()
+  await rows.filter({ hasText: "An uncertain saved edit" }).locator('[data-action="session-queue-edit"]').click()
+  await editor.fill("Do not turn this into a new task")
+  value = { ...value, queue: value.queue.filter((item) => item.nativeID !== "First") }
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+  await expect(rows.locator('[data-action="session-queue-edit"]')).toHaveText(["Second"])
+  await editor.press("Enter")
+  await expect(panel.getByRole("alert")).toContainText("no longer in the visible queue")
+  await expect(editor).toHaveText("Do not turn this into a new task")
+  expect(actions).toHaveLength(3)
+  expect(sends).toBe(0)
+  await page.screenshot({ path: test.info().outputPath("whole-backend-edit.png"), fullPage: true })
+})
+
+test("whole backend: undo restores only confirmed withdrawals and preserves unknown source text", async ({ page }) => {
+  const alpha: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "same-thread" },
+    title: "Undo Alpha",
+    state: "running",
+  }
+
+  const beta: ConversationBackend.Thread = { ...alpha, ref: { ...alpha.ref, backendID: "beta" }, title: "Undo Beta" }
+
+  let value: ConversationBackend.Execution = {
+    thread: alpha,
+    turn: { id: "active-turn", state: "running" },
+    queue: ["Restore", "Already consumed", "Unknown withdrawal", "Partial"].map((text) => ({
+      nativeID: text.replaceAll(" ", "-"),
+      inputID: text.replaceAll(" ", "-"),
+      text,
+      partial: text === "Partial",
+    })),
+  }
+
+  const entered = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  const actions: ConversationBackend.Control[] = []
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeQueueUndo",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [alpha, beta]),
+    rpc: backendRpc({
+      list: () => [alpha, beta].map((thread) => ({ id: thread.ref.backendID, label: thread.title, execution: true })),
+      status: () => ({ authentication: null }),
+      history: ({ ref }) => ({ thread: ref.backendID === "alpha" ? alpha : beta, items: [] }),
+      execution: ({ ref }) => (ref.backendID === "alpha" ? value : { thread: beta, queue: [] }),
+      control: async (backendID, action) => {
+        expect(backendID).toBe("alpha")
+        actions.push(action)
+
+        if (action.action !== "withdraw") throw new Error("Undo must withdraw exactly one native input")
+
+        if (action.nativeID === "Restore") {
+          entered.resolve()
+          await released.promise
+        }
+
+        value = { ...value, queue: value.queue.filter((item) => item.nativeID !== action.nativeID) }
+
+        if (action.nativeID === "Unknown-withdrawal") throw new Error("Native withdrawal response lost")
+
+        return { status: action.nativeID === "Already-consumed" ? "not-found" : "applied" }
+      },
+    }),
+  })
+
+  await page.goto(backendHref(alpha.ref))
+  const panel = page.getByRole("region", { name: "Native execution and queue" })
+  const editor = panel.locator('[data-component="composer-editor"]')
+  const rows = panel.locator('[data-component="session-queue-row"]')
+  await expect(editor).toBeEditable()
+  await editor.fill("Original draft")
+  await rows.filter({ hasText: "Restore" }).hover()
+  await rows.filter({ hasText: "Restore" }).locator('[data-action="session-queue-undo"]').click()
+  await entered.promise
+  await editor.fill("New draft while withdrawing")
+  released.resolve()
+  await expect(editor).toHaveText("New draft while withdrawing\n\nRestore")
+  await rows.filter({ hasText: "Already consumed" }).hover()
+  await rows.filter({ hasText: "Already consumed" }).locator('[data-action="session-queue-undo"]').click()
+  await expect(panel.getByRole("alert")).toContainText("already left the queue")
+  await expect(editor).toHaveText("New draft while withdrawing\n\nRestore")
+  await rows.filter({ hasText: "Partial" }).locator('[data-action="session-queue-edit"]').click()
+  await expect(panel.getByRole("alert")).toContainText("text editor cannot restore")
+  expect(actions).toHaveLength(2)
+  await rows.filter({ hasText: "Unknown withdrawal" }).hover()
+  await rows.filter({ hasText: "Unknown withdrawal" }).locator('[data-action="session-queue-undo"]').click()
+  await expect(panel.getByText("Withdrawal unconfirmed.", { exact: false })).toBeVisible()
+  await expect(editor).toHaveText("New draft while withdrawing\n\nRestore")
+  await expect
+    .poll(() => readBackendDraft(page, SERVER, alpha.ref))
+    .toMatchObject({
+      text: "New draft while withdrawing\n\nRestore",
+      withdrawal: { nativeID: "Unknown-withdrawal", text: "Unknown withdrawal" },
+    })
+  await page.reload()
+  await expect(panel.getByText("Withdrawal unconfirmed.", { exact: false })).toBeVisible()
+  await expect(panel.getByRole("button", { name: "Send", exact: true })).toBeDisabled()
+  expect(actions).toHaveLength(3)
+  await page
+    .locator("[data-titlebar-tab-slot]")
+    .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: "Undo Beta" }) })
+    .locator("[data-titlebar-tab-link]")
+    .click()
+  await expect(editor).toHaveText("")
+  await expect(panel.getByText("Withdrawal unconfirmed.", { exact: false })).toHaveCount(0)
+  await page
+    .locator("[data-titlebar-tab-slot]")
+    .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: "Undo Alpha" }) })
+    .locator("[data-titlebar-tab-link]")
+    .click()
+  await expect(editor).toHaveText("New draft while withdrawing\n\nRestore")
+  await expect(panel.getByText("Withdrawal unconfirmed.", { exact: false })).toBeVisible()
+  await panel.getByRole("button", { name: "Dismiss withdrawal record" }).click()
+  await expect(panel.getByRole("button", { name: "Send", exact: true })).toBeEnabled()
+  expect(actions).toHaveLength(3)
+  await workspace.push([backendEvent("activity", { ref: alpha.ref, change: "execution" }, workspace.directory)])
 })
 
 test("whole backend: stop targets the observed turn and late controls cannot cross native tabs", async ({ page }) => {
