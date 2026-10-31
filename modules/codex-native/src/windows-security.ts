@@ -98,10 +98,10 @@ export function windowsPrivate(target: string, directory: boolean, secure: boole
       throw new Error("Unsupported native profile permissions")
     const allowed = new Set([user, "SY", "S-1-5-18"])
     for (const entry of entries) {
-      const fields = entry[1].split(";")
-      if (fields.length !== 6 || fields[0] !== "A" || fields[2] !== "FA" || fields[3] || fields[4] || !allowed.has(fields[5]))
+      const fields = entry[1]!.split(";")
+      if (fields.length !== 6 || fields[0] !== "A" || fields[2] !== "FA" || fields[3] || fields[4] || !allowed.has(fields[5]!))
         throw new Error("Native profile permissions allow another identity")
-      if (directory && (!fields[1].includes("OI") || !fields[1].includes("CI") || fields[1].includes("IO")))
+      if (directory && (!fields[1]!.includes("OI") || !fields[1]!.includes("CI") || fields[1]!.includes("IO")))
         throw new Error("Native profile permissions do not protect descendants")
     }
   } finally { api.close(); kernel.close() }

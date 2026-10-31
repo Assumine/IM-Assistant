@@ -59,13 +59,15 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 20 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
-        raise RuntimeError("Required sixteen real-native and four wire scenarios did not all execute")
+    if steps[-1]["passed"] != 23 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+        raise RuntimeError("Required nineteen native/OS/activation and four wire scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
         ("packages/core", core_files, "r3-host-unit", 20),
         ("packages/server", server_files, "r3-host-server-unit", 3),
+        ("packages/im-assistant", ["src/storage.test.ts", "src/providers.test.ts"], "r3-profile-unit", 7),
+        ("packages/cli", ["test/import-boundaries.test.ts"], "r3-cli-boundaries", 5),
     ]:
         if not all((ROOT / "opencode" / directory / name).is_file() for name in files):
             raise RuntimeError("Required native test file is missing")
@@ -79,6 +81,12 @@ def _run(checkpoint):
     host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
     if host["status"] != "passed" or len(host["checks"]) != 12 or host["model_requests"] != 4:
         raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
+    steps.append(run_command("packages/server", ["run", "script/codex-product-smoke.ts"], "r3-product-entry",
+                             extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_CODEX_TEST_ROOT": str(test_root)}))
+    output = (reports / "r3-product-entry.log").read_text(encoding="utf-8")
+    product = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
+    if product["status"] != "passed" or len(product["checks"]) != 7 or product["model_requests"] != 1:
+        raise RuntimeError("Actual product bootstrap acceptance was incomplete")
     tabs = run_command("packages/app", ["test", "--conditions=solid", "--preload", "../ui/test/solid-jsx.ts",
         "--preload", "./happydom.ts", "./src/shell/tabs/tabs.test.ts", "./src/shell/state/layout.test.ts",
         "./src/shell/routes/session.test.ts", "./src/shell/notifications/notification.test.ts",
@@ -96,6 +104,11 @@ def _run(checkpoint):
     if browser["native_tests_passed"] != 185 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
+    components = run_command("packages/app", ["x", "--no-install", "playwright", "test", "--config",
+        "playwright.components.config.ts", "plugin-", "--workers", "2", "--retries", "0"], "r3-plugin-host")
+    if components["native_tests_passed"] != 31 or components["native_tests_failed"] or components["native_tests_skipped"]:
+        raise RuntimeError("Required plugin host scenarios did not execute")
+    steps.append(components)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
     version = subprocess.check_output([executable, "--version"], env=env, encoding="utf-8").strip()
     app_sources = [
@@ -105,6 +118,9 @@ def _run(checkpoint):
         "packages/core/test/conversation-backend.test.ts", "packages/core/test/plugin/fixture.ts",
         "packages/server/src/middleware/runtime-policy.ts", "packages/server/src/routes.ts",
         "packages/server/src/backend-modules.ts", "packages/server/src/fetch.ts", "packages/server/src/process.ts",
+        "packages/server/script/codex-product-smoke.ts", "packages/cli/src/server-process.ts",
+        "packages/im-assistant/src/backends.ts", "packages/im-assistant/src/cli.ts", "packages/im-assistant/package.json",
+        "packages/im-assistant/src/storage.test.ts", "packages/im-assistant/src/providers.test.ts", "packages/cli/test/import-boundaries.test.ts",
         "packages/server/test/conversation-policy.test.ts", "packages/server/script/codex-backend-smoke.ts",
         "packages/gui-plugins/src/conversation.ts", "packages/gui-plugins/src/renderer.ts",
         "packages/gui-plugins/src/backends/index.ts", "packages/gui-plugins/src/backends/renderer.tsx",
@@ -149,12 +165,14 @@ def _run(checkpoint):
         "local_fixture_only": True, "production_credentials_used": False,
         "native_state_owner": "codex-app-server", "steps": steps,
         "host_acceptance": host,
+        "product_acceptance": product,
         "sources": {file.relative_to(ROOT).as_posix(): hashlib.sha256(file.read_bytes()).hexdigest()
                     for file in sorted([*module.glob("src/*.ts"), *module.rglob("test/**/*.ts"),
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
+                                        ROOT / "tests/rebase/test_r3_01.py",
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["trusted production host activation and real-account validation remain; demand-loaded Home native lists, explicit creation/open launcher, human input, guidance, native queue controls, draft recovery and scoped live text verified with fixtures; no persisted default-backend preference is added",
+        "remaining": ["explicit next-boot activation is connected to the actual product CLI; isolated product startup/restart/disable verified; production credentials and real-account login remain unverified and no production activation was performed",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

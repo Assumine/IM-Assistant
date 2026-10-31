@@ -104,10 +104,20 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
       const instanceID = randomUUID()
       const transform = yield* WebUi.handler({ workspace: !Profile.active() })
       const remote = { urls: [] as ReadonlyArray<string> }
+      const backends = Profile.active()
+        ? yield* Effect.tryPromise(async () => {
+            const { Backends } = await import("@im-assistant/profile/backends")
+            return Backends.load()
+          }).pipe(
+            Effect.catch(() =>
+              Effect.logWarning("Optional conversation backend configuration is unavailable").pipe(Effect.as([])),
+            ),
+          )
+        : []
       const launch = start(
         {
           app: {
-            name: Profile.active() ? Profile.name : process.env.OPENCODE_CLIENT ?? OPENCODE_ARTIFACT,
+            name: Profile.active() ? Profile.name : (process.env.OPENCODE_CLIENT ?? OPENCODE_ARTIFACT),
             version: OPENCODE_VERSION,
             channel: OPENCODE_CHANNEL,
           },
@@ -145,7 +155,9 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             gitbash: process.env.OPENCODE_GIT_BASH_PATH,
           },
           fs: {
-            filewatcher: !Profile.active() && !truthy(process.env.OPENCODE_FILEWATCHER_DISABLE ?? process.env.OPENCODE_DISABLE_FILEWATCHER),
+            filewatcher:
+              !Profile.active() &&
+              !truthy(process.env.OPENCODE_FILEWATCHER_DISABLE ?? process.env.OPENCODE_DISABLE_FILEWATCHER),
             fff:
               process.env.OPENCODE_DISABLE_FFF === undefined
                 ? process.platform !== "win32"
@@ -169,6 +181,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
             },
         transform,
         () => remote.urls,
+        backends,
       )
       const server = yield* launch.pipe(
         Effect.catch((error) => {

@@ -2,6 +2,7 @@
 export { CodexSessionAdapter } from "./session-adapter"
 export { nativeBackend } from "./backend"
 export { nativeModule } from "./module"
+export { activation, setActivation, configuredModule } from "./activation"
 export type { Thread, Submission, Page, ItemEntry } from "./session-adapter"
 export { createProfile, createSharedProfile, loadProfile, verifiedVersion } from "./profile"
 export { stopSharedService } from "./shared"

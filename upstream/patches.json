@@ -183,7 +183,7 @@
         {
           "path": "packages/cli/src/server-process.ts",
           "action": "modified",
-          "sha256": "762abf84d30dee90ae041d3d0eabafec419844aaaf39b68fffacef8bfc45d4e9"
+          "sha256": "af026122ffdf5cddd79dd8326d5dd0c21ab3e60505c2ff4e3328ffa513d8faef"
         },
         {
           "path": "packages/cli/src/services/web-ui.ts",
@@ -308,7 +308,7 @@
         {
           "path": "packages/im-assistant/package.json",
           "action": "added",
-          "sha256": "77315ce8ccada7ba371daf1ac655527c8f5e90307309c1c15f8fcb9bfdddea8d"
+          "sha256": "4ee1dd63c87372df494fd64aec5452c9a4b9d0ef5139bf847d3067053290319f"
         },
         {
           "path": "packages/im-assistant/src/non-project-location.ts",
@@ -377,7 +377,7 @@
         {
           "path": "packages/im-assistant/src/cli.ts",
           "action": "added",
-          "sha256": "dd6f360d459b3ca868dcf2b48e0e9d23468ea7353bc4985b9dee1a07955f1b92"
+          "sha256": "c2705fdf59798f378a943bcab1f3bb8c42ccf0b4ec8f39634ff8d30f190728f9"
         },
         {
           "path": "packages/im-assistant/src/providers.ts",
@@ -1011,6 +1011,26 @@
           "path": "packages/server/src/process.ts",
           "action": "modified",
           "sha256": "04dcd71a45c811fd208963da679fcab8e6a9a0a5ea33af458a782133781f8e78"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-product-backend-activation",
+      "reason": "产品装配显式启停原生后端，使用独立受保护profile；配置只影响下次启动，核心仍只接公共Module，故障不阻断普通会话。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R3-01",
+        "python -m tools.verify_upstream"
+      ],
+      "files": [
+        {
+          "path": "packages/im-assistant/src/backends.ts",
+          "action": "added",
+          "sha256": "4a9c8a27a7accb1a31b839d7cff127bc4847390e502d7a47bccbef1226de6093"
+        },
+        {
+          "path": "packages/server/script/codex-product-smoke.ts",
+          "action": "added",
+          "sha256": "69e00735879da91beab7cda6b1d7ef116ae9cbf27f6ca514414c7f56e666ae91"
         }
       ]
     }

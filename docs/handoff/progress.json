@@ -21,7 +21,10 @@
     "A16",
     "A17",
     "A18",
-    "A19"
+    "A19",
+    "A20",
+    "A21",
+    "A22"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -206,7 +209,7 @@
       "blocked_reason": null
     },
     "R3-01": {
-      "status": "in_progress",
+      "status": "done",
       "artifacts": [
         "modules/codex-native/package.json",
         "modules/codex-native/tsconfig.json",
@@ -304,23 +307,39 @@
         "modules/codex-native/src/windows-security.ts",
         "opencode/packages/server/src/backend-modules.ts",
         "opencode/packages/server/src/fetch.ts",
-        "opencode/packages/server/src/process.ts"
+        "opencode/packages/server/src/process.ts",
+        "modules/codex-native/src/activation.ts",
+        "modules/codex-native/test/activation.test.ts",
+        "opencode/packages/cli/src/server-process.ts",
+        "opencode/packages/cli/test/import-boundaries.test.ts",
+        "opencode/packages/im-assistant/package.json",
+        "opencode/packages/im-assistant/src/backends.ts",
+        "opencode/packages/im-assistant/src/cli.ts",
+        "opencode/packages/im-assistant/src/providers.test.ts",
+        "opencode/packages/im-assistant/src/storage.test.ts",
+        "opencode/packages/server/script/codex-product-smoke.ts",
+        "tests/rebase/test_r3_01.py",
+        "upstream/codex-verification.json"
       ],
       "verification": [
         {
-          "kind": "checkpoint",
+          "kind": "runtime",
           "plan_id": "opencode-app-base-v2",
-          "status": "partial_verified",
+          "status": "passed",
           "exit_code": 0,
-          "tests_run": 301,
+          "tests_run": 2,
           "skipped": 0,
-          "acceptance_ids": [],
-          "command": "python -m tools.codex_native_smoke",
-          "evidence": "upstream/codex-checkpoint.json",
-          "publication": "disabled",
-          "native_http_checks": 12,
-          "native_unit_tests": 85,
-          "browser_tests": 216
+          "acceptance_ids": [
+            "A20",
+            "A21",
+            "A22"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R3-01",
+          "evidence": "upstream/codex-verification.json",
+          "scope": "isolated_feasibility",
+          "native_related_tests": 316,
+          "native_http_checks": 19,
+          "publication": "disabled"
         }
       ],
       "blocked_reason": null

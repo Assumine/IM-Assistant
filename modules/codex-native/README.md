@@ -22,7 +22,7 @@ python -m tools.codex_native_smoke
 
 通用设置页由原生SettingsPage贡献位置加载，不按Codex业务ID硬编码。它检查连接及登录，并可打开只读原生会话浏览器，不改变会话归属、默认执行器或队列。浏览器按需读取列表和历史分页，保留native thread/turn/item ID及来源顺序；向前加载保留阅读位置，切换和关闭后丢弃迟到回包。Codex读取使用thread/read(includeTurns=false)和thread/items/list，不resume或生成；只能读取本profile工作区。当前仅展示文本，未支持的内容保留为未完整展示的活动记录，不伪造回复或读取文件。后端离线后保留原选择；状态只在页面激活、连接变化、后端事件和用户刷新时读取，不后台轮询。浏览器登录URL仅经显式按钮打开；远程页面不提供依赖本机回调的登录入口，取消只影响指定登录尝试。
 
-已确认的限制：裸原生queue/add不按clientUserMessageId去重，必须使用公共send。未知交付且native也查不到时保留uncertain，不自动重发；这不是跨系统exactly-once保证。共享WebSocket在官方仍属实验性，人工提问界面已接入，真人认证及产品启动组合尚未完成；Windows已验证权限漂移拒绝，尚未进行另一Windows用户实际登录和其他OS验收。只读浏览器不是原生主会话页的正式接入。设置页浏览器登录交互只用合成夹具验证，真实CLI仅验证无凭据账号状态和不存在登录ID的取消，不把它算真人登录验收。受控助手模式继续禁用任意SDK插件，不为此放宽通用插件加载或真实系统权限。
+已确认的限制：裸原生queue/add不按clientUserMessageId去重，必须使用公共send。未知交付且native也查不到时保留uncertain，不自动重发；这不是跨系统exactly-once保证。共享WebSocket在官方仍属实验性，人工提问及产品启动组合已接，真人认证和生产切换未验收；Windows已验证权限漂移拒绝，尚未进行另一Windows用户实际登录和其他OS验收。只读浏览器不是原生主会话页的正式接入。设置页浏览器登录交互只用合成夹具验证，真实CLI仅验证无凭据账号状态和不存在登录ID的取消，不把它算真人登录验收。受控助手模式继续禁用任意SDK插件，不为此放宽通用插件加载或真实系统权限。
 
 详细证据、发布门槛和下一步见 [Codex 原生接入边界](../../docs/handoff/Codex原生接入边界.md)。
 
@@ -50,8 +50,25 @@ GUI通过公共BackendView承载整套后端。原生标签存server＋原始Ref
 
 `nativeModule(options)`提供公共`Module`工厂，可交给原生服务的`createRoutes`、`createEmbeddedRoutes`、`ServerFetch.make`或`ServerProcess.start`启动组合。只允许可信程序代码传入，不能从HTTP、项目配置或任意插件路径加载。模块获取连接后注册同一个`Definition`，宿主不认识Codex业务ID。模块启动不创建线程、登录或发送消息；各模块异步独立加载，失败/身份不匹配只撤下自身，未就绪模块不挡住其他后端或应用。
 
-模块连接与注册归应用Scope所有；释放时先撤下注册再断开本连接，不停止共享原生进程或其他客户端任务。模块工厂负责有界连接与部分获取失败的清理，不增加重试循环、任务队列或自启配置。当前通过真实嵌入式HTTP/SQLite服务验证此入口，普通产品CLI/桌面的持久激活配置尚未接入，仍默认关闭。
+模块连接与注册归应用Scope所有；释放时先撤下注册再断开本连接，不停止共享原生进程或其他客户端任务。模块工厂负责有界连接与部分获取失败的清理，不增加重试循环或任务队列。产品装配现经原CLI服务启动读取显式激活配置，默认关闭；桌面开发入口沿用该CLI链路，本轮验收实际产品CLI进程，未重新验收桌面窗口或发布安装包。
 
 新建专用home在写入任何凭据前先收紧权限。Windows x64通过Bun FFI直接调用系统安全API，保护根目录DACL，只允许当前用户和SYSTEM完全访问并继承到子项；不调用PowerShell或解析本地化命令输出。重新读取时校验home、workspace、配置、标记和令牌的所有者与DACL，发现新增其他身份授权即拒绝，既有弱权限home不自动修复或接管。POSIX使用0700/0600及当前UID检查，该路径未在本轮Windows环境验收。权限隔离不阻止同一用户的其他程序或管理员取得系统权限，不替代工具能力限制。
 
 新增真实OS回归临时向Everyone授予测试根目录或令牌读取权，确认`loadProfile`和连接均拒绝、原生监听器未启动且无模型请求；移除授权后正常读取。宿主HTTP回归同时加载正常、失败、未就绪和ID不匹配模块，并验证应用Scope退出不丢原生运行任务、下一次应用启动沿用原SQLite回执及native历史。
+
+## 产品初始化与显式启停
+
+在`opencode/packages/im-assistant`目录使用锁定Bun运行：
+
+```sh
+bun run src/cli.ts backend codex status
+bun run src/cli.ts backend codex init
+bun run src/cli.ts backend codex enable
+bun run src/cli.ts backend codex disable
+```
+
+`init`只在助手数据目录的`modules/codex-native`新建专用原生资料，不采用已有非空目录，不登录、不创建线程或启动服务。`enable`记录PATH中Codex的绝对路径，实际打开仍须通过锁定CLI版本、权限与禁用策略核验；配置成功不代表连接或认证成功。`disable`不删除历史或停止原生任务。这些命令均不重启现有客户端/服务，配置只影响下次正常服务启动。
+
+配置固定保存在受保护home内的`host-activation.json`，只接受版本、启用状态和绝对可执行文件路径；同目录临时文件＋rename写入，不存账号、令牌或API key，不接受任意模块路径、原生RPC或工作目录。核心CLI只向通用服务传入公共Module；具体能力装配归本产品包与此模块。配置缺失默认关闭，错误配置或连接失败仅使可选后端不可用，普通会话仍启动。Native账号、上下文、压缩、历史与唯一队列继续归原生服务，没有运行时热切换、自动重试或任务迁移。
+
+正式隔离验收入口为`python tools/run_runtime_checks.py --task R3-01`，直接运行当前原生CLI、产品CLI进程、HTTP/SQLite及生产构建浏览器测试，不读取旧checkpoint冒充运行。产品场景另验证首次启动的未登录状态、启停仅下次生效、进程退出保留原任务、重启返回原接纳回执且不重复生成，以及错误配置不影响核心。原生服务继续使用自有临时home与本地合成模型；真实账号认证、其他OS、安装包及生产切换仍不是这项可行性切片的已验证范围。

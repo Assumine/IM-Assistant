@@ -20,7 +20,7 @@
     {
       "label": "r3-native-tests",
       "exit_code": 0,
-      "passed": 20,
+      "passed": 23,
       "failed": 0,
       "skipped": 0,
       "log": ".reports/native/r3-native-tests.log"
@@ -36,7 +36,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.15,
+      "duration_seconds": 1.1,
       "isolated_home": true,
       "log": ".reports/native/r3-host-unit.log",
       "native_tests_passed": 20,
@@ -53,10 +53,43 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.51,
+      "duration_seconds": 2.71,
       "isolated_home": true,
       "log": ".reports/native/r3-host-server-unit.log",
       "native_tests_passed": 3,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "src/storage.test.ts",
+        "src/providers.test.ts"
+      ],
+      "cwd": "opencode/packages/im-assistant",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.1,
+      "isolated_home": true,
+      "log": ".reports/native/r3-profile-unit.log",
+      "native_tests_passed": 7,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/import-boundaries.test.ts"
+      ],
+      "cwd": "opencode/packages/cli",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.67,
+      "isolated_home": true,
+      "log": ".reports/native/r3-cli-boundaries.log",
+      "native_tests_passed": 5,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     },
@@ -69,9 +102,25 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.69,
+      "duration_seconds": 2.7,
       "isolated_home": true,
       "log": ".reports/native/r3-host-http.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/codex-product-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 39.07,
+      "isolated_home": true,
+      "log": ".reports/native/r3-product-entry.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
@@ -94,7 +143,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.7,
+      "duration_seconds": 0.69,
       "isolated_home": true,
       "log": ".reports/native/r3-tabs-unit.log",
       "native_tests_passed": 42,
@@ -127,10 +176,35 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 180.92,
+      "duration_seconds": 180.32,
       "isolated_home": true,
       "log": ".reports/native/r3-backend-browser.log",
       "native_tests_passed": 185,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "--no-install",
+        "playwright",
+        "test",
+        "--config",
+        "playwright.components.config.ts",
+        "plugin-",
+        "--workers",
+        "2",
+        "--retries",
+        "0"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 38.54,
+      "isolated_home": true,
+      "log": ".reports/native/r3-plugin-host.log",
+      "native_tests_passed": 31,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     },
@@ -143,7 +217,7 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 45.02,
+      "duration_seconds": 8.0,
       "isolated_home": true,
       "log": ".reports/native/r3-host-check.log",
       "native_tests_passed": null,
@@ -170,12 +244,28 @@
     "model_requests": 4,
     "production_credentials_used": false
   },
+  "product_acceptance": {
+    "status": "passed",
+    "checks": [
+      "product CLI initializes only a dedicated profile, refuses adoption and remains disabled by default",
+      "a fresh product boot starts its own isolated native service and reports signed-out without adopting an existing account",
+      "enabling changes the next product boot without replacing the current service or its core sessions",
+      "the actual product CLI routes input to the original native PID and a product process exit does not stop its running work",
+      "product restart preserves its SQLite admission receipt and native result without another model request or OpenCode Session",
+      "disabled next boot detaches the product entry while the existing native service and history remain owned by Codex",
+      "malformed optional configuration cannot load arbitrary code or block the product core"
+    ],
+    "model_requests": 1,
+    "production_credentials_used": false,
+    "product_entry": "packages/im-assistant/src/cli.ts"
+  },
   "sources": {
     "modules/codex-native/package.json": "c7f2fa05ce9ff3bfb44ebc2bd4d7678dd63307bd293e67777adbc23cf3103f09",
+    "modules/codex-native/src/activation.ts": "ca678904964f61237eab03959bc1bed148573b09635be43275c6f0122c9ff0e3",
     "modules/codex-native/src/backend.ts": "2405d77fccd75b3ff6bfb57746de502ddc7d8e5d239cb6e618381b137b40f449",
     "modules/codex-native/src/connection.ts": "4f0ad78f9506aa5307f78926ff7c17cf0d2e2e901a5e023dd24592d2e66cd980",
     "modules/codex-native/src/content.ts": "ae5d9be657fa2225420e31495609ba1f09e19780314649ebb9bb5c4e7402280a",
-    "modules/codex-native/src/index.ts": "bdfa7fcc32e769ab1d47495dcd6263f7407d88695346dbf5c973c23dd4234651",
+    "modules/codex-native/src/index.ts": "ac1b673bd3d9f6c3b421b26a1508c76717d3f6f516d683427c6a93e7e05d76e6",
     "modules/codex-native/src/launch.ts": "f26c9910629f110c4e7f57a278564fe04248388c1858f03cf7c375b3033b5c2f",
     "modules/codex-native/src/module.ts": "9682ec018d8fa577eed3c871c748fc1ab3d98e2b3a8a620d4831568ac166fca0",
     "modules/codex-native/src/permissions.ts": "10d00bfb1fa9200ed5d0ca7526faef1d43b2035e1f146394616ee94336d64129",
@@ -184,7 +274,8 @@
     "modules/codex-native/src/session-adapter.ts": "13d123a864e0716107f2003976a033005adcb7c86812547ee1705ec27088d9bc",
     "modules/codex-native/src/shared.ts": "8703de972b5e59937e3f7ae992e02179cca5ea79c70e38e2b2c71fca44816f67",
     "modules/codex-native/src/transport.ts": "4c6df81cd6923f73f82f411a90579c4f1ca302f54e86006485c54007ed7072bd",
-    "modules/codex-native/src/windows-security.ts": "cb114cbc5932af9910a570ae0f400a94516bf2bc5808541cb438091c264b6b56",
+    "modules/codex-native/src/windows-security.ts": "34eeb758ebe4ce542c4b1f7ae97477fc5acbe3f8ae12667fd57b32c9b0b9c51a",
+    "modules/codex-native/test/activation.test.ts": "7da2732b24f9e1019d0ab159830619875d820670aa8de61d1c12d5de23090538",
     "modules/codex-native/test/connection.test.ts": "7fd30ab639f552d71969780c36341b0d646ce75c85b6558a678f139ecd9ba466",
     "modules/codex-native/test/fixture/shared-client.ts": "961aa8114b3ff02e3b77689c58f7572dfcd0627930e8420b3365a87e08c71268",
     "modules/codex-native/test/native.test.ts": "40c20107e5c398634fbfd8c5966ec5575e302b45c5c6e32103e6293616178934",
@@ -233,6 +324,8 @@
     "opencode/packages/app/src/shell/titlebar/tab-order.test.ts": "fd9f3ceb56ee57938c00d4ebb58d5a4ec486c099c2699bd3f0b3cf6db5695e2f",
     "opencode/packages/app/src/shell/titlebar/tab-strip.tsx": "a3651b0659f8b757b68e5cd1f16b98b63782e2b8f506e1915b1b3125bcd1112e",
     "opencode/packages/app/src/shell/titlebar/titlebar.tsx": "61969bc063699f52d1ed8d47fcbf2d6e9f4d166844dabe4fc6a353fab949b589",
+    "opencode/packages/cli/src/server-process.ts": "af026122ffdf5cddd79dd8326d5dd0c21ab3e60505c2ff4e3328ffa513d8faef",
+    "opencode/packages/cli/test/import-boundaries.test.ts": "78ed02e9503fae594bc53b7284eff56cdf76ec2ca382aa3aea1fde8b42e0ea11",
     "opencode/packages/core/src/conversation-backend.ts": "ca65d277f497f6a236f85772d6ff12e62e8790986058495a6aa1125b37015962",
     "opencode/packages/core/src/kv.ts": "bcb6601fbf4d0dec0f8e7ecd403db9059c88bfe3a8d94eae50a7f04baa6053eb",
     "opencode/packages/core/src/plugin/host.ts": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5",
@@ -251,60 +344,54 @@
     "opencode/packages/gui-plugins/src/conversation.ts": "69d472e0fdf18f8cf3a652fbe0890c0c8eaa6f5361449a2a47eece3468eff5dc",
     "opencode/packages/gui-plugins/src/main.ts": "d84f0f9ad3385fd36235129073f9a2212de0da3629268da72efaaf264f0da50b",
     "opencode/packages/gui-plugins/src/renderer.ts": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f",
+    "opencode/packages/im-assistant/package.json": "4ee1dd63c87372df494fd64aec5452c9a4b9d0ef5139bf847d3067053290319f",
+    "opencode/packages/im-assistant/src/backends.ts": "4a9c8a27a7accb1a31b839d7cff127bc4847390e502d7a47bccbef1226de6093",
+    "opencode/packages/im-assistant/src/cli.ts": "c2705fdf59798f378a943bcab1f3bb8c42ccf0b4ec8f39634ff8d30f190728f9",
+    "opencode/packages/im-assistant/src/providers.test.ts": "b46e142daf280d5c78e3b122e87336391252154fc044f2b4e8f91db66a6ab158",
+    "opencode/packages/im-assistant/src/storage.test.ts": "8c165efa308377b9130562803fcc3c786710a948c402766ce5552e9bb810ec1c",
     "opencode/packages/plugin/src/effect/conversation.ts": "2d910bafe8507249e9542e441603c8673f009b2f1f5855a1495a3860777a6bd1",
     "opencode/packages/plugin/src/effect/plugin.ts": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917",
     "opencode/packages/plugin/src/gui/host-apis.ts": "af9d9e618d70e0e3b30ac899cacd8bae7ea3f2550be294022000dcaecdf27ecd",
     "opencode/packages/plugin/src/gui/registries.ts": "69a5d0d518a8353b0474174c519aa86b9cb56cf20770381631cc6e3228a7af5c",
     "opencode/packages/schema/src/conversation-backend.ts": "71cc3fd8f2f05e26366499334381d406d558f239b2a9e1d00e8ef2221a0d4d8e",
     "opencode/packages/server/script/codex-backend-smoke.ts": "bbe1e7d082962a76fd0e88c6cf6bd0eca915f0801f80211e908667c61a43a859",
+    "opencode/packages/server/script/codex-product-smoke.ts": "69e00735879da91beab7cda6b1d7ef116ae9cbf27f6ca514414c7f56e666ae91",
     "opencode/packages/server/src/backend-modules.ts": "6287e0a345a311f1f094df20f14a6cbc22180e3ca6f2de0f10b3f3197703b3fa",
     "opencode/packages/server/src/fetch.ts": "f074f8085089e29373e3d1f1260f9748e499e4271b15e99a04b333106dfb8f8f",
     "opencode/packages/server/src/middleware/runtime-policy.ts": "5cc0ba37aa4bc529ef5deb11a2301adbb199ce78b83eef19bb1aead025669b86",
     "opencode/packages/server/src/process.ts": "04dcd71a45c811fd208963da679fcab8e6a9a0a5ea33af458a782133781f8e78",
     "opencode/packages/server/src/routes.ts": "3d7662952adc9eb92f0dd3595032ffa65739a46fd359199b0a3bc975d297143d",
     "opencode/packages/server/test/conversation-policy.test.ts": "9e6d2a119e0755cc88d3f0dbbd2835b344c3008bb218a062a0da1f11c420b9ad",
-    "tools/codex_native_smoke.py": "8521cb4fea3b1a2304312ff5964f1544b6ad10f93421e81898ab12c381c5a061"
+    "tests/rebase/test_r3_01.py": "4942babb64a810c842f8a9f5c8caa1e906bd0f616f9a0128b9abdf937d6f82a6",
+    "tools/codex_native_smoke.py": "4735d0f9da9d19a1f21b82bc5fb2e9ad8bbeada4b7a8c9cd640bcf3659df7c34"
   },
-  "duration_seconds": 278.34,
+  "duration_seconds": 316.46,
   "remaining": [
-    "trusted production host activation and real-account validation remain; demand-loaded Home native lists, explicit creation/open launcher, human input, guidance, native queue controls, draft recovery and scoped live text verified with fixtures; no persisted default-backend preference is added",
+    "explicit next-boot activation is connected to the actual product CLI; isolated product startup/restart/disable verified; production credentials and real-account login remain unverified and no production activation was performed",
     "shared transport is experimental and not published; production activation and OS matrix remain unverified",
     "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
     "real account connection and capability revalidation before publication"
   ],
+  "formal_acceptance": {
+    "task": "R3-01",
+    "scope": "isolated_feasibility",
+    "status": "passed",
+    "command": "python tools/run_runtime_checks.py --task R3-01",
+    "orchestration_cases": 2,
+    "native_unit_cases": 100,
+    "browser_component_cases": 216,
+    "http_checks": 19,
+    "http_fixture_model_requests": 5,
+    "production_switched": false
+  },
   "e2e_types_recheck": {
     "command": "bun run typecheck:e2e",
     "exit_code": 2,
     "existing_diagnostics": 14,
     "new_diagnostics": 0,
-    "note": "Not passed. Same files and messages after normalizing shifted line numbers."
+    "note": "Not passed; same diagnostics after normalizing line numbers."
   },
   "additional_verification": {
-    "plugin_host": {
-      "args": [
-        "bun",
-        "x",
-        "--no-install",
-        "playwright",
-        "test",
-        "--config",
-        "playwright.components.config.ts",
-        "plugin-",
-        "--workers",
-        "2",
-        "--retries",
-        "0"
-      ],
-      "cwd": "opencode/packages/app",
-      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-      "exit_code": 0,
-      "duration_seconds": 51.29,
-      "isolated_home": true,
-      "log": ".reports/native/r3-host-plugin-host.log",
-      "native_tests_passed": 31,
-      "native_tests_failed": 0,
-      "native_tests_skipped": 0
-    },
     "changed_typescript_lint": {
       "args": [
         "bun",
@@ -312,42 +399,23 @@
         "--no-install",
         "oxlint",
         "--fix",
-        "packages/plugin/src/effect/conversation.ts",
-        "packages/server/script/codex-backend-smoke.ts",
-        "packages/server/src/backend-modules.ts",
-        "packages/server/src/fetch.ts",
-        "packages/server/src/process.ts",
-        "packages/server/src/routes.ts"
+        "packages/cli/src/server-process.ts",
+        "packages/im-assistant/src/backends.ts",
+        "packages/im-assistant/src/cli.ts",
+        "packages/server/script/codex-product-smoke.ts"
       ],
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.32,
+      "duration_seconds": 1.48,
       "isolated_home": true,
-      "log": ".reports/native/r3-host-oxlint.log",
-      "native_tests_passed": null,
-      "native_tests_failed": null,
-      "native_tests_skipped": 0
-    },
-    "gui_changed_lint_not_applicable": {
-      "args": [
-        "bun",
-        "run",
-        "lint:changed",
-        "HEAD"
-      ],
-      "cwd": "opencode",
-      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-      "exit_code": 0,
-      "duration_seconds": 4.49,
-      "isolated_home": true,
-      "log": ".reports/native/r3-host-lint.log",
+      "log": ".reports/native/r3-activation-oxlint.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
     },
     "shared_test_cleanup": {
-      "checked": 16,
+      "checked": 49,
       "stopped": 0,
       "unverified": 0
     }

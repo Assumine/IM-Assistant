@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "task": "R3-01",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "scope": "isolated_feasibility",
+  "acceptance_ids": [
+    "A20",
+    "A21",
+    "A22"
+  ],
+  "runtime_result": {
+    "task": "R3-01",
+    "plan_id": "opencode-app-base-v2",
+    "archived_reference": false,
+    "status": "passed",
+    "tests_run": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "acceptance_ids": [
+      "A20",
+      "A21",
+      "A22"
+    ],
+    "progress_updated": false
+  },
+  "checkpoint": "upstream/codex-checkpoint.json",
+  "checkpoint_sha256": "8fff2330670d5a3172f175329626d268ca83511afb84e357a0a1e6220a4c26ff",
+  "native_cli_version": "codex-cli 0.166.0-alpha.5.1",
+  "test_counts": {
+    "task": "R3-01",
+    "scope": "isolated_feasibility",
+    "status": "passed",
+    "command": "python tools/run_runtime_checks.py --task R3-01",
+    "orchestration_cases": 2,
+    "native_unit_cases": 100,
+    "browser_component_cases": 216,
+    "http_checks": 19,
+    "http_fixture_model_requests": 5,
+    "production_switched": false
+  },
+  "production_credentials_used": false,
+  "production_switched": false,
+  "publication": "disabled",
+  "remaining_release_gates": [
+    "real-account browser login and credential lifecycle",
+    "other OS and actual second Windows user",
+    "desktop/package validation for this activation change",
+    "new-connection pending human question recovery",
+    "R3-02 QQ portal and R4/R5 acceptance",
+    "existing 14 E2E type diagnostics remain failed"
+  ]
+}
