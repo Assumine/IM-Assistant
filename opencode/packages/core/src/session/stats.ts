@@ -73,6 +73,7 @@ type ToolAggregate = {
 }
 
 const decodeUsage = Schema.decodeUnknownOption(SessionEvent.UsageRecorded.data)
+const usageType = Event.versionedType(SessionEvent.UsageRecorded.type, SessionEvent.UsageRecorded.durable.version)
 const decodeProvenance = Schema.decodeUnknownOption(TokenUsage.Info.fields.provenance)
 const Window = 31 * 24 * 60 * 60 * 1_000
 
@@ -91,13 +92,22 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
     (yield* db
       .get<{ time: number | null }>(
         sql`
-        SELECT min(message.time_created) AS time
-        FROM ${SessionMessageTable} AS message
-        JOIN ${SessionTable} AS session ON session.id = message.session_id
-        WHERE message.type IN ('user', 'assistant')
-          AND message.time_created < ${to}
-          AND (session.fork_session_id IS NULL OR message.time_created >= session.time_created)
-          ${project}
+        SELECT min(time) AS time FROM (
+          SELECT message.time_created AS time
+          FROM ${SessionMessageTable} AS message
+          JOIN ${SessionTable} AS session ON session.id = message.session_id
+          WHERE message.type IN ('user', 'assistant')
+            AND message.time_created < ${to}
+            AND (session.fork_session_id IS NULL OR message.time_created >= session.time_created)
+            ${project}
+          UNION ALL
+          SELECT event.created AS time
+          FROM ${EventTable} AS event
+          JOIN ${SessionTable} AS session ON session.id = event.aggregate_id
+          WHERE event.type = ${usageType} AND event.created < ${to}
+            AND (session.fork_session_id IS NULL OR event.created >= session.time_created)
+            ${project}
+        )
       `,
       )
       .pipe(Effect.orDie))?.time ??
@@ -118,6 +128,15 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
   }
   const toolTotals = { calls: 0, succeeded: 0, failed: 0, unfinished: 0 }
   const dateKey = makeDateKey(input.timezone)
+  const addModel = (ref: Model.Ref, tokens: TokenUsage.Info, cost: number, step: boolean) => {
+    const key = `${ref.providerID}/${ref.id}#${ref.variant ?? ""}`
+    const model = models.get(key) ?? { model: ref, steps: 0, tokens: emptyTokens(), cost: 0, reporting: emptyReporting() }
+    models.set(key, model)
+    if (step) model.steps++
+    model.cost += cost
+    addTokens(model.tokens, tokens)
+    addReporting(model.reporting, tokens, cost)
+  }
 
   yield* Effect.forEach(
     ranges,
@@ -169,23 +188,11 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
                 const day = dateKey(row.timeCreated)
                 activity.set(day, (activity.get(day) ?? 0) + 1)
                 if (!row.providerID || !row.modelID) return
-                const key = `${row.providerID}/${row.modelID}#${row.variant ?? ""}`
-                const model = models.get(key) ?? {
-                  model: {
+                addModel({
                     providerID: Provider.ID.make(row.providerID),
                     id: Model.ID.make(row.modelID),
                     variant: row.variant ? Model.VariantID.make(row.variant) : undefined,
-                  },
-                  steps: 0,
-                  tokens: emptyTokens(),
-                  cost: 0,
-                  reporting: emptyReporting(),
-                }
-                models.set(key, model)
-                model.steps++
-                model.cost += row.cost ?? 0
-                addTokens(model.tokens, tokens)
-                addReporting(model.reporting, tokens, row.cost ?? 0)
+                  }, tokens, row.cost ?? 0, true)
               })
             }),
           ),
@@ -329,11 +336,10 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
         .where(
           and(
             inArray(EventTable.aggregate_id, batch),
-            eq(
-              EventTable.type,
-              Event.versionedType(SessionEvent.UsageRecorded.type, SessionEvent.UsageRecorded.durable.version),
-            ),
-            sql`json_extract(${EventTable.data}, '$.source') = 'compaction'`,
+            eq(EventTable.type, usageType),
+            sql`EXISTS (SELECT 1 FROM ${SessionTable} AS session
+              WHERE session.id = ${EventTable.aggregate_id}
+                AND (session.fork_session_id IS NULL OR ${EventTable.created} >= session.time_created))`,
             gte(EventTable.created, from),
             lt(EventTable.created, to),
           ),
@@ -348,6 +354,8 @@ export const get = Effect.fn("SessionStats.get")(function* (input: Input = {}) {
     addTokens(totals.tokens, decoded.value.tokens)
     addReporting(totals.reporting, decoded.value.tokens, decoded.value.cost)
     totals.cost += decoded.value.cost
+    // Older accounting events lack a model. Keep their usage in totals without guessing its attribution.
+    if (decoded.value.model) addModel(decoded.value.model, decoded.value.tokens, decoded.value.cost, false)
   })
 
   const days = [...activity.entries()].sort(([a], [b]) => a.localeCompare(b))

@@ -550,7 +550,7 @@ export const layer = Layer.effect(
       const prepared = yield* prepare(context, context.messages, budget, "session")
 
       const toResult = (window: ReadonlyArray<Message>, usage: Usage | undefined) =>
-        spend(context.session.id, usage && SessionUsage.record(usage, context.model.cost)).pipe(
+        spend(context, usage && SessionUsage.record(usage, context.model.cost)).pipe(
           Effect.as<Result>({
             text: "",
             // Plain JSON, not the schema encoder: provider metadata can hold undefined entries, which it rejects.
@@ -788,7 +788,7 @@ export const layer = Layer.effect(
             }
 
             if (LLMEvent.is.stepFinish(event)) {
-              return spend(sessionID, SessionUsage.record(event.usage, context.model.cost), background?.usage).pipe(
+              return spend(context, SessionUsage.record(event.usage, context.model.cost), background?.usage).pipe(
                 Effect.as(streamed),
               )
             }
@@ -856,7 +856,7 @@ export const layer = Layer.effect(
         tokens: supplied.tokens,
         cost: SessionUsage.calculateCost(context.model.cost, supplied.tokens),
       }
-      return spend(context.session.id, usage, background?.usage).pipe(
+      return spend(context, usage, background?.usage).pipe(
         Effect.as<Result>({
           text: supplied.summary,
           native: supplied.native,
@@ -876,14 +876,16 @@ export const layer = Layer.effect(
       spent.set(sessionID, total ? SessionUsage.add(total, usage) : usage)
     }
     const spend = (
-      sessionID: SessionContext.Loaded["session"]["id"],
+      context: SessionContext.Loaded,
       usage: SessionUsage.Recorded | undefined,
-      record = (recorded: SessionUsage.Recorded) => addSpent(sessionID, recorded),
+      record = (recorded: SessionUsage.Recorded) => addSpent(context.session.id, recorded),
     ) =>
       Effect.gen(function* () {
         if (!usage) return
         record(usage)
-        yield* bus.publish(SessionEvent.UsageRecorded, { sessionID, source: "compaction", ...usage })
+        yield* bus.publish(SessionEvent.UsageRecorded, {
+          sessionID: context.session.id, source: "compaction", model: context.model.ref, ...usage,
+        })
       })
 
     const publish = Effect.fnUntraced(function* (

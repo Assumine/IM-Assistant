@@ -255,7 +255,7 @@ const setup = Effect.gen(function* () {
 })
 
 it.effect(
-  "generates from fresh settled Session context without durable mutation",
+  "generates from fresh settled Session context while changing only usage accounting",
   () =>
     Effect.gen(function* () {
       requests.length = 0
@@ -326,6 +326,7 @@ it.effect(
       })
       instruction = "Changed context"
       const before = yield* durableState(db, sessionID)
+      if (!before.session) throw new Error("Missing native session")
 
       const result = yield* SessionGenerate.generate({ session, prompt: "Summarize privately" }).pipe(
         Effect.provideService(Instance.Service, instances),
@@ -356,7 +357,14 @@ it.effect(
       expect(requests[0]?.tools).toMatchObject([{ name: "lookup", description: "Lookup" }])
       expect(requests[0]?.toolChoice).toBeUndefined()
       expect(options[0]?.webSocket).toBeUndefined()
-      expect(yield* durableState(db, sessionID)).toEqual(before)
+      expect(yield* durableState(db, sessionID)).toEqual({
+        ...before, sequence: before.sequence + 1,
+        bus: [...before.bus, expect.objectContaining({ type: Bus.versionedType(SessionEvent.UsageRecorded.type, 1),
+          data: expect.objectContaining({ source: "generate", model: { providerID: "test", id: "generate-model" },
+            tokens: expect.objectContaining({ input: 0, output: 10,
+              provenance: expect.objectContaining({ input: false, output: true }) }) }) })],
+        session: { ...before.session, tokens_output: 10 },
+      })
     }),
   { timeout: 15_000 },
 )
@@ -427,7 +435,13 @@ it.effect("regenerates a failed partial answer without mutating Session history"
     expect(requests).toHaveLength(2)
     expect(requests[1]).toBe(requests[0])
     expect(userTexts(requests[1])).toContain("Summarize privately")
-    expect(yield* durableState(db, sessionID)).toEqual(before)
+    expect(yield* durableState(db, sessionID)).toEqual({
+      ...before, sequence: before.sequence + 1,
+      bus: [...before.bus, expect.objectContaining({ type: Bus.versionedType(SessionEvent.UsageRecorded.type, 1),
+        data: expect.objectContaining({ source: "generate", tokens: expect.objectContaining({
+          input: 0, output: 0, provenance: { input: false, output: false, reasoning: false, cacheRead: false, cacheWrite: false, cost: "unavailable" },
+        }) }) })],
+    })
   }).pipe(Effect.provide(TestLLM.testLayer())),
 )
 

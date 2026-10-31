@@ -21,7 +21,7 @@ import { testEffect } from "./lib/effect"
 
 const it = testEffect(
   AppNodeBuilder.build(LayerNode.group([Database.node, Bus.node]), [
-    Bus.node.replace(Bus.configured({ persist: true })),
+    Bus.node.replace(Bus.configured({ retain: [SessionEvent.UsageRecorded] })),
   ]),
 )
 const projectID = Project.ID.make("stats-project")
@@ -34,6 +34,44 @@ const otherSessionID = Session.ID.make("ses_stats_other")
 const encodeMessage = Schema.encodeSync(SessionMessage.Info)
 
 describe("SessionStats", () => {
+  it.effect("counts auxiliary-only usage by its actual range, project and model without inventing attribution for old records", () => Effect.gen(function* () {
+    const db = (yield* Database.Service).db
+    const bus = yield* Bus.Service
+    yield* db.insert(ProjectTable).values([
+      { id: projectID, worktree: AbsolutePath.make("/stats"), sandboxes: [] },
+      { id: otherProjectID, worktree: AbsolutePath.make("/other"), sandboxes: [] },
+    ]).run().pipe(Effect.orDie)
+    yield* db.insert(SessionTable).values([
+      { id: sessionID, project_id: projectID, slug: "aux", directory: "/stats", version: "test" },
+      { id: otherSessionID, project_id: otherProjectID, slug: "other", directory: "/other", version: "test" },
+      { id: forkID, project_id: projectID, slug: "fork", directory: "/stats", version: "test", fork_session_id: sessionID, time_created: 4000 },
+    ]).run().pipe(Effect.orDie)
+    const model = { providerID: Provider.ID.make("local"), id: Model.ID.make("aux-model") }
+    const usage = { cost: Money.USD.zero, tokens: { input: 2, output: 3, reasoning: 0, cache: { read: 0, write: 0 },
+      provenance: { input: true, output: true, reasoning: true, cacheRead: true, cacheWrite: true, cost: "reported" as const } } }
+    yield* TestClock.setTime(500)
+    yield* bus.publish(SessionEvent.UsageRecorded, { ...usage, sessionID: otherSessionID, model, source: "title" })
+    yield* bus.publish(SessionEvent.UsageRecorded, { ...usage, sessionID: forkID, model, source: "compaction" })
+    yield* TestClock.setTime(1000)
+    yield* bus.publish(SessionEvent.UsageRecorded, { ...usage, sessionID, model, source: "title" })
+    yield* TestClock.setTime(2000)
+    yield* bus.publish(SessionEvent.UsageRecorded, { ...usage, sessionID, model, source: "generate" })
+    // An older auxiliary event is still counted, but has no proven model or reporting metadata.
+    yield* bus.publish(SessionEvent.UsageRecorded, { sessionID, source: "compaction", cost: Money.USD.zero,
+      tokens: { input: 1, output: 0, reasoning: 0, cache: { read: 0, write: 0 } } })
+    const all = yield* SessionStats.get({ projectID, to: 3000, tools: "none" })
+    expect(DateTime.toEpochMillis(all.range.from)).toBe(1000)
+    expect(all.tokens).toEqual({ input: 5, output: 6, reasoning: 0, cache: { read: 0, write: 0 } })
+    expect(all.reporting).toMatchObject({ records: 3, complete: 2, cost: { reported: { records: 2, amount: 0 }, unknown: { records: 1, amount: 0 } } })
+    expect(all.steps).toBe(0)
+    expect(all.models).toHaveLength(1)
+    expect(all.models[0]).toMatchObject({ model, steps: 0, tokens: { input: 4, output: 6 }, reporting: { records: 2, complete: 2 } })
+    const recent = yield* SessionStats.get({ projectID, from: 1500, to: 3000, tools: "none" })
+    expect(recent.tokens.input).toBe(3)
+    expect(recent.reporting.records).toBe(2)
+    expect(recent.models[0].reporting.records).toBe(1)
+  }))
+
   it.effect("keeps reporting coverage and price sources across time ranges and legacy rows", () => Effect.gen(function* () {
     const db = (yield* Database.Service).db
     yield* db.insert(ProjectTable).values({ id: projectID, worktree: AbsolutePath.make("/stats"), sandboxes: [] }).run().pipe(Effect.orDie)
@@ -201,6 +239,7 @@ describe("SessionStats", () => {
       yield* bus.publish(SessionEvent.UsageRecorded, {
         sessionID,
         source: "title",
+        model: { id: Model.ID.make("sonnet"), providerID: Provider.ID.make("anthropic") },
         cost: Money.USD.make(0.5),
         tokens: { input: 1, output: 1, reasoning: 1, cache: { read: 1, write: 1 } },
       })
@@ -222,8 +261,11 @@ describe("SessionStats", () => {
       expect(stats.subagents).toBe(1)
       expect(stats.prompts).toBe(1)
       expect(stats.steps).toBe(3)
-      expect(stats.tokens).toEqual({ input: 42, output: 22, reasoning: 10, cache: { read: 18, write: 6 } })
-      expect(stats.cost).toBe(Money.USD.make(6.25))
+      expect(stats.tokens).toEqual({ input: 43, output: 23, reasoning: 11, cache: { read: 19, write: 7 } })
+      expect(stats.cost).toBe(Money.USD.make(6.75))
+      expect(stats.models.find(model => model.model.id === "sonnet")).toMatchObject({
+        steps: 1, cost: 2, tokens: { input: 11, output: 6, reasoning: 3, cache: { read: 5, write: 2 } },
+      })
       expect(stats.tools).toMatchObject({
         mode: "detail",
         totals: { calls: 3, succeeded: 1, failed: 1, unfinished: 1 },

@@ -4,6 +4,7 @@ import type { FileSystem } from "../filesystem.js"
 import { LLMClient, Message, type AIError } from "@opencode/ai/effect"
 import { Effect } from "effect"
 import { Database } from "../database/database.js"
+import { Bus } from "../bus.js"
 import { Instance } from "../instance/service.js"
 import { Plugin } from "../plugin/service.js"
 import type { Instructions } from "../instructions/index.js"
@@ -14,6 +15,8 @@ import { SessionModelRequest } from "./model-request.js"
 import { ModelRetry } from "../model-retry.js"
 import type { SessionRunnerModel } from "./runner/model.js"
 import type { SessionSchema } from "./schema.js"
+import { SessionEvent } from "./event.js"
+import { SessionUsage } from "./usage.js"
 
 export type Error =
   | AgentNotFoundError
@@ -22,7 +25,7 @@ export type Error =
   | AIError
   | FileSystem.DirectoryNotFoundError
 
-/** Generates text from current Session context without mutating the Session. */
+/** Generates text from current Session context without adding conversation messages. */
 export const generate = Effect.fn("SessionGenerate.generate")(function* (input: {
   session: SessionSchema.Info
   prompt: string
@@ -34,6 +37,7 @@ export const generate = Effect.fn("SessionGenerate.generate")(function* (input: 
   return yield* Effect.gen(function* () {
     yield* Plugin.awaitActivation
     const context = yield* SessionContext.Service
+    const bus = yield* Bus.Service
     const selection = yield* context.select(input.session.id)
     const model = yield* context.resolveModel(selection.session)
     const history = yield* SessionHistory.preview(database.db, selection.session.id, selection.instructions, model.ref)
@@ -62,6 +66,10 @@ export const generate = Effect.fn("SessionGenerate.generate")(function* (input: 
       modelID: model.ref.id,
     })
     const response = yield* llm.generate(prepared.request, prepared.options).pipe(ModelRetry.retry)
+    yield* bus.publish(SessionEvent.UsageRecorded, {
+      sessionID: selection.session.id, source: "generate", model: model.ref,
+      ...SessionUsage.record(response.usage, model.cost),
+    })
     yield* Effect.logInfo("session generation usage diagnostic", { usage: response.usage })
     return response.text
   }).pipe(instances.provide(input.session))

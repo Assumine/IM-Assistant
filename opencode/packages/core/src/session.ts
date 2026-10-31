@@ -485,6 +485,7 @@ const layer = Layer.effect(
           Effect.provideService(Instance.Service, instances),
           Effect.provideService(Database.Service, database),
           Effect.provideService(LLMClient.Service, llm),
+          Effect.provideService(Bus.Service, bus),
         )
       }),
       command: Effect.fn("Session.command")(function* (input) {

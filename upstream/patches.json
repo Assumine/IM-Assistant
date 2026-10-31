@@ -230,11 +230,6 @@
           "sha256": "a881206bee4add0e7c53819c4076ecd1201ab0d5cc17ad0fc790aa52c42eaf7d"
         },
         {
-          "path": "packages/core/src/session.ts",
-          "action": "modified",
-          "sha256": "eabc5dea4b90221f964599e9ba7c0c93180d29d0abb4732015d29b83a1337c03"
-        },
-        {
           "path": "packages/core/src/session/prompt.ts",
           "action": "modified",
           "sha256": "e7c006a2a62a4f7adea90b135b2844170f1e58bb309dddc3ce8a73b41bb07dc3"
@@ -338,11 +333,6 @@
           "path": "packages/server/src/options.ts",
           "action": "modified",
           "sha256": "c4e1d7f815e4749c5e45b194689db2da67ecc3fd62f70d42ddaef2b9bcd52a19"
-        },
-        {
-          "path": "packages/server/src/routes.ts",
-          "action": "modified",
-          "sha256": "ee1f392ceab084e54220039b2b3fc2c01de7beb048d87a678e171899be543a13"
         }
       ]
     },
@@ -455,16 +445,6 @@
           "sha256": "a88e813924dbbe3ce4066d888a787258716e0a2ce5c8400fc3f877e122241faa"
         },
         {
-          "path": "packages/core/src/session/stats.ts",
-          "action": "modified",
-          "sha256": "8573b657a38f11a7011af24763f9c41db35d6093e2e44b439ea1b9e75a741453"
-        },
-        {
-          "path": "packages/core/test/session-stats.test.ts",
-          "action": "modified",
-          "sha256": "a07d68c696789681d26341b0eeb38f9f0cd80121369d91ab9c15cbbc1567f450"
-        },
-        {
           "path": "packages/schema/src/session-stats.ts",
           "action": "modified",
           "sha256": "6ce980ee7670646bc737fbc7d62e612c335d8524e3006bf6e456930c270045a6"
@@ -512,11 +492,6 @@
           "sha256": "83a39dfbd4c149e5336785e4b6f2c7a058588ce2f37c0e4635ac1fc775fb9c37"
         },
         {
-          "path": "packages/client/src/effect/api/api.ts",
-          "action": "modified",
-          "sha256": "bac2f1c74b728d6e47d5b34b6a99f7d9dd343322bd049fa9aacd38da55e242bc"
-        },
-        {
           "path": "packages/client/src/effect/generated/client.ts",
           "action": "modified",
           "sha256": "7047e6bb3ea5c765578b271042653a7fefef2f19f6d740d10665387754dd0437"
@@ -525,11 +500,6 @@
           "path": "packages/client/src/promise/generated/client.ts",
           "action": "modified",
           "sha256": "936a30ba93631e013570184de957c07fa52c84ed440aba204b8dcaf706537a8d"
-        },
-        {
-          "path": "packages/client/src/promise/generated/types.ts",
-          "action": "modified",
-          "sha256": "a2ae5b73b8f10c4239599be255b8c24102c2d6d624f5efe8b5c3298c4a7aa615"
         },
         {
           "path": "packages/client/test/promise.test.ts",
@@ -565,6 +535,80 @@
           "path": "packages/app/src/settings/providers/connection-form.tsx",
           "action": "added",
           "sha256": "a1c0f98e375a8341cbf07f69335992f9fd42bf210d2f916aec9074fa3ca54209"
+        }
+      ]
+    },
+    {
+      "id": "R2-02-auxiliary-accounting",
+      "reason": "保留原生辅助用量事实并按实际时间和模型统计；临时生成仅更新计量，不改变消息、输入和上下文。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R2-02"
+      ],
+      "files": [
+        {
+          "path": "packages/client/src/effect/api/api.ts",
+          "action": "modified",
+          "sha256": "008fdd1749788887104b6d787eeebb7adaab607778152ddbe831df78c1582ccf"
+        },
+        {
+          "path": "packages/client/src/promise/generated/types.ts",
+          "action": "modified",
+          "sha256": "1914d56f05a0f6b416e4300ea04ead57e8e38debe0da3671b9d02d9d3b5e5dfb"
+        },
+        {
+          "path": "packages/core/src/bus.ts",
+          "action": "modified",
+          "sha256": "96db0657244d76fea542c85bf77d0bdc432aa279d594774c5361564fa1ba1967"
+        },
+        {
+          "path": "packages/core/src/session.ts",
+          "action": "modified",
+          "sha256": "34196f693a8acecccc5234b479558dfdc5ae2f6fac5fe645b574638f3cbd4fc0"
+        },
+        {
+          "path": "packages/core/src/session/compaction.ts",
+          "action": "modified",
+          "sha256": "3645090bede242b4cfbd05a027829245a053414ec66e30ee550566bada3f4ca6"
+        },
+        {
+          "path": "packages/core/src/session/generate.ts",
+          "action": "modified",
+          "sha256": "398dd98c98a723439a799e76b4b2992693b46df7c447380facabd501f0190590"
+        },
+        {
+          "path": "packages/core/src/session/stats.ts",
+          "action": "modified",
+          "sha256": "a995ad6d6fc897d87bcc57e0deb6cbedca83c82a27fd7672f6999f9916f4ac21"
+        },
+        {
+          "path": "packages/core/src/session/title.ts",
+          "action": "modified",
+          "sha256": "c27cf493efb558f493941a9a32e257e71e9fb6373f3020ef53a203522d895034"
+        },
+        {
+          "path": "packages/core/test/bus.test.ts",
+          "action": "modified",
+          "sha256": "31db3b84a894b964d69723fab36e99444971982fc4fec7e806ba4b6fa2909e2f"
+        },
+        {
+          "path": "packages/core/test/session-generate.test.ts",
+          "action": "modified",
+          "sha256": "d3daa03da2a9b46574072d2c346741da536bf7689651bc2706bcab709ad7e246"
+        },
+        {
+          "path": "packages/core/test/session-stats.test.ts",
+          "action": "modified",
+          "sha256": "051ef3e57071f156f5f38846b5885920b31507ffde8611bdfc03a4cb9317e720"
+        },
+        {
+          "path": "packages/schema/src/session-event.ts",
+          "action": "modified",
+          "sha256": "8fb02bd2e1adac070a185570c42099e294a36689a378f104fb4291a54c2c27fb"
+        },
+        {
+          "path": "packages/server/src/routes.ts",
+          "action": "modified",
+          "sha256": "7a44d78aa5f549e6f95e1b1dc07d6d73785c616b0226392fbb61a3669d761214"
         }
       ]
     }

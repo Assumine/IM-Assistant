@@ -1,7 +1,11 @@
 {
   "task": "R2-02",
-  "status": "in_progress",
-  "acceptance_ids_completed": [],
+  "status": "done",
+  "acceptance_ids_completed": [
+    "A17",
+    "A18",
+    "A19"
+  ],
   "native_discovery_and_storage_tests": 7,
   "native_usage_review_tests": 6,
   "canonical_check": "36 workspace tasks passed",
@@ -16,10 +20,11 @@
     "R2_02_complete": false
   },
   "limits": [
-    "API settings currently add one initial model manually; GUI model discovery, connection editing/removal and live production accounts are not verified.",
-    "Native statistics count stored assistant steps and available durable compaction records; some auxiliary model calls are missing, disclosed in UI. R2-02 and A17-A19 remain incomplete.",
-    "Full typecheck:e2e has 14 existing diagnostics; full client service timing tests also failed this run. Neither is counted as passed.",
-    "No old private database migration, production account request, installed-client/autostart switch or installer release."
+    "Only isolated local model fixtures were used. No production account request, old private DB migration, installed-client switch or installer release.",
+    "GUI adds one initial model manually; discovery is an on-demand CLI. Connection editing/removal is not implemented.",
+    "Historical auxiliary events that were never retained cannot be recovered. Old events with no model are not guessed into a model bucket. Unreported tokens and failed/retried requests without returned usage cannot be reconstructed or treated as billed zero.",
+    "Selective accounting retention is not a complete replay log. Native messages, Inbox, compaction and SQLite remain the owners.",
+    "The previous full typecheck:e2e run had 14 existing diagnostics; the expanded client suite had service handoff/contender timing failures. These remain unresolved R5 work and are not claimed as passed by this focused R2 gate."
   ],
   "native_provenance_core_regressions": 98,
   "native_client_regressions": 41,
@@ -97,5 +102,6 @@
       "Full typecheck:e2e still reports 14 existing diagnostics.",
       "Full client suite after contract corrections: 252 passed, 4 Windows skips, 3 service handoff/contender timing failures and 1 teardown error. Unmodified service tests were not changed or retried to claim a pass. Focused client contract suite passes 56/56."
     ]
-  }
+  },
+  "runtime_acceptance_evidence": "upstream/provider-verification.json"
 }

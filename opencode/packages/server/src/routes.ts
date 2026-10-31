@@ -19,6 +19,7 @@ import path from "node:path"
 import { ConfigPluginSource } from "@opencode/core/config/plugin/source"
 import { Worktree } from "@opencode/core/worktree"
 import { Session } from "@opencode/core/session"
+import { SessionEvent } from "@opencode/schema/session-event"
 import { Instance } from "@opencode/core/instance/service"
 import { SessionTransfer } from "@opencode/core/session/transfer"
 import { InstructionEntry } from "@opencode/core/session/instruction-entry"
@@ -127,7 +128,10 @@ function makeRoutes<AuthError, AuthServices>(
   const standard: LayerNode.Replacements = [
     Database.node.replace(Database.configured(options.database)),
     PersistentPty.node.replace(PersistentPty.configured(options.pty)),
-    Bus.node.replace(Bus.configured({ persist: options.events?.persist })),
+    Bus.node.replace(Bus.configured({
+      persist: options.events?.persist,
+      retain: options.runtime?.managedDirectory ? [SessionEvent.UsageRecorded] : undefined,
+    })),
     App.node.replace(App.configured(options.app)),
     ModelsDev.node.replace(ModelsDev.configured(options.models)),
     Project.node.replace(Project.configured(options.runtime?.managedDirectory ? { discover: false } : options.project)),

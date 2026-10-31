@@ -182,6 +182,8 @@ interface Options {
   readonly logReadPageSize?: number
   /** Retain durable event payloads for historical log reads and replay. */
   readonly persist?: boolean
+  /** Retain selected accounting facts without enabling a complete replay log. Projections still run for every event. */
+  readonly retain?: readonly Event.DurableDefinition[]
 }
 
 export function configured(options?: Options) {
@@ -206,6 +208,9 @@ export function configured(options?: Options) {
         const { db } = yield* Database.Service
         const logReadPageSize = options?.logReadPageSize ?? 512
         const persist = options?.persist ?? false
+        const retained = new Set(
+          options?.retain?.map((definition) => versionedType(definition.type, definition.durable.version)),
+        )
         const sessions = new Map<SessionID, Location.Ref>()
         // Keep routing separate from the public event, and retain its snapshot
         // while a slow subscriber drains events queued before a move or deletion.
@@ -295,6 +300,7 @@ export function configured(options?: Options) {
           return Effect.gen(function* () {
             const durable = definition.durable
             if (!durable) return yield* Effect.void
+            const retain = persist || retained.has(versionedType(definition.type, durable.version))
             const aggregateID = (event.data as Record<string, unknown>)[durable.aggregate]
             if (typeof aggregateID !== "string")
               return yield* Effect.die(
@@ -336,7 +342,7 @@ export function configured(options?: Options) {
                           )
                         }
                         if (input && input.seq <= latest) {
-                          if (!persist) return
+                          if (!retain) return
                           const stored = yield* db
                             .select()
                             .from(EventTable)
@@ -379,7 +385,7 @@ export function configured(options?: Options) {
                             }),
                           )
                         }
-                        if (persist) {
+                        if (retain) {
                           const stored = yield* db
                             .select({ aggregateID: EventTable.aggregate_id, seq: EventTable.seq })
                             .from(EventTable)
@@ -415,7 +421,7 @@ export function configured(options?: Options) {
                           })
                           .run()
                           .pipe(Effect.orDie)
-                        if (persist)
+                        if (retain)
                           yield* db
                             .insert(EventTable)
                             .values([
@@ -600,7 +606,9 @@ export function configured(options?: Options) {
                           const ids = new Set<Event.ID>()
                           for (const [index, item] of payloads.entries()) {
                             const seq = firstSeq + index
-                            if (persist) {
+                            const retain =
+                              persist || retained.has(versionedType(item.definition.type, item.definition.durable.version))
+                            if (retain) {
                               if (ids.has(item.event.id))
                                 yield* Effect.die(
                                   new InvalidDurableEventError({
@@ -630,7 +638,7 @@ export function configured(options?: Options) {
                               yield* projector(event)
                             }
                             if (item.commit) yield* item.commit(seq)
-                            if (persist)
+                            if (retain)
                               rows.push({
                                 id: event.id,
                                 aggregate_id: aggregateID,
@@ -649,7 +657,7 @@ export function configured(options?: Options) {
                             .onConflictDoUpdate({ target: EventSequenceTable.aggregate_id, set: { seq: finalSeq } })
                             .run()
                             .pipe(Effect.orDie)
-                          if (persist) yield* db.insert(EventTable).values(rows).run().pipe(Effect.orDie)
+                          if (rows.length) yield* db.insert(EventTable).values(rows).run().pipe(Effect.orDie)
                           return { events: queued, route }
                         }),
                       { behavior: "immediate" },

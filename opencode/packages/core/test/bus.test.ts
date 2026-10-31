@@ -2,6 +2,7 @@ import { describe, expect } from "bun:test"
 import { Cause, Deferred, Effect, Exit, Fiber, Layer, Ref, Schema, Stream } from "effect"
 import { Bus } from "@opencode/core/bus"
 import { Event } from "@opencode/schema/event"
+import { Money } from "@opencode/schema/money"
 import { Session } from "@opencode/schema/session"
 import { SessionEvent } from "@opencode/schema/session-event"
 import { Database } from "@opencode/core/database/database"
@@ -110,8 +111,36 @@ const itWithoutLocation = testEffect(
   ]),
 )
 const itWithoutPersistence = testEffect(AppNodeBuilder.build(LayerNode.group([Database.node, Bus.node])))
+const itWithAccounting = testEffect(AppNodeBuilder.build(LayerNode.group([Database.node, Bus.node]), [
+  Bus.node.replace(Bus.configured({ retain: [SessionEvent.UsageRecorded] })),
+]))
 
 describe("Bus", () => {
+  itWithAccounting.effect("retains only selected facts across individual and batch commits without replaying projections twice", () =>
+    Effect.gen(function* () {
+      const bus = yield* Bus.Service
+      const { db } = yield* Database.Service
+      const sessionID = Session.ID.create()
+      const projected: string[] = []
+      yield* bus.project(SessionEvent.Renamed, event => Effect.sync(() => { projected.push(event.data.title) }))
+      yield* bus.project(SessionEvent.UsageRecorded, event => Effect.sync(() => { projected.push(event.data.source) }))
+      const usage = { sessionID, cost: Money.USD.zero, tokens: { input: 1, output: 0, reasoning: 0, cache: { read: 0, write: 0 } } }
+      yield* bus.publish(SessionEvent.Renamed, { sessionID, title: "first" })
+      const title = yield* bus.publish(SessionEvent.UsageRecorded, { ...usage, source: "title" })
+      yield* bus.publishAll([
+        [SessionEvent.Renamed, { sessionID, title: "second" }],
+        [SessionEvent.UsageRecorded, { ...usage, source: "compaction" }],
+      ])
+      const stored = yield* db.select().from(EventTable).where(eq(EventTable.aggregate_id, sessionID)).all().pipe(Effect.orDie)
+      expect(stored.map(row => row.seq)).toEqual([1, 3])
+      expect(stored.map(row => row.type)).toEqual([Bus.versionedType(SessionEvent.UsageRecorded.type, 1), Bus.versionedType(SessionEvent.UsageRecorded.type, 1)])
+      yield* bus.replay({ id: title.id, type: Bus.versionedType(SessionEvent.UsageRecorded.type, 1), created: title.created,
+        aggregateID: sessionID, seq: title.durable.seq, data: title.data })
+      expect(projected).toEqual(["first", "title", "second", "compaction"])
+      expect((yield* db.select().from(EventSequenceTable).where(eq(EventSequenceTable.aggregate_id, sessionID)).get())?.seq).toBe(3)
+    }),
+  )
+
   it.effect("subscribes to multiple event definitions with a discriminated payload union", () =>
     Effect.gen(function* () {
       const bus = yield* Bus.Service

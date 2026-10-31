@@ -119,7 +119,7 @@ def inbox_restart_smoke():
 
 
 @contextmanager
-def synthetic_model():
+def synthetic_model(reply=None):
     """Only model tokens are synthetic; all application admission/history/database code is original."""
     received = []
 
@@ -139,9 +139,11 @@ def synthetic_model():
             self.wfile.write(data)
 
         def do_POST(self):
-            received.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
+            request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            received.append(request)
+            text = reply(request) if reply else "Native baseline reply"
             chunks = [
-                {"choices": [{"index": 0, "delta": {"role": "assistant", "content": "Native baseline reply"},
+                {"choices": [{"index": 0, "delta": {"role": "assistant", "content": text},
                               "finish_reason": None}]},
                 {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
                  "usage": {"prompt_tokens": 10, "completion_tokens": 4, "total_tokens": 14}},

@@ -64,6 +64,7 @@ export const layer = Layer.effect(
           ? bus.publish(SessionEvent.UsageRecorded, {
               sessionID: input.session.id,
               source: "title",
+              model: input.model.ref,
               ...usage,
             })
           : Effect.void,

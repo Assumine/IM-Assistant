@@ -18,7 +18,10 @@
     "A13",
     "A14",
     "A15",
-    "A16"
+    "A16",
+    "A17",
+    "A18",
+    "A19"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -159,7 +162,7 @@
       "blocked_reason": null
     },
     "R2-02": {
-      "status": "in_progress",
+      "status": "done",
       "artifacts": [
         "opencode/packages/im-assistant/src/providers.ts",
         "opencode/packages/im-assistant/src/providers.test.ts",
@@ -173,9 +176,33 @@
         "opencode/packages/core/src/config.ts",
         "opencode/packages/schema/src/config.ts",
         "opencode/packages/server/src/handlers/config.ts",
-        "opencode/packages/app/src/settings/providers/connection-form.tsx"
+        "opencode/packages/app/src/settings/providers/connection-form.tsx",
+        "tests/rebase/test_r2_02.py",
+        "tools/auxiliary_usage_smoke.py",
+        "upstream/provider-verification.json",
+        "opencode/packages/core/src/bus.ts",
+        "opencode/packages/schema/src/session-event.ts",
+        "opencode/packages/core/src/session/generate.ts"
       ],
-      "verification": [],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 7,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A17",
+            "A18",
+            "A19"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R2-02",
+          "evidence": "upstream/provider-verification.json",
+          "native_unit_tests": 254,
+          "browser_tests": 55
+        }
+      ],
       "blocked_reason": null
     },
     "R3-01": {

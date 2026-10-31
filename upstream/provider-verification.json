@@ -1,0 +1,254 @@
+{
+  "task": "R2-02",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "verified_at": "2026-10-31T02:45:10.878357+00:00",
+  "command": "python tools/run_runtime_checks.py --task R2-02",
+  "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+  "runtime": {
+    "task": "R2-02",
+    "plan_id": "opencode-app-base-v2",
+    "archived_reference": false,
+    "status": "passed",
+    "tests_run": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "acceptance_ids": [
+      "A17",
+      "A18",
+      "A19"
+    ],
+    "progress_updated": false
+  },
+  "acceptance_ids": [
+    "A17",
+    "A18",
+    "A19"
+  ],
+  "native_unit_tests": 254,
+  "browser_tests": 55,
+  "repeated_browser_runs": 10,
+  "checks": {
+    "usage-owners": {
+      "args": [
+        "bun",
+        "run",
+        "test",
+        "test/session-stats.test.ts",
+        "test/session-usage.test.ts",
+        "test/session-title.test.ts",
+        "test/session-compaction.test.ts",
+        "test/session-native-compaction.test.ts",
+        "test/session-compaction-transport.test.ts",
+        "test/session-generate.test.ts",
+        "test/bus.test.ts"
+      ],
+      "cwd": "opencode/packages/core",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 6.1,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-usage-owners.log",
+      "native_tests_passed": 130,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "account-owners": {
+      "args": [
+        "bun",
+        "run",
+        "test",
+        "test/config/provider.test.ts",
+        "test/config/provider-options.test.ts",
+        "test/config/entry-observer.test.ts",
+        "test/credential.test.ts"
+      ],
+      "cwd": "opencode/packages/core",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 5.5,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-account-owners.log",
+      "native_tests_passed": 51,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "catalog-owners": {
+      "args": [
+        "bun",
+        "test",
+        "src/providers.test.ts",
+        "src/storage.test.ts"
+      ],
+      "cwd": "opencode/packages/im-assistant",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.08,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-catalog-owners.log",
+      "native_tests_passed": 7,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "client-contracts": {
+      "args": [
+        "bun",
+        "run",
+        "test",
+        "test/promise.test.ts",
+        "test/effect.test.ts",
+        "test/deprecated-aliases.test.ts",
+        "test/contract-identity.test.ts",
+        "test/import-boundaries.test.ts"
+      ],
+      "cwd": "opencode/packages/client",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.23,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-client-contracts.log",
+      "native_tests_passed": 56,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "protocol": {
+      "args": [
+        "bun",
+        "run",
+        "test"
+      ],
+      "cwd": "opencode/packages/protocol",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.36,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-protocol.log",
+      "native_tests_passed": 10,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "settings": {
+      "args": [
+        "bun",
+        "run",
+        "test:e2e:built",
+        "--",
+        "e2e/regression/settings.spec.ts",
+        "--project",
+        "chromium",
+        "--workers=5",
+        "--retries=0"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 106.33,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-settings.log",
+      "native_tests_passed": 55,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "connection-repeat": {
+      "args": [
+        "bun",
+        "run",
+        "test:e2e:built",
+        "--",
+        "e2e/regression/settings.spec.ts",
+        "--project",
+        "chromium",
+        "--workers=5",
+        "--retries=0",
+        "--grep",
+        "custom API metadata",
+        "--repeat-each=10"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 31.13,
+      "isolated_home": true,
+      "log": ".reports/native/r2-02-acceptance-connection-repeat.log",
+      "native_tests_passed": 10,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    }
+  },
+  "canonical_check": {
+    "args": [
+      "bun",
+      "run",
+      "check"
+    ],
+    "cwd": "opencode",
+    "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+    "exit_code": 0,
+    "duration_seconds": 36.02,
+    "isolated_home": true,
+    "log": ".reports/native/r2-02-acceptance-check.log",
+    "native_tests_passed": null,
+    "native_tests_failed": null,
+    "native_tests_skipped": 0
+  },
+  "smokes": {
+    "discovery": {
+      "catalog_cli_real_http": true,
+      "generation_verified_separately": true,
+      "native_reported_usage_persisted": true,
+      "usage_provenance_survives_restart": true,
+      "native_stats_reporting_survives_restart": true,
+      "discovery_changes_default_or_queue": false,
+      "external_model_requests": 0,
+      "R2_02_complete": false
+    },
+    "configuration": {
+      "native_configuration_http": true,
+      "native_credentials_sqlite": true,
+      "restart_preserves_connections_and_credentials": true,
+      "pending_input_and_model_unchanged": true,
+      "generation_uses_saved_key": true,
+      "duplicate_and_builtin_id_conflict": true,
+      "unsafe_configuration_rejected": true,
+      "generic_config_remains_denied": true,
+      "external_model_requests": 0,
+      "R2_02_complete": false
+    },
+    "auxiliary": {
+      "real_native_http_sqlite": true,
+      "selective_accounting_retention": true,
+      "sources": [
+        "title",
+        "generate",
+        "compaction"
+      ],
+      "model_requests_accounted": 4,
+      "generation_preserves_transcript": true,
+      "no_auxiliary_double_count": true,
+      "native_context_limits": {
+        "context": 32000,
+        "output": 1024
+      },
+      "native_compacted_context_restored": true,
+      "restart_preserves_totals_and_model_attribution": true,
+      "external_model_requests": 0
+    }
+  },
+  "standalone_smokes": "Component checkpoint flags do not set task progress; this unified gate establishes R2 completion.",
+  "declared_product_files": 106,
+  "limits": [
+    "Only isolated local model fixtures were used. No production account request, old private DB migration, installed-client switch or installer release.",
+    "GUI adds one initial model manually; discovery is an on-demand CLI. Connection editing/removal is not implemented.",
+    "Historical auxiliary events that were never retained cannot be recovered. Old events with no model are not guessed into a model bucket. Unreported tokens and failed/retried requests without returned usage cannot be reconstructed or treated as billed zero.",
+    "Selective accounting retention is not a complete replay log. Native messages, Inbox, compaction and SQLite remain the owners.",
+    "The previous full typecheck:e2e run had 14 existing diagnostics; the expanded client suite had service handoff/contender timing failures. These remain unresolved R5 work and are not claimed as passed by this focused R2 gate."
+  ],
+  "e2e_types_recheck": {
+    "command": "python tools/native_baseline.py --cwd packages/app --label r2-02-accepted-e2e-types -- run typecheck:e2e",
+    "exit_code": 1,
+    "existing_diagnostics": 14,
+    "new_diagnostics": 0,
+    "note": "Not passed; same diagnostic messages and files after normalizing shifted line numbers."
+  }
+}
