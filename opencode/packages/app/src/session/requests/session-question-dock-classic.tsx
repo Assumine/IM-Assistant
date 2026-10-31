@@ -19,6 +19,8 @@ import { useServerSDK } from "@/runtime/server/client"
 import { ScopedKey } from "@/runtime/server/scope"
 import { useCommand } from "@/shell/commands/command"
 import { questionCache } from "./question-state"
+import type { QuestionDockProps } from "./question-dock-props"
+import { Loader } from "@opencode/ui/loader"
 
 const IS_MAC = /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 
@@ -124,9 +126,26 @@ function Option(props: {
 
 export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit: () => void }> = (props) => {
   const serverSDK = useServerSDK()
+
+  return (
+    <QuestionDockClassic
+      request={props.request}
+      cacheKey={ScopedKey.from(serverSDK.scope, props.request.id)}
+      reply={async (answer) => {
+        await serverSDK.api.session.form.reply({ sessionID: props.request.sessionID, formID: props.request.id, answer })
+      }}
+      reject={async () => {
+        await serverSDK.api.session.form.cancel({ sessionID: props.request.sessionID, formID: props.request.id })
+      }}
+      onSubmit={props.onSubmit}
+    />
+  )
+}
+
+export const QuestionDockClassic: Component<QuestionDockProps> = (props) => {
   const language = useLanguage()
   const command = useCommand()
-  const cacheKey = ScopedKey.from(serverSDK.scope, props.request.id)
+  const cacheKey = props.cacheKey
 
   const questions = createMemo(() =>
     props.request.fields.filter(questionField).map((field) => ({
@@ -135,6 +154,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
       question: field.description ?? field.title ?? "",
       options: field.type === "string" ? (field.options ?? []) : field.options,
       multiple: field.type === "multiselect",
+      custom: field.custom !== false,
     })),
   )
 
@@ -163,6 +183,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   let customInput: HTMLInputElement | undefined
   let optsRef: HTMLDivElement[] = []
   let replied = false
+  let disposed = false
   let focusFrame: number | undefined
 
   const question = createMemo(() => questions()[store.tab])
@@ -170,7 +191,8 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   const input = createMemo(() => store.custom[store.tab] ?? "")
   const on = createMemo(() => store.customOn[store.tab] === true)
   const multi = createMemo(() => question()?.multiple === true)
-  const count = createMemo(() => options().length + 1)
+  const customAllowed = createMemo(() => question()?.custom !== false)
+  const count = createMemo(() => options().length + (customAllowed() ? 1 : 0))
 
   const summary = createMemo(() => {
     if (total() === 1) return language.t("session.question.title")
@@ -253,7 +275,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   const pickFocus = (tab: number = store.tab) => {
     const list = questions()[tab]?.options ?? []
 
-    if (store.customOn[tab] === true) return list.length
+    if (questions()[tab]?.custom && store.customOn[tab] === true) return list.length
 
     return Math.max(
       0,
@@ -324,7 +346,14 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   onCleanup(() => {
     if (focusFrame !== undefined) cancelAnimationFrame(focusFrame)
 
-    if (replied) return
+    disposed = true
+
+    if (replied || (props.retainDraft && !props.retainDraft())) {
+      questionCache.delete(cacheKey)
+
+      return
+    }
+
     questionCache.set(cacheKey, {
       tab: store.tab,
       answers: store.answers.map((a) => (a ? [...a] : [])),
@@ -333,11 +362,13 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
     })
   })
 
-  const fail = (err: Error) => showToast({ title: language.t("common.requestFailed"), description: err.message })
+  const fail = (err: Error) => {
+    if (!disposed) showToast({ title: language.t("common.requestFailed"), description: err.message })
+  }
 
   const replyMutation = useMutation(() => ({
-    mutationFn: (answer: FormAnswer) =>
-      serverSDK.api.session.form.reply({ sessionID: props.request.sessionID, formID: props.request.id, answer }),
+    mutationFn: (answer: FormAnswer) => props.reply(answer),
+    retry: false,
     onMutate: () => {
       props.onSubmit()
     },
@@ -349,8 +380,8 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   }))
 
   const rejectMutation = useMutation(() => ({
-    mutationFn: () =>
-      serverSDK.api.session.form.cancel({ sessionID: props.request.sessionID, formID: props.request.id }),
+    mutationFn: () => props.reject(),
+    retry: false,
     onMutate: () => {
       props.onSubmit()
     },
@@ -361,7 +392,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
     onError: fail,
   }))
 
-  const sending = createMemo(() => replyMutation.isPending || rejectMutation.isPending)
+  const sending = createMemo(() => props.disabled || replyMutation.isPending || rejectMutation.isPending)
   const submitShortcut = () => (IS_MAC ? "⌘⏎" : `${language.t("common.key.ctrl")}+⏎`)
   const backShortcut = () => (IS_MAC ? "⌘[" : `${language.t("common.key.alt")}+←`)
 
@@ -394,6 +425,9 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
     return store.customOn[i] === true && (store.custom[i] ?? "").trim().length > 0
   }
 
+  const canAdvance = () =>
+    !props.requireAnswers || (last() ? questions().every((_, index) => answered(index)) : answered(store.tab))
+
   const picked = (answer: string) => store.answers[store.tab]?.includes(answer) ?? false
 
   const pick = (answer: string) => {
@@ -411,7 +445,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   }
 
   const customToggle = () => {
-    if (sending()) return
+    if (sending() || !customAllowed()) return
     setStore("focus", options().length)
 
     if (!multi()) {
@@ -555,7 +589,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
   }
 
   const next = () => {
-    if (sending()) return
+    if (sending() || !canAdvance()) return
 
     if (store.editing) commitCustom()
 
@@ -694,6 +728,9 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
               {language.t("ui.common.dismiss")}
             </Button>
             <div data-slot="question-footer-actions">
+              <Show when={replyMutation.isPending || rejectMutation.isPending}>
+                <Loader width={14} height={14} />
+              </Show>
               <Show when={store.tab > 0}>
                 <Tooltip
                   placement="top"
@@ -727,7 +764,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
                 <Button
                   variant={last() ? "contrast" : "neutral"}
                   size="large"
-                  disabled={sending()}
+                  disabled={sending() || !canAdvance()}
                   onClick={next}
                   aria-label={language.t(last() ? "ui.common.submit" : "ui.common.next")}
                   aria-keyshortcuts="Meta+Enter Control+Enter"
@@ -777,85 +814,87 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
             )}
           </For>
 
-          <div
-            data-slot="question-option"
-            data-custom="true"
-            data-picked={on()}
-            data-editing={store.editing}
-            data-disabled={sending()}
-            onClick={(event) => {
-              if (event.target !== event.currentTarget || sending()) return
-              setStore("focus", options().length)
-              setStore("customOn", store.tab, true)
-              setStore("editing", true)
-              customUpdate(input(), true)
-              customInput?.focus()
-            }}
-          >
-            <button
-              type="button"
-              ref={customRef}
-              data-slot="question-custom-toggle"
-              role={multi() ? "checkbox" : "radio"}
-              aria-checked={on()}
-              aria-label={customLabel()}
-              aria-keyshortcuts={count() <= 9 ? String(count()) : undefined}
-              disabled={sending()}
-              onFocus={() => setStore("focus", options().length)}
-              onClick={customToggle}
-            >
-              <Mark multi={multi()} picked={on()} />
-            </button>
-            <TextInput
-              ref={(el) => (customInput = el)}
-              class="question-custom-field"
-              dir="auto"
-              aria-label={customLabel()}
-              placeholder={customLabel()}
-              value={input()}
-              disabled={sending()}
-              onFocus={() => {
-                if (focusFrame !== undefined) cancelAnimationFrame(focusFrame)
-                focusFrame = undefined
+          <Show when={customAllowed()}>
+            <div
+              data-slot="question-option"
+              data-custom="true"
+              data-picked={on()}
+              data-editing={store.editing}
+              data-disabled={sending()}
+              onClick={(event) => {
+                if (event.target !== event.currentTarget || sending()) return
                 setStore("focus", options().length)
+                setStore("customOn", store.tab, true)
                 setStore("editing", true)
-              }}
-              onClick={() => {
-                setStore("customOn", store.tab, true)
                 customUpdate(input(), true)
+                customInput?.focus()
               }}
-              onBlur={() => setStore("editing", false)}
-              onKeyDown={(e) => {
-                if (e.isComposing || e.keyCode === 229) return
+            >
+              <button
+                type="button"
+                ref={customRef}
+                data-slot="question-custom-toggle"
+                role={multi() ? "checkbox" : "radio"}
+                aria-checked={on()}
+                aria-label={customLabel()}
+                aria-keyshortcuts={count() <= 9 ? String(count()) : undefined}
+                disabled={sending()}
+                onFocus={() => setStore("focus", options().length)}
+                onClick={customToggle}
+              >
+                <Mark multi={multi()} picked={on()} />
+              </button>
+              <TextInput
+                ref={(el) => (customInput = el)}
+                class="question-custom-field"
+                dir="auto"
+                aria-label={customLabel()}
+                placeholder={customLabel()}
+                value={input()}
+                disabled={sending()}
+                onFocus={() => {
+                  if (focusFrame !== undefined) cancelAnimationFrame(focusFrame)
+                  focusFrame = undefined
+                  setStore("focus", options().length)
+                  setStore("editing", true)
+                }}
+                onClick={() => {
+                  setStore("customOn", store.tab, true)
+                  customUpdate(input(), true)
+                }}
+                onBlur={() => setStore("editing", false)}
+                onKeyDown={(e) => {
+                  if (e.isComposing || e.keyCode === 229) return
 
-                if (e.key === "Escape") {
+                  if (e.key === "Escape") {
+                    e.preventDefault()
+                    setStore("editing", false)
+                    focus(options().length)
+
+                    return
+                  }
+
+                  if ((e.metaKey || e.ctrlKey) && !e.altKey) return
+
+                  if (e.key !== "Enter") return
                   e.preventDefault()
-                  setStore("editing", false)
-                  focus(options().length)
-
-                  return
-                }
-
-                if ((e.metaKey || e.ctrlKey) && !e.altKey) return
-
-                if (e.key !== "Enter") return
-                e.preventDefault()
-                commitCustom()
-              }}
-              onInput={(e) => {
-                setStore("customOn", store.tab, true)
-                customUpdate(e.currentTarget.value, true)
-              }}
-            />
-            <Show when={count() <= 9}>
-              <Keybind
-                keys={[String(count())]}
-                variant={on() ? "outline" : "neutral"}
-                data-slot="question-option-shortcut"
-                aria-hidden="true"
+                  commitCustom()
+                }}
+                onInput={(e) => {
+                  setStore("customOn", store.tab, true)
+                  customUpdate(e.currentTarget.value, true)
+                }}
               />
-            </Show>
-          </div>
+              <Show when={count() <= 9}>
+                <Keybind
+                  keys={[String(count())]}
+                  variant={on() ? "outline" : "neutral"}
+                  data-slot="question-option-shortcut"
+                  aria-hidden="true"
+                />
+              </Show>
+            </div>
+          </Show>
         </div>
       </DockPrompt>
     </div>

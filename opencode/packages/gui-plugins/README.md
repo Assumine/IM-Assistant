@@ -205,7 +205,7 @@ rows and optional actions; absent edit/undo/steer/reorder actions are omitted. T
 by Session, without importing a Session queue controller into the plugin. Pass `attached: true` only when a composer
 follows it; standalone strips do not overlap the next surface. Reordering requires a complete native queue page.
 Native controls are explicit user actions, followed by observation; failed/unknown controls are never retried automatically.
-The whole-backend control acknowledgement is `applied` or `not-found`; it never replaces the execution snapshot.
+The whole-backend control acknowledgement is `applied`, `not-found`, or `resolved` for human input; it never replaces the execution snapshot.
 For withdrawal, `not-found` means the input already left the pending queue, not that its text can safely be restored.
 The native Stop action carries the observed turn ID. A different turn must reject it in the backend rather than
 silently stopping newer work. Dispatched writes survive view navigation, while late UI results belong only to the
@@ -230,6 +230,20 @@ One unconfirmed handoff retains its original input id and body. It is not an exe
 retry/check can dispatch it. A later draft is editable and is never cleared by an earlier admission. Navigation does
 not cancel a dispatched admission; late UI results are discarded, and an unconfirmed receipt can be checked after
 returning. Backend observation reads and subscriptions still end with the view. No background resend or drain runs.
+
+`ctx.ui.BackendQuestion` reuses the app's classic/experimental question dock, chosen by the user's existing setting.
+Pass the current `execution.questions[0]` (or undefined after native resolution), `server`, the original `threadRef`,
+`busy` and `control`. It maps non-secret text choices to explicit `answer`/`dismiss-question` controls, never Session
+form RPCs or tool approvals. An `other: false` prompt has no custom input or custom-answer keyboard path. Every
+required prompt must be answered before submission. Draft choices use the native in-memory cache with the complete
+server/backend/thread/question identity, and remain when switching views. Resolved questions clear that cache.
+Keep the composer mounted inside a hidden, inert container for blocking questions, disabling its native send and
+queue controls; unmounting it would discard in-progress editor state. Nonblocking questions leave it available.
+The control callback must refresh native observations and return `resolved` or `not-found`; `resolved` confirms the
+question was resolved, potentially by another attached client, rather than claiming this answer won a race. A local
+submit does not hide the dock. Unknown responses are not retried; preserve the disabled/reconciliation state and
+refresh explicitly. Dispatched controls survive navigation, while late view errors are discarded. No answers are
+automatically replayed after reconnect, and absent question data must never be replaced with a fabricated form.
 
 The shipping main view refreshes native history after admission and lifecycle invalidation, not per-token deltas.
 While reading older content it offers a latest-records button rather than replacing the reading position. Native

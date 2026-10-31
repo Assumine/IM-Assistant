@@ -287,7 +287,12 @@
         "opencode/packages/app/src/session/composer/queue.ts",
         "modules/codex-native/src/content.ts",
         "modules/codex-native/src/questions.ts",
-        "modules/codex-native/test/connection.test.ts"
+        "modules/codex-native/test/connection.test.ts",
+        "opencode/packages/app/e2e/regression/session-request-docks.spec.ts",
+        "opencode/packages/app/src/session/requests/backend-question.tsx",
+        "opencode/packages/app/src/session/requests/question-dock-props.ts",
+        "opencode/packages/app/src/session/requests/session-question-dock-classic.tsx",
+        "opencode/packages/app/src/session/requests/session-question-dock-experimental.tsx"
       ],
       "verification": [
         {
@@ -295,7 +300,7 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 245,
+          "tests_run": 253,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
@@ -303,7 +308,7 @@
           "publication": "disabled",
           "native_http_checks": 10,
           "native_unit_tests": 83,
-          "browser_tests": 162
+          "browser_tests": 170
         }
       ],
       "blocked_reason": null

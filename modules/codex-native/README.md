@@ -22,7 +22,7 @@ python -m tools.codex_native_smoke
 
 通用设置页由原生SettingsPage贡献位置加载，不按Codex业务ID硬编码。它检查连接及登录，并可打开只读原生会话浏览器，不改变会话归属、默认执行器或队列。浏览器按需读取列表和历史分页，保留native thread/turn/item ID及来源顺序；向前加载保留阅读位置，切换和关闭后丢弃迟到回包。Codex读取使用thread/read(includeTurns=false)和thread/items/list，不resume或生成；只能读取本profile工作区。当前仅展示文本，未支持的内容保留为未完整展示的活动记录，不伪造回复或读取文件。后端离线后保留原选择；状态只在页面激活、连接变化、后端事件和用户刷新时读取，不后台轮询。浏览器登录URL仅经显式按钮打开；远程页面不提供依赖本机回调的登录入口，取消只影响指定登录尝试。
 
-已确认的限制：裸原生queue/add不按clientUserMessageId去重，必须使用公共send。未知交付且native也查不到时保留uncertain，不自动重发；这不是跨系统exactly-once保证。共享WebSocket在官方仍属实验性，人工提问界面、真人认证及正式宿主激活未完成；多用户ACL和其他OS未验收。只读浏览器不是原生主会话页的正式接入。设置页浏览器登录交互只用合成夹具验证，真实CLI仅验证无凭据账号状态和不存在登录ID的取消，不把它算真人登录验收。受控助手模式继续禁用任意SDK插件，不为此放宽通用插件加载或真实系统权限。
+已确认的限制：裸原生queue/add不按clientUserMessageId去重，必须使用公共send。未知交付且native也查不到时保留uncertain，不自动重发；这不是跨系统exactly-once保证。共享WebSocket在官方仍属实验性，人工提问界面已接入，真人认证及正式宿主激活未完成；多用户ACL和其他OS未验收。只读浏览器不是原生主会话页的正式接入。设置页浏览器登录交互只用合成夹具验证，真实CLI仅验证无凭据账号状态和不存在登录ID的取消，不把它算真人登录验收。受控助手模式继续禁用任意SDK插件，不为此放宽通用插件加载或真实系统权限。
 
 详细证据、发布门槛和下一步见 [Codex 原生接入边界](../../docs/handoff/Codex原生接入边界.md)。
 
@@ -38,4 +38,6 @@ GUI通过公共BackendView承载整套后端。原生标签存server＋原始Ref
 
 直接引导走公共send并固定expectedTurnID；明确结构化拒绝保存rejected事实，未知错误仍不自动重试。content投影每轮核对工作区，以新streamID及UTF-16偏移发送快照/增量；只暂存活跃assistant文本，完成/退订即清理，最终历史仍归Codex。中途附着缺失起点时不编造前缀，保留完成历史对齐。人工提问已接后端桥接；其他host工具/权限请求仍拒绝，不自动批准。
 
-人工提问仅接item/tool/requestUserInput；观察连接不抢先拒绝，唯一输入owner先核对工作区，再发布非秘密questions投影。公共ID随捕获代际失效，answer/dismiss-question只响应当前原生请求。等待原生serverRequest/resolved后返回resolved，不把写入当成功，也不能据此判定竞争客户端中哪份答案获胜。未知结果不重发；结束/断线清理。Default模式原生不支持此工具，不自动切Plan。提问界面尚未接入，宿主重启后待答请求恢复尚无已验证枚举API；不编造表单或重放答案。详见当前交接记录。
+人工提问仅接item/tool/requestUserInput；观察连接不抢先拒绝，唯一输入owner先核对工作区，再发布非秘密questions投影。公共ID随捕获代际失效，answer/dismiss-question只响应当前原生请求。等待原生serverRequest/resolved后返回resolved，不把写入当成功，也不能据此判定竞争客户端中哪份答案获胜。未知结果不重发；结束/断线清理。Default模式原生不支持此工具，不自动切Plan。提问界面复用原生QuestionDock，宿主重启后待答请求恢复尚无已验证枚举API；不编造表单或重放答案。详见当前交接记录。
+
+公共ctx.ui.BackendQuestion现复用classic/experimental呈现器；完整身份隔离未提交选择，阻塞时保持原编辑器节点但隐藏/禁用。原Session表单RPC不变，整套后端只发送原生answer/dismiss-question。回执先于状态更新时继续保留禁用面板，直到原生问题消失；未知结果不重发，迟到错误不进入另一会话。当前均为隔离夹具验证，不代表真人账号、ACL或生产激活完成。

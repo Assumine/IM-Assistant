@@ -36,7 +36,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.08,
+      "duration_seconds": 1.12,
       "isolated_home": true,
       "log": ".reports/native/r3-host-unit.log",
       "native_tests_passed": 19,
@@ -53,7 +53,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.49,
+      "duration_seconds": 2.51,
       "isolated_home": true,
       "log": ".reports/native/r3-host-server-unit.log",
       "native_tests_passed": 3,
@@ -69,7 +69,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.51,
+      "duration_seconds": 2.52,
       "isolated_home": true,
       "log": ".reports/native/r3-host-http.log",
       "native_tests_passed": null,
@@ -112,8 +112,9 @@
         "e2e/regression/tabs.spec.ts",
         "e2e/regression/session-queue.spec.ts",
         "e2e/regression/composer.spec.ts",
+        "e2e/regression/session-request-docks.spec.ts",
         "--grep",
-        "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts",
+        "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts|session-request-docks.spec.ts",
         "--project",
         "chromium",
         "--workers",
@@ -124,10 +125,10 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 135.31,
+      "duration_seconds": 149.02,
       "isolated_home": true,
       "log": ".reports/native/r3-backend-browser.log",
-      "native_tests_passed": 131,
+      "native_tests_passed": 139,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     },
@@ -140,7 +141,7 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 38.36,
+      "duration_seconds": 37.86,
       "isolated_home": true,
       "log": ".reports/native/r3-host-check.log",
       "native_tests_passed": null,
@@ -184,6 +185,7 @@
     "opencode/packages/app/component-tests/plugin-host.fixture.tsx": "7a87aebbc18d47eead93e080269ed0bc1d848a449922b204b90fbf655e3fa33c",
     "opencode/packages/app/e2e/regression/composer.spec.ts": "2b05f16c4cf260aea3b17c039fb4594e8832c224f0aae76f82c7fc8a737185c0",
     "opencode/packages/app/e2e/regression/session-queue.spec.ts": "3aa0c0d9efcc15d60dfd9249de0477de2b72305fa2314edfab1c918e9a8fc077",
+    "opencode/packages/app/e2e/regression/session-request-docks.spec.ts": "6847ac14874256139dd31cf8bffb041da870f924a5762d9d1ab032efb5a11331",
     "opencode/packages/app/e2e/regression/settings.spec.ts": "c10b1e6cb9feec6a180de1419909ab9ce5ab241f24ea271c75e9495ed8f029e5",
     "opencode/packages/app/e2e/regression/tabs.spec.ts": "ff6273dce7b35f45a7a528d751d1e77a1c38792160b7354565f7253598bdd5ff",
     "opencode/packages/app/e2e/utils/backends.ts": "875dc9ae233851509d7f11a73a5224fd550938b653d642dc8941602b0d3225cb",
@@ -194,13 +196,17 @@
     "opencode/packages/app/src/composer/editor/interaction.ts": "5fd64e762d98deb2f79c34d6ea4f6c26bd93d851b328be7116d4acf42da9c206",
     "opencode/packages/app/src/composer/queue-draft.ts": "d707adbd794f0daaf625944145f8ed2f63b5d6895e89655807a31543e8d6486f",
     "opencode/packages/app/src/composer/state.ts": "fee1997b90c7662270b7ff90a697940206e044893ed01f709af56e40ee06c8b6",
-    "opencode/packages/app/src/runtime/i18n/en.ts": "8c432e7224f46d25df16e7acdc2c0365cc191841441de9b596d998276c574199",
+    "opencode/packages/app/src/runtime/i18n/en.ts": "c2f111b057d8e12437f6986f1dbba5a69e386bbf7d812d7641ae2f66f1c33fe5",
     "opencode/packages/app/src/runtime/plugin/backend-view.tsx": "cf77fe3809268af828988f2bcf00da3c369f4dc5c26ed59cf08aba4c2df0d82c",
     "opencode/packages/app/src/runtime/plugin/host-apis.tsx": "50915fb56bd250b8b98752e87be67d6fbb42c00011974d6cf23d2117fdb82c7f",
     "opencode/packages/app/src/runtime/plugin/server-shell.tsx": "b312903123f4f904efefb56230525b43520d0b1d862fdaea041876ecb6698d09",
-    "opencode/packages/app/src/runtime/plugin/ui.tsx": "e33f8305d76cdf4fe86bcb41a31d8ef0c6948490b0bc8daf9ea729f78b686475",
+    "opencode/packages/app/src/runtime/plugin/ui.tsx": "08a33636e9f96a254f78c0bcf474a45210a6c344bb50007f6b3d209f18e5e948",
     "opencode/packages/app/src/session/composer/queue-panel.tsx": "d97ceb5a7e16d818897e9dbfa2792eae9191b406463f5e967802ba525069abb6",
     "opencode/packages/app/src/session/composer/queue.ts": "359887b797498d5bdad65a0dcda0d6101d40a1b49f780d97a4f73cbfb16ecf5c",
+    "opencode/packages/app/src/session/requests/backend-question.tsx": "664c199b201eb29411209fa3b8c4b98982908f24826da78da0326c04769e1af3",
+    "opencode/packages/app/src/session/requests/question-dock-props.ts": "45d5423220657e65574f64860f74e9e110e1a1b9b2bc9af1c96a21bbefbfa125",
+    "opencode/packages/app/src/session/requests/session-question-dock-classic.tsx": "05e1cefeea10a9cf394d0329b1429382d210c89cf8395c59c928f55d47c172ce",
+    "opencode/packages/app/src/session/requests/session-question-dock-experimental.tsx": "c334607ff84298924cd503ed678e136daae7f17beae7b4f1052a729736ce7f64",
     "opencode/packages/app/src/shell/notifications/notification.test.ts": "760a88e87e6bf6cb56699a5ef00740d96b592ccb7c6605f29a8a21451a3a1889",
     "opencode/packages/app/src/shell/routes/routes.tsx": "0fcabbb22d1387ecd57ddb756795c8a878a9d02be7790717297cd5656a51701a",
     "opencode/packages/app/src/shell/routes/session.test.ts": "0f27c4ed9bba5c0cdd67d499f205b539318e1165e5613a7103efd3d68aede341",
@@ -221,9 +227,9 @@
     "opencode/packages/core/src/plugin/host.ts": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5",
     "opencode/packages/core/test/conversation-backend.test.ts": "c2efdc357167571aacab6abcff6f816130281584c5f272d0827525690ca6beb1",
     "opencode/packages/core/test/plugin/fixture.ts": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8",
-    "opencode/packages/gui-plugins/README.md": "40c86094e2fdc8714b7f2e351126c05de8260706552758b0163f5876e3b7e4a6",
+    "opencode/packages/gui-plugins/README.md": "82908a36524989c86234e1ddd95aae87fa7e79380414f1f3da156fde112d4815",
     "opencode/packages/gui-plugins/src/backends/browser.tsx": "52cedca3c2b09b25d758a64cfb73c3f08cb47f5d664c09c92cc6eb367ffbdb5b",
-    "opencode/packages/gui-plugins/src/backends/execution.tsx": "141854b1d0302f9615d5b46a17cb3528e43a5ece11cf59c7543ebf489c0e30ca",
+    "opencode/packages/gui-plugins/src/backends/execution.tsx": "155c8ebab79a0640a9dccc9dd8404b58a4f7c8fb00af166f5b1cc60066f19f1b",
     "opencode/packages/gui-plugins/src/backends/i18n/en.ts": "b18c79eb0091c653ea8ff271f27fac1c4b090e7152f4ef36e42b4356588704e0",
     "opencode/packages/gui-plugins/src/backends/index.ts": "c1c64131448aae4e08f4aa3e1ef9de7abce0ade4d068af9ecb00bd159d14f2e2",
     "opencode/packages/gui-plugins/src/backends/page.tsx": "923f0656e61320722c549fa3ab3096a5384a507b79f652e0ef1627d3bbf551df",
@@ -234,22 +240,29 @@
     "opencode/packages/gui-plugins/src/renderer.ts": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f",
     "opencode/packages/plugin/src/effect/conversation.ts": "c5cda1d43e864997ceb7dcc642d55ae8d0d83c0c6f17d3f712ff912a7b6c0e5a",
     "opencode/packages/plugin/src/effect/plugin.ts": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917",
-    "opencode/packages/plugin/src/gui/host-apis.ts": "9caca1a858e630f7ef3aa1b6719a8c1557fec5240d09b3e27c3b5f70282d2c26",
+    "opencode/packages/plugin/src/gui/host-apis.ts": "af9d9e618d70e0e3b30ac899cacd8bae7ea3f2550be294022000dcaecdf27ecd",
     "opencode/packages/plugin/src/gui/registries.ts": "a538f1cda08ab7ef8cebb99786ea05b97dfb18298d50b65fbe7b0b80731846bc",
     "opencode/packages/schema/src/conversation-backend.ts": "4f322c5c945356a06c6f3ed77863a9de25b0109fb2a2a57a903d7fdbe5378ab9",
     "opencode/packages/server/script/codex-backend-smoke.ts": "3c25dc41cb02dcdbd57833f7b70de30c72170afd8354a3c1d5cba08f83c3d2a3",
     "opencode/packages/server/src/middleware/runtime-policy.ts": "5cc0ba37aa4bc529ef5deb11a2301adbb199ce78b83eef19bb1aead025669b86",
     "opencode/packages/server/src/routes.ts": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22",
     "opencode/packages/server/test/conversation-policy.test.ts": "9e6d2a119e0755cc88d3f0dbbd2835b344c3008bb218a062a0da1f11c420b9ad",
-    "tools/codex_native_smoke.py": "fc8fc62b2dba7701ff89a079ad6ad2dd43d9400232e2a809d05dd69cd9c68710"
+    "tools/codex_native_smoke.py": "1acb2b506ce5d1d4dbe6d05e0673eda9bd7ae739d94b3f268636b61ee61a8176"
   },
-  "duration_seconds": 221.71,
+  "duration_seconds": 237.33,
   "remaining": [
-    "human-input UI, backend selection and production host activation; human-input backend bridge, direct guidance, native queue controls, committed draft recovery and scoped live text verified with fixtures",
+    "backend selection and production host activation; native human-input presentation and bridge, direct guidance, native queue controls, committed draft recovery and scoped live text verified with fixtures",
     "shared transport is experimental and not published; production activation and OS matrix remain unverified",
     "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
     "real account connection and capability revalidation before publication"
   ],
+  "e2e_types_recheck": {
+    "command": "bun run typecheck:e2e",
+    "exit_code": 1,
+    "existing_diagnostics": 14,
+    "new_diagnostics": 0,
+    "note": "Not passed. Same files and messages after normalizing shifted line numbers."
+  },
   "additional_verification": {
     "plugin_host": {
       "args": [
@@ -269,9 +282,9 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 33.7,
+      "duration_seconds": 36.37,
       "isolated_home": true,
-      "log": ".reports/native/r3-question-plugin-host.log",
+      "log": ".reports/native/r3-question-ui-plugin-host.log",
       "native_tests_passed": 31,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
@@ -286,111 +299,145 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 5.18,
+      "duration_seconds": 11.18,
       "isolated_home": true,
-      "log": ".reports/native/r3-question-lint.log",
+      "log": ".reports/native/r3-question-ui-lint.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
-      "native_tests_skipped": 0,
-      "applicable": false,
-      "note": "No GUI package source changed in this slice."
-    },
-    "module_lint": {
-      "args": [
-        "F:\\Tools Download\\IM-Assistant\\next\\runtime\\tools\\bun-1.4.4\\bun-windows-x64-baseline\\bun.exe",
-        "F:\\Tools Download\\IM-Assistant\\next\\opencode\\node_modules\\oxlint\\bin\\oxlint",
-        "--config",
-        "F:\\Tools Download\\IM-Assistant\\next\\opencode\\.oxlintrc.json",
-        "modules/codex-native/src/backend.ts",
-        "modules/codex-native/src/connection.ts",
-        "modules/codex-native/src/session-adapter.ts",
-        "modules/codex-native/src/questions.ts",
-        "modules/codex-native/test/native.test.ts",
-        "modules/codex-native/test/connection.test.ts"
-      ],
-      "cwd": ".",
-      "exit_code": 0,
-      "duration_seconds": 1.37,
-      "log": ".reports/native/r3-question-module-lint.log"
+      "native_tests_skipped": 0
     },
     "shared_test_cleanup": {
-      "checked": 175,
+      "checked": 185,
       "stopped": 0,
       "unverified": 0
+    },
+    "question_contribution_mutation": {
+      "mutation": "Hide the native question contribution, reproducing the pre-integration behavior.",
+      "expected_failure": true,
+      "failed_tests": 1,
+      "restored_sha256": "155c8ebab79a0640a9dccc9dd8404b58a4f7c8fb00af166f5b1cc60066f19f1b",
+      "evidence": ".reports/native/r3-question-ui-mutation.log"
+    },
+    "question_concurrency_repeats": {
+      "args": [
+        "bun",
+        "x",
+        "--no-install",
+        "playwright",
+        "test",
+        "e2e/regression/session-request-docks.spec.ts",
+        "--grep",
+        "whole backend:",
+        "--repeat-each",
+        "10",
+        "--workers",
+        "5",
+        "--retries",
+        "0",
+        "--project",
+        "chromium"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 45.1,
+      "isolated_home": true,
+      "log": ".reports/native/r3-question-ui-stress.log",
+      "native_tests_passed": 30,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    "question_parallel_keeper": {
+      "args": [
+        "bun",
+        "x",
+        "--no-install",
+        "playwright",
+        "test",
+        "e2e/regression/session-request-docks.spec.ts",
+        "--workers",
+        "5",
+        "--retries",
+        "0",
+        "--project",
+        "chromium"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 31.73,
+      "isolated_home": true,
+      "log": ".reports/native/r3-question-ui-parallel.log",
+      "native_tests_passed": 8,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
     }
-  },
-  "e2e_types_recheck": {
-    "command": "bun run typecheck:e2e",
-    "exit_code": 1,
-    "existing_diagnostics": 14,
-    "new_diagnostics": 0,
-    "note": "Not passed. Same files and messages after normalizing shifted line numbers."
   },
   "production_benchmark": {
     "environment": "Windows Chromium production build; native HTTP fixture, empty history. Serial before/after runs, three samples each.",
-    "scope": "Existing composer only; no composer/UI source changed in this slice. Descriptive samples, not whole-app or question UI performance acceptance.",
+    "scope": "Existing composer only; not question-layout, large-history or whole-app performance acceptance.",
     "runs": {
-      "r3-question-before": {
+      "r3-question-ui-before": {
         "samples": [
           {
-            "elapsedMs": 99.17550000000028,
-            "scriptMs": 24.566000000000003,
-            "taskMs": 63.389,
-            "nodes": 1425,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 112.4022,
-            "scriptMs": 23.284,
-            "taskMs": 62.486999999999995,
-            "nodes": 1430,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 111.5047999999997,
-            "scriptMs": 24.239,
-            "taskMs": 64.967,
-            "nodes": 1430,
-            "characters": 65
-          }
-        ],
-        "median": {
-          "elapsedMs": 111.5047999999997,
-          "scriptMs": 24.239,
-          "taskMs": 63.389,
-          "nodes": 1430,
-          "characters": 65
-        }
-      },
-      "r3-question-after": {
-        "samples": [
-          {
-            "elapsedMs": 122.2534999999998,
-            "scriptMs": 26.8,
-            "taskMs": 71.412,
-            "nodes": 1430,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 90.46939999999995,
-            "scriptMs": 23.211,
-            "taskMs": 57.65,
+            "elapsedMs": 96.56800000000021,
+            "scriptMs": 24.586,
+            "taskMs": 61.49100000000001,
             "nodes": 1477,
             "characters": 65
           },
           {
-            "elapsedMs": 116.48910000000024,
-            "scriptMs": 24.105999999999998,
-            "taskMs": 63.434000000000005,
+            "elapsedMs": 108.5356999999999,
+            "scriptMs": 24.339,
+            "taskMs": 63.475,
             "nodes": 1430,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 94.65319999999974,
+            "scriptMs": 23.381,
+            "taskMs": 58.955,
+            "nodes": 1461,
             "characters": 65
           }
         ],
         "median": {
-          "elapsedMs": 116.48910000000024,
-          "scriptMs": 24.105999999999998,
-          "taskMs": 63.434000000000005,
-          "nodes": 1430,
+          "elapsedMs": 96.56800000000021,
+          "scriptMs": 24.339,
+          "taskMs": 61.49100000000001,
+          "nodes": 1461,
+          "characters": 65
+        }
+      },
+      "r3-question-ui-after": {
+        "samples": [
+          {
+            "elapsedMs": 121.13840000000027,
+            "scriptMs": 26.052,
+            "taskMs": 68.952,
+            "nodes": 1434,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 136.46389999999974,
+            "scriptMs": 30.515,
+            "taskMs": 81.289,
+            "nodes": 1434,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 107.07700000000023,
+            "scriptMs": 24.619,
+            "taskMs": 63.045,
+            "nodes": 1434,
+            "characters": 65
+          }
+        ],
+        "median": {
+          "elapsedMs": 121.13840000000027,
+          "scriptMs": 26.052,
+          "taskMs": 68.952,
+          "nodes": 1434,
           "characters": 65
         }
       }

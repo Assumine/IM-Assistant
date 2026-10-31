@@ -22,12 +22,27 @@ const QueuePanel = lazy(async () => {
 
 const BackendComposer = lazy(() => import("@/composer/backend"))
 
+const BackendQuestion = lazy(() => import("@/session/requests/backend-question"))
+
 /**
  * `Ui`: the app's components behind the SDK's small, stable props. Each maps those props onto the real component, so
  * a plugin renders exactly what the app renders. Session widgets delegate draft and interaction state to their
  * native implementations; these wrappers do not add another controller.
  */
 export const ui: Ui = {
+  BackendQuestion: (props) => (
+    <Show when={props.question?.id}>
+      <Suspense
+        fallback={
+          <div class="flex h-52 items-center justify-center">
+            <Loader />
+          </div>
+        }
+      >
+        <BackendQuestion {...props} />
+      </Suspense>
+    </Show>
+  ),
   BackendComposer: (props) => (
     <Suspense
       fallback={

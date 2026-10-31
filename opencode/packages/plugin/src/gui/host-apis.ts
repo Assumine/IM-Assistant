@@ -2070,12 +2070,49 @@ export interface UiBackendComposerProps {
   ): void
 }
 
+/** Native human-input presentation for a whole backend; never a Session form or tool permission prompt. */
+export interface UiBackendQuestionProps {
+  /** Stable server key, part of the in-memory question draft identity. */
+  server: string
+  /** Original backend/thread identity. Mount a new lifetime when it changes. */
+  threadRef: ConversationBackend.Ref
+  /** Current backend-owned question, or undefined after native resolution. Question IDs must not be reused. */
+  question?: ConversationBackend.Question
+  /** Disable answers while disconnected, reading or reconciling an unknown result. Defaults to false. */
+  busy?: boolean
+  /**
+   * Respond to this native question and refresh its owning observation. Resolve with resolved/not-found only after
+   * native confirmation; dispatched writes survive navigation, and unknown outcomes must never be retried automatically.
+   * @param control - The captured native thread and opaque question identity, plus an explicit answer or dismissal.
+   */
+  control(
+    control: Extract<
+      ConversationBackend.Control,
+      {
+        /** Only explicit human answers or dismissals, never generic native requests or tool approvals. */
+        action: "answer" | "dismiss-question"
+      }
+    >,
+  ): Promise<ConversationBackend.ControlResult>
+}
+
 /**
  * The app's own components, so a plugin's UI looks and behaves like the app's: the same buttons, menus, dialogs and
  * fields, in the user's theme, fonts and language. Each takes a small set of props the SDK keeps stable. A component
  * renders with the context of the plugin that renders it, and works in any of its contributions and dialogs.
  */
 export interface Ui {
+  /**
+   * The app's classic/experimental question dock, selected by the user's existing setting. Preserves unfinished
+   * choices in native in-memory question storage by full identity, without making a Session or granting tools.
+   * Keep the native composer mounted but hidden for blocking questions, so its draft is retained.
+   * @param props - Current native question, stable identity, availability and the explicit backend control callback.
+   * @example
+   * ```tsx
+   * <ctx.ui.BackendQuestion server={props.server} threadRef={props.ref} question={question()} control={control} />
+   * ```
+   */
+  BackendQuestion(props: UiBackendQuestionProps): JSX.Element
   /**
    * The app's real editor and draft capture for a whole-backend thread. Enter queues native input; Shift+Enter
    * inserts a newline. No local Session, file capabilities, model provider or executable queue is created.

@@ -150,6 +150,8 @@ export function Execution(props: {
   )
 
   const working = () => state.connected && state.supported && state.value?.thread.state === "running"
+  const question = () => state.value?.questions?.[0]
+  const blocking = () => question()?.blocking === true
 
   const busy = () =>
     !state.connected ||
@@ -217,19 +219,28 @@ export function Execution(props: {
         <Show when={state.value?.nextCursor}>
           <p class="px-5 text-13-regular text-v2-text-text-muted">{ctx.t("execution.partial")}</p>
         </Show>
-        <ctx.ui.BackendComposer
+        <ctx.ui.BackendQuestion
           server={props.serverID}
           threadRef={props.threadRef}
-          available={state.connected && state.supported}
-          execution={state.value}
+          question={question()}
           busy={busy()}
           control={(action) => control(action)}
-          send={(input) => send(input)}
-          onAccepted={() => {
-            refresh()
-            props.onAccepted?.()
-          }}
         />
+        <div hidden={blocking()} inert={blocking() || undefined}>
+          <ctx.ui.BackendComposer
+            server={props.serverID}
+            threadRef={props.threadRef}
+            available={state.connected && state.supported && !blocking()}
+            execution={state.value}
+            busy={busy() || blocking()}
+            control={(action) => control(action)}
+            send={(input) => send(input)}
+            onAccepted={() => {
+              refresh()
+              props.onAccepted?.()
+            }}
+          />
+        </div>
       </section>
     </Show>
   )

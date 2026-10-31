@@ -4,12 +4,261 @@ import { SERVER, sessionHref } from "../utils/app"
 import { installSseTransport } from "../utils/sse-transport"
 import { expectSessionTitle } from "../utils/waits"
 import { mockWorkspace, type WorkspaceInput } from "../utils/workspace"
+import { backendEvent, backendHref, backendRpc, backendTabs } from "../utils/backends"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 
 const directory = "C:/OpenCode/RequestDocks"
 
 const sessionID = "ses_request_docks"
 
 const title = "Request dock regression"
+
+for (const variant of ["classic", "experimental"] as const) {
+  test(`whole backend: ${variant} questions preserve drafts and wait for native resolution`, async ({
+    page,
+  }, testInfo) => {
+    const thread: ConversationBackend.Thread = {
+      ref: { backendID: "native", threadID: "questions" },
+      title: "Native questions",
+      state: "idle",
+    }
+
+    const question: ConversationBackend.Question = {
+      id: "question-first",
+      turnID: "native-turn",
+      itemID: "native-item",
+      blocking: true,
+      state: "pending",
+      prompts: [
+        {
+          id: "choice",
+          header: "Direction",
+          question: "Which direction?",
+          other: false,
+          options: [
+            { label: "Minimal", description: "Keep it small" },
+            { label: "Extended", description: "Include detail" },
+          ],
+        },
+        { id: "detail", header: "Details", question: "What should stay?", other: true, options: [] },
+      ],
+    }
+
+    let value: ConversationBackend.Execution = { thread, queue: [] }
+    const actions: ConversationBackend.Control[] = []
+    const released = Promise.withResolvers<void>()
+    let sends = 0
+
+    const workspace = await mockWorkspace(page, {
+      name: "BackendQuestions",
+      workspace: false,
+      sessions: [],
+      seed: { ...backendTabs([], [thread]), settings: { general: { newQuestionUI: variant === "experimental" } } },
+      rpc: backendRpc({
+        list: () => [{ id: "native", label: "Native", execution: true }],
+        status: () => ({ authentication: null }),
+        history: () => ({ thread, items: [] }),
+        execution: () => value,
+        send: (input) => {
+          sends++
+
+          return { status: "uncertain", ref: input.ref, inputID: input.inputID }
+        },
+        control: async (backend, action) => {
+          expect(backend).toBe("native")
+          actions.push(action)
+
+          if (action.action === "answer") await released.promise
+
+          if (action.action === "answer" && action.questionID === "question-unknown") {
+            value = { ...value, questions: value.questions?.map((item) => ({ ...item, state: "responding" })) }
+            throw new Error("Private answer failure")
+          }
+
+          if (action.action === "dismiss-question") value = { ...value, questions: [] }
+
+          return { status: "resolved" }
+        },
+      }),
+    })
+
+    await page.goto(backendHref(thread.ref))
+    const panel = page.getByRole("region", { name: "Native execution and queue" })
+    const editor = panel.locator('[contenteditable="true"]')
+    await expect(editor).toBeEditable()
+    await editor.fill("Keep my unsent draft")
+    await editor.evaluate((element) => {
+      element.dataset.questionDraft = "original"
+    })
+    value = {
+      thread: { ...thread, state: "waiting" },
+      turn: { id: "native-turn", state: "running" },
+      queue: [],
+      questions: [question],
+    }
+    await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+    const dock = panel.locator('[data-component="dock-prompt"][data-kind="question"]')
+    await expect(dock).toBeVisible()
+    await expect(editor).toHaveCount(1)
+    await expect(editor).toBeHidden()
+    await expect(dock.getByRole("textbox")).toHaveCount(0)
+    await expect(dock.getByRole("button", { name: "Next", exact: true })).toBeDisabled()
+    await dock.getByRole("radio", { name: /Minimal/ }).click()
+    await page.keyboard.press("3")
+    await expect(dock.getByRole("textbox")).toHaveCount(0)
+    await dock.getByRole("button", { name: "Next", exact: true }).click()
+    const input = dock.getByRole("textbox", { name: "Type your own answer…", exact: true })
+    await expect(input).toBeEditable()
+    await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeDisabled()
+    await input.fill("Keep the existing layout")
+    await dock.getByRole("button", { name: "Back", exact: true }).click()
+    await expect(dock.getByRole("radio", { name: /Minimal/ })).toBeChecked()
+    await dock.getByRole("button", { name: "Next", exact: true }).click()
+    await expect(input).toHaveValue("Keep the existing layout")
+    await page.screenshot({ path: testInfo.outputPath(`backend-question-${variant}.png`), fullPage: true })
+    await dock.getByRole("button", { name: "Submit", exact: true }).click()
+    await expect
+      .poll(() => actions)
+      .toEqual([
+        {
+          action: "answer",
+          threadID: "questions",
+          questionID: "question-first",
+          answers: { choice: ["Minimal"], detail: ["Keep the existing layout"] },
+        },
+      ])
+    await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeDisabled()
+    await page.keyboard.press("Control+Enter")
+    released.resolve()
+    await expect(panel.getByRole("button", { name: "Refresh execution" })).toBeEnabled()
+    await expect(dock).toBeVisible()
+    await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeDisabled()
+    expect(actions).toHaveLength(1)
+    value = { thread, queue: [], questions: [] }
+    await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+    await expect(dock).toHaveCount(0)
+    await expect(editor).toBeVisible()
+    await expect(editor).toHaveText("Keep my unsent draft")
+    await expect(editor).toHaveAttribute("data-question-draft", "original")
+    value = {
+      ...value,
+      questions: [{ ...question, id: "question-next", blocking: false, prompts: [question.prompts[0]] }],
+    }
+    await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+    await expect(dock).toBeVisible()
+    await expect(editor).toBeVisible()
+    await editor.fill("Draft while a question is open")
+    await dock.getByRole("button", { name: "Dismiss", exact: true }).click()
+    await expect(dock).toHaveCount(0)
+    await expect(editor).toHaveText("Draft while a question is open")
+    expect(actions).toHaveLength(2)
+    expect(actions[1]).toEqual({ action: "dismiss-question", threadID: "questions", questionID: "question-next" })
+    value = { ...value, questions: [{ ...question, id: "question-unknown", prompts: [question.prompts[0]] }] }
+    await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+    await expect(dock.getByRole("radio", { name: /Minimal/ })).toBeVisible()
+    await dock.getByRole("radio", { name: /Minimal/ }).click()
+    await dock.getByRole("button", { name: "Submit", exact: true }).click()
+    await expect(panel.getByRole("alert")).toContainText("Could not confirm the action")
+    await expect(page.getByText("Private answer failure", { exact: true })).toHaveCount(0)
+    await panel.getByRole("button", { name: "Refresh execution" }).click()
+    await expect(panel.getByRole("alert")).toHaveCount(0)
+    await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeDisabled()
+    await page.keyboard.press("Control+Enter")
+    expect(actions).toHaveLength(3)
+    value = { ...value, questions: [] }
+    await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+    await expect(dock).toHaveCount(0)
+    await expect(editor).toHaveText("Draft while a question is open")
+    expect(sends).toBe(0)
+  })
+}
+
+test("whole backend: question drafts and late unknown answers stay with their native identity", async ({ page }) => {
+  const threads: ConversationBackend.Thread[] = ["alpha", "beta"].map((backendID) => ({
+    ref: { backendID, threadID: "same-thread" },
+    title: `Question ${backendID}`,
+    state: "waiting",
+  }))
+
+  const question: ConversationBackend.Question = {
+    id: "same-question",
+    turnID: "turn",
+    itemID: "item",
+    blocking: true,
+    state: "pending",
+    prompts: [
+      {
+        id: "choice",
+        header: "Pick",
+        question: "Choose a direction",
+        other: false,
+        options: [
+          { label: "Alpha", description: "First" },
+          { label: "Beta", description: "Second" },
+        ],
+      },
+    ],
+  }
+
+  const values: Record<string, ConversationBackend.Execution> = Object.fromEntries(
+    threads.map((thread) => [thread.ref.backendID, { thread, queue: [], questions: [question] }]),
+  )
+
+  const actions: { backendID: string; action: ConversationBackend.Control }[] = []
+  const released = Promise.withResolvers<void>()
+
+  const workspace = await mockWorkspace(page, {
+    name: "QuestionIdentity",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], threads),
+    rpc: backendRpc({
+      list: () => threads.map((thread) => ({ id: thread.ref.backendID, label: thread.title, execution: true })),
+      status: () => ({ authentication: null }),
+      history: ({ ref }) => ({ thread: values[ref.backendID].thread, items: [] }),
+      execution: ({ ref }) => values[ref.backendID],
+      control: async (backendID, action) => {
+        actions.push({ backendID, action })
+        values[backendID] = { ...values[backendID], questions: [{ ...question, state: "responding" }] }
+        await released.promise
+        throw new Error("Private native transport error")
+      },
+    }),
+  })
+
+  await page.goto(backendHref(threads[0].ref))
+  const dock = page.locator('[data-component="dock-prompt"][data-kind="question"]')
+  await expect(dock.getByRole("radio", { name: /Alpha/ })).toBeVisible()
+  await dock.getByRole("radio", { name: /Alpha/ }).click()
+  await page.getByRole("link", { name: /Question beta/ }).click()
+  await expect(dock.getByRole("radio", { name: /Alpha/ })).not.toBeChecked()
+  await dock.getByRole("radio", { name: /Beta/ }).click()
+  const completed = page.waitForResponse(/\/api\/rpc\/experimental\.conversation\/control$/)
+  await dock.getByRole("button", { name: "Submit", exact: true }).click()
+  await expect.poll(() => actions).toHaveLength(1)
+  await page.getByRole("link", { name: /Question alpha/ }).click()
+  await expect(dock.getByRole("radio", { name: /Alpha/ })).toBeChecked()
+  released.resolve()
+  await completed
+  await page.getByRole("link", { name: /Question beta/ }).click()
+  await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeDisabled()
+  await expect(dock.getByRole("radio", { name: /Beta/ })).toBeChecked()
+  await expect(page.getByText("Private native transport error", { exact: true })).toHaveCount(0)
+  await page.getByRole("button", { name: "Refresh execution" }).click()
+  await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeDisabled()
+  expect(actions).toEqual([
+    {
+      backendID: "beta",
+      action: { action: "answer", threadID: "same-thread", questionID: "same-question", answers: { choice: ["Beta"] } },
+    },
+  ])
+  values.beta = { ...values.beta, questions: [] }
+  await workspace.push([backendEvent("activity", { ref: threads[1].ref, change: "execution" }, workspace.directory)])
+  await expect(dock).toHaveCount(0)
+  await page.getByRole("link", { name: /Question alpha/ }).click()
+  await expect(dock.getByRole("radio", { name: /Alpha/ })).toBeChecked()
+  await expect(dock.getByRole("button", { name: "Submit", exact: true })).toBeEnabled()
+})
 
 test("shows a pending question dock", async ({ page }) => {
   await mockServer(page, {

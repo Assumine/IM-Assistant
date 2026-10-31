@@ -1,6 +1,9 @@
 import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
+  "backend.question.unavailable": "This question is no longer available. Refresh the native state.",
+  "backend.question.incomplete": "Answer each question before submitting.",
+  "backend.question.unknown": "The answer could not be confirmed. Refresh the native state before trying again.",
   "backend.composer.title": "Backend message input",
   "backend.composer.placeholder": "Message this conversation",
   "backend.composer.loading": "Loading draft",

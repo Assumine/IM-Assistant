@@ -486,7 +486,7 @@
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
           "action": "modified",
-          "sha256": "8c432e7224f46d25df16e7acdc2c0365cc191841441de9b596d998276c574199"
+          "sha256": "c2f111b057d8e12437f6986f1dbba5a69e386bbf7d812d7641ae2f66f1c33fe5"
         },
         {
           "path": "packages/app/src/settings/providers/providers.tsx",
@@ -685,7 +685,7 @@
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "40c86094e2fdc8714b7f2e351126c05de8260706552758b0163f5876e3b7e4a6"
+          "sha256": "82908a36524989c86234e1ddd95aae87fa7e79380414f1f3da156fde112d4815"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
@@ -828,7 +828,7 @@
         {
           "path": "packages/plugin/src/gui/host-apis.ts",
           "action": "modified",
-          "sha256": "9caca1a858e630f7ef3aa1b6719a8c1557fec5240d09b3e27c3b5f70282d2c26"
+          "sha256": "af9d9e618d70e0e3b30ac899cacd8bae7ea3f2550be294022000dcaecdf27ecd"
         },
         {
           "path": "packages/plugin/src/gui/registries.ts",
@@ -847,7 +847,7 @@
         {
           "path": "packages/app/src/runtime/plugin/ui.tsx",
           "action": "modified",
-          "sha256": "e33f8305d76cdf4fe86bcb41a31d8ef0c6948490b0bc8daf9ea729f78b686475"
+          "sha256": "08a33636e9f96a254f78c0bcf474a45210a6c344bb50007f6b3d209f18e5e948"
         },
         {
           "path": "packages/app/src/session/composer/queue-panel.tsx",
@@ -857,7 +857,7 @@
         {
           "path": "packages/gui-plugins/src/backends/execution.tsx",
           "action": "added",
-          "sha256": "141854b1d0302f9615d5b46a17cb3528e43a5ece11cf59c7543ebf489c0e30ca"
+          "sha256": "155c8ebab79a0640a9dccc9dd8404b58a4f7c8fb00af166f5b1cc60066f19f1b"
         }
       ]
     },
@@ -906,6 +906,41 @@
           "path": "packages/app/src/session/composer/queue.ts",
           "action": "modified",
           "sha256": "359887b797498d5bdad65a0dcda0d6101d40a1b49f780d97a4f73cbfb16ecf5c"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-human-input-ui",
+      "reason": "通过通用宿主组件复用原生QuestionDock，保留Session表单RPC、问答交互与草稿；整套后端仅映射原生答案/跳过回执，不新增任务或权限控制器。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke",
+        "python -m tools.verify_upstream"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/regression/session-request-docks.spec.ts",
+          "action": "modified",
+          "sha256": "6847ac14874256139dd31cf8bffb041da870f924a5762d9d1ab032efb5a11331"
+        },
+        {
+          "path": "packages/app/src/session/requests/backend-question.tsx",
+          "action": "added",
+          "sha256": "664c199b201eb29411209fa3b8c4b98982908f24826da78da0326c04769e1af3"
+        },
+        {
+          "path": "packages/app/src/session/requests/question-dock-props.ts",
+          "action": "added",
+          "sha256": "45d5423220657e65574f64860f74e9e110e1a1b9b2bc9af1c96a21bbefbfa125"
+        },
+        {
+          "path": "packages/app/src/session/requests/session-question-dock-classic.tsx",
+          "action": "modified",
+          "sha256": "05e1cefeea10a9cf394d0329b1429382d210c89cf8395c59c928f55d47c172ce"
+        },
+        {
+          "path": "packages/app/src/session/requests/session-question-dock-experimental.tsx",
+          "action": "modified",
+          "sha256": "c334607ff84298924cd503ed678e136daae7f17beae7b4f1052a729736ce7f64"
         }
       ]
     }
