@@ -299,7 +299,12 @@ async function round(restored: boolean) {
         assert(duplicate.status === "accepted" && JSON.stringify(duplicate.target) === JSON.stringify(first))
         assert.deepEqual(
           yield* Effect.promise(() => portal.receive(message("cross", "Different target", "native-outgoing"))),
-          { status: "blocked", reason: "cross-session-confirmation-required" },
+          {
+            status: "confirmation-required",
+            confirmationID: inputID(origin(message("cross", "Different target", "native-outgoing"))),
+            target: first,
+            duplicate: false,
+          },
         )
         assert.equal((yield* Effect.promise(() => adapter.queue(second.ref.threadID))).data.length, 0)
         assert(!JSON.stringify(yield* kv.scan({ prefix: "qq-test:" })).includes("QQ native kept input"))

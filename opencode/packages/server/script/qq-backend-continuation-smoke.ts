@@ -17,7 +17,7 @@ import {
   stopSharedService,
 } from "../../../../modules/codex-native/src"
 import { createPortal, type Backend, type Scope, type Target } from "../../../../modules/qq-portal/src"
-import { inputID } from "../../../../modules/qq-portal/src/routing"
+import { inputID, scopeKey } from "../../../../modules/qq-portal/src/routing"
 
 const executable = process.env.IM_CODEX_EXECUTABLE,
   root = process.env.IM_QQ_GUIDANCE_TEST_ROOT
@@ -234,9 +234,24 @@ async function round(restored: boolean) {
           "blocked",
         )
         assert.equal((yield* call(observer.queue(first.ref.threadID))).data.length, 1)
-        const copies = yield* call(Promise.all(Array.from({ length: 6 }, () => portal.receive(adjust))))
+        yield* call(portal.bind(scope, second))
+        const proposal = yield* call(portal.receive(adjust))
+        assert(proposal.status === "confirmation-required")
+        assert.equal(admissions, 2)
+        const approval = {
+          confirmationID: proposal.confirmationID,
+          scope,
+          actorID: "20001",
+          choice: "approve" as const,
+        }
+        const copies = yield* call(Promise.all(Array.from({ length: 6 }, () => portal.confirm(adjust, approval))))
         assert(copies.some((value) => value.status === "steered" && value.delivery === "accepted"))
         assert.equal(admissions, 3)
+        assert.deepEqual(yield* call(storage.get("binding:" + scopeKey(scope))), second)
+        checks.push(
+          "cross-session confirmation uses the same native turn fence and leaves the bound conversation unchanged",
+        )
+        yield* call(portal.bind(scope, first))
         yield* call(portal.linkReply(source("adjust"), "adjust-reply"))
         assert.equal(
           (yield* call(

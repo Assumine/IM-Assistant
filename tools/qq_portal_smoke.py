@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 71),
+        (module, "r3-qq-module-tests", [bun, "test"], 80),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 3),
     ]:
         log = reports / (label + ".log")
@@ -53,7 +53,7 @@ def _run():
                              extra_env={"IM_QQ_TEST_ROOT": directory}))
     lines = (reports / "r3-qq-http.log").read_text(encoding="utf-8").splitlines()
     http = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if http["status"] != "passed" or len(http["checks"]) != 15 or http["model_requests"] != 5 or http["actual_qq_connection"] or http["external_messages_sent"]:
+    if http["status"] != "passed" or len(http["checks"]) != 17 or http["model_requests"] != 5 or http["actual_qq_connection"] or http["external_messages_sent"]:
         raise RuntimeError("QQ original SDK/HTTP/SQLite acceptance was incomplete")
     native_parent = ROOT / "runtime/codex-native"
     native_parent.mkdir(parents=True, exist_ok=True)
@@ -76,7 +76,7 @@ def _run():
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_QQ_GUIDANCE_TEST_ROOT": guidance_directory}))
     lines = (reports / "r3-qq-native-guidance-http.log").read_text(encoding="utf-8").splitlines()
     guidance = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if guidance["status"] != "passed" or len(guidance["checks"]) != 7 or guidance["model_requests"] != 3 or guidance["native_admissions"] != 5 or guidance["actual_qq_connection"] or guidance["external_messages_sent"] or guidance["production_credentials_used"]:
+    if guidance["status"] != "passed" or len(guidance["checks"]) != 8 or guidance["model_requests"] != 3 or guidance["native_admissions"] != 5 or guidance["actual_qq_connection"] or guidance["external_messages_sent"] or guidance["production_credentials_used"]:
         raise RuntimeError("Real native guarded guidance acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
@@ -133,7 +133,7 @@ def _run():
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",
                           "controls are classified only; remote control dispatch and authorization are not implemented",
-                          "ordinary Session pending append and guarded active continuation plus whole-backend current-turn guidance are supported; native pending append, completed quotes and cross-conversation confirmation remain blocked",
+                          "ordinary Session pending append, guarded active continuation, whole-backend current-turn guidance and trusted-host cross-conversation confirmation are supported; native pending append and completed quotes remain blocked",
                           "outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}

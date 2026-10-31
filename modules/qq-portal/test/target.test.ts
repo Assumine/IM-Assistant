@@ -77,7 +77,7 @@ test("references compare backend ownership as well as thread ID and cannot escap
   await portal.linkReply(decoded("source"), "outgoing")
   expect(await portal.receive(raw("same", "outgoing"))).toEqual({ status: "blocked", reason: "quoted-adjustment-unavailable" })
   await portal.bind(scope, { kind: "backend", ref: { backendID: "other", threadID: "same-id" } })
-  expect(await portal.receive(raw("cross", "outgoing"))).toEqual({ status: "blocked", reason: "cross-session-confirmation-required" })
+  expect(await portal.receive(raw("cross", "outgoing"))).toEqual({ status: "confirmation-required", confirmationID: inputID(decoded("cross")), target: destination, duplicate: false })
   expect(f.sends).toHaveLength(1)
 })
 

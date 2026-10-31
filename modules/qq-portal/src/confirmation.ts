@@ -1,0 +1,54 @@
+import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
+import { fingerprint, inputID, originKey, type Message } from "./routing"
+import { origin, type Origin, type Source } from "./sources"
+import { target, type Target } from "./target"
+
+type Storage = Pick<StorageDomain, "get" | "insert">
+export type Choice = "approve" | "decline"
+export type Proposal = { id: string; source: Source; fingerprint: string; from: Target; to: Target; parentInputID: string }
+const key = (input: Source) => "confirmation:" + originKey(input.scope, input.messageID)
+const decisionKey = (value: Proposal) => "confirmation-choice:" + originKey(value.source.scope, value.source.messageID)
+const parse = (value: unknown): Proposal => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid QQ confirmation")
+  const row = value as Record<string, unknown>
+  const to = target(row.to), from = target(row.from)
+  const identity = origin({ target: to, inputID: row.id, actorID: row.actorID, fingerprint: row.fingerprint, source: row.source })
+  if (!identity?.source || typeof row.parentInputID !== "string" || !/^msg_[A-Za-z0-9_-]+$/.test(row.parentInputID) ||
+    !/^[0-9a-f]{64}$/.test(identity.fingerprint)) throw new Error("Invalid QQ confirmation identity")
+  return { id: identity.inputID, source: identity.source, fingerprint: identity.fingerprint, from, to, parentInputID: row.parentInputID }
+}
+
+/** Consent and immutable routing metadata only. No body, execution status, retries or pending-work queue. */
+export function confirmations(storage: Storage) {
+  const read = async (input: Message) => {
+    const value = await storage.get(key(input))
+    if (value === undefined) return undefined
+    const proposal = parse(value)
+    if (proposal.id !== inputID(input) || proposal.fingerprint !== fingerprint(input) || proposal.source.actorID !== input.actorID ||
+      originKey(proposal.source.scope, proposal.source.messageID) !== originKey(input.scope, input.messageID))
+      throw new Error("QQ confirmation source conflict")
+    return proposal
+  }
+  const choice = async (proposal: Proposal): Promise<Choice | undefined> => {
+    const value = await storage.get(decisionKey(proposal))
+    if (value === undefined || value === "approve" || value === "decline") return value
+    throw new Error("Invalid QQ confirmation choice")
+  }
+  return {
+    read, choice,
+    async propose(input: Message, from: Target, quoted: Origin) {
+      const value = { id: inputID(input), source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
+        actorID: input.actorID, fingerprint: fingerprint(input), from, to: quoted.target, parentInputID: quoted.inputID }
+      const created = await storage.insert(key(input), value)
+      const proposal = await read(input)
+      if (!proposal) throw new Error("QQ confirmation was not retained")
+      return { proposal, created }
+    },
+    async decide(proposal: Proposal, value: Choice) {
+      await storage.insert(decisionKey(proposal), value)
+      const selected = await choice(proposal)
+      if (!selected) throw new Error("QQ confirmation choice was not retained")
+      return selected
+    },
+  }
+}

@@ -452,7 +452,9 @@
         "modules/codex-native/test/input.test.ts",
         "modules/qq-portal/test/backend-continuation.test.ts",
         "opencode/packages/plugin/src/effect/conversation.ts",
-        "opencode/packages/server/script/qq-backend-continuation-smoke.ts"
+        "opencode/packages/server/script/qq-backend-continuation-smoke.ts",
+        "modules/qq-portal/src/confirmation.ts",
+        "modules/qq-portal/test/confirmation.test.ts"
       ],
       "verification": [
         {
@@ -460,12 +462,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 486,
+          "tests_run": 495,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 39,
+          "http_checks": 42,
           "publication": "disabled"
         }
       ],

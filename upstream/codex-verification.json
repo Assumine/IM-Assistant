@@ -26,7 +26,7 @@
     "progress_updated": false
   },
   "checkpoint": "upstream/codex-checkpoint.json",
-  "checkpoint_sha256": "585babdb9a9514deddbf0e005ff1e9b3e620bf3125110ce69aa09ca70794f8c4",
+  "checkpoint_sha256": "72a56c377a17d1f135e2ebe637bf0a33247473a2f1b822dfa0ce1f9a592ee65a",
   "native_cli_version": "codex-cli 0.166.0-alpha.5.1",
   "test_counts": {
     "task": "R3-01",

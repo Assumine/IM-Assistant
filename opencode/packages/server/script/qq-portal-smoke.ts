@@ -6,6 +6,7 @@ import { create } from "../../sdk/src/opencode"
 import type { StorageDomain } from "../../plugin/src/promise/storage"
 import { isConflictError } from "@opencode/client"
 import { createPortal, type Message, type Scope } from "../../../../modules/qq-portal/src"
+import { scopeKey } from "../../../../modules/qq-portal/src/routing"
 
 const root = process.env.IM_QQ_TEST_ROOT
 if (!root) throw new Error("Use tools.qq_portal_smoke with an isolated root")
@@ -315,10 +316,25 @@ try {
   await portal.bind(peer, second.id)
   const duplicate = await portal.receive(queued)
   assert(duplicate.status === "accepted" && duplicate.sessionID === first.id)
-  assert.deepEqual(await portal.receive(message("cross", "Other conversation", "reply-to-queued")), {
-    status: "blocked",
-    reason: "cross-session-confirmation-required",
-  })
+  const cross = message("cross", "Other conversation", "reply-to-queued")
+  const confirmation = await portal.receive(cross)
+  assert(
+    confirmation.status === "confirmation-required" &&
+      confirmation.target.kind === "session" &&
+      confirmation.target.sessionID === first.id,
+  )
+  const approval = {
+    confirmationID: confirmation.confirmationID,
+    scope: peer,
+    actorID: "20001",
+    choice: "approve" as const,
+  }
+  assert.equal((await portal.confirm(cross, approval)).status, "amended")
+  assert.equal((await portal.confirm(cross, approval)).status, "amended")
+  assert.deepEqual(await storage.get("binding:" + scopeKey(peer)), { kind: "session", sessionID: second.id })
+  checks.push(
+    "explicit cross-session consent appends to the original pending input once without changing the current binding",
+  )
   assert.equal((await portal.receive(message("queued", "Changed body"))).status, "conflict")
   checks.push(
     "quoted pending input appends once in place, including lost acknowledgments; source and reply IDs retain their frozen target through rebinding",
@@ -362,7 +378,7 @@ try {
     history.filter((item) => item.type === "user").map((item) => item.text),
     [
       "Desktop active input",
-      "Unique QQ queued body\n\nAdd more\n\nLost append acknowledgment recovered",
+      "Unique QQ queued body\n\nAdd more\n\nLost append acknowledgment recovered\n\nOther conversation",
       "Desktop pending input",
       "QQ recovered acknowledgment",
     ],
@@ -413,10 +429,15 @@ try {
     "SQLite restart restores append receipts; consumed parents reject new amendments without creating a follow-up task",
   )
   assert.equal((await portal.receive(message("unknown", "Unknown must not replay"))).status, "uncertain")
-  assert.deepEqual(await portal.receive(message("cross-restart", "Keep frozen target", "reply-to-queued")), {
-    status: "blocked",
-    reason: "cross-session-confirmation-required",
-  })
+  assert.equal(
+    (await portal.receive(message("cross-restart", "Keep frozen target", "reply-to-queued"))).status,
+    "confirmation-required",
+  )
+  assert.equal((await portal.confirm(cross, approval)).status, "amended")
+  assert.equal(requests.length, 5)
+  checks.push(
+    "SQLite reopen retains consent and the native amendment receipt; repeated confirmation never resends or changes binding",
+  )
   assert.equal((await portal.receive(recall("queued"))).status, "unchanged")
   assert.equal(requests.length, 5)
   checks.push(
