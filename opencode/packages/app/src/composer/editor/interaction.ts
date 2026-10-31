@@ -66,6 +66,8 @@ export function createComposerEditor(input: {
   store: ComposerStateStoreInput
   state?: ReturnType<typeof createComposerEditorState>
   shellEnabled?: boolean
+  /** A whole-backend text editor does not resolve local commands, mentions or filesystem context. */
+  textOnly?: boolean
   history?: ComposerHistory
   commands: Accessor<ComposerSuggestion[]>
   context: Accessor<ComposerSuggestion[]>
@@ -663,7 +665,7 @@ export function createComposerEditor(input: {
 
       if (prompt) draft.setPrompt(prompt, cursor)
 
-      if (input.view.draftOnly) return
+      if (input.view.draftOnly || input.textOnly) return
       dispatch({ type: "input.changed", value, persist: !prompt })
     },
     onCursor(cursor: number) {
@@ -703,6 +705,12 @@ export function createComposerEditor(input: {
     onPaste(event: ClipboardEvent) {
       const clipboard = event.clipboardData
       const text = clipboard?.getData("text/plain")
+
+      if (input.textOnly && !text) {
+        event.preventDefault()
+
+        return
+      }
 
       if (attachments && shouldHandlePasteAsAttachment(clipboard, !!input.attachments?.readClipboardImage)) {
         resetCycle()

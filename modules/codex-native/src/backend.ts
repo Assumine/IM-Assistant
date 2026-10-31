@@ -104,11 +104,14 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       }
     },
     enqueue: async (input) => {
-      await owned(input.ref)
+      const thread = await owned(input.ref)
       if (input.delivery === "steer") {
         const result = await adapter.steer(input.ref.threadID, input.expectedTurnID, input.inputID, input.text)
         return { nativeID: result.turnId, kind: "steered" }
       }
+      // A persisted, unloaded thread accepts queue/add but cannot drain until an explicit resume.
+      // Only a newly admitted user send reaches here; browsing and reconciliation remain read-only.
+      if (thread.status.type === "notLoaded") await adapter.resume(input.ref.threadID)
       const result = await adapter.enqueue(input.ref.threadID, input.inputID, input.text)
       return { nativeID: result.queuedSubmission.id, kind: "queued" }
     },

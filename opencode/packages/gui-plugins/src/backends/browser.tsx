@@ -13,6 +13,7 @@ export function ConversationBrowser(props: {
   backend: ConversationBackend.Descriptor
   thread?: ConversationBackend.Thread
   embedded?: boolean
+  revision?: number
   onOpen?: (thread: ConversationBackend.Thread) => void
   onThread?: (thread: ConversationBackend.Thread) => void
 }) {
@@ -25,14 +26,16 @@ export function ConversationBrowser(props: {
     history?: ConversationBackend.History
     listing: boolean
     reading: boolean
+    updated: boolean
     connected: boolean
     error?: "listFailed" | "historyFailed"
-  }>({ threads: [], selected: props.thread, listing: false, reading: false, connected: false })
+  }>({ threads: [], selected: props.thread, listing: false, reading: false, updated: false, connected: false })
 
   let viewport: HTMLDivElement | undefined
+  const atEnd = () => !viewport || viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 32
   let list = (_more = false) => {}
 
-  let read = (_thread: ConversationBackend.Thread, _older = false) => {}
+  let read = (_thread: ConversationBackend.Thread, _older = false, _background = false) => {}
 
   // Own only the visible snapshot. The backend owns history, pagination and execution.
   createKeyed(
@@ -49,13 +52,13 @@ export function ConversationBrowser(props: {
       onCleanup(() => controller.abort())
       setState({ connected: true, listing: false, reading: false })
 
-      read = (thread, older = false) => {
+      read = (thread, older = false, background = false) => {
         const cursor = older ? state.history?.nextCursor : undefined
 
         if (older && !cursor) return
         const revision = ++version.history
         const existing = state.selected?.ref.threadID === thread.ref.threadID ? state.history : undefined
-        setState({ selected: thread, history: existing, reading: true, error: undefined })
+        setState({ selected: thread, history: existing, reading: true, updated: false, error: undefined })
 
         const current = () =>
           !controller.signal.aborted &&
@@ -65,6 +68,14 @@ export function ConversationBrowser(props: {
         void rpc.history({ ref: thread.ref, limit: 20, cursor }, options).then(
           (page) => {
             if (!current()) return
+
+            // The user can start reading older records while a lifecycle refresh is in flight.
+            if (background && !atEnd()) {
+              setState({ reading: false, updated: true })
+
+              return
+            }
+
             const element = viewport
             const previous = element && { height: element.scrollHeight, top: element.scrollTop }
             const seen = new Set(existing?.items.map((item) => `${item.turnID}\0${item.id}`))
@@ -80,6 +91,9 @@ export function ConversationBrowser(props: {
               if (!current() || !element || viewport !== element) return
               element.scrollTop =
                 older && previous ? previous.top + element.scrollHeight - previous.height : element.scrollHeight
+
+              // A completion during this read may describe newer native data. Coalesce it after the current page.
+              if (state.updated && !older && atEnd()) read(page.thread, false, true)
             })
           },
           () => {
@@ -124,6 +138,33 @@ export function ConversationBrowser(props: {
         ),
       )
 
+      if (props.embedded)
+        onCleanup(
+          rpc.events.on(
+            "activity",
+            ({ data: event }) => {
+              const thread = state.selected
+
+              if (
+                !thread ||
+                event.ref.backendID !== thread.ref.backendID ||
+                event.ref.threadID !== thread.ref.threadID ||
+                event.change === "execution"
+              )
+                return
+
+              if (state.reading || !atEnd()) {
+                setState("updated", true)
+
+                return
+              }
+
+              read(thread, false, true)
+            },
+            options,
+          ),
+        )
+
       if (!props.thread) list()
 
       if (state.selected) read(state.selected)
@@ -132,6 +173,13 @@ export function ConversationBrowser(props: {
   )
 
   const selected = () => state.selected
+  // An explicit send asks to see its native history, never a locally invented optimistic message.
+  createKeyed(
+    () => props.revision,
+    () => {
+      if (props.revision && state.connected && state.selected) read(state.selected)
+    },
+  )
   const history = () => (state.history?.thread.ref.threadID === selected()?.ref.threadID ? state.history : undefined)
 
   const content = () => (
@@ -141,7 +189,7 @@ export function ConversationBrowser(props: {
         fallback={
           <header class="flex shrink-0 flex-col gap-1 px-5 py-4">
             <h2 class="text-16-medium">{selected()?.title ?? props.backend.label}</h2>
-            <p class="text-13-regular text-v2-text-text-muted">{ctx.t("browse.description")}</p>
+            <p class="text-13-regular text-v2-text-text-muted">{ctx.t("browse.liveDescription")}</p>
           </header>
         }
       >
@@ -248,7 +296,7 @@ export function ConversationBrowser(props: {
                     disabled={state.reading || !state.connected}
                     onClick={() => read(thread())}
                   >
-                    {ctx.t("browse.refreshHistory")}
+                    {ctx.t(state.updated ? "browse.newer" : "browse.refreshHistory")}
                   </Button>
                 </div>
                 <div

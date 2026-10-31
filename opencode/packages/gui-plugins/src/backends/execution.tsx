@@ -6,7 +6,12 @@ import { Spinner } from "@opencode/ui/spinner"
 import type definition from "./index"
 
 /** A visible projection and explicit controls; execution and pending inputs stay entirely in the native backend. */
-export function Execution(props: { threadRef: ConversationBackend.Ref; serverRef: () => ServerRef | undefined }) {
+export function Execution(props: {
+  serverID: string
+  threadRef: ConversationBackend.Ref
+  serverRef: () => ServerRef | undefined
+  onAccepted?: () => void
+}) {
   const ctx = usePlugin<typeof definition>()
 
   const [state, setState] = createStore<{
@@ -194,6 +199,23 @@ export function Execution(props: { threadRef: ConversationBackend.Ref; serverRef
         </Show>
         <ctx.ui.QueuePanel queue={queue} />
       </section>
+      <ctx.ui.BackendComposer
+        server={props.serverID}
+        threadRef={props.threadRef}
+        available={state.connected && state.supported}
+        send={(input) => {
+          const server = props.serverRef()
+
+          if (!server?.connected || !server.compatible || !state.supported)
+            return Promise.reject(new Error("Backend unavailable"))
+
+          return server.client.rpc(ConversationBackend.Api).send(input)
+        }}
+        onAccepted={() => {
+          refresh()
+          props.onAccepted?.()
+        }}
+      />
     </Show>
   )
 }

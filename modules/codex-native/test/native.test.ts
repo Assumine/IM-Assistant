@@ -429,6 +429,13 @@ describe("shared native service ownership", () => {
     await expect(backend.control({ action: "compact", threadID: foreign.thread.id })).rejects.toThrow("another workspace")
     await expect(backend.enqueue({ ref: { ...ref, threadID: foreign.thread.id }, inputID: "foreign-write", text: "Must not run" })).rejects.toThrow("another workspace")
     expect(upstream.requests).toHaveLength(3)
+    const active = observe(reader)
+    const receipt = await backend.enqueue({ ref, inputID: "browse-explicit-send", text: "continue-original-native-thread" })
+    expect(receipt.kind).toBe("queued")
+    await active.wait(completed)
+    expect(upstream.requests).toHaveLength(4)
+    expect(text(upstream.requests[3].body)).toContain("continue-original-native-thread")
+    expect((await browse.history(ref, { limit: 1 })).items.map((entry) => entry.text)).toEqual(["native-reply-4"])
   })
 
   test("closing one client preserves the native running request and the other client", async () => {

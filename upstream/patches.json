@@ -113,7 +113,7 @@
         {
           "path": "packages/app/src/composer/editor/interaction.ts",
           "action": "modified",
-          "sha256": "0d2f3c3a68ed449526a56f1bdae2f1f79cbb5c819c259f566062d2cb48bb7bb4"
+          "sha256": "4fa197917032cca29ac290cc2e6534e9bc025869493ea115f37e997c783f0aaa"
         },
         {
           "path": "packages/app/src/composer/model.ts",
@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "67558dda70f70183facd083db3eeb477316a5d088c3ead4058511ccd55497cfa"
+          "sha256": "dde817c4aba6a3b82f0d6397d80bc6fd2748f4eb4342fb408f7516056ada3a6c"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -471,7 +471,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "eeaebd0e007a0790a347e704cd85ab9e84c95442dc1ef6c4e744b876d42374ac"
+          "sha256": "f2aa2b14a0f7779fb18e5616c902ca258dc1039bfb4d976811944698edfa518d"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -486,7 +486,7 @@
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
           "action": "modified",
-          "sha256": "9f72696c2ddc0f105310ecd1f6865276d987e8b4480dbc768fbc1667d7bbb26a"
+          "sha256": "9266771cc17bb4dad6d702fb541a59c643bd9991d3e8eb7d03a9f0c2e86d72e8"
         },
         {
           "path": "packages/app/src/settings/providers/providers.tsx",
@@ -680,17 +680,17 @@
         {
           "path": "packages/app/e2e/utils/backends.ts",
           "action": "added",
-          "sha256": "666980053382e999a89544b9fac965d5f7f0c94e479f75a3fedefe8f22a5f429"
+          "sha256": "eed513836a264d397b682a261e9fd396ebe79e32b60c763221279e105e3f3121"
         },
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "db02450fe1464e561808a0d5f15aca29b1d9d341207de340593f95640e85c8cf"
+          "sha256": "cff1a96c3be7f5e850efd7e898fa114c8fdebd811fea969e124be717a849f3b9"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "d8e668edaa2874a3433b7d7fedfb2fd4fbf35668a8555dc54fc3e1af6dc072e2"
+          "sha256": "32b589a71303a181844433f3c8446656a2ee5ed0d37758a7a0719fb602de3c98"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -729,7 +729,7 @@
         {
           "path": "packages/gui-plugins/src/backends/browser.tsx",
           "action": "added",
-          "sha256": "898c99d8fb177e2f49ae2413e3f02de145b0ec91eac476bbcce194d8c626f7b7"
+          "sha256": "b53789a63fb92377209c19aa3b9596aaf0ea8ecdb55aaedbb0744ca44598b1ca"
         }
       ]
     },
@@ -823,12 +823,12 @@
         {
           "path": "packages/gui-plugins/src/backends/room.tsx",
           "action": "added",
-          "sha256": "d2a243737d797b8dd89c1593d991b0e50cc2ce2d356085d8b875bf17834cb154"
+          "sha256": "353d8b91a3ddd9933714ab7722681bcfd4626b3b52a056ec9463d88037440634"
         },
         {
           "path": "packages/plugin/src/gui/host-apis.ts",
           "action": "modified",
-          "sha256": "7011004f84e9fb1317ce292ffa0b14e0a321dfeab75926ea3cfb733bedfb1df7"
+          "sha256": "6ef1a6ca35604365cd571f3b4712f61d33ac29fe81d957a2ca7a5fce58651af2"
         },
         {
           "path": "packages/plugin/src/gui/registries.ts",
@@ -847,7 +847,7 @@
         {
           "path": "packages/app/src/runtime/plugin/ui.tsx",
           "action": "modified",
-          "sha256": "790bb8b95224a1c83e2b489808e7d2d0f7c9eed63e5c0f32e16ecf2de466d205"
+          "sha256": "e33f8305d76cdf4fe86bcb41a31d8ef0c6948490b0bc8daf9ea729f78b686475"
         },
         {
           "path": "packages/app/src/session/composer/queue-panel.tsx",
@@ -857,7 +857,36 @@
         {
           "path": "packages/gui-plugins/src/backends/execution.tsx",
           "action": "added",
-          "sha256": "0986ed5af05e894564735da16ce2c62779742dae49757fa5f8cdc4f710b4a76a"
+          "sha256": "bc689feefc88e786afa5e447c3268f43a3a15180a4b9f41a359fca5981e593a0"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-backend-composer",
+      "reason": "原生编辑器、草稿和提交捕获经公共整套后端组件复用；只保留一个待确认输入，接纳与执行仍归原后端，不创建Session/Inbox或第二套可执行队列。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/utils/drafts.ts",
+          "action": "modified",
+          "sha256": "17541290888453ccc785c68411c320172c0e7d2306ec53cb3d3eadb57a20fdd0"
+        },
+        {
+          "path": "packages/app/src/composer/backend.tsx",
+          "action": "added",
+          "sha256": "11fb04c731f39f83ea71b076f538de370ddeafa0de58492edbd603ea5872059d"
+        },
+        {
+          "path": "packages/app/src/composer/editor/editor.tsx",
+          "action": "modified",
+          "sha256": "942496ace7a4b8857364b270853e10bcea068f64af5de462de14a1066638fdba"
+        },
+        {
+          "path": "packages/app/src/composer/state.ts",
+          "action": "modified",
+          "sha256": "fee1997b90c7662270b7ff90a697940206e044893ed01f709af56e40ee06c8b6"
         }
       ]
     }

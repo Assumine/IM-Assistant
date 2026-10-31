@@ -1,6 +1,13 @@
 import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
+  "backend.composer.title": "Backend message input",
+  "backend.composer.placeholder": "Message this conversation",
+  "backend.composer.loading": "Loading draft",
+  "backend.composer.sending": "Sending message",
+  "backend.composer.unconfirmed": "Delivery is unconfirmed. Check before sending again.",
+  "backend.composer.check": "Retry or check delivery",
+  "backend.composer.unavailable": "Backend unavailable. Your draft is kept.",
   "backend.view.unavailable": "This conversation view is unavailable. Its original backend reference has been kept.",
   "settings.providers.connection.add": "Add compatible API",
   "settings.providers.connection.description":

@@ -1,9 +1,10 @@
 import type { Page } from "@playwright/test"
 import { Schema } from "effect"
+import { ConversationBackend } from "@opencode/schema/conversation-backend"
 
 // Reads committed inline prompt text so reload tests do not race the draft writer.
-export async function readSessionDraftText(page: Page, sessionID: string) {
-  const raw = await page.evaluate(async (sessionID) => {
+async function readDraftDocument(page: Page, suffix: string) {
+  return page.evaluate(async (suffix) => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("opencode-drafts", 1)
       request.onsuccess = () => resolve(request.result)
@@ -20,7 +21,7 @@ export async function readSessionDraftText(page: Page, sessionID: string) {
         request.onerror = () => reject(request.error)
       })
 
-      const key = keys.find((key) => String(key).endsWith(`:session:${sessionID}:prompt`))
+      const key = keys.find((key) => String(key).endsWith(suffix))
 
       if (key === undefined) return null
 
@@ -33,7 +34,11 @@ export async function readSessionDraftText(page: Page, sessionID: string) {
     } finally {
       db.close()
     }
-  }, sessionID)
+  }, suffix)
+}
+
+export async function readSessionDraftText(page: Page, sessionID: string) {
+  const raw = await readDraftDocument(page, `:session:${sessionID}:prompt`)
 
   if (raw === null) return ""
 
@@ -49,4 +54,24 @@ export async function readSessionDraftText(page: Page, sessionID: string) {
     .filter((part) => part.type === "text")
     .map((part) => Schema.decodeUnknownSync(Schema.String)(part.content))
     .join("")
+}
+
+export async function readBackendDraft(page: Page, server: string, ref: ConversationBackend.Ref) {
+  const raw = await readDraftDocument(
+    page,
+    `:backend-composer:${JSON.stringify([server, ref.backendID, ref.threadID])}`,
+  )
+
+  if (raw === null) return null
+
+  const draft = Schema.decodeUnknownSync(
+    Schema.fromJsonString(
+      Schema.Struct({
+        prompt: Schema.Array(Schema.Struct({ type: Schema.Literal("text"), content: Schema.String })),
+        handoff: Schema.optional(Schema.NullOr(ConversationBackend.Input)),
+      }),
+    ),
+  )(raw)
+
+  return { text: draft.prompt.map((part) => part.content).join(""), handoff: draft.handoff ?? undefined }
 }

@@ -41,6 +41,7 @@ type Fixture = {
     limit?: number
   }) => ConversationBackend.Execution | Promise<ConversationBackend.Execution>
   control?: (backendID: string, control: ConversationBackend.Control) => Schema.Json | Promise<Schema.Json>
+  send?: (input: ConversationBackend.Input) => ConversationBackend.Admission | Promise<ConversationBackend.Admission>
 }
 
 // Backend methods share the real client's RPC envelope. All unconfigured mutations fail the scenario.
@@ -49,6 +50,9 @@ export function backendRpc(fixture: Fixture): NonNullable<MockServerConfig["rpc"
     if (id !== ConversationBackend.Api.id) throw new Error(`Unexpected RPC: ${id}.${method}`)
 
     if (method === "list") return [...(await fixture.list())]
+
+    if (method === "send" && fixture.send)
+      return fixture.send(Schema.decodeUnknownSync(ConversationBackend.Input)(body))
 
     if (method === "history" && fixture.history)
       return fixture.history(

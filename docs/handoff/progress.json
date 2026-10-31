@@ -276,7 +276,13 @@
         "opencode/packages/app/e2e/regression/session-queue.spec.ts",
         "opencode/packages/app/src/runtime/plugin/ui.tsx",
         "opencode/packages/app/src/session/composer/queue-panel.tsx",
-        "opencode/packages/gui-plugins/src/backends/execution.tsx"
+        "opencode/packages/gui-plugins/src/backends/execution.tsx",
+        "opencode/packages/app/e2e/regression/composer.spec.ts",
+        "opencode/packages/app/e2e/utils/drafts.ts",
+        "opencode/packages/app/src/composer/backend.tsx",
+        "opencode/packages/app/src/composer/editor/editor.tsx",
+        "opencode/packages/app/src/composer/editor/interaction.ts",
+        "opencode/packages/app/src/composer/state.ts"
       ],
       "verification": [
         {
@@ -284,7 +290,7 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 199,
+          "tests_run": 234,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
@@ -292,7 +298,7 @@
           "publication": "disabled",
           "native_http_checks": 10,
           "native_unit_tests": 77,
-          "browser_tests": 122
+          "browser_tests": 157
         }
       ],
       "blocked_reason": null

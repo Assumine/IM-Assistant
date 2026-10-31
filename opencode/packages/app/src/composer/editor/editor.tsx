@@ -73,6 +73,8 @@ export type ComposerEditorProps = {
   controller: ComposerEditorModel
   disabled?: boolean
   readOnly?: boolean
+  /** Hide unsupported add/attachment/command controls; defaults to visible. */
+  addMenu?: boolean
   borderUnderlay?: boolean
   class?: string
   modelControl?: JSX.Element
@@ -391,20 +393,22 @@ export function ComposerEditor(props: ComposerEditorProps) {
             inert={state.mode === "shell" ? true : undefined}
             style={buttons()}
           >
-            <ComposerEditorAddMenu
-              disabled={view.draftOnly || state.mode === "shell"}
-              title={i18n.t("ui.promptInput.add")}
-              keybind={props.attachKeybind ?? ["Mod", "U"]}
-              attachLabel={i18n.t("ui.promptInput.attachments")}
-              attachShortcut={props.attachShortcut ?? "Mod+U"}
-              commandsLabel={i18n.t("ui.promptInput.commands")}
-              contextLabel={i18n.t("ui.promptInput.context")}
-              shellLabel={i18n.t("ui.promptInput.shell")}
-              onAttach={props.controller.attach}
-              onCommands={props.controller.openCommands}
-              onContext={props.controller.openContext}
-              onShell={props.controller.openShell}
-            />
+            <Show when={props.addMenu !== false}>
+              <ComposerEditorAddMenu
+                disabled={view.draftOnly || state.mode === "shell"}
+                title={i18n.t("ui.promptInput.add")}
+                keybind={props.attachKeybind ?? ["Mod", "U"]}
+                attachLabel={i18n.t("ui.promptInput.attachments")}
+                attachShortcut={props.attachShortcut ?? "Mod+U"}
+                commandsLabel={i18n.t("ui.promptInput.commands")}
+                contextLabel={i18n.t("ui.promptInput.context")}
+                shellLabel={i18n.t("ui.promptInput.shell")}
+                onAttach={props.controller.attach}
+                onCommands={props.controller.openCommands}
+                onContext={props.controller.openContext}
+                onShell={props.controller.openShell}
+              />
+            </Show>
           </div>
           <div
             ref={controlsViewport}

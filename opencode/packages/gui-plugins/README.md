@@ -205,8 +205,19 @@ rows and optional actions; absent edit/undo/steer/reorder actions are omitted. T
 by Session, without importing a Session queue controller into the plugin. Pass `attached: true` only when a composer
 follows it; standalone strips do not overlap the next surface. Reordering requires a complete native queue page.
 Native controls are explicit user actions, followed by observation; failed/unknown controls are never retried automatically.
-The native composer, live text and production host activation have not been delivered. Closing a view must only release
-its requests and subscriptions, never stop or reschedule backend work.
+`ctx.ui.BackendComposer` delegates to the app's real `ComposerEditor`, text interaction and submission capture.
+It keeps drafts through the native persistence layer, keyed by server and the original backend/thread reference.
+The `send(input)` callback goes to the public whole-backend admission service. Enter queues text; Shift+Enter inserts
+a newline. No Session/Inbox, model selection, local commands, filesystem context or upload controls are fabricated.
+One unconfirmed handoff retains its original input id and body. It is not an executable queue: only explicit send or
+retry/check can dispatch it. A later draft is editable and is never cleared by an earlier admission. Navigation does
+not cancel a dispatched admission; late UI results are discarded, and an unconfirmed receipt can be checked after
+returning. Backend observation reads and subscriptions still end with the view. No background resend or drain runs.
+
+The shipping main view refreshes native history after admission and lifecycle invalidation, not per-token deltas.
+While reading older content it offers a latest-records button rather than replacing the reading position. Native
+edit/restore-to-editor, direct steer from the composer, per-token live text and production activation remain pending.
+Closing a view must never stop or reschedule backend work.
 
 ## Primitives
 

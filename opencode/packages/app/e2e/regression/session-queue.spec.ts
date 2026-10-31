@@ -4,14 +4,191 @@ import { PromptInput } from "@opencode/schema/prompt-input"
 import { SessionInbox } from "@opencode/schema/session-inbox"
 import { SessionMessage } from "@opencode/schema/session-message"
 import { Schema } from "effect"
-import { holdRoute, provider } from "../utils/app"
+import { holdRoute, provider, SERVER } from "../utils/app"
 import type { MockServerConfig } from "../utils/mock-server"
 import { openSession } from "../utils/workspace"
 import { mockWorkspace } from "../utils/workspace"
 import { backendEvent, backendHref, backendRpc, backendTabs } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+import { readBackendDraft } from "../utils/drafts"
 
 const sessionID = "ses_session_queue_regression"
+
+test("whole backend: native editor preserves scoped drafts and reconciles a lost reply with the original input", async ({
+  page,
+}) => {
+  const alpha: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "same-thread" },
+    title: "Draft Alpha",
+    state: "idle",
+  }
+
+  const beta: ConversationBackend.Thread = { ...alpha, ref: { ...alpha.ref, backendID: "beta" }, title: "Draft Beta" }
+  const entered = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  const calls: ConversationBackend.Input[] = []
+  const records: ConversationBackend.Entry[] = []
+  const receipts = new Map<string, ConversationBackend.Admission>()
+  const sessions: string[] = []
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname
+
+    if (request.method() === "POST" && (path === "/api/session" || path.endsWith("/prompt"))) sessions.push(path)
+  })
+  await mockWorkspace(page, {
+    name: "NativeEditor",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [alpha, beta]),
+    rpc: backendRpc({
+      list: () => [alpha, beta].map((thread) => ({ id: thread.ref.backendID, label: thread.title, execution: true })),
+      status: () => ({ authentication: null }),
+      history: ({ ref }) => ({
+        thread: ref.backendID === "alpha" ? alpha : beta,
+        items: ref.backendID === "alpha" ? records : [],
+      }),
+      execution: ({ ref }) => ({ thread: ref.backendID === "alpha" ? alpha : beta, queue: [] }),
+      send: async (input) => {
+        calls.push(input)
+        const previous = receipts.get(input.inputID)
+
+        if (previous) return previous
+
+        const admission: ConversationBackend.Admission = {
+          status: "accepted",
+          ref: input.ref,
+          inputID: input.inputID,
+          receipt: { nativeID: input.inputID, kind: "queued" },
+        }
+
+        receipts.set(input.inputID, admission)
+        records.push({ id: input.inputID, turnID: "original-turn", kind: "user", text: input.text, partial: false })
+        entered.resolve()
+        await release.promise
+
+        return admission
+      },
+    }),
+  })
+  await page.goto(backendHref(alpha.ref))
+  const editor = page.locator('[data-component="composer-editor"]')
+  const composer = page.getByRole("region", { name: "Backend message input" })
+  await expect(editor).toBeEditable()
+  await expect(page.locator('[data-action="composer-attach"]')).toHaveCount(0)
+  expect(
+    await editor.evaluate((element) => {
+      const clipboard = new DataTransfer()
+      clipboard.items.add(new File(["fixture"], "image.png", { type: "image/png" }))
+
+      return element.dispatchEvent(
+        new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: clipboard }),
+      )
+    }),
+  ).toBe(false)
+  await expect(editor).toHaveText("")
+  await editor.fill("First line")
+  await editor.press("End")
+  await editor.press("Shift+Enter")
+  await editor.pressSequentially("Second line")
+  const firstReply = page.waitForResponse(/\/api\/rpc\/experimental\.conversation\/send$/)
+  await editor.press("Enter")
+  await entered.promise
+  await expect(editor).toHaveText("")
+  await expect(composer.getByText("Sending message", { exact: true })).toBeVisible()
+  await editor.fill("Alpha follow-up draft")
+  await expect(composer.getByRole("button", { name: "Send", exact: true })).toBeDisabled()
+  expect(calls).toHaveLength(1)
+  expect(calls[0]).toMatchObject({ ref: alpha.ref, text: "First line\nSecond line", delivery: "queue" })
+  await expect
+    .poll(() => readBackendDraft(page, SERVER, alpha.ref))
+    .toMatchObject({ text: "Alpha follow-up draft", handoff: calls[0] })
+  await page.screenshot({ path: test.info().outputPath("native-composer-pending.png"), fullPage: true })
+  await page.locator("[data-titlebar-tab-title]", { hasText: beta.title }).click()
+  await expect(editor).toHaveText("")
+  await editor.fill("Beta draft")
+  release.resolve()
+  expect((await firstReply).ok()).toBe(true)
+  await page.locator("[data-titlebar-tab-title]", { hasText: alpha.title }).click()
+  await expect(editor).toHaveText("Alpha follow-up draft")
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  expect(calls).toHaveLength(1)
+  await composer.getByRole("button", { name: "Retry or check delivery" }).click()
+  await expect(composer.getByRole("status")).toHaveCount(0)
+  await expect(
+    page.getByRole("region", { name: "Conversation history" }).getByText("First line\nSecond line", { exact: true }),
+  ).toBeVisible()
+  await expect(editor).toHaveText("Alpha follow-up draft")
+  expect(calls).toEqual([calls[0], calls[0]])
+  expect(records).toHaveLength(1)
+  await expect
+    .poll(() => readBackendDraft(page, SERVER, alpha.ref))
+    .toEqual({ text: "Alpha follow-up draft", handoff: undefined })
+  await page.reload()
+  await expect(editor).toHaveText("Alpha follow-up draft")
+  await expect(composer.getByRole("button", { name: "Send", exact: true })).toBeEnabled()
+  expect(calls).toHaveLength(2)
+  await page.locator("[data-titlebar-tab-title]", { hasText: beta.title }).click()
+  await expect(editor).toHaveText("Beta draft")
+  expect(sessions).toEqual([])
+})
+
+test("whole backend: uncertain admission survives reload without automatic resend", async ({ page }) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "uncertain-thread" },
+    title: "Unconfirmed input",
+    state: "idle",
+  }
+
+  const calls: ConversationBackend.Input[] = []
+  let connected = true
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeUnknown",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [thread]),
+    rpc: backendRpc({
+      list: () => (connected ? [{ id: thread.ref.backendID, label: thread.title, execution: true }] : []),
+      status: () => ({ authentication: null }),
+      history: () => ({ thread, items: [] }),
+      execution: () => ({ thread, queue: [] }),
+      send: (input) => {
+        calls.push(input)
+
+        return { status: "uncertain", ref: input.ref, inputID: input.inputID }
+      },
+    }),
+  })
+
+  await page.goto(backendHref(thread.ref))
+  const editor = page.locator('[data-component="composer-editor"]')
+  const composer = page.getByRole("region", { name: "Backend message input" })
+  await expect(editor).toBeEditable()
+  await editor.fill("A single native input")
+  await editor.press("Enter")
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  await editor.fill("Keep this next draft")
+  await expect
+    .poll(() => readBackendDraft(page, SERVER, thread.ref))
+    .toMatchObject({ text: "Keep this next draft", handoff: calls[0] })
+  await page.reload()
+  await expect(editor).toHaveText("Keep this next draft")
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  expect(calls).toHaveLength(1)
+  connected = false
+  await workspace.push([backendEvent("changed", {}, workspace.directory)])
+  await expect(composer).toHaveCount(0)
+  connected = true
+  await workspace.push([backendEvent("changed", {}, workspace.directory)])
+  await expect(editor).toHaveText("Keep this next draft")
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  expect(calls).toHaveLength(1)
+  await composer.getByRole("button", { name: "Retry or check delivery" }).click()
+  await expect(composer.getByRole("button", { name: "Retry or check delivery" })).toBeEnabled()
+  expect(calls).toEqual([calls[0], calls[0]])
+  await expect(composer.getByRole("button", { name: "Send", exact: true })).toBeDisabled()
+  await expect(editor).toHaveText("Keep this next draft")
+})
 
 test("whole backend: native queue actions reconcile observations without Session admission", async ({ page }) => {
   const thread: ConversationBackend.Thread = {

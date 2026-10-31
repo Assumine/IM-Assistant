@@ -2030,12 +2030,54 @@ export interface UiQueuePanelProps {
   attached?: boolean
 }
 
+/** The native text composer for a whole conversation backend, with its own draft and unconfirmed handoff. */
+export interface UiBackendComposerProps {
+  /** Stable host server key; part of the draft identity. */
+  server: string
+  /** Original native backend/thread identity. A new identity requires a new component lifetime. */
+  threadRef: ConversationBackend.Ref
+  /** Whether the owning backend is connected and accepts input. Draft editing remains available while false. */
+  available: boolean
+  /**
+   * Submit one stable input through the public whole-backend admission service. The composer never starts a runner.
+   * Only an explicit user action calls this, including retry/reconciliation with the unchanged input id and body.
+   * @param input - Captured text and original native target, with queue delivery.
+   * A dispatched admission must survive view navigation; discard late UI results rather than canceling the write.
+   */
+  send(input: ConversationBackend.Input): Promise<ConversationBackend.Admission>
+  /**
+   * Refresh visible backend observations after admission. This is not a command to execute the next input.
+   * @param admission - The confirmed native admission fact, not current execution status.
+   */
+  onAccepted?(
+    admission: Extract<
+      ConversationBackend.Admission,
+      {
+        /** Only confirmed admissions reach this callback. */
+        status: "accepted"
+      }
+    >,
+  ): void
+}
+
 /**
  * The app's own components, so a plugin's UI looks and behaves like the app's: the same buttons, menus, dialogs and
  * fields, in the user's theme, fonts and language. Each takes a small set of props the SDK keeps stable. A component
  * renders with the context of the plugin that renders it, and works in any of its contributions and dialogs.
  */
 export interface Ui {
+  /**
+   * The app's real editor and draft capture for a whole-backend thread. Enter queues native input; Shift+Enter
+   * inserts a newline. No local Session, file capabilities, model provider or executable queue is created.
+   *
+   * @param props - Stable identity, current availability and the backend's admission callback.
+   *
+   * @example
+   * ```tsx
+   * <ctx.ui.BackendComposer server={props.server} threadRef={props.ref} available={connected()} send={send} />
+   * ```
+   */
+  BackendComposer(props: UiBackendComposerProps): JSX.Element
   /**
    * The app's native pending-message strip. This is presentation only: the backend remains the queue owner.
    * Unsupported actions are omitted, not emulated by withdrawing and resending inputs.

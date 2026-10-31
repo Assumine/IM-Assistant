@@ -5,8 +5,98 @@ import { mockMissingLocation, mockOpenCodeServer } from "../utils/mock-server"
 import { mockRemoteServer, mockWorkspace, openSession, openSettings, type WorkspaceInput } from "../utils/workspace"
 import { recordNotifications } from "../utils/notifications"
 import { installSseTransport } from "../utils/sse-transport"
-import { backendEvent, backendRpc } from "../utils/backends"
+import { backendEvent, backendRpc, backendTabs, backendHref } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+
+test("backends: native completion refreshes latest records without interrupting older reading", async ({ page }) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "live-history" },
+    title: "Live native history",
+    state: "idle",
+  }
+
+  let items: ConversationBackend.Entry[] = Array.from({ length: 20 }, (_, index) => ({
+    id: `native-${index}`,
+    turnID: "original-turn",
+    kind: "assistant",
+    partial: false,
+    text: `Original native record ${index}\n${"A line kept while reading older records.\n".repeat(8)}`,
+  }))
+
+  let reads = 0
+  let hold = false
+  const entered = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeLiveHistory",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [thread]),
+    rpc: backendRpc({
+      list: () => [{ id: thread.ref.backendID, label: thread.title, browse: true }],
+      status: () => ({ authentication: null }),
+      history: async () => {
+        reads += 1
+        const snapshot = { thread, items }
+
+        if (hold) {
+          hold = false
+          entered.resolve()
+          await release.promise
+        }
+
+        return snapshot
+      },
+    }),
+  })
+
+  await page.goto(backendHref(thread.ref))
+  const history = page.getByRole("region", { name: "Conversation history" })
+  const viewport = history.locator("div[data-scrollable]")
+  await expect(history.getByText(items[19].text, { exact: true })).toBeVisible()
+  await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0
+  })
+  const before = reads
+  items = [
+    ...items.slice(1),
+    { id: "new-native", turnID: "next-turn", kind: "assistant", partial: false, text: "A completed native answer" },
+  ]
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "both" }, workspace.directory)])
+  const latest = history.getByRole("button", { name: "New activity — show latest records" })
+  await expect(latest).toBeEnabled()
+  expect(reads).toBe(before)
+  await expect(viewport).toHaveJSProperty("scrollTop", 0)
+  await expect(history.getByText("A completed native answer", { exact: true })).toHaveCount(0)
+  await latest.click()
+  await expect(history.getByText("A completed native answer", { exact: true })).toBeVisible()
+  await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  items = [
+    ...items.slice(1),
+    { id: "newer-native", turnID: "latest-turn", kind: "assistant", partial: false, text: "The latest native answer" },
+  ]
+  hold = true
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "history" }, workspace.directory)])
+  await entered.promise
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0
+  })
+  release.resolve()
+  await expect(latest).toBeEnabled()
+  await expect(viewport).toHaveJSProperty("scrollTop", 0)
+  await expect(history.getByText("The latest native answer", { exact: true })).toHaveCount(0)
+  await latest.click()
+  await expect(history.getByText("The latest native answer", { exact: true })).toBeVisible()
+  await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  items = [
+    ...items.slice(1),
+    { id: "final-native", turnID: "final-turn", kind: "assistant", partial: false, text: "A final native answer" },
+  ]
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "history" }, workspace.directory)])
+  await expect(history.getByText("A final native answer", { exact: true })).toBeVisible()
+})
 
 test("backends: native history pagination preserves source order, identities and the reading position", async ({
   page,

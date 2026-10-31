@@ -90,9 +90,9 @@ def _run(checkpoint):
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
-        "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
+        "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "e2e/regression/composer.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts|composer.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 91 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 126 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
@@ -111,6 +111,10 @@ def _run(checkpoint):
         "packages/gui-plugins/src/backends/execution.tsx",
         "packages/app/src/runtime/plugin/ui.tsx", "packages/app/src/session/composer/queue-panel.tsx",
         "packages/app/e2e/regression/session-queue.spec.ts",
+        "packages/app/src/composer/backend.tsx", "packages/app/src/composer/state.ts",
+        "packages/app/src/composer/editor/editor.tsx", "packages/app/src/composer/editor/interaction.ts",
+        "packages/app/e2e/utils/drafts.ts",
+        "packages/app/e2e/regression/composer.spec.ts",
         "packages/app/e2e/utils/backends.ts", "packages/app/e2e/utils/mock-server.ts",
         "packages/app/e2e/regression/settings.spec.ts",
         "packages/app/e2e/regression/tabs.spec.ts", "packages/app/component-tests/plugin-host.fixture.tsx",
@@ -139,7 +143,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["native composer/edit/undo/live-text UI and production host activation; native-ref tabs, history and observed queue guide/withdraw/reorder verified with fixtures",
+        "remaining": ["native queue edit/undo/direct-steer, per-token live-text UI and production host activation; native editor queue submission, draft/handoff persistence and lifecycle history observations verified with fixtures",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],
