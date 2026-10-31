@@ -247,7 +247,8 @@
         "opencode/packages/gui-plugins/src/backends/renderer.tsx",
         "opencode/packages/gui-plugins/src/conversation.ts",
         "opencode/packages/gui-plugins/src/main.ts",
-        "opencode/packages/gui-plugins/src/renderer.ts"
+        "opencode/packages/gui-plugins/src/renderer.ts",
+        "opencode/packages/gui-plugins/src/backends/browser.tsx"
       ],
       "verification": [
         {
@@ -255,15 +256,15 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 68,
+          "tests_run": 73,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
           "publication": "disabled",
-          "native_http_checks": 8,
-          "native_unit_tests": 31,
-          "browser_tests": 37
+          "native_http_checks": 9,
+          "native_unit_tests": 33,
+          "browser_tests": 40
         }
       ],
       "blocked_reason": null

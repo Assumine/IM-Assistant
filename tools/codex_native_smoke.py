@@ -59,12 +59,12 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 11 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
-        raise RuntimeError("Required eleven real-native scenarios did not all execute")
+    if steps[-1]["passed"] != 12 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+        raise RuntimeError("Required twelve real-native scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 17),
+        ("packages/core", core_files, "r3-host-unit", 18),
         ("packages/server", server_files, "r3-host-server-unit", 3),
     ]:
         if not all((ROOT / "opencode" / directory / name).is_file() for name in files):
@@ -77,7 +77,7 @@ def _run(checkpoint):
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_CODEX_TEST_ROOT": str(test_root)}))
     output = (reports / "r3-host-http.log").read_text(encoding="utf-8")
     host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
-    if host["status"] != "passed" or len(host["checks"]) != 8 or host["model_requests"] != 4:
+    if host["status"] != "passed" or len(host["checks"]) != 9 or host["model_requests"] != 4:
         raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
@@ -85,7 +85,7 @@ def _run(checkpoint):
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
         "--grep", "backends:", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 6 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 9 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
@@ -100,6 +100,7 @@ def _run(checkpoint):
         "packages/gui-plugins/src/conversation.ts", "packages/gui-plugins/src/renderer.ts",
         "packages/gui-plugins/src/backends/index.ts", "packages/gui-plugins/src/backends/renderer.tsx",
         "packages/gui-plugins/src/backends/page.tsx", "packages/gui-plugins/src/backends/i18n/en.ts",
+        "packages/gui-plugins/src/backends/browser.tsx",
         "packages/app/e2e/utils/backends.ts", "packages/app/e2e/utils/mock-server.ts",
         "packages/app/e2e/regression/settings.spec.ts",
     ]
@@ -115,7 +116,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["native conversation/timeline UI binding and production host activation; settings selection/sign-in UI verified with fixtures",
+        "remaining": ["full native tab/composer/queue UI binding and production host activation; settings selection/sign-in and read-only history UI verified with fixtures",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

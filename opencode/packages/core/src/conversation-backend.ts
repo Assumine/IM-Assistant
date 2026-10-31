@@ -29,7 +29,9 @@ const layer = Layer.effect(
     const changed = new Set<() => void>()
     const authentication = new Set<(backendID: string, event: ConversationBackend.AuthenticationEvent) => void>()
     const register: ConversationDomain["register"] = Effect.fn("ConversationBackend.register")(function* (backend) {
-      const descriptor = yield* Schema.decodeUnknownEffect(ConversationBackend.Descriptor)(backend.descriptor)
+      const descriptor = yield* Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Descriptor))(
+        backend.descriptor,
+      )
       if (descriptor.id === "opencode" || backends.has(descriptor.id))
         return yield* Effect.fail(new Error("Backend ID is already registered or reserved"))
       const unsubscribe = backend.subscribe((notification) => {
@@ -68,6 +70,38 @@ const layer = Layer.effect(
       const get = (id: string) => backends.get(id)
       const registration = yield* rpc.register(ConversationBackend.Api, {
         list: () => Effect.sync(() => Array.from(backends.values(), (backend) => backend.descriptor)),
+        threads: (input, ctx) => {
+          const browse = get(input.backendID)?.browse
+          if (!browse) return Effect.fail(ctx.error("unavailable", "Backend history is unavailable"))
+          return Effect.tryPromise({
+            try: () => browse.threads({ cursor: input.cursor, limit: input.limit }),
+            catch: () => ctx.error("failed", "Unable to read backend conversations"),
+          }).pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Threads))),
+            Effect.flatMap((page) =>
+              page.items.every((item) => item.ref.backendID === input.backendID)
+                ? Effect.succeed(page)
+                : Effect.fail(ctx.error("failed", "Backend returned a different conversation owner")),
+            ),
+            Effect.mapError(() => ctx.error("failed", "Unable to read backend conversations")),
+          )
+        },
+        history: (input, ctx) => {
+          const browse = get(input.ref.backendID)?.browse
+          if (!browse) return Effect.fail(ctx.error("unavailable", "Backend history is unavailable"))
+          return Effect.tryPromise({
+            try: () => browse.history(input.ref, { cursor: input.cursor, limit: input.limit }),
+            catch: () => ctx.error("failed", "Unable to read backend history"),
+          }).pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.History))),
+            Effect.flatMap((page) =>
+              page.thread.ref.backendID === input.ref.backendID && page.thread.ref.threadID === input.ref.threadID
+                ? Effect.succeed(page)
+                : Effect.fail(ctx.error("failed", "Backend returned a different conversation")),
+            ),
+            Effect.mapError(() => ctx.error("failed", "Unable to read backend history")),
+          )
+        },
         status: (input, ctx) => {
           const backend = get(input.backendID)
           if (!backend) return Effect.fail(ctx.error("unavailable", "Conversation backend is unavailable"))
@@ -77,7 +111,7 @@ const layer = Layer.effect(
             try: () => auth.read(),
             catch: () => ctx.error("failed", "Unable to read backend account"),
           }).pipe(
-            Effect.flatMap(Schema.decodeUnknownEffect(ConversationBackend.Account)),
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Account))),
             Effect.map((account) => ({ authentication: account })),
             Effect.mapError(() => ctx.error("failed", "Unable to read backend account")),
           )

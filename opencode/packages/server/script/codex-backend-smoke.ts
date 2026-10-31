@@ -77,7 +77,7 @@ async function round(resume: boolean) {
         return accepted
       },
     })
-    assert.deepEqual(yield* Effect.promise(() => call("list", {})), [{ id: "codex-native", label: "Codex" }])
+    assert.deepEqual(yield* Effect.promise(() => call("list", {})), [{ id: "codex-native", label: "Codex", browse: true }])
     assert.deepEqual(yield* Effect.promise(() => call("status", { backendID: "codex-native" })), { authentication: { state: "not-required" } })
     assert.equal(yield* Effect.promise(() => call("cancelLogin", { backendID: "codex-native", loginID: "00000000-0000-0000-0000-000000000001" })), "not-found")
     if (!resume) checks.push("native account projection and scoped login cancellation use the real application RPC")
@@ -123,6 +123,14 @@ async function round(resume: boolean) {
     assert.equal((yield* Effect.promise(() => adapter.queue(ref.threadID))).data.length, 2)
     checks.push("unknown native acknowledgment reconciles the real queue instead of re-sending")
     const db = Context.get(context, Database.Service).db
+    const browse = yield* Effect.promise(() => call("threads", { backendID: "codex-native", limit: 1 }))
+    const threadPage = Schema.decodeUnknownSync(Schema.Struct({ items: Schema.Array(Schema.Struct({ ref: Schema.Struct({ backendID: Schema.String, threadID: Schema.String }) })) }))(browse)
+    assert.deepEqual(threadPage.items[0].ref, ref)
+    // Reading a running thread must not create/resume it or admit another input.
+    yield* Effect.promise(() => call("history", { ref, limit: 1 }))
+    assert.equal(requests.length, 1)
+    assert.equal((yield* Effect.promise(() => adapter.queue(ref.threadID))).data.length, 2)
+    checks.push("read-only native projections preserve references without a second admission or model request")
     // Query the real database, never a mirrored Codex session or queue.
     assert.equal((yield* db.select({ id: SessionTable.id }).from(SessionTable).all()).length, 0)
     assert.equal((yield* db.select({ id: SessionInboxTable.id }).from(SessionInboxTable).all()).length, 0)

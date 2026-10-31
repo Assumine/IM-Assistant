@@ -8,6 +8,16 @@ type Fixture = {
   status: (backendID: string) => ConversationBackend.Status | Promise<ConversationBackend.Status>
   login?: (backendID: string) => ConversationBackend.BrowserLogin | Promise<ConversationBackend.BrowserLogin>
   cancel?: (backendID: string, loginID: string) => "canceled" | "not-found"
+  threads?: (input: {
+    backendID: string
+    cursor?: string
+    limit?: number
+  }) => ConversationBackend.Threads | Promise<ConversationBackend.Threads>
+  history?: (input: {
+    ref: ConversationBackend.Ref
+    cursor?: string
+    limit?: number
+  }) => ConversationBackend.History | Promise<ConversationBackend.History>
 }
 
 // Backend methods share the real client's RPC envelope. All unconfigured mutations fail the scenario.
@@ -17,9 +27,19 @@ export function backendRpc(fixture: Fixture): NonNullable<MockServerConfig["rpc"
 
     if (method === "list") return [...(await fixture.list())]
 
+    if (method === "history" && fixture.history)
+      return fixture.history(
+        Schema.decodeUnknownSync(Schema.Struct({ ref: ConversationBackend.Ref, ...ConversationBackend.Page }))(body),
+      )
+
     const input = Schema.decodeUnknownSync(Schema.Struct({ backendID: Schema.String }))(body)
 
     if (method === "status") return fixture.status(input.backendID)
+
+    if (method === "threads" && fixture.threads)
+      return fixture.threads(
+        Schema.decodeUnknownSync(Schema.Struct({ backendID: Schema.String, ...ConversationBackend.Page }))(body),
+      )
 
     if (method === "login" && fixture.login) return fixture.login(input.backendID)
 

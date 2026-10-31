@@ -6,6 +6,7 @@ import { Button } from "@opencode/ui/button"
 import { Loader } from "@opencode/ui/loader"
 import { Icon } from "@opencode/ui/icon"
 import type definition from "./index"
+import { ConversationBrowser } from "./browser"
 
 export default function BackendsPage() {
   const ctx = usePlugin<typeof definition>()
@@ -302,6 +303,19 @@ function BackendCatalog(props: { server: () => ServerRef | undefined }) {
           <section class="settings-section pt-5" aria-label={selected().label}>
             <h3 class="settings-section-title">{selected().label}</h3>
             <Show when={available()} fallback={<p role="status">{ctx.t("unavailable")}</p>}>
+              <Show when={selected().browse}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const backend = state.selected
+
+                    if (!backend || !available()) return
+                    ctx.dialogs.open(() => <ConversationBrowser server={props.server} backend={backend} />)
+                  }}
+                >
+                  {ctx.t("browse.open")}
+                </Button>
+              </Show>
               <Show
                 when={!state.checking}
                 fallback={

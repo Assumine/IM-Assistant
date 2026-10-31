@@ -1,8 +1,14 @@
 import { Transport, type Launch, type Notification } from "./transport"
 import type { Connection } from "./connection"
+import path from "node:path"
 
 export interface Thread {
   id: string
+  cwd: string
+  name?: string | null
+  preview: string
+  updatedAt: number
+  status: { type: string; activeFlags?: string[] }
   turns: Record<string, unknown>[]
   [key: string]: unknown
 }
@@ -18,6 +24,8 @@ export interface Page<T> {
 export interface ItemEntry {
   item: Record<string, unknown>
   turnId: string
+  startedAtMs?: number | null
+  completedAtMs?: number | null
   [key: string]: unknown
 }
 interface Pagination { cursor?: string; limit?: number }
@@ -78,6 +86,14 @@ export class CodexSessionAdapter {
     return this.native.request<Page<ItemEntry>>("thread/items/list", {
       threadId: id(threadId), turnId: turnId === undefined ? undefined : id(turnId), ...page(pagination), sortDirection: "asc",
     })
+  }
+  async history(threadId: string, pagination: Pagination = {}) {
+    const { thread } = await this.read(threadId)
+    if (path.relative(this.workspace, thread.cwd) !== "") throw new Error("Thread belongs to another workspace")
+    const items = await this.native.request<Page<ItemEntry>>("thread/items/list", {
+      threadId: id(threadId), ...page(pagination), sortDirection: "desc",
+    })
+    return { thread, ...items }
   }
   enqueue(threadId: string, clientUserMessageId: string, text: string) {
     return this.native.request<{ queuedSubmission: Submission }>("thread/queue/add", {

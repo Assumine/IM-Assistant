@@ -6,6 +6,222 @@ import { mockRemoteServer, mockWorkspace, openSession, openSettings, type Worksp
 import { recordNotifications } from "../utils/notifications"
 import { installSseTransport } from "../utils/sse-transport"
 import { backendEvent, backendRpc } from "../utils/backends"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+
+test("backends: native history pagination preserves source order, identities and the reading position", async ({
+  page,
+}) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "native-thread" },
+    title: "Native history",
+    state: "unloaded",
+  }
+
+  const recent: ConversationBackend.Entry[] = Array.from({ length: 20 }, (_, index) => ({
+    id: `item-${100 - index}`,
+    turnID: "native-turn",
+    kind: "user",
+    partial: false,
+    text: `Recent record ${index}\n${"A preserved line of native history.\n".repeat(8)}`,
+  }))
+
+  const earlier: ConversationBackend.Entry[] = Array.from({ length: 8 }, (_, index) => ({
+    id: `earlier-${8 - index}`,
+    turnID: "earlier-turn",
+    kind: "assistant",
+    partial: false,
+    text: `Earlier record ${index}`,
+  }))
+
+  const sameID = { ...recent[0], turnID: "other-turn", text: "Independent record with the same item ID" }
+  const entered = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  const queries: object[] = []
+
+  const { settings } = await openSettings(page, {
+    name: "Native history pagination",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native", browse: true }],
+      status: () => ({ authentication: null }),
+      threads: (input) => {
+        queries.push(input)
+
+        return input.cursor
+          ? { items: [{ ...thread, ref: { ...thread.ref, threadID: "second-thread" }, title: "Another conversation" }] }
+          : { items: [thread], nextCursor: "opaque-list" }
+      },
+      history: async (input) => {
+        queries.push(input)
+
+        if (input.cursor) {
+          entered.resolve()
+          await release.promise
+
+          return { thread, items: [...earlier, sameID, recent[0]] }
+        }
+
+        return { thread, items: recent, nextCursor: "opaque-earlier" }
+      },
+    }),
+  })
+
+  try {
+    await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+    await settings.getByRole("button", { name: "View conversations", exact: true }).click()
+    const dialog = page.getByRole("dialog", { name: "Alpha native", exact: true })
+    await dialog.getByRole("button", { name: "Load more conversations", exact: true }).click()
+    await expect(dialog.getByRole("button", { name: "Another conversation", exact: true })).toBeVisible()
+    await dialog.getByRole("button", { name: "Native history", exact: true }).click()
+    await expect(dialog.getByText(recent[19].text, { exact: true })).toBeInViewport()
+    const pane = dialog.getByRole("region", { name: "Conversation history", exact: true })
+    const bounds = await dialog.boundingBox()
+    const historyBounds = await pane.boundingBox()
+    expect(Math.abs(historyBounds!.x + historyBounds!.width - bounds!.x - bounds!.width)).toBeLessThan(1)
+    await dialog.getByRole("button", { name: "Load earlier records", exact: true }).click()
+    await entered.promise
+    const anchor = dialog.getByText(recent[0].text, { exact: true })
+    const before = await anchor.boundingBox()
+    release.resolve()
+    await expect(dialog.getByRole("article")).toHaveCount(29)
+    await expect(dialog.getByRole("article").locator("p")).toHaveText(
+      [...earlier, sameID, ...recent].map((item) => item.text),
+    )
+    await expect.poll(async () => Math.abs((await anchor.boundingBox())!.y - before!.y)).toBeLessThan(1)
+    await expect(dialog.getByRole("button", { name: "Load earlier records", exact: true })).toBeHidden()
+    expect(queries).toEqual([
+      { backendID: "alpha", limit: 20 },
+      { backendID: "alpha", cursor: "opaque-list", limit: 20 },
+      { ref: thread.ref, limit: 20 },
+      { ref: thread.ref, cursor: "opaque-earlier", limit: 20 },
+    ])
+    await page.screenshot({ path: test.info().outputPath("native-history-browser.png"), fullPage: true })
+  } finally {
+    release.resolve()
+  }
+})
+
+test("backends: switching native histories ignores an older response", async ({ page }) => {
+  const first: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "first-thread" },
+    title: "First native conversation",
+    state: "unloaded",
+  }
+
+  const second = { ...first, ref: { ...first.ref, threadID: "second-thread" }, title: "Second native conversation" }
+  const entered = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+
+  const { settings } = await openSettings(page, {
+    name: "Native history ownership",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native", browse: true }],
+      status: () => ({ authentication: null }),
+      threads: () => ({ items: [first, second] }),
+      history: async ({ ref }) => {
+        const isFirst = ref.threadID === first.ref.threadID
+
+        if (isFirst) {
+          entered.resolve()
+          await release.promise
+        }
+
+        return {
+          thread: isFirst ? first : second,
+          items: [
+            {
+              id: "same-native-item",
+              turnID: "same-native-turn",
+              kind: "assistant",
+              text: isFirst ? "First private history" : "Second private history",
+              partial: false,
+            },
+          ],
+        }
+      },
+    }),
+  })
+
+  try {
+    await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+    await settings.getByRole("button", { name: "View conversations", exact: true }).click()
+    const dialog = page.getByRole("dialog", { name: "Alpha native", exact: true })
+    await dialog.getByRole("button", { name: first.title, exact: true }).click()
+    await entered.promise
+    await dialog.getByRole("button", { name: second.title, exact: true }).click()
+    await expect(dialog.getByText("Second private history", { exact: true })).toBeVisible()
+
+    const answered = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/experimental.conversation/history") &&
+        response.request().postDataJSON().input.ref.threadID === first.ref.threadID,
+    )
+
+    release.resolve()
+    await answered
+    await expect(dialog.getByText("Second private history", { exact: true })).toBeVisible()
+    await expect(dialog.getByText("First private history", { exact: true })).toBeHidden()
+  } finally {
+    release.resolve()
+  }
+})
+
+test("backends: history failure stays retryable and closing stops history subscriptions", async ({ page }) => {
+  await page.clock.install()
+
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "native-thread" },
+    title: "Native conversation",
+    state: "unloaded",
+  }
+
+  let failed = true
+  let reads = 0
+  let lists = 0
+
+  const { settings, push, directory } = await openSettings(page, {
+    name: "Native history failure",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "alpha", label: "Alpha native", browse: true }],
+      status: () => ({ authentication: null }),
+      threads: () => {
+        lists++
+
+        return { items: [thread] }
+      },
+      history: () => {
+        reads++
+
+        if (failed) throw new Error("Fixture history unavailable")
+
+        return {
+          thread,
+          items: [{ id: "unsupported-item", turnID: "native-turn", kind: "activity", text: "", partial: true }],
+        }
+      },
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Conversation backends", exact: true }).click()
+  await settings.getByRole("button", { name: "View conversations", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "Alpha native", exact: true })
+  await dialog.getByRole("button", { name: thread.title, exact: true }).click()
+  await expect(dialog.getByRole("alert")).toHaveText("Could not load history. Refresh the records to try again.")
+  await expect(dialog.getByText("No recorded history.", { exact: true })).toBeHidden()
+  failed = false
+  await dialog.getByRole("button", { name: "Refresh latest records", exact: true }).click()
+  await expect(dialog.getByRole("article", { name: "Activity record", exact: true })).toContainText(
+    "Some content in this record is not displayed in this preview.",
+  )
+  await dialog.getByRole("button", { name: "Close", exact: true }).click()
+  await expect(dialog).toBeHidden()
+  await push([backendEvent("changed", {}, directory)])
+  await page.clock.fastForward(15_000)
+  expect(reads).toBe(2)
+  expect(lists).toBe(1)
+})
 
 test("backends: registration changes preserve an offline selection without polling", async ({ page }) => {
   await page.clock.install()

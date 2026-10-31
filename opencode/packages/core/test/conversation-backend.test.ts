@@ -61,11 +61,63 @@ it.effect("public native RPC is optional, and backend registration is scoped and
     expect(yield* client.create({ backendID: "example" })).toEqual({ nativeThread: "native-thread" })
     expect(yield* client.status({ backendID: "example" })).toEqual({ authentication: null })
     expect(Exit.isFailure(yield* client.login({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
+    expect(Exit.isFailure(yield* client.threads({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
+    expect(Exit.isFailure(yield* client.history({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
     expect(Exit.isFailure(yield* host.register(example.backend).pipe(Effect.exit))).toBe(true)
     yield* registered.dispose
     yield* registered.dispose
     expect(example.closed()).toBe(1)
     expect(yield* client.list({})).toEqual([])
+  }),
+)
+
+it.effect("read-only projections preserve pagination and reject a different native owner", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    const example = fixture()
+    const thread = { ref: input.ref, title: "Native title", state: "unloaded" as const }
+    const calls: object[] = []
+    let mismatched = false
+    yield* host.bind(rpc)
+    yield* host.register({
+      ...example.backend,
+      browse: {
+        threads: async (page) => {
+          calls.push(page)
+          return {
+            items: [
+              { ...thread, updatedAt: undefined, ref: mismatched ? { ...input.ref, backendID: "other" } : input.ref },
+            ],
+            nextCursor: "native-next",
+          }
+        },
+        history: async (ref, page) => {
+          calls.push({ ref, page })
+          return {
+            thread: { ...thread, ref: mismatched ? { ...ref, threadID: "other-thread" } : ref },
+            items: [{ id: "native-item", turnID: "native-turn", kind: "user", text: "Native body", partial: false }],
+            nextCursor: "native-earlier",
+          }
+        },
+      },
+    })
+    const client = rpc.client(Api)
+    expect(yield* client.threads({ backendID: "example", cursor: "opaque-list", limit: 2 })).toEqual({
+      items: [thread],
+      nextCursor: "native-next",
+    })
+    expect((yield* client.history({ ref: input.ref, cursor: "opaque-history", limit: 3 })).items[0].id).toBe(
+      "native-item",
+    )
+    expect(calls).toEqual([
+      { cursor: "opaque-list", limit: 2 },
+      { ref: input.ref, page: { cursor: "opaque-history", limit: 3 } },
+    ])
+    mismatched = true
+    expect(Exit.isFailure(yield* client.threads({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
+    expect(Exit.isFailure(yield* client.history({ ref: input.ref }).pipe(Effect.exit))).toBe(true)
+    expect(example.admissions).toEqual([])
   }),
 )
 

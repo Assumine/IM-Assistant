@@ -471,7 +471,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "edc4a38fde0fd670164c162310132349e7acf3cd071d29e30b7628e25b863a0c"
+          "sha256": "eeaebd0e007a0790a347e704cd85ab9e84c95442dc1ef6c4e744b876d42374ac"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "d18f932d5155d2689e0c7f5cc045a3cdb56ba262fe9c2237954d80a02cdb2f24"
+          "sha256": "adc61ccd82bb8d659760ec627bd1224183f1ee03ab34fe6d625b3cd84299a341"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "b00f3c835f67d7a328874ca5292e7758328bccec1f6bcb7bdd638efcf2a16eea"
+          "sha256": "00b54bf1aa011d74755fb6f91dc3b6773eb58fb5e231119d07b909f3152b8fd2"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "40c8d06c74ce1bd95f80e822613b96a2c77c5b8b6c37cf09b9b617b48d58889d"
+          "sha256": "b072e97a68e6901c39626fa6b610e63e8d2f264ed800636b7ca88dc3ae8c9e93"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "692799ae9b5d72be7798a691ffc701faf8088c34a6a8bd4cc495847544fccb05"
+          "sha256": "adbcaa1dc321b5dfd09e55416a2f15d3d4c63b7f9cb371916e2e59adbf2e2b17"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -656,17 +656,17 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "74c8a372cd8f995bb822e93d5d12eca6f0f8e3f4a65ea8f0243d245c6978c89b"
+          "sha256": "21bc40274057f0511be7047c6d94cfe1da545b8153bd295fd0af08e92f98dcbd"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "5ce42dcc08a6b9ae2e6421f5860cba515d8e9b45bd7d799b781d01681b7b7699"
+          "sha256": "37618b5e49d5f379ab5f5be73ad39cb06fae256600f183bdc510867d8b64ad97"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "a4d2948dfda156a0d1a3eb262d1d1dde3ca7008ac5bc716a48b9a9760342221a"
+          "sha256": "d16f84d1638e534038f4816bf3739f7b1e7b7ac6a7205646f8d0d5a2b7b717f4"
         }
       ]
     },
@@ -680,7 +680,7 @@
         {
           "path": "packages/app/e2e/utils/backends.ts",
           "action": "added",
-          "sha256": "1e92b3d0bc6229bac88cff7a779afe46b71fef73fdf6761c4e1b8ed93c924908"
+          "sha256": "60bac4e2769ff76ff6b6c3f82fdaf15a7e12414907a60bbf00389d9c8935ca78"
         },
         {
           "path": "packages/gui-plugins/README.md",
@@ -690,7 +690,7 @@
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "11f90118a624631ea1e9642afbf13f2647029105f07a8a531415fe11f6804abe"
+          "sha256": "39fc2d7d5deb8751895e80f10e48fcff48e4cee00a21c37bf7e6ce5bc273bbb6"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -700,7 +700,7 @@
         {
           "path": "packages/gui-plugins/src/backends/page.tsx",
           "action": "added",
-          "sha256": "310116ae719367f2b016396664990f29b377e71b4f48eccd451f7c9dec9be945"
+          "sha256": "c3306d701f65384238010476d27db608296abc87a6b827a5493a1bc41521c77a"
         },
         {
           "path": "packages/gui-plugins/src/backends/renderer.tsx",
@@ -716,6 +716,20 @@
           "path": "packages/gui-plugins/src/renderer.ts",
           "action": "modified",
           "sha256": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-backend-history-browser",
+      "reason": "完整后端可选只读会话浏览，保留native引用/游标/顺序和阅读锚点，不接管原Session/Inbox、队列或历史库。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/gui-plugins/src/backends/browser.tsx",
+          "action": "added",
+          "sha256": "9d29d300700cadf8940d6a8d6695c900119615bc3ee59e7971c0185d2a1575de"
         }
       ]
     }

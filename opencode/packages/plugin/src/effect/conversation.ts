@@ -16,6 +16,14 @@ export interface Definition {
   ) => Promise<ConversationBackend.Receipt | undefined>
   readonly subscribe: (listener: (notification: Schema.Json) => void) => () => void
   readonly onClose?: (listener: () => void) => () => void
+  // Optional read-only UI projection. Reading must not resume a thread or admit work.
+  readonly browse?: {
+    readonly threads: (page: { cursor?: string; limit?: number }) => Promise<ConversationBackend.Threads>
+    readonly history: (
+      ref: ConversationBackend.Ref,
+      page: { cursor?: string; limit?: number },
+    ) => Promise<ConversationBackend.History>
+  }
   // Optional native sign-in ceremony. The backend retains all tokens and refresh/expiry logic.
   readonly authentication?: {
     readonly read: () => Promise<ConversationBackend.Account>

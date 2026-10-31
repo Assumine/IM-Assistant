@@ -6,6 +6,7 @@ import { createInterface } from "node:readline"
 import { fileURLToPath } from "node:url"
 import { CodexSessionAdapter, createProfile, createSharedProfile, stopSharedService, loadProfile, nativeBackend, NativeError, OutcomeUnknown, type Notification, type Profile } from "../src"
 import { policy } from "../src/profile"
+import { Transport } from "../src/transport"
 
 const executable = process.env.IM_CODEX_EXECUTABLE
 const root = process.env.IM_CODEX_TEST_ROOT
@@ -311,6 +312,53 @@ function worker(profile: Profile) {
 }
 
 describe("shared native service ownership", () => {
+  test("read-only browsing preserves native IDs and page order without resuming or reading another workspace", async () => {
+    const upstream = fixture()
+    const options = await managed(upstream.url)
+    const adapter = await open(options.profile)
+    const observer = observe(adapter)
+    const { thread } = await adapter.create()
+    await adapter.enqueue(thread.id, "browse-first", "first-native-record")
+    await observer.wait(completed)
+    await adapter.enqueue(thread.id, "browse-second", "second-native-record")
+    await observer.wait((event) => completed(event) && observer.events.filter(completed).length === 2)
+    const wire = await Transport.open(options)
+    cleanup.push(() => wire.close())
+    const foreignDirectory = await mkdtemp(path.join(root!, "foreign-"))
+    const foreign = await wire.request<{ thread: { id: string } }>("thread/start", { cwd: foreignDirectory })
+    const foreignCompleted = deferred<void>()
+    const unsubscribe = wire.subscribe((event) => {
+      if (event.method === "turn/completed" && event.params.threadId === foreign.thread.id) foreignCompleted.resolve()
+    })
+    await wire.request("thread/queue/add", { threadId: foreign.thread.id, clientUserMessageId: "foreign-record", input: [{ type: "text", text: "Separate test workspace" }] })
+    await foreignCompleted.promise
+    unsubscribe()
+    await stopSharedService(options)
+    const reader = await open(options.profile)
+    const backend = nativeBackend(reader)
+    const browse = backend.browse
+    if (!browse) throw new Error("Native browsing adapter missing")
+    const ref = { backendID: backend.descriptor.id, threadID: thread.id }
+    const listed = await browse.threads({ limit: 10 })
+    expect(listed.items.some((entry) => entry.ref.threadID === thread.id)).toBe(true)
+    expect(listed.items.some((entry) => entry.ref.threadID === foreign.thread.id)).toBe(false)
+    const latest = await browse.history(ref, { limit: 1 })
+    expect(latest.thread.ref).toEqual(ref)
+    expect(latest.thread.state).toBe("unloaded")
+    expect(latest.items.map((entry) => entry.text)).toEqual(["native-reply-2"])
+    expect(latest.nextCursor).toBeString()
+    const earlier = await browse.history(ref, { limit: 1, cursor: latest.nextCursor })
+    expect(earlier.items.map((entry) => entry.text)).toEqual(["second-native-record"])
+    const original = await reader.items(thread.id)
+    const rawID = original.data.at(-1)?.item.id
+    if (typeof rawID !== "string") throw new Error("Native history ID missing")
+    expect(latest.items[0].id).toBe(rawID)
+    expect(earlier.items[0].turnID).toBe(original.data.at(-2)!.turnId)
+    expect((await reader.read(thread.id)).thread.status.type).toBe("notLoaded")
+    await expect(browse.history({ ...ref, threadID: foreign.thread.id }, {})).rejects.toThrow("another workspace")
+    expect(upstream.requests).toHaveLength(3)
+  })
+
   test("closing one client preserves the native running request and the other client", async () => {
     const entered = deferred<void>()
     const release = deferred<void>()

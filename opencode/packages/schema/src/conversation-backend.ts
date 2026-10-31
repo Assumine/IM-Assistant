@@ -2,6 +2,7 @@ export * as ConversationBackend from "./conversation-backend.js"
 
 import { Schema } from "effect"
 import { Rpc } from "./rpc.js"
+import { optional } from "./schema.js"
 
 const ID = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{1,128}$/))
 export const Ref = Schema.Struct({ backendID: ID, threadID: ID })
@@ -37,14 +38,41 @@ export const Control = Schema.Union([
   Schema.Struct({ action: Schema.Literal("compact"), threadID: ID }),
 ])
 export type Control = typeof Control.Type
-export const Descriptor = Schema.Struct({ id: ID, label: Schema.String })
+export const Descriptor = Schema.Struct({ id: ID, label: Schema.String, browse: optional(Schema.Boolean) })
 export type Descriptor = typeof Descriptor.Type
+
+// Read-only display projections. Native references and ordering remain backend-owned.
+export const Thread = Schema.Struct({
+  ref: Ref,
+  title: Schema.String,
+  state: Schema.Literals(["running", "waiting", "idle", "unloaded", "error", "unknown"]),
+  updatedAt: optional(Schema.Number),
+})
+export type Thread = typeof Thread.Type
+export const Threads = Schema.Struct({ items: Schema.Array(Thread), nextCursor: optional(Schema.String) })
+export type Threads = typeof Threads.Type
+export const Entry = Schema.Struct({
+  id: ID,
+  turnID: ID,
+  kind: Schema.Literals(["user", "assistant", "activity"]),
+  text: Schema.String,
+  partial: Schema.Boolean,
+  timestamp: optional(Schema.Number),
+})
+export type Entry = typeof Entry.Type
+export const History = Schema.Struct({
+  thread: Thread,
+  // Each page is chronological; nextCursor requests an earlier page.
+  items: Schema.Array(Entry),
+  nextCursor: optional(Schema.String),
+})
+export type History = typeof History.Type
 
 // Display projections only: credentials, OAuth tokens and native configuration never cross this surface.
 export const Account = Schema.Struct({
   state: Schema.Literals(["signed-in", "signed-out", "not-required"]),
-  label: Schema.optional(Schema.String),
-  plan: Schema.optional(Schema.String),
+  label: optional(Schema.String),
+  plan: optional(Schema.String),
 })
 export type Account = typeof Account.Type
 export const Status = Schema.Struct({ authentication: Schema.NullOr(Account) })
@@ -85,6 +113,16 @@ export const Api = Rpc.define({
     status: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID })),
       output: Schema.toStandardSchemaV1(Status),
+      errors,
+    },
+    threads: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID, ...Page })),
+      output: Schema.toStandardSchemaV1(Threads),
+      errors,
+    },
+    history: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, ...Page })),
+      output: Schema.toStandardSchemaV1(History),
       errors,
     },
     login: {
