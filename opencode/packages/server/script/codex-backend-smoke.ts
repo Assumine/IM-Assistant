@@ -7,7 +7,7 @@ import { HttpEffect, HttpRouter, HttpServer } from "effect/http"
 import { Database } from "@opencode/core/database/database"
 import { SessionTable, SessionInboxTable } from "@opencode/core/session/sql"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
-import { Admission, Execution, type Ref } from "@opencode/schema/conversation-backend"
+import { Admission, Created, Execution, type Ref } from "@opencode/schema/conversation-backend"
 import { createEmbeddedRoutes } from "../src/routes"
 import {
   CodexSessionAdapter,
@@ -120,7 +120,7 @@ async function round(resume: boolean) {
         },
       })
       assert.deepEqual(yield* Effect.promise(() => call("list", {})), [
-        { id: "codex-native", label: "Codex", browse: true, execution: true },
+        { id: "codex-native", label: "Codex", browse: true, execution: true, create: true },
       ])
       assert.deepEqual(yield* Effect.promise(() => call("status", { backendID: "codex-native" })), {
         authentication: { state: "not-required" },
@@ -161,10 +161,10 @@ async function round(resume: boolean) {
         checks.push("native disconnection unregisters the backend from the real application RPC")
         return
       }
-      const created = Schema.decodeUnknownSync(Schema.Struct({ thread: Schema.Struct({ id: Schema.String }) }))(
+      const created = Schema.decodeUnknownSync(Created)(
         yield* Effect.promise(() => call("create", { backendID: "codex-native" })),
       )
-      ref = { backendID: "codex-native", threadID: created.thread.id }
+      ref = created.thread.ref
       const sent = Schema.decodeUnknownSync(Admission)(
         yield* Effect.promise(() => call("send", { ref, inputID: "host-active", text: "native-active" })),
       )

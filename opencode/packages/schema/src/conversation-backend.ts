@@ -59,6 +59,7 @@ export const Descriptor = Schema.Struct({
   label: Schema.String,
   browse: optional(Schema.Boolean),
   execution: optional(Schema.Boolean),
+  create: optional(Schema.Boolean),
 })
 export type Descriptor = typeof Descriptor.Type
 
@@ -70,6 +71,9 @@ export const Thread = Schema.Struct({
   updatedAt: optional(Schema.Number),
 })
 export type Thread = typeof Thread.Type
+// A new native conversation, with display metadata only. Creation never admits a prompt or resumes pending work.
+export interface Created extends Schema.Schema.Type<typeof Created> {}
+export const Created = Schema.Struct({ thread: Thread }).annotate({ identifier: "ConversationBackend.Created" })
 export const Threads = Schema.Struct({ items: Schema.Array(Thread), nextCursor: optional(Schema.String) })
 export type Threads = typeof Threads.Type
 export const Entry = Schema.Struct({
@@ -218,7 +222,7 @@ export const Api = Rpc.define({
     },
     create: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ backendID: ID })),
-      output: Schema.toStandardSchemaV1(Schema.Json),
+      output: Schema.toStandardSchemaV1(Created),
       errors,
     },
     query: {

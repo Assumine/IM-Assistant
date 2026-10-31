@@ -10,7 +10,7 @@ const json = async (response: Promise<unknown>) => await response as Awaited<Ret
 
 export function nativeBackend(adapter: CodexSessionAdapter): Definition {
   if (adapter.runtimeInfo().mode !== "shared") throw new Error("Managed backend requires the shared native service")
-  const descriptor = { id: "codex-native", label: "Codex", browse: true, execution: true }
+  const descriptor = { id: "codex-native", label: "Codex", browse: true, execution: true, create: true }
   const content = nativeContent(adapter, descriptor.id)
   const questions = nativeQuestions(adapter, descriptor.id)
   const owned = async (ref: ConversationBackend.Ref) => {
@@ -88,7 +88,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
         }
       }),
     },
-    create: () => json(adapter.create()),
+    create: async () => ({ thread: threadView((await adapter.create()).thread, descriptor.id) }),
     query: async (query) => {
       if ("threadID" in query) await adapter.readOwned(query.threadID)
       switch (query.action) {

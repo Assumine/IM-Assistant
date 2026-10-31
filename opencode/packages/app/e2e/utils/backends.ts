@@ -25,6 +25,7 @@ type Fixture = {
   status: (backendID: string) => ConversationBackend.Status | Promise<ConversationBackend.Status>
   login?: (backendID: string) => ConversationBackend.BrowserLogin | Promise<ConversationBackend.BrowserLogin>
   cancel?: (backendID: string, loginID: string) => "canceled" | "not-found"
+  create?: (backendID: string) => ConversationBackend.Created | Promise<ConversationBackend.Created>
   threads?: (input: {
     backendID: string
     cursor?: string
@@ -70,6 +71,8 @@ export function backendRpc(fixture: Fixture): NonNullable<MockServerConfig["rpc"
     const input = Schema.decodeUnknownSync(Schema.Struct({ backendID: Schema.String }))(body)
 
     if (method === "status") return fixture.status(input.backendID)
+
+    if (method === "create" && fixture.create) return fixture.create(input.backendID)
 
     if (method === "control" && fixture.control) {
       const action = Schema.decodeUnknownSync(Schema.Struct({ control: ConversationBackend.Control }))(body)

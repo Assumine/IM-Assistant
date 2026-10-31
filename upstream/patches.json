@@ -143,7 +143,7 @@
         {
           "path": "packages/app/src/new-session/view.tsx",
           "action": "modified",
-          "sha256": "f6c92b417d00683da95f0768acf98e1d4d3b5b810f368ba5629156e4b3f2a3ee"
+          "sha256": "16a1927a159642c16a667366e4cf62ed08e32739db2c23de0a2638eb8ef799f8"
         },
         {
           "path": "packages/app/src/runtime/platform/platform.tsx",
@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "3106790465da42e25fd2723a8b8ec338a3e85c734994b9aebcfadcb596f997ab"
+          "sha256": "ca65d277f497f6a236f85772d6ff12e62e8790986058495a6aa1125b37015962"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "c2efdc357167571aacab6abcff6f816130281584c5f272d0827525690ca6beb1"
+          "sha256": "edb6ca9ebc542cc4753a300f3aecaa1002e5a807e5400df82bc30a97c97c9c15"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "c5cda1d43e864997ceb7dcc642d55ae8d0d83c0c6f17d3f712ff912a7b6c0e5a"
+          "sha256": "e7e2a58d8eea4e63fdfdbef64f75062e99207660b0e536484e074ff16478bd22"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -656,12 +656,12 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "4f322c5c945356a06c6f3ed77863a9de25b0109fb2a2a57a903d7fdbe5378ab9"
+          "sha256": "71cc3fd8f2f05e26366499334381d406d558f239b2a9e1d00e8ef2221a0d4d8e"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "3c25dc41cb02dcdbd57833f7b70de30c72170afd8354a3c1d5cba08f83c3d2a3"
+          "sha256": "ab336c323a2b4e09442696d1de2745892622d444b0115a7610b9eda1b6c6a03b"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",
@@ -680,17 +680,17 @@
         {
           "path": "packages/app/e2e/utils/backends.ts",
           "action": "added",
-          "sha256": "875dc9ae233851509d7f11a73a5224fd550938b653d642dc8941602b0d3225cb"
+          "sha256": "bb8af491eb6afa5dabb925961b0b87387f5e9e2a824a794c4cb051c6d4d0676e"
         },
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "82908a36524989c86234e1ddd95aae87fa7e79380414f1f3da156fde112d4815"
+          "sha256": "cef6224868ba74285fa42f004f584ceda4000c5026d4c24cdaf0507f4e8f6c25"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "b18c79eb0091c653ea8ff271f27fac1c4b090e7152f4ef36e42b4356588704e0"
+          "sha256": "e24e4b47846d42ecf16746a8680eba098bc3e565d8744106d49209ccc6197793"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -705,7 +705,7 @@
         {
           "path": "packages/gui-plugins/src/backends/renderer.tsx",
           "action": "added",
-          "sha256": "def510b2eb2b4a6b3d10b9612b7530d6f85939f54f37a80700639d15705d94de"
+          "sha256": "c050624dd71b2d0b0ec2fde7257fefac3b136e839a24bfd62ebc9ae5e4bb0243"
         },
         {
           "path": "packages/gui-plugins/src/main.ts",
@@ -833,7 +833,7 @@
         {
           "path": "packages/plugin/src/gui/registries.ts",
           "action": "modified",
-          "sha256": "a538f1cda08ab7ef8cebb99786ea05b97dfb18298d50b65fbe7b0b80731846bc"
+          "sha256": "dcd847a87f2e1472d6c89e4d6b66e685bd91e923fa4bbd83982d19d64d91c9c7"
         }
       ]
     },
@@ -941,6 +941,26 @@
           "path": "packages/app/src/session/requests/session-question-dock-experimental.tsx",
           "action": "modified",
           "sha256": "c334607ff84298924cd503ed678e136daae7f17beae7b4f1052a729736ce7f64"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-launcher",
+      "reason": "在原生草稿页通过公共位置明确新建/打开整套会话后端；创建返回规范化原始Ref，保留草稿和原生执行权，未知结果不自动重试，不增加调度器或默认后端切换。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke",
+        "python -m tools.verify_upstream"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/regression/new-session.spec.ts",
+          "action": "modified",
+          "sha256": "dea385d34f4d03d9534016d4803a5d8bc49aff189b848ddc880a56c413239331"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/launcher.tsx",
+          "action": "added",
+          "sha256": "ce0083ba40c60b92eb7e5716139b6b73133b54a4a6082ea2c2a1d8c4afb7034c"
         }
       ]
     }

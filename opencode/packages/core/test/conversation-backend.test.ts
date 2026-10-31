@@ -32,7 +32,10 @@ function fixture() {
   let closed = 0
   const backend: Definition = {
     descriptor: { id: "example", label: "Example native backend" },
-    create: async () => ({ nativeThread: "native-thread" }),
+    create: async () => ({
+      thread: { ref: { backendID: "example", threadID: "native-thread" }, title: "New native thread", state: "idle" },
+      privateHome: "must-stay-native",
+    }),
     query: async () => ({ nativeHistory: [] }),
     control: async () => ({ status: "applied" }),
     enqueue: async (input) => {
@@ -65,7 +68,9 @@ it.effect("public native RPC is optional, and backend registration is scoped and
     const example = fixture()
     const registered = yield* host.register(example.backend)
     expect(yield* client.list({})).toEqual([example.backend.descriptor])
-    expect(yield* client.create({ backendID: "example" })).toEqual({ nativeThread: "native-thread" })
+    expect(yield* client.create({ backendID: "example" })).toEqual({
+      thread: { ref: input.ref, title: "New native thread", state: "idle" },
+    })
     expect(yield* client.status({ backendID: "example" })).toEqual({ authentication: null })
     expect(Exit.isFailure(yield* client.login({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
     expect(Exit.isFailure(yield* client.threads({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
@@ -76,6 +81,47 @@ it.effect("public native RPC is optional, and backend registration is scoped and
     yield* registered.dispose
     expect(example.closed()).toBe(1)
     expect(yield* client.list({})).toEqual([])
+  }),
+)
+
+it.effect("native creation rejects another owner and a replaced registration without replay", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service
+    const rpc = yield* Rpc.Service
+    const example = fixture()
+    yield* host.bind(rpc)
+    const client = rpc.client(Api)
+    const wrong = yield* host.register({
+      ...example.backend,
+      create: async () => ({
+        thread: { ref: { ...input.ref, backendID: "other" }, title: "Wrong owner", state: "idle" },
+      }),
+    })
+    expect(Exit.isFailure(yield* client.create({ backendID: "example" }).pipe(Effect.exit))).toBe(true)
+    yield* wrong.dispose
+    const entered = yield* Deferred.make<void>()
+    const released = yield* Deferred.make<void>()
+    const run = Effect.runPromiseWith(yield* Effect.context<never>())
+    let calls = 0
+    const original = yield* host.register({
+      ...example.backend,
+      create: async () => {
+        calls++
+        await run(Deferred.succeed(entered, undefined))
+        await run(Deferred.await(released))
+        return example.backend.create()
+      },
+    })
+    const pending = yield* client
+      .create({ backendID: "example" })
+      .pipe(Effect.exit, Effect.forkChild({ startImmediately: true }))
+    yield* Deferred.await(entered)
+    yield* original.dispose
+    yield* host.register({ ...fixture().backend })
+    yield* Deferred.succeed(released, undefined)
+    expect(Exit.isFailure(yield* Fiber.join(pending))).toBe(true)
+    expect(calls).toBe(1)
+    expect(example.admissions).toEqual([])
   }),
 )
 

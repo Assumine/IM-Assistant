@@ -564,6 +564,11 @@ describe("shared native service ownership", () => {
     await stopSharedService(options)
     const reader = await open(options.profile)
     const backend = nativeBackend(reader)
+    const created = await backend.create()
+    expect(created.thread.ref.backendID).toBe(backend.descriptor.id)
+    expect(created.thread.ref.threadID).not.toBe(thread.id)
+    expect(Object.keys(created.thread).sort()).toEqual(["ref", "state", "title", "updatedAt"])
+    expect((await reader.queue(created.thread.ref.threadID)).data).toEqual([])
     const browse = backend.browse
     if (!browse) throw new Error("Native browsing adapter missing")
     const ref = { backendID: backend.descriptor.id, threadID: thread.id }

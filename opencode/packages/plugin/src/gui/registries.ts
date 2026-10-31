@@ -706,6 +706,11 @@ export interface ComposerPill {
 
 /** The places a `Slot` renders, with the input each passes to `render`. */
 export interface SlotMap {
+  /** Additional launch actions on a new Session draft. Does not replace the native editor or submit its draft. */
+  readonly "new-session.actions": {
+    /** Stable server key for this draft; a contribution reads the live ServerRef from the SDK when acting. */
+    readonly server: string
+  }
   /** Full-width strip under the window content, above toasts. */
   readonly "window.bottom": Record<string, never>
   /** The timeline title row. Cached timelines stay mounted while hidden; `active` is false then. */

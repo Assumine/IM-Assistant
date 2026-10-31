@@ -1,4 +1,11 @@
 export default {
+  "launch.open": "Other conversation backends",
+  "launch.title": "Choose a conversation backend",
+  "launch.backend": "Conversation backend",
+  "launch.choose": "Choose a backend",
+  "launch.create": "Create conversation",
+  "launch.unknown":
+    "Creation could not be confirmed. Check this backend's conversation list before creating another conversation.",
   title: "Conversation backends",
   description: "Inspect connections and sign-in. Existing conversations keep their own backend.",
   server: "Server",

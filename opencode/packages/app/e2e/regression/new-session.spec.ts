@@ -2,6 +2,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import type { OpenCodeEvent, WorktreeDirectory } from "@opencode/client/promise"
 import { draftHref, expectPath, NO_PROVIDER, project, provider, seed, sessionHref, T0 } from "../utils/app"
 import { mockOpenCodeServer } from "../utils/mock-server"
+import { backendEvent, backendHref, backendRpc } from "../utils/backends"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 import {
   newSessionLocation,
   newSessionWorktree,
@@ -22,6 +24,225 @@ const draftID = "draft_workspace_pending"
 const otherID = "ses_workspace_pending_other"
 
 const text = "Create the workspace, then explain the pending session."
+
+test("whole backend launcher: explicit creation keeps the OpenCode draft and creates once", async ({ page }, info) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "new-native" },
+    title: "New native conversation",
+    state: "idle",
+  }
+
+  const calls: string[] = []
+  const released = Promise.withResolvers<void>()
+  let lists = 0
+  let sessions = 0
+  let sends = 0
+
+  const view = await openDraft(page, {
+    name: "NativeLauncherCreate",
+    workspace: false,
+    onSessionCreate: () => {
+      sessions++
+    },
+    rpc: backendRpc({
+      list: () => {
+        lists++
+
+        return [{ id: "native", label: "Native", create: true, browse: true, execution: true }]
+      },
+      status: () => ({ authentication: null }),
+      create: async (id) => {
+        calls.push(id)
+        await released.promise
+
+        return { thread }
+      },
+      history: ({ ref }) => {
+        expect(ref).toEqual(thread.ref)
+
+        return { thread, items: [] }
+      },
+      execution: () => ({ thread, queue: [] }),
+      send: (input) => {
+        sends++
+
+        return { status: "uncertain", ref: input.ref, inputID: input.inputID }
+      },
+    }),
+  })
+
+  await view.editor.fill("Keep this OpenCode draft")
+  const launch = page.getByRole("button", { name: "Other conversation backends", exact: true })
+  await expect(launch).toBeEnabled()
+  expect(lists).toBe(0)
+  await launch.click()
+  const dialog = page.getByRole("dialog", { name: "Choose a conversation backend", exact: true })
+  const choice = dialog.getByRole("combobox", { name: "Conversation backend", exact: true })
+  await expect(choice).toBeEnabled()
+  await expect(choice).toHaveValue("")
+  expect(calls).toEqual([])
+  await choice.selectOption("native")
+  const create = dialog.getByRole("button", { name: "Create conversation", exact: true })
+
+  if (info.repeatEachIndex === 0)
+    await info.attach("native-launcher", { body: await page.screenshot(), contentType: "image/png" })
+  const reply = page.waitForResponse(/\/api\/rpc\/experimental\.conversation\/create$/)
+  await create.click()
+  await expect.poll(() => calls).toEqual(["native"])
+  await expect(create).toBeDisabled()
+  await expect(choice).toBeDisabled()
+  await page.keyboard.press("Enter")
+  released.resolve()
+  await reply
+  await expect(dialog).toHaveCount(0)
+  await expectPath(page, backendHref(thread.ref))
+  await expect(page.getByRole("heading", { name: thread.title, exact: true })).toBeVisible()
+  await expect(
+    page.getByRole("region", { name: "Native execution and queue" }).locator('[contenteditable="true"]'),
+  ).toBeEditable()
+  await page.locator(`[data-titlebar-tab-link][href="${draftHref(view.draftID)}"]`).click()
+  await expect(view.editor).toHaveText("Keep this OpenCode draft")
+  expect(calls).toEqual(["native"])
+  expect(sessions).toBe(0)
+  expect(sends).toBe(0)
+})
+
+test("whole backend launcher: unavailable choices stay selected and existing conversations open without resume", async ({
+  page,
+}) => {
+  const native = { id: "native", label: "Native", create: true, browse: true }
+  const archive = { id: "archive", label: "Archive", browse: true }
+  let items: ConversationBackend.Descriptor[] = [native, archive]
+
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "archive", threadID: "original-thread" },
+    title: "Earlier archive conversation",
+    state: "unloaded",
+  }
+
+  let creates = 0
+
+  const view = await openDraft(page, {
+    name: "NativeLauncherBrowse",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => items,
+      status: () => ({ authentication: null }),
+      create: () => {
+        creates++
+
+        return { thread }
+      },
+      threads: ({ backendID }) => {
+        expect(backendID).toBe("archive")
+
+        return { items: [thread] }
+      },
+      history: ({ ref }) => {
+        expect(ref).toEqual(thread.ref)
+
+        return { thread, items: [] }
+      },
+    }),
+  })
+
+  await page.getByRole("button", { name: "Other conversation backends", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "Choose a conversation backend", exact: true })
+  const choice = dialog.getByRole("combobox", { name: "Conversation backend", exact: true })
+  await expect(choice).toBeEnabled()
+  await choice.selectOption("native")
+  items = [archive]
+  await view.push([backendEvent("changed", {}, view.directory)])
+  await expect(choice).toBeEnabled()
+  await expect(choice).toHaveValue("native")
+  await expect(dialog.getByRole("status")).toHaveText("Unavailable")
+  await expect(dialog.getByRole("button", { name: "Create conversation", exact: true })).toHaveCount(0)
+  items = [native, archive]
+  await view.push([backendEvent("changed", {}, view.directory)])
+  await expect(dialog.getByRole("button", { name: "Create conversation", exact: true })).toBeEnabled()
+  await choice.selectOption("archive")
+  await expect(dialog.getByRole("button", { name: "Create conversation", exact: true })).toHaveCount(0)
+  await dialog.getByRole("button", { name: "View conversations", exact: true }).click()
+  const browser = page.getByRole("dialog", { name: "Archive", exact: true })
+  await expect(browser.getByRole("button", { name: thread.title, exact: true })).toBeEnabled()
+  await browser.getByRole("button", { name: thread.title, exact: true }).click()
+  await expect(browser.getByText("No recorded history.", { exact: true })).toBeVisible()
+  await browser.getByRole("button", { name: "Open as tab", exact: true }).click()
+  await expectPath(page, backendHref(thread.ref))
+  await expect(page.getByRole("heading", { name: thread.title, exact: true })).toBeVisible()
+  expect(creates).toBe(0)
+})
+
+test("whole backend launcher: unknown creation is not retried and closing discards late navigation", async ({
+  page,
+}) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "late-created" },
+    title: "Late created native",
+    state: "idle",
+  }
+
+  const released = Promise.withResolvers<void>()
+  let mode: "fail" | "held" = "fail"
+  let calls = 0
+
+  const view = await openDraft(page, {
+    name: "NativeLauncherUnknown",
+    workspace: false,
+    rpc: backendRpc({
+      list: () => [{ id: "native", label: "Native", create: true, browse: true }],
+      status: () => ({ authentication: null }),
+      threads: () => ({ items: [] }),
+      create: async () => {
+        calls++
+
+        if (mode === "fail") throw new Error("Private native creation error")
+        await released.promise
+
+        return { thread }
+      },
+    }),
+  })
+
+  await view.editor.fill("Keep the draft after closing")
+  const open = page.getByRole("button", { name: "Other conversation backends", exact: true })
+  await open.click()
+  const dialog = page.getByRole("dialog", { name: "Choose a conversation backend", exact: true })
+  const choice = dialog.getByRole("combobox", { name: "Conversation backend", exact: true })
+  await expect(choice).toBeEnabled()
+  await choice.selectOption("native")
+  const create = dialog.getByRole("button", { name: "Create conversation", exact: true })
+  await create.click()
+  await expect(dialog.getByRole("alert")).toContainText("Creation could not be confirmed")
+  await expect(page.getByText("Private native creation error", { exact: true })).toHaveCount(0)
+  await expect(create).toBeDisabled()
+  await dialog.getByRole("button", { name: "Refresh backends", exact: true }).click()
+  await expect(choice).toBeEnabled()
+  await expect(create).toBeDisabled()
+  await dialog.getByRole("button", { name: "View conversations", exact: true }).click()
+  const browser = page.getByRole("dialog", { name: "Native", exact: true })
+  await expect(browser.getByText("No conversations in this backend.", { exact: true })).toBeVisible()
+  await browser.getByRole("button", { name: "Close", exact: true }).click()
+  await expect(browser).toHaveCount(0)
+  await expect(dialog).toHaveCount(0)
+  await expect(open).toBeEnabled()
+  expect(calls).toBe(1)
+  mode = "held"
+  await open.click()
+  await expect(choice).toBeEnabled()
+  await choice.selectOption("native")
+  const reply = page.waitForResponse(/\/api\/rpc\/experimental\.conversation\/create$/)
+  await create.click()
+  await expect.poll(() => calls).toBe(2)
+  await page.keyboard.press("Escape")
+  await expect(dialog).toHaveCount(0)
+  released.resolve()
+  await reply
+  await expect(view.editor).toHaveText("Keep the draft after closing")
+  await expectPath(page, draftHref(view.draftID))
+  await expect(page.locator(`[data-titlebar-tab-link][href="${backendHref(thread.ref)}"]`)).toHaveCount(0)
+  expect(calls).toBe(2)
+})
 
 const followUp = "Then explain the setup scripts.\nInclude the install command."
 
@@ -234,11 +455,7 @@ test("the worktree trigger opens the current project's worktree step", async ({ 
   await local.click()
   await expect(search).toBeFocused()
   await expect(back).toHaveText("Run session in")
-  await expect(options.locator(".command-palette-title")).toHaveText([
-    "BranchWorktrees",
-    "New worktree",
-    "quiet-river",
-  ])
+  await expect(options.locator(".command-palette-title")).toHaveText(["BranchWorktrees", "New worktree", "quiet-river"])
   await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
 
   // Stepping back lands on the projects step with the drilled project active, as after drilling in with →.

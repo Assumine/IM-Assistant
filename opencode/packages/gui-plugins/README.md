@@ -199,7 +199,19 @@ starts a new view lifetime, while `props.title` is reactive. Resolve the current
 where it is used. `ctx.tabs.list()` exposes a separate optional `backend` reference, never a fake `SessionRef`.
 
 The shipping `backends` plugin uses the same read-only history reader in settings and on the main surface. It uses
-the public whole-backend RPC, not private Session/Inbox controllers. The main view also observes native execution
+the public `new-session.actions` slot for an explicit launcher next to the original draft. The slot supplies only
+the draft's server key; it does not expose a composer controller or replace the native submit path. Choosing a
+backend never transfers the OpenCode draft or changes an existing thread's owner. The launcher loads the catalog
+only while open and on explicit refresh/registration changes, retains unavailable selections, and never falls back
+to another executor. Declared `create`/`browse` capabilities determine the available actions. The existing `create`
+RPC returns `Created` with normalized display-only `Thread` metadata and the unchanged native `Ref`; the core strips
+private fields, checks backend ownership and rejects late results from a replaced registration. Creation starts no
+prompt or queue drain. Its non-idempotent native write survives closing the dialog, but late UI navigation is discarded.
+An unknown result disables another creation for that backend in the current dialog and offers the native history
+reader for inspection; it is never automatically retried. Opening history and its tabs remains read-only until the
+user explicitly submits native input. No default preference, Session/Inbox, second task store or scheduler is added.
+
+The plugin uses the public whole-backend RPC, not private Session/Inbox controllers. The main view observes native execution
 and uses `ctx.ui.QueuePanel` for the app's existing pending-message strip. Its `UiQueueView` supplies backend-owned
 rows and optional actions; absent edit/undo/steer/reorder actions are omitted. The host lazy-loads the same panel used
 by Session, without importing a Session queue controller into the plugin. Pass `attached: true` only when a composer

@@ -39,6 +39,8 @@ import { NewSessionBranch } from "./workspace/selector"
 import { NewSessionBrickBreaker } from "./brick-breaker"
 import { NewSessionPinBoard, type PinBoardHandle } from "./pin-board"
 import { NewSessionWordmark, type LodgerBall } from "./wordmark"
+import { PluginSlot } from "@/runtime/plugin/render"
+import { useServer } from "@/runtime/server/current"
 
 const providerTipDismissalDuration = 30 * 24 * 60 * 60 * 1000
 
@@ -75,6 +77,7 @@ export function NewSessionView(props: {
 
   const settings = useSettings()
   const platform = usePlatform()
+  const server = useServer()
 
   const [wordmark, setWordmark] = createStore<WordmarkState>({ mode: "flat", game: false })
 
@@ -115,6 +118,9 @@ export function NewSessionView(props: {
               }}
             />
             <div class="mt-8 flex flex-col gap-3">
+              <div class="flex justify-end empty:hidden">
+                <PluginSlot at="new-session.actions" input={{ server: server.key }} />
+              </div>
               <div data-slot="new-session-composer" class="flex flex-col gap-1">
                 <div class="relative z-10">
                   <Composer model={props.composer} />
@@ -379,7 +385,9 @@ function NewSessionLocation(props: {
                       size="small"
                       class="shrink-0 text-v2-icon-icon-muted"
                     />
-                    <span class="min-w-0 truncate">{worktree() ?? language.t("session.new.workspace.triggerLocal")}</span>
+                    <span class="min-w-0 truncate">
+                      {worktree() ?? language.t("session.new.workspace.triggerLocal")}
+                    </span>
                     <Show when={props.onboarding}>
                       <span
                         data-slot="workspace-onboarding-dot"

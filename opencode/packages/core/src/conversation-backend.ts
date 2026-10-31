@@ -187,7 +187,15 @@ const layer = Layer.effect(
           return Effect.tryPromise({
             try: () => backend.create(),
             catch: () => ctx.error("failed", "Native backend request failed"),
-          })
+          }).pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Created))),
+            Effect.flatMap((created) =>
+              created.thread.ref.backendID === input.backendID && get(input.backendID) === backend
+                ? Effect.succeed(created)
+                : Effect.fail(ctx.error("failed", "Native creation could not be confirmed")),
+            ),
+            Effect.mapError(() => ctx.error("failed", "Native creation could not be confirmed")),
+          )
         },
         query: (input, ctx) => {
           const backend = get(input.backendID)
