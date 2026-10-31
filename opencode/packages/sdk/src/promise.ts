@@ -18,8 +18,10 @@ export interface InstanceOptions {
 }
 
 export interface CreateOptions
-  extends Omit<EmbeddedHost.CreateOptions, "plugins" | "workspaceProviders" | "instances"> {
+  extends Omit<EmbeddedHost.CreateOptions, "plugins" | "trustedPlugins" | "workspaceProviders" | "instances"> {
   readonly plugins?: ReadonlyArray<Plugin.Plugin>
+  /** Trusted compiled host code only, never supplied from model input or project configuration. */
+  readonly trustedPlugins?: ReadonlyArray<Plugin.Plugin>
   readonly instances?: InstanceOptions
 }
 
@@ -32,12 +34,13 @@ export type Interface = Omit<OpenCodeClient, "plugin"> & {
 }
 
 export async function create(options: CreateOptions = {}, embed: EmbeddedHost.EmbedOptions = {}): Promise<Interface> {
-  const { plugins, instances, ...hostOptions } = options
+  const { plugins, trustedPlugins, instances, ...hostOptions } = options
   const host = await Effect.runPromise(
     EmbeddedHost.create(
       {
         ...hostOptions,
         plugins: await adaptPlugins(plugins),
+        trustedPlugins: await adaptPlugins(trustedPlugins),
         instances: instances
           ? {
               key: (session) => instances.key(Schema.encodeSync(Session.Info)(session)),

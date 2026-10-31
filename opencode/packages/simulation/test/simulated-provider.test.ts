@@ -678,7 +678,10 @@ function runProvider<E>(
 const providerLayer = (endpoint: string) =>
   SimulatedProvider.layerDrive({ endpoint, version: "test" }).pipe(
     Layer.provide(
-      Layer.succeed(SdkPlugins.Service, SdkPlugins.Service.of({ register: () => Effect.void, all: () => [] })),
+      Layer.succeed(
+        SdkPlugins.Service,
+        SdkPlugins.Service.of({ register: () => Effect.void, registerTrusted: () => Effect.void, all: () => [] }),
+      ),
     ),
   )
 

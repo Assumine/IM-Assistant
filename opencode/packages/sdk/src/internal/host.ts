@@ -18,6 +18,8 @@ import { SdkInstances } from "./instances"
 export interface CreateOptions<R = never> extends Omit<ServerOptions, "hostname" | "port" | "password"> {
   readonly log?: LogOptions
   readonly plugins?: ReadonlyArray<Plugin>
+  /** Explicit trusted code contributions; unlike ordinary SDK plugins these can run in managed mode. */
+  readonly trustedPlugins?: ReadonlyArray<Plugin>
   readonly workspaceProviders?: Readonly<Record<string, WorkspaceDriver.Interface>>
   readonly instances?: SdkInstances.Options<R>
 }
@@ -31,7 +33,7 @@ export const create = Effect.fn("EmbeddedHost.create")(function* <R = never>(
   options: CreateOptions<R> = {},
   embed: EmbedOptions = {},
 ) {
-  const { log, plugins, workspaceProviders, instances, ...server } = options
+  const { log, plugins, trustedPlugins, workspaceProviders, instances, ...server } = options
   const selector = instances ? SdkInstances.provide(instances, yield* Effect.context<R>()) : undefined
   const runtime = ManagedRuntime.make(
     createEmbeddedRoutes(
@@ -51,6 +53,7 @@ export const create = Effect.fn("EmbeddedHost.create")(function* <R = never>(
     const services = yield* runtime.contextEffect
     const sdkPlugins = Context.get(services, SdkPlugins.Service)
     for (const plugin of plugins ?? []) yield* sdkPlugins.register(plugin)
+    for (const plugin of trustedPlugins ?? []) yield* sdkPlugins.registerTrusted(plugin)
     // The sweep is a no-op when nothing is suspended. ManagedRuntime owns the
     // fiber so recovery never delays startup but still stops with the host.
     runtime.runFork(Context.get(services, SessionRestart.Service).resumeSuspendedSessions)

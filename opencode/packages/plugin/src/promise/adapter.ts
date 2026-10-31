@@ -479,6 +479,7 @@ export function fromPromise(plugin: Plugin) {
           storage: {
             get: (key) => run(host.storage.get(key)),
             set: (key, value) => run(host.storage.set(key, value)),
+            insert: (key, value) => run(host.storage.insert(key, value)),
             remove: (key) => run(host.storage.remove(key)),
             scan: (options) => run(host.storage.scan(options)),
           },

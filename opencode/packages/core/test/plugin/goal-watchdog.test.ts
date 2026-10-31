@@ -61,6 +61,12 @@ const run = Effect.fnUntraced(function* (seed?: Goal.State) {
       storage: {
         get: (key) => Effect.sync(() => stored.get(key)),
         set: (key, value) => Effect.sync(() => void stored.set(key, value)),
+        insert: (key, value) =>
+          Effect.sync(() => {
+            if (stored.has(key)) return false
+            stored.set(key, value)
+            return true
+          }),
         remove: (key) => Effect.sync(() => void stored.delete(key)),
         scan: (options) =>
           Effect.sync(() => ({
@@ -96,8 +102,7 @@ const run = Effect.fnUntraced(function* (seed?: Goal.State) {
   // Let the forked event watcher and startup sweep start.
   yield* Effect.yieldNow
   return {
-    goal: () =>
-      Option.getOrUndefined(Schema.decodeUnknownOption(Goal.State)(stored.get(`session:${sessionID}`))),
+    goal: () => Option.getOrUndefined(Schema.decodeUnknownOption(Goal.State)(stored.get(`session:${sessionID}`))),
     changed,
     get: () => handlers.get?.({ sessionID }) ?? Effect.die("the goal RPC was not registered"),
     command: (text: string) =>

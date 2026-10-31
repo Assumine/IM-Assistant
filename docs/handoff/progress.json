@@ -319,7 +319,14 @@
         "opencode/packages/im-assistant/src/storage.test.ts",
         "opencode/packages/server/script/codex-product-smoke.ts",
         "tests/rebase/test_r3_01.py",
-        "upstream/codex-verification.json"
+        "upstream/codex-verification.json",
+        "opencode/packages/core/src/plugin/sdk.ts",
+        "opencode/packages/core/src/plugin/supervisor.ts",
+        "opencode/packages/plugin/src/effect/storage.ts",
+        "opencode/packages/plugin/src/promise/adapter.ts",
+        "opencode/packages/plugin/src/promise/storage.ts",
+        "opencode/packages/sdk/src/internal/host.ts",
+        "opencode/packages/sdk/src/promise.ts"
       ],
       "verification": [
         {
@@ -345,9 +352,46 @@
       "blocked_reason": null
     },
     "R3-02": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "in_progress",
+      "artifacts": [
+        "modules/qq-portal/package.json",
+        "modules/qq-portal/src/index.ts",
+        "modules/qq-portal/src/routing.ts",
+        "modules/qq-portal/test/recall-owner.test.ts",
+        "modules/qq-portal/test/routing.test.ts",
+        "modules/qq-portal/tsconfig.json",
+        "opencode/packages/core/src/plugin/host.ts",
+        "opencode/packages/core/src/plugin/sdk.ts",
+        "opencode/packages/core/src/plugin/supervisor.ts",
+        "opencode/packages/core/test/plugin/goal-watchdog.test.ts",
+        "opencode/packages/core/test/plugin/host.ts",
+        "opencode/packages/plugin/src/effect/storage.ts",
+        "opencode/packages/plugin/src/promise/adapter.ts",
+        "opencode/packages/plugin/src/promise/storage.ts",
+        "opencode/packages/sdk/src/internal/host.ts",
+        "opencode/packages/sdk/src/promise.ts",
+        "opencode/packages/server/script/qq-portal-smoke.ts",
+        "opencode/packages/server/test/vcs.test.ts",
+        "opencode/packages/simulation/test/simulated-provider.test.ts",
+        "tools/qq_portal_smoke.py",
+        "modules/qq-portal/README.md",
+        "upstream/qq-checkpoint.json"
+      ],
+      "verification": [
+        {
+          "kind": "checkpoint",
+          "plan_id": "opencode-app-base-v2",
+          "status": "partial_verified",
+          "exit_code": 0,
+          "tests_run": 40,
+          "skipped": 0,
+          "acceptance_ids": [],
+          "command": "python -m tools.qq_portal_smoke",
+          "evidence": "upstream/qq-checkpoint.json",
+          "http_checks": 10,
+          "publication": "disabled"
+        }
+      ],
       "blocked_reason": null
     },
     "R4-01": {

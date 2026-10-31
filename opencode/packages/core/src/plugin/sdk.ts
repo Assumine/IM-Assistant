@@ -20,7 +20,9 @@ export const Updated = Bus.ephemeral({ type: "sdk.plugin.updated", schema: {} })
  */
 export interface Interface {
   readonly register: (plugin: Plugin) => Effect.Effect<void>
-  readonly all: () => readonly Generation[]
+  /** Trusted, compiled host composition only; never exposed through config, HTTP or a plugin context. */
+  readonly registerTrusted: (plugin: Plugin) => Effect.Effect<void>
+  readonly all: (options?: { readonly trustedOnly?: boolean }) => readonly Generation[]
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/SdkPlugins") {}
@@ -29,14 +31,22 @@ export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const bus = yield* Bus.Service
-    const plugins = new Map<string, Generation>()
+    const plugins = new Map<string, { generation: Generation; trusted: boolean }>()
     let revision = 0
+    const register = (plugin: Plugin, trusted: boolean) =>
+      Effect.sync(() => {
+        plugins.set(plugin.id, {
+          generation: { ...plugin, revision: String(++revision), source: { type: "sdk" } },
+          trusted,
+        })
+      }).pipe(Effect.andThen(bus.publish(Updated, {}, { global: true })), Effect.asVoid)
     return Service.of({
-      register: (plugin) =>
-        Effect.sync(() => {
-          plugins.set(plugin.id, { ...plugin, revision: String(++revision), source: { type: "sdk" } })
-        }).pipe(Effect.andThen(bus.publish(Updated, {}, { global: true })), Effect.asVoid),
-      all: () => [...plugins.values()],
+      register: (plugin) => register(plugin, false),
+      registerTrusted: (plugin) => register(plugin, true),
+      all: (options) =>
+        [...plugins.values()]
+          .filter((entry) => !options?.trustedOnly || entry.trusted)
+          .map((entry) => entry.generation),
     })
   }),
 )

@@ -122,6 +122,7 @@ it.live("returns 501 when a registered VCS provider has no initializer", () =>
               SdkPlugins.Service,
               SdkPlugins.Service.of({
                 register: () => Effect.void,
+                registerTrusted: () => Effect.void,
                 all: () => [
                   {
                     id: "read-only-vcs",
@@ -292,6 +293,7 @@ it.live("maps a failing base provider to HTTP 503 instead of null metadata", () 
               SdkPlugins.Service,
               SdkPlugins.Service.of({
                 register: () => Effect.void,
+                registerTrusted: () => Effect.void,
                 all: () => [
                   {
                     id: "failing-vcs",

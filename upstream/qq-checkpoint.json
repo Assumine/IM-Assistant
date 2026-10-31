@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "task": "R3-02",
+  "status": "partial_verified",
+  "publication": "disabled",
+  "steps": [
+    {
+      "label": "r3-qq-module-types",
+      "exit_code": 0,
+      "passed": null,
+      "skipped": 0,
+      "log": ".reports/native/r3-qq-module-types.log"
+    },
+    {
+      "label": "r3-qq-module-tests",
+      "exit_code": 0,
+      "passed": 32,
+      "skipped": 0,
+      "log": ".reports/native/r3-qq-module-tests.log"
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/qq-portal-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.52,
+      "isolated_home": true,
+      "log": ".reports/native/r3-qq-http.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "--timeout",
+        "30000",
+        "test/instances.test.ts",
+        "test/instances-effect.test.ts"
+      ],
+      "cwd": "opencode/packages/sdk",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 7.93,
+      "isolated_home": true,
+      "log": ".reports/native/r3-qq-sdk-regression.log",
+      "native_tests_passed": 8,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    }
+  ],
+  "http_acceptance": {
+    "status": "passed",
+    "checks": [
+      "public Promise SDK storage exposes atomic first-writer metadata and keeps plugin namespaces isolated",
+      "recognized commands bypass AI admission while an actual native model request is held before its first token",
+      "eight QQ deliveries admit one original input beside desktop input in the same real Inbox, with metadata outside visible text",
+      "queued recall and recall-before-offline-delivery suppress only the matching native pending input and never interrupt a running request",
+      "unknown handoff is not replayed; a lost HTTP acknowledgment is reconciled from actual native pending evidence",
+      "source and acknowledged reply IDs retain their frozen target through rebinding; unsupported quote paths do not silently enqueue or steer",
+      "failed metadata writes do not admit input; group at/actor rules and other bot separation remain before all admission",
+      "the original native drain owns FIFO and completion independently of QQ bindings, metadata or replies",
+      "SQLite restart restores bindings, origin aliases and unknown handoffs without replay; delivered input recall leaves execution unchanged",
+      "the original core and its stored conversations reopen with no QQ plugin, transport or login"
+    ],
+    "model_requests": 5,
+    "actual_qq_connection": false,
+    "external_messages_sent": 0
+  },
+  "execution_owner": "original-opencode-session-inbox",
+  "production_credentials_used": false,
+  "sources": {
+    "modules/qq-portal/package.json": "6d27b0ac0e1477959947e9dd53165b4d0f3fd981aad526e8ebb56ee7f6f05b41",
+    "modules/qq-portal/src/index.ts": "adbb34d9c212a774f9f1736fcb2346d8ad30110ca350c6539a3a5ea030ff9694",
+    "modules/qq-portal/src/routing.ts": "5dbfa9ed4af1f6a02f7784ec3cdfb1d9b218345ed9dd50dd1ec6ec63d4b3ca9e",
+    "modules/qq-portal/test/recall-owner.test.ts": "ece818a09a31a2645cee68eb14537817325cd7b02770fb45c09bed0ff9740d67",
+    "modules/qq-portal/test/routing.test.ts": "7fe733e56696f7be6709aec9703094a3f77913faea5a27e991c9bf3e4c447239",
+    "modules/qq-portal/tsconfig.json": "60b04ea374fcfbe69388b6980d7e074d71f27117eecc82f6c0d7527eb25c5947",
+    "opencode/packages/core/src/plugin/host.ts": "accbe150a8badfe578e5032fce3ba4220aa281cf903b6b06c22f68e4c43df2f5",
+    "opencode/packages/core/src/plugin/sdk.ts": "1043c239d99e7f7cc72f8629657e1e7210b8b70ed55edc397642b36a4ae04a63",
+    "opencode/packages/core/src/plugin/supervisor.ts": "a6208bebf310e0db482eba7d64d350d3235a7e3386ad81766acf0899d9366e23",
+    "opencode/packages/core/test/plugin/goal-watchdog.test.ts": "625c64565227eef0f4728f1a9cbaeaeb564f8d1fef92e94a82b00b80a003579e",
+    "opencode/packages/core/test/plugin/host.ts": "c8f482247da51dd084da1e5e477fd9829389191a93857865cb03a1b20b72a340",
+    "opencode/packages/plugin/src/effect/storage.ts": "522d14f81e7c1ba9bc2013e726879c08eb0b7e5cf4dbdde5bfd75a75d2a08ab0",
+    "opencode/packages/plugin/src/promise/adapter.ts": "52230b822b2637804b9de606f0a049c9f162a55a78e288943791c7ef79af1519",
+    "opencode/packages/plugin/src/promise/storage.ts": "1311c43aa1449ce849211f14cd00a8b33b8ece6375688e57dfabebc240a49604",
+    "opencode/packages/sdk/src/internal/host.ts": "84d41f5e6aa64ff55538b7ea4a15e7b9a4185ece71d301fe0c0f7fe5cb789874",
+    "opencode/packages/sdk/src/promise.ts": "ad8cd9e00f1dbf76eeac7674a884204ec374e594e36dacd872b1c9a72bb0baf8",
+    "opencode/packages/server/script/qq-portal-smoke.ts": "109e1d03ddab52f78bc1cea511d55412c21cbf5326ac2324b78ceea196e8cfb5",
+    "opencode/packages/server/test/vcs.test.ts": "c2534ec034e95a0f2def7d9380c919c430b1b3e6aa5465fc02c1556e1cc96749",
+    "opencode/packages/simulation/test/simulated-provider.test.ts": "58ae9918e390d2645d4c6a8770dcd8fc9193fff96a98cfb01f4535b8b6f22ae3",
+    "tools/qq_portal_smoke.py": "ab8ba6f34db2aaf0080c118e81cbbcad870f5185608ed9e89958c871795d643d"
+  },
+  "remaining": [
+    "live authenticated OneBot transport and product activation are not connected",
+    "controls are classified only; remote control dispatch and authorization are not implemented",
+    "known quoted adjustments and cross-conversation confirmation remain blocked until native conditional admission/update contracts exist",
+    "Codex whole-backend targets, outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
+    "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
+    "formal R3-02 acceptance is not implemented and A23-A26 are not completed"
+  ],
+  "compatibility": {
+    "task": "R3-01",
+    "status": "passed",
+    "tests": 316,
+    "http_checks": 19,
+    "evidence": "upstream/codex-verification.json"
+  },
+  "e2e_types_recheck": {
+    "command": "bun run typecheck:e2e",
+    "exit_code": 2,
+    "existing_diagnostics": 14,
+    "new_diagnostics": 0,
+    "note": "Not passed; same diagnostics after normalizing line numbers."
+  },
+  "formal_acceptance": {
+    "status": "not_implemented",
+    "tests_run": 0,
+    "acceptance_ids": []
+  },
+  "additional_verification": {
+    "changed_typescript_lint": {
+      "args": [
+        "bun",
+        "x",
+        "--no-install",
+        "oxlint",
+        "--fix",
+        "packages/core/src/plugin/host.ts",
+        "packages/core/src/plugin/sdk.ts",
+        "packages/core/src/plugin/supervisor.ts",
+        "packages/core/test/plugin/goal-watchdog.test.ts",
+        "packages/core/test/plugin/host.ts",
+        "packages/plugin/src/effect/storage.ts",
+        "packages/plugin/src/promise/adapter.ts",
+        "packages/plugin/src/promise/storage.ts",
+        "packages/sdk/src/internal/host.ts",
+        "packages/sdk/src/promise.ts",
+        "packages/server/script/qq-portal-smoke.ts",
+        "packages/server/test/vcs.test.ts",
+        "packages/simulation/test/simulated-provider.test.ts"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.5,
+      "isolated_home": true,
+      "log": ".reports/native/r3-qq-oxlint.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    }
+  }
+}

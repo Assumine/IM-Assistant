@@ -218,7 +218,7 @@
         {
           "path": "packages/core/src/plugin/supervisor.ts",
           "action": "modified",
-          "sha256": "f705100ed4244c39dbd490d4fdf3ebf88a507c725df879b78a6ca61283809438"
+          "sha256": "a6208bebf310e0db482eba7d64d350d3235a7e3386ad81766acf0899d9366e23"
         },
         {
           "path": "packages/core/src/project.ts",
@@ -636,7 +636,7 @@
         {
           "path": "packages/core/src/plugin/host.ts",
           "action": "modified",
-          "sha256": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5"
+          "sha256": "accbe150a8badfe578e5032fce3ba4220aa281cf903b6b06c22f68e4c43df2f5"
         },
         {
           "path": "packages/core/test/conversation-backend.test.ts",
@@ -1031,6 +1031,71 @@
           "path": "packages/server/script/codex-product-smoke.ts",
           "action": "added",
           "sha256": "69e00735879da91beab7cda6b1d7ef116ae9cbf27f6ca514414c7f56e666ae91"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-qq-ingress-foundation",
+      "reason": "公共插件元数据原子首写、显式可信SDK贡献及QQ原生输入适配；普通SDK插件和配置扫描保持禁用，不增加任务执行队列。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python -m tools.verify_upstream"
+      ],
+      "files": [
+        {
+          "path": "packages/core/src/plugin/sdk.ts",
+          "action": "modified",
+          "sha256": "1043c239d99e7f7cc72f8629657e1e7210b8b70ed55edc397642b36a4ae04a63"
+        },
+        {
+          "path": "packages/core/test/plugin/goal-watchdog.test.ts",
+          "action": "modified",
+          "sha256": "625c64565227eef0f4728f1a9cbaeaeb564f8d1fef92e94a82b00b80a003579e"
+        },
+        {
+          "path": "packages/core/test/plugin/host.ts",
+          "action": "modified",
+          "sha256": "c8f482247da51dd084da1e5e477fd9829389191a93857865cb03a1b20b72a340"
+        },
+        {
+          "path": "packages/plugin/src/effect/storage.ts",
+          "action": "modified",
+          "sha256": "522d14f81e7c1ba9bc2013e726879c08eb0b7e5cf4dbdde5bfd75a75d2a08ab0"
+        },
+        {
+          "path": "packages/plugin/src/promise/adapter.ts",
+          "action": "modified",
+          "sha256": "52230b822b2637804b9de606f0a049c9f162a55a78e288943791c7ef79af1519"
+        },
+        {
+          "path": "packages/plugin/src/promise/storage.ts",
+          "action": "modified",
+          "sha256": "1311c43aa1449ce849211f14cd00a8b33b8ece6375688e57dfabebc240a49604"
+        },
+        {
+          "path": "packages/sdk/src/internal/host.ts",
+          "action": "modified",
+          "sha256": "84d41f5e6aa64ff55538b7ea4a15e7b9a4185ece71d301fe0c0f7fe5cb789874"
+        },
+        {
+          "path": "packages/sdk/src/promise.ts",
+          "action": "modified",
+          "sha256": "ad8cd9e00f1dbf76eeac7674a884204ec374e594e36dacd872b1c9a72bb0baf8"
+        },
+        {
+          "path": "packages/server/script/qq-portal-smoke.ts",
+          "action": "added",
+          "sha256": "109e1d03ddab52f78bc1cea511d55412c21cbf5326ac2324b78ceea196e8cfb5"
+        },
+        {
+          "path": "packages/server/test/vcs.test.ts",
+          "action": "modified",
+          "sha256": "c2534ec034e95a0f2def7d9380c919c430b1b3e6aa5465fc02c1556e1cc96749"
+        },
+        {
+          "path": "packages/simulation/test/simulated-provider.test.ts",
+          "action": "modified",
+          "sha256": "58ae9918e390d2645d4c6a8770dcd8fc9193fff96a98cfb01f4535b8b6f22ae3"
         }
       ]
     }

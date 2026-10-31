@@ -1,0 +1,342 @@
+// Isolated SDK/HTTP/SQLite acceptance. No QQ connection, login, or external message is made.
+import assert from "node:assert/strict"
+import { mkdtemp, mkdir } from "node:fs/promises"
+import path from "node:path"
+import { create } from "../../sdk/src/opencode"
+import type { StorageDomain } from "../../plugin/src/promise/storage"
+import { createPortal, type Message, type Scope } from "../../../../modules/qq-portal/src"
+
+const root = process.env.IM_QQ_TEST_ROOT
+if (!root) throw new Error("Use tools.qq_portal_smoke with an isolated root")
+const home = await mkdtemp(path.join(root, "qq-portal-"))
+const directory = path.join(home, "location")
+await mkdir(directory)
+const checks: string[] = []
+const requests: unknown[] = []
+let ordinaryActivated = false
+const entered = Promise.withResolvers<void>()
+const release = Promise.withResolvers<void>()
+const upstream = Bun.serve({
+  hostname: "127.0.0.1",
+  port: 0,
+  async fetch(request) {
+    if (request.method !== "POST") return Response.json({ data: [] })
+    requests.push(await request.json())
+    const serial = requests.length
+    if (serial === 1) {
+      entered.resolve()
+      await release.promise
+    }
+    const chunks = [
+      {
+        choices: [
+          { index: 0, delta: { role: "assistant", content: `QQ fixture response ${serial}` }, finish_reason: null },
+        ],
+      },
+      {
+        choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+      },
+    ]
+    return new Response(
+      chunks
+        .map(
+          (chunk) =>
+            `data: ${JSON.stringify({ id: `qq-fixture-${serial}`, object: "chat.completion.chunk", model: "baseline", created: 0, ...chunk })}\n\n`,
+        )
+        .join("") + "data: [DONE]\n\n",
+      { headers: { "content-type": "text/event-stream" } },
+    )
+  },
+})
+const config = {
+  model: "baseline/baseline",
+  update: "disable",
+  share: "disabled",
+  providers: {
+    baseline: {
+      name: "Local QQ acceptance model",
+      package: "@opencode/ai/providers/openai-compatible",
+      settings: { baseURL: `http://127.0.0.1:${upstream.port}/v1`, apiKey: "synthetic" },
+      models: {
+        baseline: {
+          name: "Local model",
+          limit: { context: 32000, output: 1024 },
+          capabilities: { tools: false, input: ["text"], output: ["text"] },
+        },
+      },
+    },
+  },
+}
+const policy = { botID: "10001", allowedUsers: ["20001", "20002"], allowedGroups: ["30001"] }
+const peer: Scope = { botID: policy.botID, kind: "private", peerID: "20001" }
+const group: Scope = { botID: policy.botID, kind: "group", peerID: "30001" }
+function message(id: string, text: string, quote?: string) {
+  return {
+    post_type: "message",
+    message_type: "private",
+    self_id: policy.botID,
+    user_id: "20001",
+    message_id: id,
+    message: [...(quote ? [{ type: "reply", data: { id: quote } }] : []), { type: "text", data: { text } }],
+  }
+}
+function recall(id: string, actor = "20001") {
+  return { post_type: "notice", notice_type: "friend_recall", self_id: policy.botID, user_id: actor, message_id: id }
+}
+async function boot(plugins = true) {
+  const ready = Promise.withResolvers<StorageDomain>()
+  const other = Promise.withResolvers<StorageDomain>()
+  const app = await create({
+    database: { path: path.join(home, "application.sqlite") },
+    models: { fetch: false },
+    runtime: { managedDirectory: directory },
+    config: { directory: path.join(home, "config"), project: false, claude: false, content: JSON.stringify(config) },
+    fs: { filewatcher: false },
+    log: { level: "error", emit: () => {} },
+    plugins: [
+      {
+        id: "must-remain-blocked",
+        setup: () => {
+          ordinaryActivated = true
+        },
+      },
+    ],
+    trustedPlugins: plugins
+      ? [
+          {
+            id: "qq-portal",
+            setup: (context) => {
+              ready.resolve(context.storage)
+            },
+          },
+          {
+            id: "unrelated-plugin",
+            setup: (context) => {
+              other.resolve(context.storage)
+            },
+          },
+        ]
+      : [],
+  })
+  return { app, storage: ready.promise, other: other.promise }
+}
+async function until(check: () => Promise<boolean>) {
+  const deadline = Date.now() + 30_000
+  while (!(await check())) {
+    if (Date.now() > deadline) throw new Error("Native QQ observation deadline")
+    await Bun.sleep(20)
+  }
+}
+async function bounded<T>(value: Promise<T>) {
+  let timer: ReturnType<typeof setTimeout>
+  try {
+    return await Promise.race([
+      value,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("QQ fixture event deadline")), 30_000)
+      }),
+    ])
+  } finally {
+    clearTimeout(timer!)
+  }
+}
+
+let host: Awaited<ReturnType<typeof boot>> | undefined
+try {
+  host = await boot()
+  let app = host.app
+  const first = await app.session.create({
+    title: "QQ first",
+    location: { directory },
+    model: { providerID: "baseline", id: "baseline" },
+  })
+  const second = await app.session.create({
+    title: "QQ second",
+    location: { directory },
+    model: { providerID: "baseline", id: "baseline" },
+  })
+  // Like the original SDK's instance tests, this initializes the actual Session instance; read-only agent lists do not load plugins.
+  await app.permission.list({ sessionID: first.id })
+  let storage = await bounded(host.storage)
+  assert.equal(ordinaryActivated, false)
+  const won = await Promise.all(Array.from({ length: 8 }, (_, i) => storage.insert("atomic-test", { i })))
+  assert.equal(won.filter(Boolean).length, 1)
+  assert.equal(await (await bounded(host.other)).get("atomic-test"), undefined)
+  checks.push("public Promise SDK storage exposes atomic first-writer metadata and keeps plugin namespaces isolated")
+  let portal = createPortal({ policy, storage, session: app.session })
+  await portal.bind(peer, first.id)
+  await portal.bind(group, second.id)
+  const active = await app.session.prompt({ sessionID: first.id, text: "Desktop active input", delivery: "queue" })
+  await bounded(entered.promise)
+  assert.deepEqual(await portal.receive(message("command", "/CODEX LIST")), {
+    status: "command",
+    action: "list",
+    arguments: "",
+  })
+  assert.deepEqual(await app.session.inbox.list({ sessionID: first.id }), [])
+  checks.push(
+    "recognized commands bypass AI admission while an actual native model request is held before its first token",
+  )
+  const queued = message("queued", "Unique QQ queued body")
+  const copies = await Promise.all(Array.from({ length: 8 }, () => portal.receive(queued)))
+  assert(copies.some((result) => result.status === "accepted"))
+  const pending = await app.session.inbox.list({ sessionID: first.id })
+  assert.equal(pending.length, 1)
+  assert.equal(pending[0].type, "user")
+  if (pending[0].type !== "user") throw new Error("User input expected")
+  assert.equal(pending[0].payload.text, "Unique QQ queued body")
+  assert.equal(pending[0].payload.metadata?.qq && typeof pending[0].payload.metadata.qq === "object", true)
+  const desktop = await app.session.prompt({ sessionID: first.id, text: "Desktop pending input", delivery: "queue" })
+  assert.deepEqual(
+    (await app.session.inbox.list({ sessionID: first.id })).map((input) => input.id),
+    [pending[0].id, desktop.id],
+  )
+  assert(!JSON.stringify(await storage.scan({ prefix: "origin:" })).includes("Unique QQ queued body"))
+  checks.push(
+    "eight QQ deliveries admit one original input beside desktop input in the same real Inbox, with metadata outside visible text",
+  )
+  assert.equal((await portal.receive(message("withdraw", "Must never reach the model"))).status, "accepted")
+  assert.equal((await portal.receive(recall("withdraw"))).status, "withdrawn")
+  assert.equal((await portal.receive(message("withdraw", "Must never reach the model"))).status, "recalled")
+  await portal.receive(recall("before-arrival"))
+  assert.equal((await portal.receive(message("before-arrival", "Late offline recalled input"))).status, "recalled")
+  assert.equal(
+    (await portal.receive({ ...recall("queued", "20002"), notice_type: "group_recall", group_id: "30001" })).status,
+    "unchanged",
+  )
+  assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 2)
+  checks.push(
+    "queued recall and recall-before-offline-delivery suppress only the matching native pending input and never interrupt a running request",
+  )
+  let attempts = 0
+  const unknown = createPortal({
+    policy,
+    storage,
+    session: {
+      ...app.session,
+      prompt: async () => {
+        attempts++
+        throw new Error("No native evidence")
+      },
+    },
+  })
+  assert.equal((await unknown.receive(message("unknown", "Unknown must not replay"))).status, "uncertain")
+  assert.equal((await unknown.receive(message("unknown", "Unknown must not replay"))).status, "uncertain")
+  assert.equal(attempts, 1)
+  const lost = createPortal({
+    policy,
+    storage,
+    session: {
+      ...app.session,
+      prompt: async (input) => {
+        await app.session.prompt(input)
+        throw new Error("Lost HTTP acknowledgment")
+      },
+    },
+  })
+  assert.equal((await lost.receive(message("lost", "QQ recovered acknowledgment"))).status, "accepted")
+  assert.equal((await lost.receive(message("lost", "QQ recovered acknowledgment"))).status, "accepted")
+  assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 3)
+  checks.push(
+    "unknown handoff is not replayed; a lost HTTP acknowledgment is reconciled from actual native pending evidence",
+  )
+  const decoded = (await import("../../../../modules/qq-portal/src/routing")).decode(queued, policy)
+  if (decoded.kind !== "message") throw new Error("Message expected")
+  await portal.linkReply(decoded.message as Message, "reply-to-queued")
+  assert.deepEqual(await portal.receive(message("adjust", "Add more", "reply-to-queued")), {
+    status: "blocked",
+    reason: "quoted-adjustment-unavailable",
+  })
+  await portal.bind(peer, second.id)
+  const duplicate = await portal.receive(queued)
+  assert(duplicate.status === "accepted" && duplicate.sessionID === first.id)
+  assert.deepEqual(await portal.receive(message("cross", "Other conversation", "reply-to-queued")), {
+    status: "blocked",
+    reason: "cross-session-confirmation-required",
+  })
+  assert.equal((await portal.receive(message("queued", "Changed body"))).status, "conflict")
+  checks.push(
+    "source and acknowledged reply IDs retain their frozen target through rebinding; unsupported quote paths do not silently enqueue or steer",
+  )
+  const failedStorage = createPortal({
+    policy,
+    session: app.session,
+    storage: {
+      ...storage,
+      insert: async () => {
+        throw new Error("Metadata persistence failure")
+      },
+    },
+  })
+  await assert.rejects(() => failedStorage.receive(message("store-failure", "Must not claim acceptance")))
+  assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 3)
+  const groupMessage = {
+    ...message("group", "Group input"),
+    message_type: "group",
+    group_id: "30001",
+    message: [{ type: "at", data: { qq: policy.botID } }, ...message("group", "Group input").message],
+  }
+  assert.equal(
+    (await portal.receive({ ...groupMessage, message: message("group", "Group input").message })).status,
+    "ignored",
+  )
+  assert.equal((await portal.receive({ ...groupMessage, self_id: "10002" })).status, "ignored")
+  assert.equal((await portal.receive(groupMessage)).status, "accepted")
+  checks.push(
+    "failed metadata writes do not admit input; group at/actor rules and other bot separation remain before all admission",
+  )
+  release.resolve()
+  await until(async () => {
+    const running = await app.session.active()
+    return !running[first.id] && !running[second.id]
+  })
+  assert.equal(requests.length, 5)
+  assert.equal(ordinaryActivated, false)
+  const history = await app.session.context({ sessionID: first.id })
+  assert.deepEqual(
+    history.filter((item) => item.type === "user").map((item) => item.text),
+    ["Desktop active input", "Unique QQ queued body", "Desktop pending input", "QQ recovered acknowledgment"],
+  )
+  assert.equal(history.filter((item) => item.id === active.id).length, 1)
+  assert(!JSON.stringify(requests).includes("Must never reach the model"))
+  assert(!JSON.stringify(requests).includes("Unknown must not replay"))
+  checks.push("the original native drain owns FIFO and completion independently of QQ bindings, metadata or replies")
+  await app.close()
+  host = await boot()
+  app = host.app
+  await app.permission.list({ sessionID: first.id })
+  storage = await bounded(host.storage)
+  portal = createPortal({ policy, storage, session: app.session })
+  const restored = await portal.receive(queued)
+  assert(restored.status === "accepted" && restored.sessionID === first.id && restored.duplicate)
+  assert.equal((await portal.receive(message("unknown", "Unknown must not replay"))).status, "uncertain")
+  assert.deepEqual(await portal.receive(message("cross-restart", "Keep frozen target", "reply-to-queued")), {
+    status: "blocked",
+    reason: "cross-session-confirmation-required",
+  })
+  assert.equal((await portal.receive(recall("queued"))).status, "unchanged")
+  assert.equal(requests.length, 5)
+  checks.push(
+    "SQLite restart restores bindings, origin aliases and unknown handoffs without replay; delivered input recall leaves execution unchanged",
+  )
+  await app.close()
+  host = await boot(false)
+  assert.equal((await host.app.session.get({ sessionID: first.id })).id, first.id)
+  assert.equal((await host.app.session.inbox.list({ sessionID: first.id })).length, 0)
+  assert.equal(requests.length, 5)
+  checks.push("the original core and its stored conversations reopen with no QQ plugin, transport or login")
+  console.log(
+    JSON.stringify({
+      status: "passed",
+      checks,
+      model_requests: requests.length,
+      actual_qq_connection: false,
+      external_messages_sent: 0,
+    }),
+  )
+} finally {
+  release.resolve()
+  await host?.app.close()
+  upstream.stop(true)
+}

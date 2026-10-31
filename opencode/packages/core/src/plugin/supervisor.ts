@@ -151,7 +151,7 @@ export const layer = Layer.effectDiscard(
       // container writes, so the instance's explicit choices win over globals.
       const pre = [
         ...internal.pre.map((plugin) => ({ ...plugin, revision: "internal", source: { type: "builtin" as const } })),
-        ...(policy.managed ? [] : sdk.all()),
+        ...sdk.all({ trustedOnly: policy.managed }),
         ...(policy.managed ? [] : instance.all()),
       ]
       const post = internal.post.map((plugin) => ({
