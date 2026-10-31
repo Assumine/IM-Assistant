@@ -1968,12 +1968,86 @@ export interface UiCodeProps {
   readonly class?: string
 }
 
+/** A backend-owned pending input projected into the native queue strip. */
+export interface UiQueueRow {
+  /** Stable native input id, used for row identity and actions. */
+  id: string
+  /** Display text, already projected by the owning backend. */
+  text: string
+  /** Number of attached items; zero when the backend exposes text only. */
+  attachments: number
+  /** This input has an operation in flight; disables its actions. */
+  pending?: boolean
+}
+
+/**
+ * Reactive presentation contract shared by Session and whole-backend queue views.
+ * Action return values are ignored; implementations own asynchronous errors and reconciliation.
+ */
+export interface UiQueueView {
+  /** Pending inputs in backend order, not a second executable queue. */
+  rows(): readonly UiQueueRow[]
+  /** Native id currently being edited; undefined when no edit is open. */
+  editing(): string | undefined
+  /** Whether the backend is executing, independently of the pending row count. */
+  working(): boolean
+  /** Whether actions are unavailable, for example during reconciliation or disconnection. */
+  busy(): boolean
+  /**
+   * Guide the active execution or deliver a parked input. Omit when unavailable.
+   * @param id - The native row id.
+   */
+  steer?(id: string): void
+  /**
+   * Withdraw a pending input. Omit when unavailable.
+   * @param id - The native row id.
+   */
+  remove?(id: string): void
+  /**
+   * Restore an input into the owning editor. Omit without a draft adapter.
+   * @param id - The native row id.
+   */
+  undo?(id: string): void
+  /**
+   * Open the owning editor for a pending input. Omit without an edit adapter.
+   * @param id - The native row id.
+   */
+  edit?(id: string): void
+  /**
+   * Submit the complete native order. Omit for an incomplete page or unsupported backend.
+   * @param ids - All pending native row ids in the requested order.
+   */
+  reorder?(ids: string[]): void
+}
+
+/** Props for the host's native queue strip. */
+export interface UiQueuePanelProps {
+  /** Backend-owned observations and actions. */
+  queue: UiQueueView
+  /** Hide the strip without changing the backend queue; defaults to false. */
+  hidden?: boolean
+  /** Overlap the following composer card; defaults to false for standalone panels. */
+  attached?: boolean
+}
+
 /**
  * The app's own components, so a plugin's UI looks and behaves like the app's: the same buttons, menus, dialogs and
  * fields, in the user's theme, fonts and language. Each takes a small set of props the SDK keeps stable. A component
  * renders with the context of the plugin that renders it, and works in any of its contributions and dialogs.
  */
 export interface Ui {
+  /**
+   * The app's native pending-message strip. This is presentation only: the backend remains the queue owner.
+   * Unsupported actions are omitted, not emulated by withdrawing and resending inputs.
+   *
+   * @param props - Observed rows and backend-owned actions.
+   *
+   * @example
+   * ```tsx
+   * <ctx.ui.QueuePanel queue={queue} />
+   * ```
+   */
+  QueuePanel(props: UiQueuePanelProps): JSX.Element
   /**
    * An icon from the app's catalog, the artwork every `icon` field of the SDK names.
    *

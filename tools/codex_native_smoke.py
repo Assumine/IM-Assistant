@@ -90,9 +90,9 @@ def _run(checkpoint):
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]
     browser = run_command("packages/app", ["x", "--no-install", "playwright", "test", "e2e/regression/settings.spec.ts",
-        "e2e/regression/tabs.spec.ts", "--grep", "backends:|tabs.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
+        "e2e/regression/tabs.spec.ts", "e2e/regression/session-queue.spec.ts", "--grep", "backends:|tabs.spec.ts|session-queue.spec.ts", "--project", "chromium", "--workers", "2", "--retries", "0"], "r3-backend-browser",
         extra_env={"PLAYWRIGHT_BUILD": "1", "PLAYWRIGHT_PORT": str(port)})
-    if browser["native_tests_passed"] != 50 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
+    if browser["native_tests_passed"] != 91 or browser["native_tests_failed"] or browser["native_tests_skipped"]:
         raise RuntimeError("Required backend settings browser scenarios did not execute")
     steps.append(browser)
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
@@ -108,6 +108,9 @@ def _run(checkpoint):
         "packages/gui-plugins/src/backends/index.ts", "packages/gui-plugins/src/backends/renderer.tsx",
         "packages/gui-plugins/src/backends/page.tsx", "packages/gui-plugins/src/backends/i18n/en.ts",
         "packages/gui-plugins/src/backends/browser.tsx",
+        "packages/gui-plugins/src/backends/execution.tsx",
+        "packages/app/src/runtime/plugin/ui.tsx", "packages/app/src/session/composer/queue-panel.tsx",
+        "packages/app/e2e/regression/session-queue.spec.ts",
         "packages/app/e2e/utils/backends.ts", "packages/app/e2e/utils/mock-server.ts",
         "packages/app/e2e/regression/settings.spec.ts",
         "packages/app/e2e/regression/tabs.spec.ts", "packages/app/component-tests/plugin-host.fixture.tsx",
@@ -136,7 +139,7 @@ def _run(checkpoint):
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["native composer/queue/live-text UI and production host activation; native-ref shell tabs and read-only main history verified with fixtures",
+        "remaining": ["native composer/edit/undo/live-text UI and production host activation; native-ref tabs, history and observed queue guide/withdraw/reorder verified with fixtures",
                       "shared transport is experimental and not published; production activation and OS matrix remain unverified",
                       "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],

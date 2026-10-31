@@ -1,4 +1,4 @@
-import { children, For, Show } from "solid-js"
+import { children, For, lazy, Show, Suspense } from "solid-js"
 import type { Ui, UiMenuItem } from "@opencode/plugin/gui"
 import { Markdown } from "@opencode/session-ui/markdown"
 import { Button } from "@opencode/ui/button"
@@ -14,11 +14,23 @@ import { Tooltip } from "@opencode/ui/tooltip"
 
 const loaderSize = { small: 14, normal: 16, large: 20 }
 
+const QueuePanel = lazy(async () => {
+  const { SessionQueuePanel } = await import("@/session/composer/queue-panel")
+
+  return { default: SessionQueuePanel }
+})
+
 /**
  * `Ui`: the app's components behind the SDK's small, stable props. Each maps those props onto the real component, so
  * a plugin renders exactly what the app renders. The components keep no state of their own.
  */
 export const ui: Ui = {
+  QueuePanel: (props) => (
+    // Only the strip waits for its chunk; the history and shell remain mounted.
+    <Suspense fallback={<Loader />}>
+      <QueuePanel queue={props.queue} hidden={props.hidden} attached={props.attached ?? false} />
+    </Suspense>
+  ),
   Icon: (props) => <Icon name={props.name} size={props.size} class={props.class} />,
   Button: (props) => (
     <Button

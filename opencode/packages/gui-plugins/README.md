@@ -199,8 +199,13 @@ starts a new view lifetime, while `props.title` is reactive. Resolve the current
 where it is used. `ctx.tabs.list()` exposes a separate optional `backend` reference, never a fake `SessionRef`.
 
 The shipping `backends` plugin uses the same read-only history reader in settings and on the main surface. It uses
-the public whole-backend RPC, not private Session/Inbox controllers. The main view is currently read-only; native
-composer/queue interaction and production host activation have not been delivered. Closing a view must only release
+the public whole-backend RPC, not private Session/Inbox controllers. The main view also observes native execution
+and uses `ctx.ui.QueuePanel` for the app's existing pending-message strip. Its `UiQueueView` supplies backend-owned
+rows and optional actions; absent edit/undo/steer/reorder actions are omitted. The host lazy-loads the same panel used
+by Session, without importing a Session queue controller into the plugin. Pass `attached: true` only when a composer
+follows it; standalone strips do not overlap the next surface. Reordering requires a complete native queue page.
+Native controls are explicit user actions, followed by observation; failed/unknown controls are never retried automatically.
+The native composer, live text and production host activation have not been delivered. Closing a view must only release
 its requests and subscriptions, never stop or reschedule backend work.
 
 ## Primitives

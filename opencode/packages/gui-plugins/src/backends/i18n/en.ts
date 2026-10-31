@@ -55,4 +55,11 @@ export default {
   "browse.kind.user": "You",
   "browse.kind.assistant": "Assistant",
   "browse.kind.activity": "Activity record",
+  "execution.title": "Native execution and queue",
+  "execution.refresh": "Refresh execution",
+  "execution.readFailed": "Could not read execution. Refresh before using queue controls.",
+  "execution.controlUnknown":
+    "Could not confirm the queue action. Refresh and check the native queue before trying another action.",
+  "execution.partial":
+    "Only the first page of pending inputs is shown. Reordering is unavailable for an incomplete queue.",
 }

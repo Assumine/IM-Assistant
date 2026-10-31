@@ -35,6 +35,12 @@ type Fixture = {
     cursor?: string
     limit?: number
   }) => ConversationBackend.History | Promise<ConversationBackend.History>
+  execution?: (input: {
+    ref: ConversationBackend.Ref
+    cursor?: string
+    limit?: number
+  }) => ConversationBackend.Execution | Promise<ConversationBackend.Execution>
+  control?: (backendID: string, control: ConversationBackend.Control) => Schema.Json | Promise<Schema.Json>
 }
 
 // Backend methods share the real client's RPC envelope. All unconfigured mutations fail the scenario.
@@ -49,9 +55,20 @@ export function backendRpc(fixture: Fixture): NonNullable<MockServerConfig["rpc"
         Schema.decodeUnknownSync(Schema.Struct({ ref: ConversationBackend.Ref, ...ConversationBackend.Page }))(body),
       )
 
+    if (method === "execution" && fixture.execution)
+      return fixture.execution(
+        Schema.decodeUnknownSync(Schema.Struct({ ref: ConversationBackend.Ref, ...ConversationBackend.Page }))(body),
+      )
+
     const input = Schema.decodeUnknownSync(Schema.Struct({ backendID: Schema.String }))(body)
 
     if (method === "status") return fixture.status(input.backendID)
+
+    if (method === "control" && fixture.control) {
+      const action = Schema.decodeUnknownSync(Schema.Struct({ control: ConversationBackend.Control }))(body)
+
+      return fixture.control(input.backendID, action.control)
+    }
 
     if (method === "threads" && fixture.threads)
       return fixture.threads(
@@ -71,7 +88,7 @@ export function backendRpc(fixture: Fixture): NonNullable<MockServerConfig["rpc"
 }
 
 export function backendEvent(
-  name: "changed" | "authentication",
+  name: "changed" | "authentication" | "activity",
   data: Schema.JsonObject,
   directory: string,
 ): OpenCodeEvent {

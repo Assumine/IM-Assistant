@@ -36,7 +36,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.98,
+      "duration_seconds": 1.02,
       "isolated_home": true,
       "log": ".reports/native/r3-host-unit.log",
       "native_tests_passed": 19,
@@ -53,7 +53,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.32,
+      "duration_seconds": 2.34,
       "isolated_home": true,
       "log": ".reports/native/r3-host-server-unit.log",
       "native_tests_passed": 3,
@@ -69,7 +69,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.3,
+      "duration_seconds": 2.38,
       "isolated_home": true,
       "log": ".reports/native/r3-host-http.log",
       "native_tests_passed": null,
@@ -94,7 +94,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.65,
+      "duration_seconds": 0.68,
       "isolated_home": true,
       "log": ".reports/native/r3-tabs-unit.log",
       "native_tests_passed": 42,
@@ -110,8 +110,9 @@
         "test",
         "e2e/regression/settings.spec.ts",
         "e2e/regression/tabs.spec.ts",
+        "e2e/regression/session-queue.spec.ts",
         "--grep",
-        "backends:|tabs.spec.ts",
+        "backends:|tabs.spec.ts|session-queue.spec.ts",
         "--project",
         "chromium",
         "--workers",
@@ -122,10 +123,10 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 75.23,
+      "duration_seconds": 90.61,
       "isolated_home": true,
       "log": ".reports/native/r3-backend-browser.log",
-      "native_tests_passed": 50,
+      "native_tests_passed": 91,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     },
@@ -138,7 +139,7 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 34.35,
+      "duration_seconds": 9.91,
       "isolated_home": true,
       "log": ".reports/native/r3-host-check.log",
       "native_tests_passed": null,
@@ -177,14 +178,17 @@
     "modules/codex-native/test/native.test.ts": "e911d3233f6d2c0067e92f109e3e3c479c141336d011e794e3ef98421130f5ed",
     "modules/codex-native/tsconfig.json": "6bdec6041d61f39890056d01ac1c90b4e200e866dca04bef9c57b67231326fe8",
     "opencode/packages/app/component-tests/plugin-host.fixture.tsx": "7a87aebbc18d47eead93e080269ed0bc1d848a449922b204b90fbf655e3fa33c",
+    "opencode/packages/app/e2e/regression/session-queue.spec.ts": "67558dda70f70183facd083db3eeb477316a5d088c3ead4058511ccd55497cfa",
     "opencode/packages/app/e2e/regression/settings.spec.ts": "eeaebd0e007a0790a347e704cd85ab9e84c95442dc1ef6c4e744b876d42374ac",
     "opencode/packages/app/e2e/regression/tabs.spec.ts": "ff6273dce7b35f45a7a528d751d1e77a1c38792160b7354565f7253598bdd5ff",
-    "opencode/packages/app/e2e/utils/backends.ts": "00b1dbf857f84253179ee269d0979a7cd2bcd62bf52a2f8b5b1250c8c28be0b7",
+    "opencode/packages/app/e2e/utils/backends.ts": "666980053382e999a89544b9fac965d5f7f0c94e479f75a3fedefe8f22a5f429",
     "opencode/packages/app/e2e/utils/mock-server.ts": "b6ee65ef245014b1adf6d7d956442b18aab5fb38ce9ec410eff134d97fba8dac",
     "opencode/packages/app/src/runtime/i18n/en.ts": "9f72696c2ddc0f105310ecd1f6865276d987e8b4480dbc768fbc1667d7bbb26a",
     "opencode/packages/app/src/runtime/plugin/backend-view.tsx": "cf77fe3809268af828988f2bcf00da3c369f4dc5c26ed59cf08aba4c2df0d82c",
     "opencode/packages/app/src/runtime/plugin/host-apis.tsx": "50915fb56bd250b8b98752e87be67d6fbb42c00011974d6cf23d2117fdb82c7f",
     "opencode/packages/app/src/runtime/plugin/server-shell.tsx": "b312903123f4f904efefb56230525b43520d0b1d862fdaea041876ecb6698d09",
+    "opencode/packages/app/src/runtime/plugin/ui.tsx": "790bb8b95224a1c83e2b489808e7d2d0f7c9eed63e5c0f32e16ecf2de466d205",
+    "opencode/packages/app/src/session/composer/queue-panel.tsx": "d97ceb5a7e16d818897e9dbfa2792eae9191b406463f5e967802ba525069abb6",
     "opencode/packages/app/src/shell/notifications/notification.test.ts": "760a88e87e6bf6cb56699a5ef00740d96b592ccb7c6605f29a8a21451a3a1889",
     "opencode/packages/app/src/shell/routes/routes.tsx": "0fcabbb22d1387ecd57ddb756795c8a878a9d02be7790717297cd5656a51701a",
     "opencode/packages/app/src/shell/routes/session.test.ts": "0f27c4ed9bba5c0cdd67d499f205b539318e1165e5613a7103efd3d68aede341",
@@ -205,30 +209,31 @@
     "opencode/packages/core/src/plugin/host.ts": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5",
     "opencode/packages/core/test/conversation-backend.test.ts": "25a8b6bd0f2da01e2345f28ceb7d7bd183121166ecaba97d5d953d0aee1db246",
     "opencode/packages/core/test/plugin/fixture.ts": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8",
-    "opencode/packages/gui-plugins/README.md": "2c8f96be5be049263b00b0d52ea2f85ef832c3584a0996901fea19ce10d88094",
+    "opencode/packages/gui-plugins/README.md": "db02450fe1464e561808a0d5f15aca29b1d9d341207de340593f95640e85c8cf",
     "opencode/packages/gui-plugins/src/backends/browser.tsx": "898c99d8fb177e2f49ae2413e3f02de145b0ec91eac476bbcce194d8c626f7b7",
-    "opencode/packages/gui-plugins/src/backends/i18n/en.ts": "5863e0398c83f3d80d41b3e0715d6d8e112a04509b5538f26a9942aef291d2c5",
+    "opencode/packages/gui-plugins/src/backends/execution.tsx": "0986ed5af05e894564735da16ce2c62779742dae49757fa5f8cdc4f710b4a76a",
+    "opencode/packages/gui-plugins/src/backends/i18n/en.ts": "d8e668edaa2874a3433b7d7fedfb2fd4fbf35668a8555dc54fc3e1af6dc072e2",
     "opencode/packages/gui-plugins/src/backends/index.ts": "c1c64131448aae4e08f4aa3e1ef9de7abce0ade4d068af9ecb00bd159d14f2e2",
     "opencode/packages/gui-plugins/src/backends/page.tsx": "923f0656e61320722c549fa3ab3096a5384a507b79f652e0ef1627d3bbf551df",
     "opencode/packages/gui-plugins/src/backends/renderer.tsx": "def510b2eb2b4a6b3d10b9612b7530d6f85939f54f37a80700639d15705d94de",
-    "opencode/packages/gui-plugins/src/backends/room.tsx": "4c057327fbd3164368dc015ad476f404d70c7e669317ada46310b2dfe1404c3b",
+    "opencode/packages/gui-plugins/src/backends/room.tsx": "d2a243737d797b8dd89c1593d991b0e50cc2ce2d356085d8b875bf17834cb154",
     "opencode/packages/gui-plugins/src/conversation.ts": "69d472e0fdf18f8cf3a652fbe0890c0c8eaa6f5361449a2a47eece3468eff5dc",
     "opencode/packages/gui-plugins/src/main.ts": "d84f0f9ad3385fd36235129073f9a2212de0da3629268da72efaaf264f0da50b",
     "opencode/packages/gui-plugins/src/renderer.ts": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f",
     "opencode/packages/plugin/src/effect/conversation.ts": "6616fb50a995305b8440951bc0b50777aafa5bd2c54ce3765ec027fd6381289b",
     "opencode/packages/plugin/src/effect/plugin.ts": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917",
-    "opencode/packages/plugin/src/gui/host-apis.ts": "a23542a2967167e8754aab9f9eb44b1d22185b5bad8a44d1344d7876e5520828",
+    "opencode/packages/plugin/src/gui/host-apis.ts": "7011004f84e9fb1317ce292ffa0b14e0a321dfeab75926ea3cfb733bedfb1df7",
     "opencode/packages/plugin/src/gui/registries.ts": "a538f1cda08ab7ef8cebb99786ea05b97dfb18298d50b65fbe7b0b80731846bc",
     "opencode/packages/schema/src/conversation-backend.ts": "b481f2cfd19cb0a171d24b52febbedaad9e40c6f8f020958136a19cd9dccb30a",
     "opencode/packages/server/script/codex-backend-smoke.ts": "3963adfcd2d01fb28e64540f174668ef5d5532e715dc33b44f0096f46aebce16",
     "opencode/packages/server/src/middleware/runtime-policy.ts": "5cc0ba37aa4bc529ef5deb11a2301adbb199ce78b83eef19bb1aead025669b86",
     "opencode/packages/server/src/routes.ts": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22",
     "opencode/packages/server/test/conversation-policy.test.ts": "9e6d2a119e0755cc88d3f0dbbd2835b344c3008bb218a062a0da1f11c420b9ad",
-    "tools/codex_native_smoke.py": "7a3183ba55d0e979fa2f19a2342183951a1a442e63bad6c33b7e60d8995d1959"
+    "tools/codex_native_smoke.py": "aee201204b3d4297ca954413a08f61c412a7b53cb4b9391545371848e9c7abdd"
   },
-  "duration_seconds": 160.57,
+  "duration_seconds": 144.15,
   "remaining": [
-    "native composer/queue/live-text UI and production host activation; native-ref shell tabs and read-only main history verified with fixtures",
+    "native composer/edit/undo/live-text UI and production host activation; native-ref tabs, history and observed queue guide/withdraw/reorder verified with fixtures",
     "shared transport is experimental and not published; production activation and OS matrix remain unverified",
     "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
     "real account connection and capability revalidation before publication"
@@ -252,9 +257,9 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 31.97,
+      "duration_seconds": 33.41,
       "isolated_home": true,
-      "log": ".reports/native/r3-tabs-plugin-host.log",
+      "log": ".reports/native/r3-queue-plugin-host.log",
       "native_tests_passed": 31,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
@@ -269,147 +274,91 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 5.17,
+      "duration_seconds": 4.71,
       "isolated_home": true,
-      "log": ".reports/native/r3-tabs-lint-changed.log",
+      "log": ".reports/native/r3-queue-lint.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
     },
     "shared_test_cleanup": {
-      "checked": 74,
+      "checked": 90,
       "stopped": 0,
       "unverified": 0
     }
   },
   "e2e_types_recheck": {
-    "command": "python -m tools.native_baseline --cwd packages/app --label r3-tabs-e2e-types -- run typecheck:e2e",
+    "command": "bun run typecheck:e2e",
     "exit_code": 1,
     "existing_diagnostics": 14,
     "new_diagnostics": 0,
     "note": "Not passed; same files and diagnostic text after normalizing shifted line numbers."
   },
-  "conversation_benchmark": {
-    "scenario": "upstream conversation composer accepts consecutive input without losing text",
-    "baseline_product_commit": "1ac4690ab96349e93c6c23bf19d9fc1359152711",
-    "conditions": "Pinned Windows Chromium, production build, isolated native HTTP fixture, empty history; 3 samples each, no retries. Same build/static server as the browser regression suite; builds and benchmark runs were serial.",
-    "scope": "Checks existing composer input only; not long native history, native tab switch latency or whole-application performance acceptance. Small samples are descriptive, not proof of an improvement.",
+  "production_benchmark": {
+    "environment": "Windows Chromium, production build, native HTTP fixture, empty history; serial runs, 3 samples per side.",
+    "scope": "Existing composer input only. Not native long history or whole-app performance acceptance; samples are descriptive.",
     "runs": {
-      "r3-tabs-before": {
-        "receipt": {
-          "args": [
-            "bun",
-            "x",
-            "--no-install",
-            "playwright",
-            "test",
-            "--config",
-            "../../../.reports/r3-browse-benchmark.config.mts",
-            "conversation-composer-benchmark.spec.ts",
-            "--project",
-            "chromium",
-            "--repeat-each",
-            "3",
-            "--retries",
-            "0"
-          ],
-          "cwd": "opencode/packages/app",
-          "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-          "exit_code": 0,
-          "duration_seconds": 31.64,
-          "isolated_home": true,
-          "log": ".reports/native/r3-tabs-before.log",
-          "native_tests_passed": 3,
-          "native_tests_failed": 0,
-          "native_tests_skipped": 0
-        },
+      "r3-widgets-before": {
         "samples": [
           {
-            "elapsedMs": 117.44369999999981,
-            "scriptMs": 26.471999999999998,
-            "taskMs": 67.10199999999999,
-            "nodes": 1405,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 101.92409999999973,
-            "scriptMs": 24.035,
-            "taskMs": 61.27700000000001,
-            "nodes": 1403,
-            "characters": 65
-          },
-          {
-            "elapsedMs": 107.69550000000027,
-            "scriptMs": 24.404,
-            "taskMs": 61.629000000000005,
-            "nodes": 1405,
-            "characters": 65
-          }
-        ],
-        "median": {
-          "elapsedMs": 107.69550000000027,
-          "scriptMs": 24.404,
-          "taskMs": 61.629000000000005,
-          "nodes": 1405,
-          "characters": 65
-        }
-      },
-      "r3-tabs-after": {
-        "receipt": {
-          "args": [
-            "bun",
-            "x",
-            "--no-install",
-            "playwright",
-            "test",
-            "--config",
-            "../../../.reports/r3-browse-benchmark.config.mts",
-            "conversation-composer-benchmark.spec.ts",
-            "--project",
-            "chromium",
-            "--repeat-each",
-            "3",
-            "--retries",
-            "0"
-          ],
-          "cwd": "opencode/packages/app",
-          "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-          "exit_code": 0,
-          "duration_seconds": 29.57,
-          "isolated_home": true,
-          "log": ".reports/native/r3-tabs-after.log",
-          "native_tests_passed": 3,
-          "native_tests_failed": 0,
-          "native_tests_skipped": 0
-        },
-        "samples": [
-          {
-            "elapsedMs": 105.34810000000016,
-            "scriptMs": 23.262,
-            "taskMs": 59.856,
+            "elapsedMs": 119.54620000000023,
+            "scriptMs": 26.321,
+            "taskMs": 68.709,
             "nodes": 1416,
             "characters": 65
           },
           {
-            "elapsedMs": 89.72870000000012,
-            "scriptMs": 21.985,
-            "taskMs": 55.657,
+            "elapsedMs": 89.51999999999998,
+            "scriptMs": 22.863999999999997,
+            "taskMs": 56.806,
             "nodes": 1463,
             "characters": 65
           },
           {
-            "elapsedMs": 106.87210000000005,
-            "scriptMs": 24.301,
-            "taskMs": 61.11600000000001,
-            "nodes": 1416,
+            "elapsedMs": 91.99260000000004,
+            "scriptMs": 23.798,
+            "taskMs": 59.291999999999994,
+            "nodes": 1463,
             "characters": 65
           }
         ],
         "median": {
-          "elapsedMs": 105.34810000000016,
-          "scriptMs": 23.262,
-          "taskMs": 59.856,
-          "nodes": 1416,
+          "elapsedMs": 91.99260000000004,
+          "scriptMs": 23.798,
+          "taskMs": 59.291999999999994,
+          "nodes": 1463,
+          "characters": 65
+        }
+      },
+      "r3-widgets-after": {
+        "samples": [
+          {
+            "elapsedMs": 109.5926999999997,
+            "scriptMs": 24.011999999999997,
+            "taskMs": 63.041,
+            "nodes": 1418,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 105.04299999999967,
+            "scriptMs": 23.429000000000002,
+            "taskMs": 60.807,
+            "nodes": 1418,
+            "characters": 65
+          },
+          {
+            "elapsedMs": 111.8738000000003,
+            "scriptMs": 23.833,
+            "taskMs": 61.416000000000004,
+            "nodes": 1418,
+            "characters": 65
+          }
+        ],
+        "median": {
+          "elapsedMs": 109.5926999999997,
+          "scriptMs": 23.833,
+          "taskMs": 61.416000000000004,
+          "nodes": 1418,
           "characters": 65
         }
       }

@@ -12,19 +12,19 @@ import { Loader } from "@opencode/ui/loader"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { prefersReducedMotion } from "@opencode/ui/motion"
 import { useLanguage } from "@/runtime/i18n/language"
-import type { SessionQueueView } from "./queue"
+import type { UiQueueView } from "@opencode/plugin/gui"
 import { cascade, Grow, queueStagger } from "./spring-height"
 import "./queue-panel.css"
 
-type QueueRow = ReturnType<SessionQueueView["rows"]>[number]
+type QueueRow = ReturnType<UiQueueView["rows"]>[number]
 
 // Pullout above the composer listing the prompts queued behind the current
 // turn. The panel slides under the composer card (negative margin, opaque
 // composer background) so the two read as one attached surface.
-export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boolean }) {
+export function SessionQueuePanel(props: { queue: UiQueueView; hidden?: boolean; attached?: boolean }) {
   const language = useLanguage()
   // A removed prompt stays drawn in its slot while it closes; the last prompts stay while the emptied panel closes.
-  const [shown, setShown] = createSignal(props.queue.rows())
+  const [shown, setShown] = createSignal([...props.queue.rows()])
   const live = createMemo(() => props.queue.rows().map((row) => row.id))
   const appearing = new Set<string>()
   let lastLive = props.queue.rows()
@@ -83,13 +83,18 @@ export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boo
   onCleanup(() => stopCascade?.())
 
   return (
-    <Grow when={open()} fade class="relative z-0" onClosed={() => setShown(props.queue.rows())}>
+    <Grow when={open()} fade class="relative z-0" onClosed={() => setShown([...props.queue.rows()])}>
       <div
         data-component="session-queue-panel"
         inert={!open()}
-        class="relative z-0 -mb-3 rounded-xl bg-v2-background-bg-base px-1.5 pt-1.5 shadow-[inset_0_0_0_0.5px_var(--v2-border-border-base)]"
+        class="relative z-0 rounded-xl bg-v2-background-bg-base px-1.5 pt-1.5 shadow-[inset_0_0_0_0.5px_var(--v2-border-border-base)]"
         // Match the composer overlap so the scroll crop meets the input edge.
-        classList={{ "pb-3": count() > 4, "pb-[18px]": count() <= 4 }}
+        classList={{
+          "-mb-3": props.attached !== false,
+          "pb-3": props.attached !== false && count() > 4,
+          "pb-[18px]": props.attached !== false && count() <= 4,
+          "pb-1.5": props.attached === false,
+        }}
       >
         <Grow when={count() > 3} fade>
           <div class="px-1.5 pt-1 pb-px text-[11px] font-[530] uppercase leading-[var(--line-height-tight)] tracking-[0.05px] text-v2-text-text-muted [font-variant-numeric:tabular-nums]">
@@ -115,7 +120,9 @@ export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boo
             if (event.canceled || !isSortable(source)) return
 
             if (source.initialIndex === source.index) return
-            void props.queue.reorder(arrayMove(live(), source.initialIndex, source.index))
+
+            if (props.queue.busy()) return
+            void props.queue.reorder?.(arrayMove(live(), source.initialIndex, source.index))
           }}
         >
           {/* Keyed on row IDs so store updates move row elements instead of
@@ -124,6 +131,7 @@ export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boo
           <div
             ref={listRef}
             data-slot="session-queue-list"
+            data-scrollable
             class="flex flex-col"
             classList={{ "max-h-[148px] overflow-y-auto": count() > 4 }}
             style={{
@@ -152,7 +160,7 @@ export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boo
   )
 }
 
-function keepLeaving<T extends { id: string }>(previous: T[], next: T[]) {
+function keepLeaving<T extends { id: string }>(previous: readonly T[], next: readonly T[]) {
   const rows = [...next]
 
   previous.forEach((row, index) => {
@@ -165,7 +173,7 @@ function keepLeaving<T extends { id: string }>(previous: T[], next: T[]) {
   return rows
 }
 
-function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: number }) {
+function SessionQueueRow(props: { queue: UiQueueView; id: string; index: number }) {
   const language = useLanguage()
   const row = createMemo((last?: QueueRow) => props.queue.rows().find((entry) => entry.id === props.id) ?? last)
   const leaving = () => props.index < 0
@@ -183,7 +191,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
       return props.index
     },
     get disabled() {
-      return props.queue.busy() || leaving()
+      return props.queue.busy() || leaving() || !props.queue.reorder
     },
   })
 
@@ -209,6 +217,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
               type="button"
               class="grid shrink-0 cursor-grab touch-none grid-cols-2 gap-x-[2px] gap-y-[2.25px] p-1"
               aria-label={language.t("session.queue.reorder")}
+              disabled={props.queue.busy() || !props.queue.reorder}
             >
               <For each={Array.from({ length: 6 })}>
                 {() => <span class="size-[2px] bg-v2-background-bg-layer-04" />}
@@ -219,15 +228,17 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                 type="button"
                 data-action="session-queue-edit"
                 dir="auto"
+                disabled={!props.queue.edit}
                 aria-disabled={entry().pending}
                 class="max-w-full min-w-0 self-start truncate rounded-sm text-start text-[13px] font-[440] leading-[var(--line-height-compact)]"
                 classList={{
                   "text-v2-text-text-faint": editing() || entry().pending,
                   "cursor-progress": entry().pending,
                   "cursor-text text-v2-text-text-base hover:bg-v2-overlay-simple-overlay-hover":
-                    !editing() && !entry().pending,
+                    !!props.queue.edit && !editing() && !entry().pending,
+                  "text-v2-text-text-base": !props.queue.edit,
                 }}
-                onClick={() => props.queue.edit(props.id)}
+                onClick={() => props.queue.edit?.(props.id)}
               >
                 {entry().text ||
                   (entry().attachments ? language.plural("session.queue.attachments", entry().attachments) : "")}
@@ -252,38 +263,42 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
               <Loader class="size-3.5 text-v2-text-text-faint" />
             </Show>
             <Show when={!editing() && !entry().pending}>
-              <Tooltip
-                placement="top"
-                inactive={!props.queue.working()}
-                value={language.t("session.queue.steerTooltip")}
-              >
-                <Button
-                  data-action="session-queue-steer"
-                  type="button"
-                  size="small"
-                  variant="ghost-faint"
-                  icon="arrow-up"
-                  disabled={props.queue.busy()}
-                  class="gap-0.5 ps-1 ![font-weight:530] [&_[data-slot=icon-svg]]:text-v2-icon-icon-muted"
-                  onClick={() => void props.queue.steer(props.id)}
+              <Show when={props.queue.steer}>
+                <Tooltip
+                  placement="top"
+                  inactive={!props.queue.working()}
+                  value={language.t("session.queue.steerTooltip")}
                 >
-                  {props.queue.working() ? language.t("session.queue.steer") : language.t("session.queue.send")}
-                </Button>
-              </Tooltip>
-              <Tooltip placement="top" value={language.t("session.queue.undo")}>
-                <IconButton
-                  data-action="session-queue-undo"
-                  type="button"
-                  class="rounded-sm"
-                  variant="ghost-muted"
-                  icon={<Icon name="outline-undo" />}
-                  disabled={props.queue.busy()}
-                  aria-label={language.t("session.queue.undo")}
-                  onClick={() => props.queue.undo(props.id)}
-                />
-              </Tooltip>
+                  <Button
+                    data-action="session-queue-steer"
+                    type="button"
+                    size="small"
+                    variant="ghost-faint"
+                    icon="arrow-up"
+                    disabled={props.queue.busy()}
+                    class="gap-0.5 ps-1 ![font-weight:530] [&_[data-slot=icon-svg]]:text-v2-icon-icon-muted"
+                    onClick={() => void props.queue.steer?.(props.id)}
+                  >
+                    {props.queue.working() ? language.t("session.queue.steer") : language.t("session.queue.send")}
+                  </Button>
+                </Tooltip>
+              </Show>
+              <Show when={props.queue.undo}>
+                <Tooltip placement="top" value={language.t("session.queue.undo")}>
+                  <IconButton
+                    data-action="session-queue-undo"
+                    type="button"
+                    class="rounded-sm"
+                    variant="ghost-muted"
+                    icon={<Icon name="outline-undo" />}
+                    disabled={props.queue.busy()}
+                    aria-label={language.t("session.queue.undo")}
+                    onClick={() => props.queue.undo?.(props.id)}
+                  />
+                </Tooltip>
+              </Show>
             </Show>
-            <Show when={!entry().pending}>
+            <Show when={!entry().pending && props.queue.remove}>
               <Tooltip placement="top" value={language.t("session.queue.remove")}>
                 <IconButton
                   data-action="session-queue-remove"
@@ -293,7 +308,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                   icon={<Icon name="outline-xmark" />}
                   disabled={props.queue.busy()}
                   aria-label={language.t("session.queue.remove")}
-                  onClick={() => void props.queue.remove(props.id)}
+                  onClick={() => void props.queue.remove?.(props.id)}
                 />
               </Tooltip>
             </Show>

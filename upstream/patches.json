@@ -347,7 +347,7 @@
         {
           "path": "packages/app/e2e/regression/session-queue.spec.ts",
           "action": "modified",
-          "sha256": "9cd4200780c3d997c07c4e90fd1090e3d89343b53f7aa89a9b28bed2985f2b0c"
+          "sha256": "67558dda70f70183facd083db3eeb477316a5d088c3ead4058511ccd55497cfa"
         },
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
@@ -680,17 +680,17 @@
         {
           "path": "packages/app/e2e/utils/backends.ts",
           "action": "added",
-          "sha256": "00b1dbf857f84253179ee269d0979a7cd2bcd62bf52a2f8b5b1250c8c28be0b7"
+          "sha256": "666980053382e999a89544b9fac965d5f7f0c94e479f75a3fedefe8f22a5f429"
         },
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "2c8f96be5be049263b00b0d52ea2f85ef832c3584a0996901fea19ce10d88094"
+          "sha256": "db02450fe1464e561808a0d5f15aca29b1d9d341207de340593f95640e85c8cf"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
           "action": "added",
-          "sha256": "5863e0398c83f3d80d41b3e0715d6d8e112a04509b5538f26a9942aef291d2c5"
+          "sha256": "d8e668edaa2874a3433b7d7fedfb2fd4fbf35668a8555dc54fc3e1af6dc072e2"
         },
         {
           "path": "packages/gui-plugins/src/backends/index.ts",
@@ -823,17 +823,41 @@
         {
           "path": "packages/gui-plugins/src/backends/room.tsx",
           "action": "added",
-          "sha256": "4c057327fbd3164368dc015ad476f404d70c7e669317ada46310b2dfe1404c3b"
+          "sha256": "d2a243737d797b8dd89c1593d991b0e50cc2ce2d356085d8b875bf17834cb154"
         },
         {
           "path": "packages/plugin/src/gui/host-apis.ts",
           "action": "modified",
-          "sha256": "a23542a2967167e8754aab9f9eb44b1d22185b5bad8a44d1344d7876e5520828"
+          "sha256": "7011004f84e9fb1317ce292ffa0b14e0a321dfeab75926ea3cfb733bedfb1df7"
         },
         {
           "path": "packages/plugin/src/gui/registries.ts",
           "action": "modified",
           "sha256": "a538f1cda08ab7ef8cebb99786ea05b97dfb18298d50b65fbe7b0b80731846bc"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-queue-view",
+      "reason": "通过公共UiQueueView复用原生队列展示；完整后端仅观察execution并显式control，不借用Session/Inbox或建立第二份执行队列。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/app/src/runtime/plugin/ui.tsx",
+          "action": "modified",
+          "sha256": "790bb8b95224a1c83e2b489808e7d2d0f7c9eed63e5c0f32e16ecf2de466d205"
+        },
+        {
+          "path": "packages/app/src/session/composer/queue-panel.tsx",
+          "action": "modified",
+          "sha256": "d97ceb5a7e16d818897e9dbfa2792eae9191b406463f5e967802ba525069abb6"
+        },
+        {
+          "path": "packages/gui-plugins/src/backends/execution.tsx",
+          "action": "added",
+          "sha256": "0986ed5af05e894564735da16ce2c62779742dae49757fa5f8cdc4f710b4a76a"
         }
       ]
     }

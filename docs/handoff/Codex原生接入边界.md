@@ -1,6 +1,6 @@
 # Codex 原生接入边界与当前切片
 
-R3-01仍为进行中。`modules/codex-native`已有原生适配器、公共后端定义、原生应用HTTP/SQLite、Windows/Bun共享实例及通用后端设置页验证。设置页支持查看后端、原生登录状态和只读历史，并可把原始Ref打开为主会话标签。发送/队列交互、真实账号及正式激活尚未完成，没有宣称正式接入。A20–A22尚不记为完成。
+R3-01仍为进行中。`modules/codex-native`已有原生适配器、公共后端定义、原生应用HTTP/SQLite、Windows/Bun共享实例及通用后端设置页验证。设置页支持查看后端、原生登录状态和只读历史，并可把原始Ref打开为主会话标签。主区域已有运行/队列观察及guide/withdraw/reorder；发送、编辑/恢复到输入框、实时内容、真实账号及正式激活尚未完成，没有宣称正式接入。A20–A22尚不记为完成。
 
 ## 来源与版本
 
@@ -69,7 +69,7 @@ Codex模块使用[官方认证接口](https://learn.chatgpt.com/docs/app-server)
 
 Codex列表按profile工作区过滤，读取时再次核对thread.cwd。thread/read(includeTurns=false)和thread/items/list(sortDirection=desc)读取后反转单页，取得最近页并向前分页；这两个原生操作不resume线程。实测服务重启后读取持久线程仍为notLoaded，不增加模型调用；另一个工作区的线程不展示且不能读取。未支持的非文本条目保留native ID和所在位置，显示未完整预览的活动记录，不冒充assistant文本。当前没有Markdown/附件/工具展示或实时增量接入。
 
-只读弹窗和主区域复用同一ConversationBrowser历史读取器，不是独立会话宿主。主标签已保留整套后端Ref，但仍没有编辑器/队列交互。原生OpenCode Session页继续绑定自己的Session ID，不能为复用组件伪造Session或将Codex输入再插入Inbox。
+只读弹窗和主区域复用同一ConversationBrowser历史读取器，不是独立会话宿主。主标签已保留整套后端Ref，并增加有限队列交互；编辑器尚未接入。原生OpenCode Session页继续绑定自己的Session ID，不能为复用组件伪造Session或将Codex输入再插入Inbox。
 
 ## 原生运行和队列投影
 
@@ -89,9 +89,15 @@ TabStorage增加backend变体，只保存server、Ref和标题。标签新增与
 
 backends内置GUI插件提供通用、按需加载的只读主视图。从设置历史的Open as tab按钮打开；主区域不显示另一列线程选择器，仍保留原读者的分页、阅读锚点、错误和部分内容提示。路由加载有相同尺寸的原生容器占位，没有跨整个窗口的Suspense空白。没有新的发消息表单或队列副本，未把read-only UI当成发送能力。
 
+## 主区域队列交互
+
+ctx.ui.QueuePanel经UiQueueView复用Session原面板及拖动、进入/退出展示，不复制SessionQueue控制器。backends插件仅保留可见execution快照，经control调用guide/withdraw/reorder，再读取原生结果。打开视图只观察；不会从本地取任务、自动发下一项或伪造Session。读取串行合并失效，不轮询；server代际/Ref生命周期隔离异步回包。未知操作结果保留提示并阻止下一操作，需人工刷新核对，不自动重试。nextCursor存在时禁用排序；空pending与running独立。未接入的编辑、恢复到输入框和停放队列Send不展示。
+
+新增两项生产浏览器用例验证原始身份的操作和迟到回包、不完整页/错误提示；原Session队列39项全量回归。当前共91浏览器＋31插件组件，连同77原生测试为199项，另10项HTTP。真实生产构建截图已查看。性能基准前后各3次仅描述既有composer输入，不算整个应用性能验收。主区域正文仍为手动历史快照，未交付流式内容或正式激活。
+
 ## 真实验证
 
-`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、13个真实Codex场景、19个核心/RPC/KV单测、3个服务端权限/错误回归、42个原生标签/路由/持久化单测、50个生产构建设置/完整标签浏览器回归、10项真实原生应用HTTP/SQLite检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
+`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、13个真实Codex场景、19个核心/RPC/KV单测、3个服务端权限/错误回归、42个原生标签/路由/持久化单测、91个生产构建设置/完整标签/完整队列浏览器回归、10项真实原生应用HTTP/SQLite检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
 
 - 原生队列自动启动、忙碌时编辑/排序/撤回、FIFO 和历史分页；额外确认重复 clientUserMessageId 并不去重。
 - 进程退出后的 native pending/历史恢复，原生 ID 和只读账号结果保持，不补发已交付输入。
@@ -104,14 +110,14 @@ backends内置GUI插件提供通用、按需加载的只读主视图。从设置
 
 HTTP验证现使用共享native profile，证明发送/调整共用接纳ID与turn前提、8份并发只产生一个队列项、丢失回执后查队列、消费后查历史、SQLite重启返回原回执、OpenCode Session/Inbox不重复接纳，以及native断开后真实RPC清单自动撤下。此HTTP样本4次合成模型请求，未调用真实账号。故障单测另覆盖中断后不盲目重发、SQLite回执更新失败不虚报成功、ID冲突及旧注册收尾不误删替代实例。
 
-设置页原6个场景覆盖离线选择保留、离开页面停止订阅、无轮询、原生浏览器完成通知、按login ID取消、切换后端时的迟到快照、完成事件早于login回包、失败后不自动重试。另3项覆盖原生列表/历史分页、跨turn相同item ID、来源顺序、重复边界条目、阅读锚点、切换后的迟到历史、读取失败/重试/部分内容提示和关闭后的无额外读取。HTTP另证明真实CLI的账号投影/取消与读取不二次接纳、不增加模型请求。浏览器认证只使用合成夹具，不冒充真人认证通过。execution场景和核心通知归属/旧注册回归保留；HTTP实际验证空待办但仍在运行、待办分页和编辑/排序/撤回只作用同一原生队列，模型仍4次。本轮50项浏览器回归包含完整标签keeper和原9项设置，新增主标签用例证明两个backend与普通Session共享同一ID时不串线、刷新恢复、关闭重开、离线不改绑且无发送/续接请求；31项插件宿主回归另重跑通过。性能基准前后各3次仅为小样本描述，不能宣称整个应用性能已验收。
+设置页原6个场景覆盖离线选择保留、离开页面停止订阅、无轮询、原生浏览器完成通知、按login ID取消、切换后端时的迟到快照、完成事件早于login回包、失败后不自动重试。另3项覆盖原生列表/历史分页、跨turn相同item ID、来源顺序、重复边界条目、阅读锚点、切换后的迟到历史、读取失败/重试/部分内容提示和关闭后的无额外读取。HTTP另证明真实CLI的账号投影/取消与读取不二次接纳、不增加模型请求。浏览器认证只使用合成夹具，不冒充真人认证通过。execution场景和核心通知归属/旧注册回归保留；HTTP实际验证空待办但仍在运行、待办分页和编辑/排序/撤回只作用同一原生队列，模型仍4次。前一轮50项浏览器回归包含完整标签keeper和原9项设置，新增主标签用例证明两个backend与普通Session共享同一ID时不串线、刷新恢复、关闭重开、离线不改绑且无发送/续接请求；31项插件宿主回归另重跑通过。性能基准前后各3次仅为小样本描述，不能宣称整个应用性能已验收。
 
-证据只标partial_verified，不能代替正式R3整体验收；发送/队列/实时内容交互、真实账号和正式宿主激活未验收，正式tests/rebase/test_r3_01.py仍未实现。累计产品补丁143个文件，源码最终摘要与台账保存。未改变Protocol/HttpApi，使用现有通用RPC，不手改生成客户端。助手权限仍仅放行此RPC的11个固定方法；任意RPC、MCP、文件和shell入口继续禁用。单独typecheck:e2e仍有原14条诊断，不标通过；既有client全套计时失败仍留R5处理。
+证据只标partial_verified，不能代替正式R3整体验收；发送、编辑/恢复到输入框、实时内容、真实账号和正式宿主激活未验收，正式tests/rebase/test_r3_01.py仍未实现。累计产品补丁146个文件，源码最终摘要与台账保存。未改变Protocol/HttpApi，使用现有通用RPC，不手改生成客户端。助手权限仍仅放行此RPC的11个固定方法；任意RPC、MCP、文件和shell入口继续禁用。单独typecheck:e2e仍有原14条诊断，不标通过；既有client全套计时失败仍留R5处理。
 
 ## 下一步实施边界
 
-公共整套后端位置、Windows/Bun共享实例、设置/登录状态和只读主会话标签已实现。下一步接原生发送/队列及实时内容交互，完善主会话列表的整套后端选择，再做正式宿主激活与真人账号验证；不直接读取或复制旧Codex凭据。保持OpenCode原Session/Inbox不变，不能在设置弹窗长出第二套会话运行层。使用createSharedProfile/loadProfile和nativeBackend，不能回退stdio或把KV首写当成执行锁。遵守窗口关闭只断连、明确停止才终止整实例的区分。设置页选择是检查对象；只有明确Open as tab才打开原始Ref，并不更换默认执行器。
+公共整套后端位置、Windows/Bun共享实例、设置/登录状态和只读主会话标签已实现。下一步接原生发送、编辑/恢复到输入框及实时内容交互，完善主会话列表的整套后端选择，再做正式宿主激活与真人账号验证；不直接读取或复制旧Codex凭据。保持OpenCode原Session/Inbox不变，不能在设置弹窗长出第二套会话运行层。使用createSharedProfile/loadProfile和nativeBackend，不能回退stdio或把KV首写当成执行锁。遵守窗口关闭只断连、明确停止才终止整实例的区分。设置页选择是检查对象；只有明确Open as tab才打开原始Ref，并不更换默认执行器。
 
 前端可以复用原生展示与交互组件，但不能为复用而向 OpenCode Inbox 再插入 Codex 待执行消息。恢复/重复投递的接纳策略、同 profile 生命周期和 native UI 契约须真实验证，再添加正式 R3 运行验收并考虑开放。QQ 仍是可选转发层，不能解决这些公共框架缺口或成为执行入口所有者。
 
-主标签承载位置已补齐，下一步是原生编辑器/队列视觉和完整交互。composer/adapter.ts要求Session.prompt/ServerSDK，session/composer/queue-panel.tsx仍依赖SessionQueueView；须在这些所有者处提取可复用的界面契约，不能复制控制器、伪造Session或从插件导入app私有模块。原生线程输入经send，队列经control，运行/历史从execution/history读取；不因打开、切换、收到完成通知而自行调度下一条。不要给当前只读页面直接加一套临时表单和本地队列。
+主标签及队列公共展示契约已补齐，下一步是原生编辑器和完整交互。composer/adapter.ts仍要求Session.prompt/ServerSDK；须在该所有者处提取可复用的界面契约，不能复制控制器、伪造Session或从插件导入app私有模块。原生线程输入经send，队列经control，运行/历史从execution/history读取；不因打开、切换、收到完成通知而自行调度下一条。不要给当前只读页面直接加一套临时表单和本地队列。

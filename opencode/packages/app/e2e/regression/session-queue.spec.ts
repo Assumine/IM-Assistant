@@ -7,8 +7,178 @@ import { Schema } from "effect"
 import { holdRoute, provider } from "../utils/app"
 import type { MockServerConfig } from "../utils/mock-server"
 import { openSession } from "../utils/workspace"
+import { mockWorkspace } from "../utils/workspace"
+import { backendEvent, backendHref, backendRpc, backendTabs } from "../utils/backends"
+import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 
 const sessionID = "ses_session_queue_regression"
+
+test("whole backend: native queue actions reconcile observations without Session admission", async ({ page }) => {
+  const thread: ConversationBackend.Thread = {
+    ref: { backendID: "native", threadID: "queue-thread" },
+    title: "Native queue",
+    state: "running",
+  }
+
+  let value: ConversationBackend.Execution = {
+    thread,
+    turn: { id: "active-turn", state: "running" },
+    queue: ["First", "Second", "Third"].map((text) => ({ nativeID: text, inputID: text, text, partial: false })),
+  }
+
+  const controls: ConversationBackend.Control[] = []
+  const admissions: string[] = []
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname
+
+    if (request.method() === "POST" && (path === "/api/session" || /\/(prompt|send|create)$/.test(path)))
+      admissions.push(path)
+  })
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeQueue",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [thread]),
+    rpc: backendRpc({
+      list: () => [{ id: thread.ref.backendID, label: "Native", execution: true }],
+      status: () => ({ authentication: null }),
+      history: () => ({ thread, items: [] }),
+      execution: () => value,
+      control: (backendID, action) => {
+        expect(backendID).toBe(thread.ref.backendID)
+        expect(action.threadID).toBe(thread.ref.threadID)
+        controls.push(action)
+
+        if (action.action === "reorder")
+          value = {
+            ...value,
+            queue: action.nativeIDs.flatMap((id) => value.queue.filter((item) => item.nativeID === id)),
+          }
+
+        if (action.action === "guide" || action.action === "withdraw")
+          value = { ...value, queue: value.queue.filter((item) => item.nativeID !== action.nativeID) }
+
+        if (action.action === "withdraw") throw new Error("Response lost after native withdrawal")
+
+        return null
+      },
+    }),
+  })
+
+  await page.goto(backendHref(thread.ref))
+  const panel = page.getByRole("region", { name: "Native execution and queue" })
+  const rows = panel.locator('[data-component="session-queue-row"]')
+  const texts = rows.locator('[data-action="session-queue-edit"]')
+  await expect(texts).toHaveText(["First", "Second", "Third"])
+  await expect(texts.filter({ hasText: "First" })).toBeDisabled()
+  await expect(panel.locator('[data-action="session-queue-undo"]')).toHaveCount(0)
+  await page.screenshot({ path: test.info().outputPath("whole-backend-pending.png"), fullPage: true })
+  const first = rows.filter({ hasText: "First" })
+  await first.getByRole("button", { name: "Reorder queued prompt" }).hover()
+  await page.mouse.down()
+  const target = await rows.filter({ hasText: "Third" }).boundingBox()
+
+  if (!target) throw new Error("Native queue target is not visible")
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 })
+  await page.mouse.up()
+  await expect(texts).toHaveText(["Second", "Third", "First"])
+  await rows.filter({ hasText: "Second" }).hover()
+  await rows.filter({ hasText: "Second" }).locator('[data-action="session-queue-steer"]').click()
+  await expect(texts).toHaveText(["Third", "First"])
+  await rows.filter({ hasText: "Third" }).hover()
+  await rows.filter({ hasText: "Third" }).locator('[data-action="session-queue-remove"]').click()
+  await expect(texts).toHaveText(["First"])
+  await expect(panel.getByRole("alert")).toContainText("Could not confirm the queue action")
+  await expect(rows.getByRole("button", { name: "Reorder queued prompt" })).toBeDisabled()
+  await panel.getByRole("button", { name: "Refresh execution" }).click()
+  await expect(panel.getByRole("alert")).toHaveCount(0)
+  await expect(rows.getByRole("button", { name: "Reorder queued prompt" })).toBeEnabled()
+  expect(controls).toEqual([
+    { action: "reorder", threadID: thread.ref.threadID, nativeIDs: ["Second", "Third", "First"] },
+    { action: "guide", threadID: thread.ref.threadID, nativeID: "Second" },
+    { action: "withdraw", threadID: thread.ref.threadID, nativeID: "Third" },
+  ])
+  value = { ...value, queue: [] }
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+  await expect(rows).toHaveCount(0)
+  await expect(panel.getByText("Running", { exact: true })).toBeVisible()
+  value = { thread: { ...thread, state: "idle" }, turn: { id: "active-turn", state: "completed" }, queue: [] }
+  await workspace.push([backendEvent("activity", { ref: thread.ref, change: "execution" }, workspace.directory)])
+  await expect(panel.getByText("Idle", { exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("whole-backend-queue.png"), fullPage: true })
+  expect(admissions).toEqual([])
+})
+
+test("whole backend: incomplete queues cannot reorder and late reads cannot cross native tabs", async ({ page }) => {
+  const alpha: ConversationBackend.Thread = {
+    ref: { backendID: "alpha", threadID: "same-thread" },
+    title: "Alpha",
+    state: "idle",
+  }
+
+  const beta: ConversationBackend.Thread = { ...alpha, ref: { ...alpha.ref, backendID: "beta" }, title: "Beta" }
+  const arrived = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  let hold = false
+  let reads = 0
+
+  const workspace = await mockWorkspace(page, {
+    name: "NativeQueueLifetime",
+    workspace: false,
+    sessions: [],
+    seed: backendTabs([], [alpha, beta]),
+    rpc: backendRpc({
+      list: () => [alpha, beta].map((thread) => ({ id: thread.ref.backendID, label: thread.title, execution: true })),
+      status: () => ({ authentication: null }),
+      history: ({ ref }) => ({ thread: ref.backendID === "alpha" ? alpha : beta, items: [] }),
+      execution: async ({ ref }) => {
+        reads += 1
+
+        if (ref.backendID === "alpha" && hold) {
+          arrived.resolve()
+          await released.promise
+        }
+
+        const thread = ref.backendID === "alpha" ? alpha : beta
+
+        return {
+          thread,
+          queue: [{ nativeID: "same-input", inputID: "same-input", text: `${thread.title} pending`, partial: false }],
+          nextCursor: "remaining",
+        }
+      },
+    }),
+  })
+
+  await page.goto(backendHref(alpha.ref))
+  const panel = page.getByRole("region", { name: "Native execution and queue" })
+  await expect(panel.getByText("Alpha pending", { exact: true })).toBeVisible()
+  await expect(panel.getByRole("button", { name: "Reorder queued prompt" })).toBeDisabled()
+  await expect(panel.locator('[data-action="session-queue-steer"]')).toHaveCount(0)
+  await expect(
+    panel.getByText(
+      "Only the first page of pending inputs is shown. Reordering is unavailable for an incomplete queue.",
+    ),
+  ).toBeVisible()
+  hold = true
+  await panel.getByRole("button", { name: "Refresh execution" }).click()
+  await arrived.promise
+  await page
+    .locator("[data-titlebar-tab-slot]")
+    .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: "Beta" }) })
+    .locator("[data-titlebar-tab-link]")
+    .click()
+  await expect(panel.getByText("Beta pending", { exact: true })).toBeVisible()
+  released.resolve()
+  const before = reads
+  await workspace.push([backendEvent("activity", { ref: alpha.ref, change: "execution" }, workspace.directory)])
+  await workspace.push([backendEvent("activity", { ref: beta.ref, change: "execution" }, workspace.directory)])
+  await expect.poll(() => reads).toBe(before + 1)
+  await expect(panel.getByRole("button", { name: "Refresh execution" })).toBeEnabled()
+  await expect(panel.getByText("Alpha pending", { exact: true })).toHaveCount(0)
+  await expect(panel.getByText("Beta pending", { exact: true })).toBeVisible()
+})
 
 // The session.prompt payload, as the server's endpoint validates it.
 const PromptBody = Schema.Struct({
@@ -235,13 +405,20 @@ test("follow-up preference controls Enter while Mod+Enter uses the alternate del
   await expect(view.input).toHaveText("")
 })
 
-test("conversation host keeps an unacknowledged queued input in its own session across switching and reload", async ({ page }) => {
-  const mock = createQueueMock([], [
-    { id: "msg_conversation_running", type: "user", text: "A request with no reply yet", time: { created: 1 } },
+test("conversation host keeps an unacknowledged queued input in its own session across switching and reload", async ({
+  page,
+}) => {
+  const mock = createQueueMock(
+    [],
+    [{ id: "msg_conversation_running", type: "user", text: "A request with no reply yet", time: { created: 1 } }],
+  )
+
+  const view = await openQueue(page, mock, "queue", undefined, "running", undefined, false, [
+    { id: "ses_conversation_other", title: "Another conversation" },
   ])
-  const view = await openQueue(page, mock, "queue", undefined, "running", undefined, false,
-    [{ id: "ses_conversation_other", title: "Another conversation" }])
+
   const held = await holdRoute(page, new RegExp(`/api/session/${sessionID}/prompt(\\?|$)`), { method: "POST" })
+
   try {
     await expect(userRow(page, "msg_conversation_running")).toBeVisible()
     await expect(view.rows).toHaveCount(0)
@@ -260,7 +437,9 @@ test("conversation host keeps an unacknowledged queued input in its own session 
     await expect(view.rows).toHaveCount(0)
     await view.input.fill("Unsent draft in the other conversation")
     held.release()
-    await expect.poll(() => mock.prompts.map(prompt => prompt.text)).toEqual(["Follow-up belongs to the first conversation"])
+    await expect
+      .poll(() => mock.prompts.map((prompt) => prompt.text))
+      .toEqual(["Follow-up belongs to the first conversation"])
     await expect(view.input).toHaveText("Unsent draft in the other conversation")
     await expect(view.rows).toHaveCount(0)
 
@@ -283,6 +462,7 @@ test("conversation host shows an idle submission before admission without a phan
   const mock = createQueueMock([])
   const view = await openQueue(page, mock, "queue", undefined, "idle", undefined, false)
   const held = await holdRoute(page, new RegExp(`/api/session/${sessionID}/prompt(\\?|$)`), { method: "POST" })
+
   try {
     await view.input.fill("Start a fresh conversation turn")
     await view.input.press("Enter")

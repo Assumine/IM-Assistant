@@ -272,7 +272,11 @@
         "opencode/packages/app/src/shell/titlebar/titlebar.tsx",
         "opencode/packages/gui-plugins/src/backends/room.tsx",
         "opencode/packages/plugin/src/gui/host-apis.ts",
-        "opencode/packages/plugin/src/gui/registries.ts"
+        "opencode/packages/plugin/src/gui/registries.ts",
+        "opencode/packages/app/e2e/regression/session-queue.spec.ts",
+        "opencode/packages/app/src/runtime/plugin/ui.tsx",
+        "opencode/packages/app/src/session/composer/queue-panel.tsx",
+        "opencode/packages/gui-plugins/src/backends/execution.tsx"
       ],
       "verification": [
         {
@@ -280,7 +284,7 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 158,
+          "tests_run": 199,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
@@ -288,7 +292,7 @@
           "publication": "disabled",
           "native_http_checks": 10,
           "native_unit_tests": 77,
-          "browser_tests": 81
+          "browser_tests": 122
         }
       ],
       "blocked_reason": null
