@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import time
 
-from tools.native_baseline import ROOT, environment, provenance
+from tools.native_baseline import ROOT, environment, provenance, run_command
 
 
 def run():
@@ -60,20 +60,49 @@ def _run(checkpoint):
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
     if steps[-1]["passed"] != 6 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
         raise RuntimeError("Required six real-native scenarios did not all execute")
+    core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts"]
+    server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
+    for directory, files, label, count in [
+        ("packages/core", core_files, "r3-host-unit", 14),
+        ("packages/server", server_files, "r3-host-server-unit", 3),
+    ]:
+        if not all((ROOT / "opencode" / directory / name).is_file() for name in files):
+            raise RuntimeError("Required native test file is missing")
+        result = run_command(directory, ["test", *files], label)
+        if result["native_tests_passed"] != count or result["native_tests_failed"] or result["native_tests_skipped"]:
+            raise RuntimeError(f"Required native test scenarios did not execute: {label}")
+        steps.append(result)
+    steps.append(run_command("packages/server", ["run", "script/codex-backend-smoke.ts"], "r3-host-http",
+                             extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_CODEX_TEST_ROOT": str(test_root)}))
+    output = (reports / "r3-host-http.log").read_text(encoding="utf-8")
+    host = json.loads(next(line for line in reversed(output.splitlines()) if line.startswith('{"status":')))
+    if host["status"] != "passed" or len(host["checks"]) != 6 or host["model_requests"] != 4:
+        raise RuntimeError("Native application HTTP/SQLite acceptance was incomplete")
+    steps.append(run_command(".", ["run", "check"], "r3-host-check"))
     version = subprocess.check_output([executable, "--version"], env=env, encoding="utf-8").strip()
+    app_sources = [
+        "packages/schema/src/conversation-backend.ts", "packages/plugin/src/effect/conversation.ts",
+        "packages/plugin/src/effect/plugin.ts", "packages/core/src/conversation-backend.ts",
+        "packages/core/src/kv.ts", "packages/core/src/plugin/host.ts",
+        "packages/core/test/conversation-backend.test.ts", "packages/core/test/plugin/fixture.ts",
+        "packages/server/src/middleware/runtime-policy.ts", "packages/server/src/routes.ts",
+        "packages/server/test/conversation-policy.test.ts", "packages/server/script/codex-backend-smoke.ts",
+    ]
     receipt = {
         "schema_version": 1, "task": "R3-01", "status": "partial_verified",
         "publication": "disabled", "native_cli_version": version,
         "native_cli_sha256": hashlib.sha256(Path(executable).read_bytes()).hexdigest(),
         "local_fixture_only": True, "production_credentials_used": False,
         "native_state_owner": "codex-app-server", "steps": steps,
+        "host_acceptance": host,
         "sources": {file.relative_to(ROOT).as_posix(): hashlib.sha256(file.read_bytes()).hexdigest()
                     for file in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"),
-                                        module / "package.json", module / "tsconfig.json", Path(__file__).resolve()])},
+                                        module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
+                                        *(ROOT / "opencode" / name for name in app_sources)])},
         "duration_seconds": round(time.monotonic() - started, 2),
-        "remaining": ["application whole-backend public host and native UI binding",
+        "remaining": ["native UI binding and production host activation",
                       "cross-process single ownership via native application service",
-                      "native queue/add is not idempotent by clientUserMessageId; host acceptance must prevent duplicate admission",
+                      "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
                       "real account connection and capability revalidation before publication"],
     }
     checkpoint.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")

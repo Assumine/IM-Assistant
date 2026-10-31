@@ -218,7 +218,21 @@
         "modules/codex-native/README.md",
         "tools/codex_native_smoke.py",
         "upstream/codex-checkpoint.json",
-        "docs/handoff/Codex原生接入边界.md"
+        "docs/handoff/Codex原生接入边界.md",
+        "modules/codex-native/src/backend.ts",
+        "opencode/packages/schema/src/conversation-backend.ts",
+        "opencode/packages/plugin/src/effect/conversation.ts",
+        "opencode/packages/plugin/src/effect/plugin.ts",
+        "opencode/packages/core/src/conversation-backend.ts",
+        "opencode/packages/core/src/kv.ts",
+        "opencode/packages/core/src/plugin/host.ts",
+        "opencode/packages/core/test/conversation-backend.test.ts",
+        "opencode/packages/core/test/plugin/fixture.ts",
+        "opencode/packages/server/src/middleware/runtime-policy.ts",
+        "opencode/packages/server/src/routes.ts",
+        "opencode/packages/server/test/conversation-policy.test.ts",
+        "opencode/packages/server/script/codex-backend-smoke.ts",
+        "upstream/patches.json"
       ],
       "verification": [
         {
@@ -226,12 +240,13 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 6,
+          "tests_run": 23,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.codex_native_smoke",
           "evidence": "upstream/codex-checkpoint.json",
-          "publication": "disabled"
+          "publication": "disabled",
+          "native_http_checks": 6
         }
       ],
       "blocked_reason": null

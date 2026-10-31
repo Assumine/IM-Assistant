@@ -14,6 +14,11 @@ export interface Page<T> {
   data: T[]
   nextCursor: string | null
 }
+export interface ItemEntry {
+  item: Record<string, unknown>
+  turnId: string
+  [key: string]: unknown
+}
 interface Pagination { cursor?: string; limit?: number }
 
 function id(value: string) {
@@ -63,9 +68,9 @@ export class CodexSessionAdapter {
       threadId: id(threadId), ...page(pagination), itemsView: "full", sortDirection: "desc",
     })
   }
-  items(threadId: string, turnId: string, pagination: Pagination = {}) {
-    return this.native.request<Page<Record<string, unknown>>>("thread/items/list", {
-      threadId: id(threadId), turnId: id(turnId), ...page(pagination), sortDirection: "asc",
+  items(threadId: string, turnId?: string, pagination: Pagination = {}) {
+    return this.native.request<Page<ItemEntry>>("thread/items/list", {
+      threadId: id(threadId), turnId: turnId === undefined ? undefined : id(turnId), ...page(pagination), sortDirection: "asc",
     })
   }
   enqueue(threadId: string, clientUserMessageId: string, text: string) {

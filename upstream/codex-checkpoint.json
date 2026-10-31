@@ -24,23 +24,116 @@
       "failed": 0,
       "skipped": 0,
       "log": ".reports/native/r3-native-tests.log"
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/conversation-backend.test.ts",
+        "test/kv.test.ts",
+        "test/rpc-handler-errors.test.ts"
+      ],
+      "cwd": "opencode/packages/core",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.94,
+      "isolated_home": true,
+      "log": ".reports/native/r3-host-unit.log",
+      "native_tests_passed": 14,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/conversation-policy.test.ts",
+        "test/rpc-handler-errors.test.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.27,
+      "isolated_home": true,
+      "log": ".reports/native/r3-host-server-unit.log",
+      "native_tests_passed": 3,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/codex-backend-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.05,
+      "isolated_home": true,
+      "log": ".reports/native/r3-host-http.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 6.66,
+      "isolated_home": true,
+      "log": ".reports/native/r3-host-check.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
     }
   ],
+  "host_acceptance": {
+    "status": "passed",
+    "checks": [
+      "steering uses the same admission ID and the native active-turn guard",
+      "eight concurrent HTTP copies create exactly one native queued submission",
+      "unknown native acknowledgment reconciles the real queue instead of re-sending",
+      "Codex inputs create no OpenCode Session or Inbox rows",
+      "after queue consumption, native clientId resolves to the persisted user message",
+      "application SQLite restart returns the same receipt without native re-admission"
+    ],
+    "model_requests": 4,
+    "production_credentials_used": false
+  },
   "sources": {
     "modules/codex-native/package.json": "c7f2fa05ce9ff3bfb44ebc2bd4d7678dd63307bd293e67777adbc23cf3103f09",
-    "modules/codex-native/src/index.ts": "04695a31fc8dafa6f762b5b0018b05085c2e66557539a28bf4efc248eaf93617",
+    "modules/codex-native/src/backend.ts": "eaeec4f488d70d9138a65684eef6fbc97e41fa77f21096b48c7c5a8a0a142aee",
+    "modules/codex-native/src/index.ts": "30ab3a56795e95f03f69a394ff2d7a757bbe852f3d2cd2dfd145b80553c1b9a3",
     "modules/codex-native/src/profile.ts": "25056c247706713418ff9f253863aee62efcc43a2d77d4f5b5c8ae0da1594ad1",
-    "modules/codex-native/src/session-adapter.ts": "c12864d1eb8aeb4c3eff830db91f9f77261b5b1742cc72b6e733679dab45e367",
+    "modules/codex-native/src/session-adapter.ts": "1ca6dcf8292b2eb5c4bb36535c0b6bc18f7a26130bd1ac11f2d4984db01d4a01",
     "modules/codex-native/src/transport.ts": "96a1f0423ec3a1e395c72e080127496e701e682b7b44762fe31a624c40714972",
     "modules/codex-native/test/native.test.ts": "4eeca9732fd18561562f4782392238b851d6cea01c337a831b477b3bc7b15703",
     "modules/codex-native/tsconfig.json": "6bdec6041d61f39890056d01ac1c90b4e200e866dca04bef9c57b67231326fe8",
-    "tools/codex_native_smoke.py": "23bb59269f447d40d500066ce133ce6315b9dcd30880140c421a6b34aae414c5"
+    "opencode/packages/core/src/conversation-backend.ts": "51134ef251420595f629373ad7bb4b3bae6241ca0115ed501626b969988da2fe",
+    "opencode/packages/core/src/kv.ts": "bcb6601fbf4d0dec0f8e7ecd403db9059c88bfe3a8d94eae50a7f04baa6053eb",
+    "opencode/packages/core/src/plugin/host.ts": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5",
+    "opencode/packages/core/test/conversation-backend.test.ts": "6bfe2ccf0cdfc6d9d2899d263290904bb610c6e38016e9853f9bb9ba91b0f6e5",
+    "opencode/packages/core/test/plugin/fixture.ts": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8",
+    "opencode/packages/plugin/src/effect/conversation.ts": "d587d1c7ebde63bc72f23904632ac78ff3ee2d8620ff6ee002f4dc3e355b8ca0",
+    "opencode/packages/plugin/src/effect/plugin.ts": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917",
+    "opencode/packages/schema/src/conversation-backend.ts": "17b3a50f700e5729e2ac13196d6bb81edaec03b9956b8518af783b99e3a8becb",
+    "opencode/packages/server/script/codex-backend-smoke.ts": "6f84e14e41acff6628d566de7ee53bfb9140f12e17e8b67442729670dd8ffa8f",
+    "opencode/packages/server/src/middleware/runtime-policy.ts": "fb6268737c30335c23fbb17a029302eee3f30451b2ada8d890fcf034b99bcf01",
+    "opencode/packages/server/src/routes.ts": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22",
+    "opencode/packages/server/test/conversation-policy.test.ts": "88f2c8fc44311a30bea4e8f41487f237becc03b62823dea391bf447f1a83eca9",
+    "tools/codex_native_smoke.py": "51b540a9884dcd76117d33ec758f263e625095c16c00d77a6591124ec7883ec8"
   },
-  "duration_seconds": 22.76,
+  "duration_seconds": 36.17,
   "remaining": [
-    "application whole-backend public host and native UI binding",
+    "native UI binding and production host activation",
     "cross-process single ownership via native application service",
-    "native queue/add is not idempotent by clientUserMessageId; host acceptance must prevent duplicate admission",
+    "uncertain handoff with no native evidence requires manual reconciliation; never automatically replay",
     "real account connection and capability revalidation before publication"
   ]
 }

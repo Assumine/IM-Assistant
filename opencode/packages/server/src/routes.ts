@@ -15,6 +15,7 @@ import { PtyTicket } from "@opencode/core/pty/ticket"
 import { PersistentPty } from "@opencode/core/persistent-pty"
 import { Project } from "@opencode/core/project"
 import { RuntimePolicy } from "@opencode/core/runtime-policy"
+import { ConversationBackend } from "@opencode/core/conversation-backend"
 import path from "node:path"
 import { ConfigPluginSource } from "@opencode/core/config/plugin/source"
 import { Worktree } from "@opencode/core/worktree"
@@ -59,6 +60,7 @@ import type { ServerOptions } from "./options"
 
 const applicationServiceNodes = [
   RuntimePolicy.node,
+  ConversationBackend.node,
   Global.node,
   FSUtil.node,
   Database.node,

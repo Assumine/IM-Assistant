@@ -91,7 +91,8 @@
       "reason": "通用会话宿主能力边界、非项目环境和原生UI裁剪；会话/Inbox/历史仍归原生核心，内部持久化和受控附件保留。",
       "verification_commands": [
         "python tools/run_runtime_checks.py --task R1-02",
-        "python tools/run_runtime_checks.py --task R0-01"
+        "python tools/run_runtime_checks.py --task R0-01",
+        "python -m tools.codex_native_smoke"
       ],
       "files": [
         {
@@ -257,7 +258,7 @@
         {
           "path": "packages/core/test/plugin/fixture.ts",
           "action": "modified",
-          "sha256": "e01dbd103f0dfac07a5cf599759b91f658156addbbbdf971d78cce0968321223"
+          "sha256": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8"
         },
         {
           "path": "packages/core/test/plugin/provider-dynamic.test.ts",
@@ -463,7 +464,8 @@
         "python -m tools.provider_configuration_smoke",
         "python tools/native_baseline.py --cwd packages/app --label r2-02-custom-api-browser-final -- run test:e2e:built -- e2e/regression/settings.spec.ts --project chromium --workers=2 --retries=0",
         "python tools/native_baseline.py --cwd packages/client --label r2-02-config-client-contracts -- run test test/promise.test.ts test/effect.test.ts test/deprecated-aliases.test.ts test/contract-identity.test.ts test/import-boundaries.test.ts",
-        "python tools/native_baseline.py --cwd . --label r2-02-config-close-check -- run check"
+        "python tools/native_baseline.py --cwd . --label r2-02-config-close-check -- run check",
+        "python -m tools.codex_native_smoke"
       ],
       "files": [
         {
@@ -529,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "bf315206a948c4018f7c0dbef48dcc56ede2b2300fa741f593c4e459d5479891"
+          "sha256": "fb6268737c30335c23fbb17a029302eee3f30451b2ada8d890fcf034b99bcf01"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -542,7 +544,8 @@
       "id": "R2-02-auxiliary-accounting",
       "reason": "保留原生辅助用量事实并按实际时间和模型统计；临时生成仅更新计量，不改变消息、输入和上下文。",
       "verification_commands": [
-        "python tools/run_runtime_checks.py --task R2-02"
+        "python tools/run_runtime_checks.py --task R2-02",
+        "python -m tools.codex_native_smoke"
       ],
       "files": [
         {
@@ -608,7 +611,62 @@
         {
           "path": "packages/server/src/routes.ts",
           "action": "modified",
-          "sha256": "7a44d78aa5f549e6f95e1b1dc07d6d73785c616b0226392fbb61a3669d761214"
+          "sha256": "b8aae611e975fccb425a9edba2d221b27bb11ed12fd2b8b6b4f873f9ce4aee22"
+        }
+      ]
+    },
+    {
+      "id": "R3-01-native-backend-host",
+      "reason": "完整原生后端的受控公共RPC注册与原生KV接纳回执；执行/队列/历史归后端，保留任意插件和文件能力禁用，不发布Codex界面入口。",
+      "verification_commands": [
+        "python -m tools.codex_native_smoke",
+        "python -m tools.native_baseline --cwd . --label r3-host-check -- run check"
+      ],
+      "files": [
+        {
+          "path": "packages/core/src/conversation-backend.ts",
+          "action": "added",
+          "sha256": "51134ef251420595f629373ad7bb4b3bae6241ca0115ed501626b969988da2fe"
+        },
+        {
+          "path": "packages/core/src/kv.ts",
+          "action": "modified",
+          "sha256": "bcb6601fbf4d0dec0f8e7ecd403db9059c88bfe3a8d94eae50a7f04baa6053eb"
+        },
+        {
+          "path": "packages/core/src/plugin/host.ts",
+          "action": "modified",
+          "sha256": "a42dd471020381dfdf006f2da49841adc80c8737e605f7c4bb9a581c1c6524f5"
+        },
+        {
+          "path": "packages/core/test/conversation-backend.test.ts",
+          "action": "added",
+          "sha256": "6bfe2ccf0cdfc6d9d2899d263290904bb610c6e38016e9853f9bb9ba91b0f6e5"
+        },
+        {
+          "path": "packages/plugin/src/effect/conversation.ts",
+          "action": "added",
+          "sha256": "d587d1c7ebde63bc72f23904632ac78ff3ee2d8620ff6ee002f4dc3e355b8ca0"
+        },
+        {
+          "path": "packages/plugin/src/effect/plugin.ts",
+          "action": "modified",
+          "sha256": "cd48a68a87bb97cf44e711f4349ae65e5e440a8a30408679e18ce64b14533917"
+        },
+        {
+          "path": "packages/schema/src/conversation-backend.ts",
+          "action": "added",
+          "sha256": "17b3a50f700e5729e2ac13196d6bb81edaec03b9956b8518af783b99e3a8becb"
+        },
+        {
+          "path": "packages/server/script/codex-backend-smoke.ts",
+          "action": "added",
+          "sha256": "6f84e14e41acff6628d566de7ee53bfb9140f12e17e8b67442729670dd8ffa8f"
+        },
+        {
+          "path": "packages/server/test/conversation-policy.test.ts",
+          "action": "added",
+          "sha256": "88f2c8fc44311a30bea4e8f41487f237becc03b62823dea391bf447f1a83eca9"
         }
       ]
     }

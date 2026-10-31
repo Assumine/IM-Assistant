@@ -6,6 +6,7 @@ import type { App } from "../app.js"
 import type { AgentDomain } from "./agent.js"
 import type { AISDKDomain } from "./aisdk.js"
 import type { CommandDomain } from "./command.js"
+import type { ConversationDomain } from "./conversation.js"
 import type { EventDomain } from "./event.js"
 import type { IntegrationDomain } from "./integration.js"
 import type { MCPDomain } from "./mcp.js"
@@ -33,6 +34,8 @@ export interface Context {
   readonly credential: Pick<CredentialApi<unknown>, "activate">
   readonly event: EventDomain
   readonly experimental: {
+    /** Whole native conversation backends. Experimental; absent on older hosts. */
+    readonly conversation?: ConversationDomain
     readonly terminal: Pick<ExperimentalApi<unknown>["persistentPty"], "read">
     /** Stateless generation with a model and a prompt: no session, history or tools. */
     readonly generate: ExperimentalGenerateApi<unknown>

@@ -1,6 +1,6 @@
 # Codex 原生接入边界与当前切片
 
-R3-01 仍为进行中。新增 `modules/codex-native`，完成独立原生后端适配器及真实 CLI 验证；尚未接入主程序会话选择、前端或生产账号，没有宣称正式接入。A20–A22 尚不记为完成。
+R3-01仍为进行中。`modules/codex-native`已有原生适配器、公共后端定义及原生应用HTTP/SQLite接入验证。主程序会话选择、前端、真实账号和跨进程生命周期尚未开放，没有宣称正式接入。A20–A22尚不记为完成。
 
 ## 来源与版本
 
@@ -13,24 +13,27 @@ R3-01 仍为进行中。新增 `modules/codex-native`，完成独立原生后端
 | 内容 | 当前归属和实现 |
 | --- | --- |
 | native thread/turn/item/queue ID | 原样保留，不转换成 OpenCode `ses_`、Inbox 或消息 ID |
-| 输入 | 文本转成原生 `UserInput`，只调用原生 queue/add；空闲启动由 Codex 完成 |
+| 输入 | 公共send先原子接纳；普通文本调用原生queue/add，空闲启动由Codex完成 |
 | 排序、修改、撤回、显式引导 | 对应原生队列接口；没有助手取出任务再执行的循环 |
-| 调整 | 原生 turn/steer，必须携带 expectedTurnId；旧 turn ID 不能误改当前 turn |
+| 调整 | 同样经send接纳，delivery=steer并携带expectedTurnID；原生turn/steer校验旧turn ID，control不能绕过接纳追加输入 |
 | 历史与恢复 | 原生 resume/read/turns/items 分页，不覆盖 history/path，不复制会话库 |
 | 压缩 | 原生 thread/compact/start；本机兼容 API 使用原生本地摘要路径，非 OpenAI 远程 compact |
 | 账号、模型 | 原生只读接口；测试账号为空，未验证真人登录、切换或套餐用量 |
 | 生命周期 | 自己的 stdio 子进程，进程内同一 profile 只允许一个实例；故障不自动重启或重发 |
 | 传输 | 只保存尚未回包的 RPC 关联；通知直传、不持久化第二份消息历史；关闭事件单独暴露 |
+| 应用接纳回执 | 原生KV表原子首写；只保留输入ID、目标、请求摘要和native回执，无正文、待执行内容或调度器 |
 
 已实测：空闲 queue/add 自动启动；忙碌队列可编辑、排序、撤回，并自动依次执行。进程退出后，未完成输入和已完成历史仍由 native store 保存。测试在新进程续接同一 thread；需要显式继续的 pending 项由测试模拟用户引导，不由适配器自动补发。中断不等于撤回已发生的操作，恢复时仍需核对未知结果。
 
 ## 已发现且尚未消除的缺口
 
-1. **原生队列不提供客户端消息 ID 幂等性。** 同一 clientUserMessageId 连续 queue/add 会生成两个 native submission ID。测试显式记录此行为并撤回多出的测试项，不能把“有客户端 ID”写成“不会重复接纳”。超时返回 OutcomeUnknown，不自动重试。后续统一应用入口必须接管输入接纳的唯一性和结果核对；不能为此再造第二个执行队列或历史账本。未知交付不能默认为未发送。
-2. **应用公共入口尚缺整套后端槽位。** 已核查 OpenCode 原生插件的 session/provider hooks，它们主要修改原生会话和模型请求，不能替换整个会话后端。不能把 Codex 接成 provider，再套一层 OpenCode Agent/Inbox。下一步需要在原生应用框架内提供有限的公共后端位置，不新建外层 Python 宿主。
+1. **裸原生队列不提供客户端消息ID幂等性。** 同一clientUserMessageId连续queue/add会生成两个native submission ID。公共入口现已使用原生KV的原子首写保证同一输入只调用一次后端enqueue；8份真实HTTP并发输入只产生一条native队列记录。结果未知时只查native队列/历史，不重发。不能将其宣传为跨系统exactly-once：首写后、原生调用前中断时可能没有实际交付；原生也查不到的输入保持uncertain，须人工核对，不默认为未发送。并发副本也可能在首轮交付尚未可查时暂时返回uncertain；原生可查或回执落盘后重查即可确认，不重新执行。
+2. **公共整套后端位置已落地，UI未接。** 核心ConversationBackend服务通过现有原生RPC发布有限的list/create/query/control/send，并按backend ID＋native thread ID路由。普通OpenCode分支保持原Session/Inbox入口；Codex走完整后端，HTTP实测没有插入OpenCode Session或Inbox。原生插件session/provider hooks不足以承载整套后端，因此只补公共位置；不嵌套Agent、不新建外层宿主。Effect插件上下文提供可选experimental.conversation注册，但助手模式继续禁用任意SDK/配置插件，验证由受信任宿主通过公共服务注册。
 3. **跨进程生命周期与账号未验收。** 模块的进程内 profile 排他仅防同一宿主重复打开；未来公共入口须利用原生应用服务的单实例生命周期，不能任由多个 stdio 实例竞争同一 native home。当前没有真实账户连接、原生产线程迁移或 UI 人工提问/审批转交。
 
-因此 `package.json` 明确为实验性且 publication=disabled，入口没有注册到启动、默认模型或主界面。这不是一次可供用户切换使用的发布。
+因此package.json仍为实验性且publication=disabled。公共RPC存在时默认后端清单为空，Codex没有注册到启动、默认模型或主界面。这不是一次可供用户切换使用的发布。
+
+接纳键按稳定inputID全局唯一；更换目标、正文或调整目标turn不能复用原ID。accepted表示输入被接纳的事实，不表示任务此刻仍在排队、执行或已经完成；实时状态必须读原生后端。确认回执不会因队列消费或撤回而删除，避免旧输入重投。SQLite首写失败不调用后端，原生已接收但回执更新失败时不报告成功，后续只做核对。没有第二份待执行任务表、后台排空循环或消息历史副本。
 
 ## 文件能力边界
 
@@ -42,7 +45,7 @@ R3-01 仍为进行中。新增 `modules/codex-native`，完成独立原生后端
 
 ## 真实验证
 
-`python -m tools.codex_native_smoke` 调用锁定 Bun 和 TypeScript，对模块进行类型检查并驱动真实 Codex App Server。六个场景全部在新建隔离 profile、本地合成 Responses 服务中执行，没有真实上游账号或模型请求：
+`python -m tools.codex_native_smoke`调用锁定工具链，执行模块类型检查、6个真实Codex场景、14个核心/RPC/KV单测、3个服务端权限/错误回归、6项真实原生应用HTTP/SQLite链路检查及完整canonical check。所有模型调用在新建隔离profile、本地合成Responses服务中执行，没有真实上游账号或模型请求。原始模块场景包括：
 
 - 原生队列自动启动、忙碌时编辑/排序/撤回、FIFO 和历史分页；额外确认重复 clientUserMessageId 并不去重。
 - 进程退出后的 native pending/历史恢复，原生 ID 和只读账号结果保持，不补发已交付输入。
@@ -51,10 +54,12 @@ R3-01 仍为进行中。新增 `modules/codex-native`，完成独立原生后端
 - 原生本地压缩后重启，下一次真实模型输入使用压缩上下文，不再带旧 assistant 回复。
 - 非空 home 拒绝接管、同进程重复打开拒绝、配置篡改拒绝、文件输入和无效参数拒绝。
 
-证据只标 partial_verified。它不能代替 `python tools/run_runtime_checks.py --task R3-01` 的正式应用验收；正式 R3 Python 验收文件尚未实现，整个阶段不能标绿。已有 OpenCode 产品源文件未改变，原 106 文件补丁台账不增加。
+新增HTTP证明：发送/调整共享接纳ID与native turn前提、8份并发只产生一个队列项、丢失原生回执后查队列确认、消费后查历史clientId确认、应用SQLite重启后返回原回执、OpenCode会话和Inbox不接纳Codex输入。本轮4次合成模型请求，未调用真实账号。故障单测另覆盖中断后不盲目重发、SQLite回执更新失败不虚报成功，以及同ID改目标/正文/调整类型的冲突。
+
+证据只标partial_verified，不能代替正式R3整体验收；GUI、跨进程实例和真实账号未验收，正式tests/rebase/test_r3_01.py仍未实现。累计产品补丁现为115个文件，源码最终摘要与台账一并保存。未改变Protocol/HttpApi，使用现有通用RPC及其原生客户端机制，不手改生成客户端。新增助手权限仅放行此RPC的5个固定方法；任意RPC、MCP、文件和shell入口继续禁用。
 
 ## 下一步实施边界
 
-先落实原生应用内的公共整套后端位置，至少保留 backend ID＋native thread ID 的引用，生命周期、能力和事件订阅有明确归属。OpenCode 分支继续直接使用原生 Session/Inbox；Codex 分支直接调用此模块的原生队列，不能两个入口认领同一输入。跨后端引用仅保存路由与回执所需元数据，不复制另一套会话历史。
+公共整套后端位置已实现。下一步落实受信任宿主的正式激活、native profile的跨进程唯一生命周期，以及原生前端选择/数据绑定。注册作用域释放会撤下后端并取消事件订阅；打开native进程的能力包仍负责进程的作用域收尾。不能把模块进程内排他或KV首写当成跨进程执行锁。
 
 前端可以复用原生展示与交互组件，但不能为复用而向 OpenCode Inbox 再插入 Codex 待执行消息。恢复/重复投递的接纳策略、同 profile 生命周期和 native UI 契约须真实验证，再添加正式 R3 运行验收并考虑开放。QQ 仍是可选转发层，不能解决这些公共框架缺口或成为执行入口所有者。

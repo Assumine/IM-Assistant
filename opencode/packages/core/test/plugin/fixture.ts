@@ -2,6 +2,7 @@ import { Agent } from "@opencode/core/agent"
 import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { AISDK } from "@opencode/core/aisdk"
 import { Command } from "@opencode/core/command"
+import { ConversationBackend } from "@opencode/core/conversation-backend"
 import { Config } from "@opencode/core/config"
 import { Credential } from "@opencode/core/credential"
 import { Database } from "@opencode/core/database/database"
@@ -108,6 +109,7 @@ export const makePluginTestLayer = (permission = permissionLayer, generate = gen
       Provider.node,
       Model.node,
       Command.node,
+      ConversationBackend.node,
       Integration.node,
       Job.node,
       KV.node,

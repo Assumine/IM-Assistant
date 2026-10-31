@@ -10,6 +10,7 @@ import { Effect, Schema, Stream } from "effect"
 import { Agent } from "../agent.js"
 import { AISDK } from "../aisdk.js"
 import { Command } from "../command.js"
+import { ConversationBackend } from "../conversation-backend.js"
 import { Credential } from "../credential.js"
 import { Bus } from "../bus.js"
 import { Integration } from "../integration.js"
@@ -65,6 +66,8 @@ export const make = Effect.fn("PluginHost.make")(function* (
   const location = yield* Location.Service
   const reference = yield* Reference.Service
   const rpc = yield* Rpc.Service
+  const conversation = yield* ConversationBackend.Service
+  yield* conversation.bind(rpc).pipe(Effect.orDie)
   const skill = yield* Skill.Service
   const tools = yield* Tool.Service
   const vcs = yield* Vcs.Service
@@ -280,6 +283,7 @@ export const make = Effect.fn("PluginHost.make")(function* (
       }) as Plugin.Context["event"]["subscribe"],
     },
     experimental: {
+      conversation: { register: conversation.register },
       terminal: {
         read: (input) => persistentPty.read(input.sessionID, input.lines),
       },
@@ -642,6 +646,7 @@ export const requirements = LayerNode.group([
   Location.node,
   Reference.node,
   Rpc.node,
+  ConversationBackend.node,
   Skill.node,
   Tool.node,
   Vcs.node,

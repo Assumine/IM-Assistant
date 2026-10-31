@@ -27,6 +27,8 @@ export interface ScanResult {
 export interface Interface {
   readonly get: (key: string) => Effect.Effect<Value | undefined>
   readonly set: (key: string, value: Value) => Effect.Effect<void>
+  /** Atomic first-writer admission for metadata; never starts work. */
+  readonly insert: (key: string, value: Value) => Effect.Effect<boolean>
   readonly remove: (key: string) => Effect.Effect<void>
   readonly scan: (options: ScanOptions) => Effect.Effect<ScanResult>
 }
@@ -53,6 +55,11 @@ const layer = Layer.effect(
           .onConflictDoUpdate({ target: KVTable.key, set: { value, time_updated: Date.now() } })
           .run()
           .pipe(Effect.orDie)
+      }),
+      insert: Effect.fn("KV.insert")(function* (key, value) {
+        const rows = yield* db.insert(KVTable).values({ key, value }).onConflictDoNothing()
+          .returning({ key: KVTable.key }).all().pipe(Effect.orDie)
+        return rows.length === 1
       }),
       remove: Effect.fn("KV.remove")(function* (key) {
         yield* db.delete(KVTable).where(eq(KVTable.key, key)).run().pipe(Effect.orDie)
