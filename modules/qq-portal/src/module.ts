@@ -17,7 +17,9 @@ export async function configuredModule(home: string, environment: NodeJS.Process
 } = {}): Promise<ApplicationModule | undefined> {
   const config = await readConfiguration(home)
   if (!config.enabled) return undefined
-  const accounts = config.accounts.map((account) => {
+  const enabled = config.accounts.filter((account) => account.enabled !== false)
+  if (enabled.length === 0) return undefined
+  const accounts = enabled.map((account) => {
     const token = environment[account.tokenEnv] ?? ""
     delete environment[account.tokenEnv]
     return { ...account, token }

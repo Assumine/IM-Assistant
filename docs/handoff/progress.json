@@ -24,7 +24,11 @@
     "A19",
     "A20",
     "A21",
-    "A22"
+    "A22",
+    "A23",
+    "A24",
+    "A25",
+    "A26"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -402,7 +406,7 @@
       "blocked_reason": null
     },
     "R3-02": {
-      "status": "in_progress",
+      "status": "done",
       "artifacts": [
         "modules/qq-portal/package.json",
         "modules/qq-portal/src/index.ts",
@@ -539,20 +543,29 @@
         "modules/qq-portal/src/queue-replies.ts",
         "modules/qq-portal/test/queue-replies.test.ts",
         "opencode/packages/server/script/qq-queue-receipts-smoke.ts",
-        "opencode/packages/core/test/session-log.test.ts"
+        "opencode/packages/core/test/session-log.test.ts",
+        "tests/rebase/test_r3_02.py",
+        "upstream/qq-verification.json"
       ],
       "verification": [
         {
-          "kind": "checkpoint",
+          "kind": "runtime",
           "plan_id": "opencode-app-base-v2",
-          "status": "partial_verified",
+          "status": "passed",
           "exit_code": 0,
-          "tests_run": 697,
+          "tests_run": 5,
           "skipped": 0,
-          "acceptance_ids": [],
-          "command": "python -m tools.qq_portal_smoke",
-          "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 143,
+          "acceptance_ids": [
+            "A23",
+            "A24",
+            "A25",
+            "A26"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R3-02",
+          "evidence": "upstream/qq-verification.json",
+          "native_unit_tests": 699,
+          "http_checks": 147,
+          "scope": "isolated-current-source-native-chain-not-live-account-rollout",
           "publication": "disabled"
         }
       ],

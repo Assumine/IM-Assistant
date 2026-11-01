@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 241),
+        (module, "r3-qq-module-tests", [bun, "test"], 243),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 7),
     ]:
         log = reports / (label + ".log")
@@ -70,10 +70,12 @@ def _run():
                              extra_env={"IM_QQ_PRODUCT_TEST_ROOT": product_directory}))
     lines = (reports / "r3-qq-product-http.log").read_text(encoding="utf-8").splitlines()
     product = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if (product["status"] != "passed" or len(product["checks"]) != 17 or product["model_requests"] != 2 or
+    if (product["status"] != "passed" or len(product["checks"]) != 21 or product["model_requests"] != 7 or
             product["actual_qq_connection"] or product["external_messages_sent"] or product["production_credentials_used"] or
-            product["loopback_connection_attempts"] != 4 or product["automatic_task_replies"] != "native-input-attribution" or product["loopback_task_send_attempts"] != 1 or
-            product["loopback_control_send_attempts"] != 9 or product["loopback_confirmed_control_replies"] != 8 or
+            product["loopback_connection_attempts"] != 7 or product["automatic_task_replies"] != "native-input-attribution" or product["loopback_task_send_attempts"] != 6 or
+            product["loopback_control_send_attempts"] != 12 or product["loopback_confirmed_control_replies"] != 11 or
+            product["independent_account_checks"] != 4 or product["second_account_task_replies"] != 3 or product["isolated_quote_followups"] != 2 or
+            product["isolated_bot_identities"] != ["10001", "10002"] or
             product["product_entry"] != "packages/im-assistant/src/cli.ts"):
         raise RuntimeError("QQ actual product entry acceptance was incomplete")
     owner_directory = tempfile.mkdtemp(prefix="qq-notification-owner-", dir=parent)
@@ -222,7 +224,7 @@ def _run():
         "opencode/packages/server/test/application-modules.test.ts", "opencode/packages/server/test/process.test.ts", "opencode/packages/server/test/fetch.test.ts",
         "opencode/packages/im-assistant/src/portals.ts", "opencode/packages/im-assistant/src/cli.ts", "opencode/packages/im-assistant/package.json",
         "opencode/packages/cli/src/server-process.ts", "opencode/packages/server/package.json", "opencode/bun.lock",
-        "opencode/packages/server/script/qq-product-smoke.ts",
+        "opencode/packages/server/script/qq-product-smoke.ts", "tests/rebase/test_r3_02.py",
         "opencode/packages/server/script/qq-notification-owner-smoke.ts",
         "opencode/packages/server/script/qq-output-smoke.ts",
         "opencode/packages/schema/src/session-message.ts", "opencode/packages/schema/src/session-input-output.ts",
@@ -240,13 +242,13 @@ def _run():
                                "outbound_task_transport_connected": True, "task_reply_targets": ["session", "backend"], "backend_task_replies_connected": True},
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *(module / "test").rglob("*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
-            "remaining": ["authenticated transport, product startup, scoped login-triggered NapCat history recovery and durable reply receipts verified only against loopback fixtures; live QQ, runtime module UI/status and automatic transport reconnect remain unverified or unimplemented",
+            "acceptance_scope": "isolated-current-source-native-chain-not-live-account-rollout",
+            "remaining": ["authenticated transport, per-account enable/disable, product startup, scoped login-triggered NapCat history recovery and durable reply receipts verified only against loopback fixtures; live QQ, runtime module UI/status and automatic transport reconnect remain unverified or unimplemented",
                           "quoted confirmation commands and published-view selections are connected; implicit latest-list selection, native stop fences and remaining commands are not connected",
                           "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
                           "first/final public output requires proven native input/root/turn identity; optional queue notices and proved retirement are connected; ordinary Session failure-only notifications, native cancellation outside QQ without a native retained receipt and remote unknown-send recovery remain unimplemented",
                           "history recovery requires an observed cursor, exact boundary proof and real_seq; gaps or provider limits are reported without partial admission or guessed initial imports; no executable offline spool is stored",
-                          "explicit NapCat inline images are verified on native Session and Codex only; Session quoted attachment amendments, general files/audio/video, backend image history UI and companion routing remain unavailable; unsupported input is refused without partial forwarding",
-                          "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}
+                          "explicit NapCat inline images are verified on native Session and Codex only; Session quoted attachment amendments, general files/audio/video, backend image history UI and companion routing remain unavailable; unsupported input is refused without partial forwarding"]}
 
 
 if __name__ == "__main__":

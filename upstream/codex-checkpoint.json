@@ -868,7 +868,8 @@
   },
   "latest_qq_evidence": {
     "checkpoint": "upstream/qq-checkpoint.json",
-    "scope": "QQ-optional-queue-receipt-lifecycle",
+    "verification": "upstream/qq-verification.json",
+    "scope": "QQ-optional-account-isolation-and-formal-R3-02",
     "native_implementation_changed": false,
     "full_R3_01_rerun": false,
     "browser_component_rerun": false

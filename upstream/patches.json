@@ -1285,7 +1285,7 @@
         {
           "path": "packages/im-assistant/src/portals.ts",
           "action": "added",
-          "sha256": "d5dbe23523e430bdf913cacf4742d7aec1882c91cd6304384d12781c84def158"
+          "sha256": "543f2622b8bd583bd667c1366b1d82e3aff46eed9bc8e7cad6318238d8de8a6a"
         },
         {
           "path": "packages/plugin/src/promise/application.ts",
@@ -1305,7 +1305,7 @@
         {
           "path": "packages/server/script/qq-product-smoke.ts",
           "action": "added",
-          "sha256": "a7402e6eb127bf7f61af9a96101079875a7bfccd5c711d6a4cf3121ba67607a3"
+          "sha256": "75b99ab8ecca8d5e4acdee85a966c58a0bdb049d3109184aa5c8edfb4995151f"
         },
         {
           "path": "packages/server/src/application-modules.ts",

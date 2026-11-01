@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { OpenCode } from "@opencode/client"
 import { fakeOneBot, until as observe, type Call } from "../../../../modules/qq-portal/test/fixture/onebot"
+import { inputID } from "../../../../modules/qq-portal/src/routing"
 
 const root = process.env.IM_QQ_PRODUCT_TEST_ROOT
 if (!root) throw new Error("Use tools.qq_portal_smoke with an isolated root")
@@ -57,13 +58,16 @@ const env = () => ({
   IM_QQ_TOKEN_FIRST: first.token,
   IM_QQ_TOKEN_SECOND: "wrong-fixture-token",
 })
-async function command(action: string, success = true) {
-  const child = Bun.spawn([process.execPath, "run", entry, "portal", "qq", action], {
-    env: env(),
-    stdout: "pipe",
-    stderr: "pipe",
-    windowsHide: true,
-  })
+async function command(action: string, success = true, botID?: string) {
+  const child = Bun.spawn(
+    [process.execPath, "run", entry, "portal", "qq", action, ...(botID !== undefined ? [botID] : [])],
+    {
+      env: env(),
+      stdout: "pipe",
+      stderr: "pipe",
+      windowsHide: true,
+    },
+  )
   const [code, output, error] = await Promise.all([
     child.exited,
     new Response(child.stdout).text(),
@@ -74,7 +78,11 @@ async function command(action: string, success = true) {
   if (success)
     return JSON.parse(output) as {
       enabled: boolean
+      botID?: string
+      moduleEnabled?: boolean
+      accountEnabled?: boolean
       accountCount: number
+      enabledAccountCount: number
       connectionVerified: boolean
       controlRepliesSupported: boolean
       automaticTaskReplies: boolean
@@ -82,9 +90,9 @@ async function command(action: string, success = true) {
       appliesTo: string
     }
 }
-async function boot() {
+async function boot(authenticatedSecond = false) {
   const child = Bun.spawn([process.execPath, "run", entry, "serve", "--hostname", "127.0.0.1", "--port", "0"], {
-    env: env(),
+    env: { ...env(), ...(authenticatedSecond ? { IM_QQ_TOKEN_SECOND: second.token } : {}) },
     stdin: "pipe",
     stdout: "pipe",
     stderr: "pipe",
@@ -432,11 +440,175 @@ try {
     "the original acknowledged catalog alias remains selectable after a real product restart without publishing a replacement reply",
   )
   await host.stop()
+
+  const both = {
+    ...config,
+    enabled: true,
+    accounts: config.accounts.map((account) => ({ ...account, controls: { allowedUsers: ["20001"] } })),
+  }
+  await writeFile(settings, JSON.stringify(both))
+  const firstOff = await command("disable", true, "10001")
+  assert(
+    firstOff &&
+      !firstOff.enabled &&
+      firstOff.moduleEnabled &&
+      !firstOff.accountEnabled &&
+      firstOff.enabledAccountCount === 1,
+  )
+  assert.equal((await command("status", true, "10002"))?.enabled, true)
+  const unchanged = await readFile(settings, "utf8")
+  await command("disable", false, "99999")
+  await command("disable", false, "")
+  assert.equal(await readFile(settings, "utf8"), unchanged)
+  host = await boot(true)
+  await observe(() => second.calls.filter((call) => call.action === "get_status").length === 1)
+  assert.equal(first.upgrades.length, 2)
+  const other = await host.client.session.create({
+    title: "Second task account native session",
+    location: { directory: path.join(product, "session-location") },
+    model: { providerID: "baseline", id: "baseline" },
+  })
+  const secondSends = (id: number) =>
+    second.calls.filter((call) => call.action.startsWith("send_") && quoteOf(call) === String(id))
+  second.event({ ...message(800, "/bind " + other.id), self_id: 10002 })
+  await observe(() => secondSends(800).length === 1)
+  const otherTask = { ...message(801, "Second bot owns this same peer and message ID"), self_id: 10002 }
+  second.event(otherTask)
+  second.event(otherTask)
+  await observe(() => secondSends(801).length === 1, 30000)
+  assert.equal(requests.length, 3)
+  assert.equal(sendsFor(801).length, 1)
+  assert.deepEqual(
+    (await host.client.session.context({ sessionID: other.id }))
+      .filter((row) => row.type === "user")
+      .map((row) => row.text),
+    ["Second bot owns this same peer and message ID"],
+  )
+  checks.push(
+    "per-account disable leaves the sibling online and identical peer/message IDs retain separate native bindings, deduplication and replies",
+  )
+
+  await command("enable", true, "10001")
+  await host.stop()
+  host = await boot(true)
+  await observe(
+    () =>
+      first.calls.filter((call) => call.action === "get_status").length === 3 &&
+      second.calls.filter((call) => call.action === "get_status").length === 2,
+  )
+  first.event(message(850, "First bot after independent restart"))
+  second.event({ ...message(850, "Second bot after independent restart"), self_id: 10002 })
+  await observe(() => sendsFor(850).length === 1 && secondSends(850).length === 1, 30000)
+  assert.equal(requests.length, 5)
+  const firstTexts = (await host.client.session.context({ sessionID: session.id }))
+    .filter((row) => row.type === "user")
+    .map((row) => row.text)
+  const secondTexts = (await host.client.session.context({ sessionID: other.id }))
+    .filter((row) => row.type === "user")
+    .map((row) => row.text)
+  assert.deepEqual(firstTexts, [
+    "Desktop holds the native runner",
+    "One QQ input through the real product",
+    "First bot after independent restart",
+  ])
+  assert.deepEqual(secondTexts, [
+    "Second bot owns this same peer and message ID",
+    "Second bot after independent restart",
+  ])
+  const firstAlias = first.answers.find((reply) => reply.echo === sendsFor(850)[0]!.echo)
+  const secondAlias = second.answers.find((reply) => reply.echo === secondSends(850)[0]!.echo)
+  assert(firstAlias?.status === "ok" && secondAlias?.status === "ok")
+  const parent = (botID: string) => inputID({ scope: { botID, kind: "private", peerID: "20001" }, messageID: "850" })
+  await until(
+    async () =>
+      (await host!.client.session.input.position({ sessionID: session.id, inputID: parent("10001") })).status ===
+        "closed" &&
+      (await host!.client.session.input.position({ sessionID: other.id, inputID: parent("10002") })).status ===
+        "closed",
+  )
+  const firstFollowup = message(
+    851,
+    "First bot quoted follow-up",
+    String((firstAlias.data as { message_id: number }).message_id),
+  )
+  const secondFollowup = {
+    ...message(851, "Second bot quoted follow-up", String((secondAlias.data as { message_id: number }).message_id)),
+    self_id: 10002,
+  }
+  for (const event of [firstFollowup, firstFollowup]) first.event(event)
+  for (const event of [secondFollowup, secondFollowup]) second.event(event)
+  await observe(() => sendsFor(851).length === 1 && secondSends(851).length === 1, 30000)
+  assert.equal(requests.length, 7)
+  for (const [botID, sessionID, text] of [
+    ["10001", session.id, "First bot quoted follow-up"],
+    ["10002", other.id, "Second bot quoted follow-up"],
+  ] as const) {
+    const history = await host.client.session.context({ sessionID })
+    const followup = history.find((row) => row.type === "user" && row.text === text)
+    assert(followup?.type === "user")
+    assert.deepEqual(followup.metadata?.inputRelation, {
+      kind: "followup",
+      inputID: parent(botID),
+      rootID: parent(botID),
+    })
+    assert.equal(history.filter((row) => row.type === "user" && row.text === text).length, 1)
+  }
+  checks.push(
+    "two live accounts preserve separate SQLite bindings and acknowledged aliases after restart without cross-account history or result attribution",
+  )
+
+  first.event({
+    ...group,
+    message_id: 861,
+    message: [
+      { type: "at", data: { qq: "10003" } },
+      { type: "text", data: { text: "Only the chat bot was mentioned" } },
+    ],
+  })
+  first.event({ ...message(862, "Bot messages are not user tasks"), user_id: 10001 })
+  first.event({ ...group, message_id: 863, user_id: 29999 })
+  first.event(message(864, "/status"))
+  await observe(() => sendsFor(864).length === 1)
+  first.event({ ...message(860, "Other bot identity must not create a task"), self_id: 10003 })
+  await observe(() => first.sockets.size === 0)
+  second.event({ ...message(865, "/status"), self_id: 10002 })
+  await observe(() => secondSends(865).length === 1)
+  for (const id of [860, 861, 862, 863]) assert.equal(sendsFor(id).length, 0)
+  assert.equal(requests.length, 7)
+  assert.equal(
+    (await host.client.session.context({ sessionID: session.id })).filter((row) => row.type === "user").length,
+    4,
+  )
+  assert.equal((await host.client.session.inbox.list({ sessionID: session.id })).length, 0)
+  checks.push(
+    "a chat-bot identity, mention of another bot, bot self-output and unauthorized group member cannot enter the task forwarding chain",
+  )
+
+  await command("disable", true, "10001")
+  await command("disable", true, "10002")
+  assert.equal((await command("status"))?.enabledAccountCount, 0)
+  await host.stop()
+  const connections = first.upgrades.length + second.upgrades.length
+  host = await boot(true)
+  assert.equal((await host.client.session.get({ sessionID: other.id })).id, other.id)
+  assert.equal(first.upgrades.length + second.upgrades.length, connections)
+  assert.equal(requests.length, 7)
+  await command("disable")
+  await command("enable", true, "10002")
+  const masked = await command("status", true, "10002")
+  assert(
+    masked && masked.accountEnabled && !masked.moduleEnabled && !masked.enabled && masked.enabledAccountCount === 0,
+  )
+  checks.push(
+    "all-disabled accounts leave the native application usable and the global off switch overrides individual desired state without deleting settings",
+  )
+
+  await host.stop()
   await writeFile(settings, JSON.stringify({ ...config, enabled: true, token: "never-accept-raw-secrets" }))
   await command("status", false)
   host = await boot()
   assert.equal((await host.client.session.get({ sessionID: session.id })).id, session.id)
-  assert.equal(first.upgrades.length + second.upgrades.length, 4)
+  assert.equal(first.upgrades.length + second.upgrades.length, connections)
   assert(!(await readFile(settings, "utf8")).includes(first.token))
   checks.push("malformed optional settings are rejected without opening sockets or blocking the actual product core")
   console.log(
@@ -449,20 +621,59 @@ try {
       production_credentials_used: false,
       product_entry: "packages/im-assistant/src/cli.ts",
       loopback_connection_attempts: first.upgrades.length + second.upgrades.length,
+      independent_account_checks: 4,
+      isolated_quote_followups: 2,
+      second_account_task_replies: secondSends(801).length + secondSends(850).length + secondSends(851).length,
+      isolated_bot_identities: ["10001", "10002"],
       automatic_task_replies: "native-input-attribution",
-      loopback_task_send_attempts: sendsFor(801).length,
-      loopback_control_send_attempts: first.calls.filter(
-        (call) => call.action.startsWith("send_") && quoteOf(call) !== "801",
-      ).length,
-      loopback_confirmed_control_replies: first.answers.filter(
-        (answer) =>
-          answer.status === "ok" &&
-          record(answer.data) &&
-          "message_id" in answer.data &&
-          !sendsFor(801).some((call) => call.echo === answer.echo),
-      ).length,
+      loopback_task_send_attempts: [first, second].reduce(
+        (count, account) =>
+          count +
+          account.calls.filter(
+            (call) => call.action.startsWith("send_") && ["801", "850", "851"].includes(quoteOf(call) ?? ""),
+          ).length,
+        0,
+      ),
+      loopback_control_send_attempts: [first, second].reduce(
+        (count, account) =>
+          count +
+          account.calls.filter(
+            (call) => call.action.startsWith("send_") && !["801", "850", "851"].includes(quoteOf(call) ?? ""),
+          ).length,
+        0,
+      ),
+      loopback_confirmed_control_replies: [first, second].reduce(
+        (count, account) =>
+          count +
+          account.answers.filter(
+            (answer) =>
+              answer.status === "ok" &&
+              record(answer.data) &&
+              "message_id" in answer.data &&
+              account.calls.some(
+                (call) =>
+                  call.echo === answer.echo &&
+                  call.action.startsWith("send_") &&
+                  !["801", "850", "851"].includes(quoteOf(call) ?? ""),
+              ),
+          ).length,
+        0,
+      ),
     }),
   )
+} catch (error) {
+  console.error(
+    JSON.stringify({
+      completed_checks: checks.length,
+      last_check: checks.at(-1),
+      model_requests: requests.length,
+      accounts: [first, second].map((account) => ({
+        connections: account.upgrades.length,
+        calls: account.calls.map((call) => ({ action: call.action, quote: quoteOf(call) })),
+      })),
+    }),
+  )
+  throw error
 } finally {
   release.resolve()
   await host?.stop()

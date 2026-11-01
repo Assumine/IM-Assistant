@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "task": "R3-02",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "source_base_revision": "7d5d5f405a37a90ab672264cb21ea5c1c985e856",
+  "source_identity": "current-implementation-hashes-in-checkpoint-not-an-unchanged-HEAD-claim",
+  "scope": "isolated-current-source-native-chain-not-live-account-rollout",
+  "checkpoint": "upstream/qq-checkpoint.json",
+  "checkpoint_sha256": "dd0e60804907025a56f6c53845c7f1445ed738550affc63f358d49ffa199fd11",
+  "runtime_entrypoint": {
+    "task": "R3-02",
+    "plan_id": "opencode-app-base-v2",
+    "archived_reference": false,
+    "status": "passed",
+    "tests_run": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "acceptance_ids": [
+      "A23",
+      "A24",
+      "A25",
+      "A26"
+    ]
+  },
+  "native_tests": 699,
+  "chain_checks": 147,
+  "source_hashes": 136,
+  "acceptance": {
+    "A23": [
+      "product_acceptance",
+      "transport_acceptance",
+      "notification_acceptance"
+    ],
+    "A24": [
+      "http_acceptance",
+      "backend_acceptance",
+      "continuation_acceptance",
+      "guidance_acceptance",
+      "native_followup_acceptance"
+    ],
+    "A25": [
+      "history_acceptance",
+      "queue_receipt_acceptance",
+      "output_acceptance",
+      "backend_output_acceptance"
+    ],
+    "A26": [
+      "product_acceptance",
+      "notification_acceptance",
+      "output_acceptance",
+      "backend_output_acceptance"
+    ]
+  },
+  "publication": "disabled",
+  "production_credentials_used": false,
+  "external_messages_sent": 0,
+  "canonical_workspace_check": "passed",
+  "browser_component_rerun": false,
+  "remaining": [
+    "authenticated transport, per-account enable/disable, product startup, scoped login-triggered NapCat history recovery and durable reply receipts verified only against loopback fixtures; live QQ, runtime module UI/status and automatic transport reconnect remain unverified or unimplemented",
+    "quoted confirmation commands and published-view selections are connected; implicit latest-list selection, native stop fences and remaining commands are not connected",
+    "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
+    "first/final public output requires proven native input/root/turn identity; optional queue notices and proved retirement are connected; ordinary Session failure-only notifications, native cancellation outside QQ without a native retained receipt and remote unknown-send recovery remain unimplemented",
+    "history recovery requires an observed cursor, exact boundary proof and real_seq; gaps or provider limits are reported without partial admission or guessed initial imports; no executable offline spool is stored",
+    "explicit NapCat inline images are verified on native Session and Codex only; Session quoted attachment amendments, general files/audio/video, backend image history UI and companion routing remain unavailable; unsupported input is refused without partial forwarding"
+  ]
+}

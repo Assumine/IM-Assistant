@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import { configuration, configuredModule, initialize, readConfiguration, setEnabled, type Configuration } from "../src"
+import { configuration, configuredModule, initialize, readConfiguration, setEnabled, setAccountEnabled, type Configuration } from "../src"
 import { fakeOneBot, policy } from "./fixture/onebot"
 
 const account = () => ({ policy: structuredClone(policy), url: "ws://127.0.0.1:6700/", tokenEnv: "IM_QQ_TOKEN_FIXTURE", controls: { allowedUsers: ["20001"], backendIDs: ["codex-native"] } })
@@ -76,4 +76,36 @@ test("history is an explicit bounded account capability rather than an implicit 
   expect(value.accounts[0]!.history).toEqual({ provider: "napcat", pageSize: 20, maxPages: 5 })
   expect(configuration({ version: 1, enabled: true, accounts: [account()] }).accounts[0]!.history).toBeUndefined()
   expect(() => configuration({ version: 1, enabled: true, accounts: [{ ...account(), history: { provider: "arbitrary", code: "no" } }] })).toThrow()
+})
+
+test("individual account switches preserve siblings and reject missing identities without modifying settings", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "qq-account-switch-"))
+  const sibling = { ...account(), tokenEnv: "IM_QQ_TOKEN_SECOND", policy: { ...policy, botID: "10002" } }
+  try {
+    await writeFile(path.join(home, "channels.json"), JSON.stringify({ version: 1, enabled: true, accounts: [account(), sibling] }))
+    await setAccountEnabled(home, "10001", false)
+    expect(await readConfiguration(home)).toEqual({ version: 1, enabled: true, accounts: [{ ...account(), enabled: false }, sibling] })
+    const before = await readFile(path.join(home, "channels.json"), "utf8")
+    await expect(setAccountEnabled(home, "99999", true)).rejects.toThrow("QQ account is not configured")
+    expect(await readFile(path.join(home, "channels.json"), "utf8")).toBe(before)
+    await setEnabled(home, false)
+    await setAccountEnabled(home, "10001", true)
+    expect(await readConfiguration(home)).toEqual({ version: 1, enabled: false, accounts: [{ ...account(), enabled: true }, sibling] })
+  } finally { await rm(home, { recursive: true, force: true }) }
+})
+
+test("disabled accounts consume no credentials and all-disabled configuration opens no optional module", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "qq-account-tokens-"))
+  const sibling = { ...account(), tokenEnv: "IM_QQ_TOKEN_SECOND", policy: { ...policy, botID: "10002" } }
+  try {
+    const environment = { IM_QQ_TOKEN_FIXTURE: "first-only", IM_QQ_TOKEN_SECOND: "second-only" }
+    await writeFile(path.join(home, "channels.json"), JSON.stringify({ version: 1, enabled: true, accounts: [{ ...account(), enabled: false }, sibling] }))
+    expect((await configuredModule(home, environment))?.id).toBe("qq-portal")
+    expect(environment.IM_QQ_TOKEN_FIXTURE).toBe("first-only")
+    expect(environment.IM_QQ_TOKEN_SECOND).toBeUndefined()
+    await setAccountEnabled(home, "10002", false)
+    expect(await configuredModule(home, environment)).toBeUndefined()
+    expect(environment.IM_QQ_TOKEN_FIXTURE).toBe("first-only")
+    for (const enabled of [null, "false", 0]) expect(() => configuration({ version: 1, enabled: true, accounts: [{ ...account(), enabled }] })).toThrow()
+  } finally { await rm(home, { recursive: true, force: true }) }
 })

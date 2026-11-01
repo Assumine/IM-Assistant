@@ -1,4 +1,4 @@
-# QQ 可选转发入口：隔离接回中
+# QQ 可选薄转发：隔离原生链路已验收
 
 本包只负责QQ与助手会话之间的转发和控制。小羊等人格聊天机器人规划为独立可选的QQ附属插件，账号、配置、上下文、工具权限和启停分别隔离；不会加入本包的任务路由。见[架构边界](../../docs/architecture/QQ接入与附属机器人边界.md)。
 
@@ -109,9 +109,9 @@ openTaskReplies订阅原公开事件，先等当前OneBot身份验证，再读�
 
 ## 产品配置与运行边界
 
-本机产品CLI提供`portal qq init|enable|disable|status`。初始化只创建本产品根目录`modules/qq-portal/channels.json`，默认关闭、无账号，不接管旧设置；重复init拒绝覆盖。enable/disable只影响下次服务启动，不打断现有原生任务。status显示配置的期望状态、账号数量、connectionVerified=false、controlRepliesSupported=true、automaticTaskReplies=true和taskReplyTargets=["session","backend"]；这些是能力范围，不冒充在线状态。当前真实连接状态仅来自通道onState/服务日志，运行状态页面和单账号管理界面仍待接入。
+本机产品CLI提供`portal qq init`及`portal qq enable|disable|status [botID]`。省略账号操作模块总开关，指定账号仅改变该账号，不删除配置或绑定；未知或空账号明确拒绝，不意外操作全局。初始化默认关闭、无账号，重复init拒绝覆盖。全部启停均作用于下次服务启动，不打断当前任务。status返回期望配置与enabledAccountCount，单账号另含botID、moduleEnabled、accountEnabled；enabled表示总开关与账号开关同时允许，connectionVerified始终为false。真实在线状态仍来自onState/日志，图形化管理待R4接入。
 
-配置为`{ version: 1, enabled: false, accounts: [...] }`。每项允许url、tokenEnv、policy及可选controls、history、images、queueReplies；policy含botID、allowedUsers、allowedGroups，controls用户须是任务白名单的子集。最多8账号，机器人ID和tokenEnv不得重复，文件须为普通文件且不超过512KiB。配置不能指定插件路径、代码、明文令牌或URL查询凭据。令牌以专用`IM_QQ_TOKEN_...`环境变量引用；装配启用账号时读入内存并从当前进程环境移除，防止后续子进程继承。禁用配置不消费令牌变量，不连接网络。
+配置为`{ version: 1, enabled: false, accounts: [...] }`。每项允许url、tokenEnv、policy及可选enabled、controls、history、images、queueReplies；账号enabled省略兼容为true，false只停用本账号，总开关关闭优先；policy含botID、allowedUsers、allowedGroups，controls用户须是任务白名单的子集。最多8账号，机器人ID和tokenEnv不得重复，文件须为普通文件且不超过512KiB。配置不能指定插件路径、代码、明文令牌或URL查询凭据。令牌以专用`IM_QQ_TOKEN_...`环境变量引用；装配启用账号时读入内存并从当前进程环境移除，防止后续子进程继承。禁用模块或账号不消费对应令牌变量，不建立对应连接；账号全关闭时不装配转发模块。
 
 产品Portals只装配已知qq-portal包；框架ApplicationModules不知道QQ规则。资源使用同一原生公共客户端和按模块ID隔离的原插件KV；通过原HTTP策略进入Session/Inbox或整套后端，不直接读核心表或Codex私有文件。open同步交回资源，认证与登录不延迟核心启动。每账号独立通道，一项认证失败不挡另一项；配置损坏时QQ不可用，核心仍启动。正常关闭先停入口并结算已开始接纳，再释放客户端/SQLite。模块工厂若在交回资源前失败，必须自行清理已获取的私有资源。
 
@@ -133,15 +133,15 @@ createControlReplies只处理可信入口给出的控制响应，核对已解码
 python -m tools.qq_portal_smoke
 ```
 
-241项QQ模块＋8项SDK＋96项原生Session＋290项执行/Runner/压缩＋10项客户端竞争＋20项后端契约＋7项原生身份＋20项服务生命周期＋5项原生日志＝697项，零失败零跳过；143项真实链路检查通过。新增队列回执夹具8项：桌面与QQ混排、原消息引用、改绑后取消、提示别名解除、任务开始清理、通知失败隔离、原生Codex删除及重启不重试。4次合成模型请求、6条排队提示、6次提示撤回尝试、2次回环连接；全部无真实QQ或生产凭据。
+正式入口tests/rebase/test_r3_02.py已运行5项验收，覆盖A23–A26；内部真实执行243项QQ模块＋8项SDK＋96项原生Session＋290项执行/Runner/压缩＋10项客户端竞争＋20项后端契约＋7项原生身份＋20项服务生命周期＋5项原生日志＝699项，另有147项原生链路检查，零失败零跳过。来源摘要136项，原源码9236、产品补丁219及物化链接43项核对通过。
 
-队列/通知相关17项重复10次共170项、8项真实链路重复3次共24项通过，另作稳定性证据，不叠加主计数。canonical check36工作区、14个改动TS文件lint通过；未改公共Protocol或前端，不重跑无关browser/component。历史R3-01及增量证据保持原source_revision；图片额外稳定性和原生模块30项固定在3e42fc6，不能冒充本轮重跑。原14条E2E类型诊断和R5附件草稿恢复问题仍待修复。
+本轮真实产品CLI新增单账号停用/重启、双账号同消息ID及实际回复引用后续隔离、其他机器人身份拒绝及全关闭四组检查；7次合成模型请求、7次回环连接、6条任务结果、12次控制回执发送尝试，其中11次明确确认。无真实QQ、外部消息或生产凭据。canonical check36工作区和6个改动TS文件lint通过；没有公共Protocol或前端变更，不重复无关浏览器测试。旧队列170项/24项重复及图片稳定性保留在原版本，不计本轮重跑；14条既有E2E类型诊断和R5附件草稿恢复问题仍待修复。
 
 框架的新增点是通用原生Inbox追加及输入归属护栏、POST continue/GET continuation接口和可重放的输入关闭事件；HTTP客户端由锁定生成器同步更新。归属及去重元数据在核心原KV内投影，不是QQ任务状态或第二份会话正文。Solid数据层只复用原生pending缓存、读期间的事件合并和串行重校验，不另存一套消息状态或手工改队列顺序。待办append保留原ID/序位/附件/metadata/投递方式；当前续接使用新的原生steer输入，归属固定于原输入边界。运行、恢复、上下文和队列仍由原生执行器拥有。
 
 助手模式继续禁止普通SDK插件、实例插件、配置目录扫描和任意路径加载。新增的SDK `trustedPlugins`只由可信程序代码显式贡献，通过原生插件生命周期加载；不能放在用户消息、模型工具或项目JSON中。公共storage.insert按插件命名空间原子首写，Promise和Effect接口一致。不要在每个会话实例的setup里重复登录同一个机器人；正式产品的传输资源生命周期已接入，SDK显式Scope验证仍保留；具备原生输出证明的整套后端已接任务自动出站；运行状态UI仍未实现。
 
-`upstream/qq-checkpoint.json`仅记录partial_verified，publication=disabled。正式`tests/rebase/test_r3_02.py`尚未实现，A23–A26不计完成；本阶段不代表真实机器人已连接或可发布。
+正式汇总为`upstream/qq-verification.json`，R3-02隔离原生链路验收passed；checkpoint继续以partial_verified及publication=disabled明确区分真实账号上线、完整能力及发布范围。本阶段没有登录生产机器人，也没有迁入聊天插件。
 
 ## 受控图片输入
 

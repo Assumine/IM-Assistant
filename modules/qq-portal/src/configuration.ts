@@ -6,7 +6,7 @@ import type { ControlOptions } from "./controls"
 import { historyConfiguration, type HistoryConfig } from "./history"
 import { imageConfiguration, type ImageConfig } from "./images"
 
-export type Account = { policy: Policy; url: string; tokenEnv: string; controls?: ControlOptions; history?: HistoryConfig; images?: ImageConfig; queueReplies?: boolean }
+export type Account = { enabled?: boolean; policy: Policy; url: string; tokenEnv: string; controls?: ControlOptions; history?: HistoryConfig; images?: ImageConfig; queueReplies?: boolean }
 export type Configuration = { version: 1; enabled: boolean; accounts: Account[] }
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 const keys = (value: Record<string, unknown>, allowed: readonly string[]) => Object.keys(value).every((key) => allowed.includes(key))
@@ -19,7 +19,8 @@ export function configuration(value: unknown): Configuration {
     !Array.isArray(value.accounts) || value.accounts.length > 8) throw new Error("Invalid QQ configuration")
   const bots = new Set<string>(), tokens = new Set<string>()
   const accounts = value.accounts.map((item): Account => {
-    if (!record(item) || !keys(item, ["policy", "url", "tokenEnv", "controls", "history", "images", "queueReplies"]) ||
+    if (!record(item) || !keys(item, ["enabled", "policy", "url", "tokenEnv", "controls", "history", "images", "queueReplies"]) ||
+      item.enabled !== undefined && typeof item.enabled !== "boolean" ||
       item.queueReplies !== undefined && typeof item.queueReplies !== "boolean" || !record(item.policy) ||
       !keys(item.policy, ["botID", "allowedUsers", "allowedGroups"]) || !id(item.policy.botID) || !ids(item.policy.allowedUsers) || !ids(item.policy.allowedGroups) ||
       typeof item.url !== "string" || typeof item.tokenEnv !== "string" || !/^IM_QQ_TOKEN_[A-Z0-9_]{1,64}$/.test(item.tokenEnv) ||
@@ -42,7 +43,7 @@ export function configuration(value: unknown): Configuration {
     bots.add(item.policy.botID); tokens.add(item.tokenEnv)
     const history = historyConfiguration(item.history)
     const images = imageConfiguration(item.images)
-    return { policy, url: url.href, tokenEnv: item.tokenEnv, ...(permissions ? { controls: permissions } : {}), ...(history ? { history } : {}), ...(images ? { images } : {}),
+    return { ...(item.enabled !== undefined ? { enabled: item.enabled } : {}), policy, url: url.href, tokenEnv: item.tokenEnv, ...(permissions ? { controls: permissions } : {}), ...(history ? { history } : {}), ...(images ? { images } : {}),
       ...(item.queueReplies !== undefined ? { queueReplies: item.queueReplies } : {}) }
   })
   if (value.enabled && accounts.length === 0) throw new Error("QQ accounts must be configured before enabling")
@@ -80,6 +81,21 @@ export async function setEnabled(home: string, enabled: boolean) {
   const previous = await readConfiguration(home)
   const value = configuration({ ...previous, enabled })
   if (previous.enabled === enabled) return
+  await writeConfiguration(home, value)
+}
+
+/** Desired state only; never changes another account or the global switch. */
+export async function setAccountEnabled(home: string, botID: string, enabled: boolean) {
+  const previous = await readConfiguration(home)
+  const account = previous.accounts.find((account) => account.policy.botID === botID)
+  if (!account) throw new Error("QQ account is not configured")
+  if ((account.enabled !== false) === enabled) return
+  await writeConfiguration(home, configuration({ ...previous,
+    accounts: previous.accounts.map((entry) => entry.policy.botID === botID ? { ...entry, enabled } : entry),
+  }))
+}
+
+async function writeConfiguration(home: string, value: Configuration) {
   const temporary = path.join(home, ".channels-" + randomUUID() + ".json")
   const file = await open(temporary, "wx", 0o600)
   try { await file.writeFile(JSON.stringify(value, null, 2) + "\n"); await file.close(); await rename(temporary, path.join(home, "channels.json")) }
