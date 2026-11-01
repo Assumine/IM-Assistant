@@ -119,7 +119,8 @@ export function DesktopApp(props: { api: ElectronAPI; version: string }) {
           />
           <DesktopEffects api={props.api} />
           <Suspense fallback={null}>
-            <Show when={initializationData(sidecar)} keyed>
+            {/* The assistant profile has an isolated native database and never imports legacy project data. */}
+            <Show when={platform.workspace !== false && initializationData(sidecar)} keyed>
               {(server) => <MigrationStatus server={server} />}
             </Show>
           </Suspense>

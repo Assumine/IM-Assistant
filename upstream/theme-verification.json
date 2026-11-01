@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "task": "R4-02",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "source_base_revision": "595905d0a4ed8ae6bb9319fc1b1658b9a496b905",
+  "source_identity": "current-implementation-hashes-in-checkpoint-not-an-unchanged-HEAD-claim",
+  "scope": "isolated-current-source-native-presentation-not-production-rollout",
+  "checkpoint": "upstream/theme-checkpoint.json",
+  "checkpoint_sha256": "b203e9dddb12f5ca5c7111474316196a032712f9a22482b184fe68d711814568",
+  "runtime_entrypoint": {
+    "task": "R4-02",
+    "plan_id": "opencode-app-base-v2",
+    "status": "passed",
+    "tests_run": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "acceptance_ids": [
+      "A30",
+      "A31",
+      "A32"
+    ]
+  },
+  "baseline": "upstream/theme-baseline.json",
+  "canonical_workspace_checks": 36,
+  "browser_executions": 72,
+  "distinct_existing_interactions_before_and_after": 57,
+  "new_presentation_keeper_cases": 3,
+  "presentation_repetitions_per_case": 5,
+  "production_benchmark_runs_before": 3,
+  "production_benchmark_runs_after": 3,
+  "native_model_requests": 4,
+  "native_desktop_checks": 4,
+  "native_unit_tests": 69,
+  "gui_changed_files_linted": 16,
+  "dark_palette": "charcoal-neutral-greys-and-grey-white-selection-from-user-reference",
+  "source_hashes": 323,
+  "performance": {
+    "before": {
+      "samples": [
+        {
+          "firstObservedMs": 87.5,
+          "stableObservedMs": 127.30000000447035
+        },
+        {
+          "firstObservedMs": 94.20000000298023,
+          "stableObservedMs": 138.89999999850988
+        },
+        {
+          "firstObservedMs": 93.70000000298023,
+          "stableObservedMs": 126.70000000298023
+        }
+      ],
+      "median": {
+        "firstObservedMs": 93.70000000298023,
+        "stableObservedMs": 127.30000000447035
+      }
+    },
+    "after": {
+      "samples": [
+        {
+          "firstObservedMs": 93.89999999850988,
+          "stableObservedMs": 126.60000000149012
+        },
+        {
+          "firstObservedMs": 98.79999999701977,
+          "stableObservedMs": 125.29999999701977
+        },
+        {
+          "firstObservedMs": 84.20000000298023,
+          "stableObservedMs": 111.90000000596046
+        }
+      ],
+      "median": {
+        "firstObservedMs": 93.89999999850988,
+        "stableObservedMs": 125.29999999701977
+      }
+    },
+    "median_change_ms": {
+      "firstObservedMs": 0.2,
+      "stableObservedMs": -2.0
+    },
+    "interpretation": "three isolated local samples; descriptive comparison, not a universal latency guarantee"
+  },
+  "desktop_scope": {
+    "original_electron_app": true,
+    "os_dpi": 144,
+    "os_scaling_percent": 150,
+    "application_zoom_percent": [
+      100,
+      110,
+      125,
+      150
+    ],
+    "windowed_and_maximized": true,
+    "fresh_isolated_profile": true,
+    "packaged_installer": false,
+    "other_system_dpi_settings": "not switched or separately verified"
+  },
+  "historical_parent_evidence": {
+    "task": "R4-01",
+    "revision": "595905d0a4ed8ae6bb9319fc1b1658b9a496b905",
+    "checkpoint": "upstream/capability-checkpoint.json",
+    "sha256": "99e95cd4c2463de2e954a4300334ebd9bb112a579f1207ff4dbd96e501ba0702",
+    "rebound_to_current_theme_source": false
+  },
+  "acceptance": {
+    "A30": [
+      "fixed icon navigation and native panes at 1440/1000/820/600 widths",
+      "native font roles, chosen palette and reduced-motion setting persist",
+      "real Windows Electron window sizes, caption clearance and original zoom IPC"
+    ],
+    "A31": [
+      "same 57 original queue/history cases pass before and after",
+      "live user and streamed assistant text enter once; history, cached tabs and reduced motion do not replay",
+      "native HTTP/SQLite admission, safe-step steer, withdrawal, final result then next input, idle start and restart remain ordered"
+    ],
+    "A32": [
+      "original production web build and real Chromium keepers",
+      "separately built original Windows Electron product with real native service and isolated data",
+      "no old client, accounts, external model service or QQ connection required"
+    ]
+  },
+  "standalone_e2e_typecheck": {
+    "status": "failed-existing-diagnostics",
+    "diagnostics": 14,
+    "new_diagnostics": 0
+  },
+  "publication": "disabled",
+  "production_credentials_used": false,
+  "actual_qq_connection": false,
+  "external_messages_sent": 0,
+  "remaining": [
+    "R5 fault and release acceptance, including the fourteen pre-existing standalone E2E type errors",
+    "packaged installer, other OS and other Windows users are not verified",
+    "real accounts, hardware providers, marketplace and business-module migration remain outside this task"
+  ]
+}

@@ -53,6 +53,7 @@
       "name": "@opencode/app",
       "version": "2.2.3",
       "dependencies": {
+        "@im-assistant/profile": "workspace:*",
         "@corvu/drawer": "catalog:",
         "@dnd-kit/abstract": "0.5.0",
         "@dnd-kit/dom": "0.5.0",

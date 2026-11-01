@@ -21,6 +21,8 @@ import { fileNode, mockWorkspace, openSession, openSettings } from "../utils/wor
 import { expectSessionTitle } from "../utils/waits"
 import { backendRpc, backendHref, backendTabs } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+import { layoutBounds } from "../utils/presentation"
+import { capabilityRpc } from "../utils/capabilities"
 
 const a = { id: "ses_tab_a", title: "Tab A session" }
 
@@ -29,6 +31,67 @@ const b = { id: "ses_tab_b", title: "Tab B session" }
 const c = { id: "ses_tab_c", title: "Tab C session" }
 
 test.use({ serviceWorkers: "block" })
+
+test("assistant layout: fixed navigation and native panes fit window sizes through session and settings switches", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  const workspace = await openSession(page, {
+    name: "AssistantLayout",
+    workspace: false,
+    sessions: [a, b],
+    seed: { settings: { appearance: { tabLayout: "vertical", sidebarOpen: true } } },
+    rpc: capabilityRpc({ list: () => [], notifications: () => ({ items: [], counts: { unread: 0, attention: 0 } }) }),
+  })
+
+  const navigation = page.getByRole("navigation", { name: "Application navigation", exact: true })
+  await expect(navigation).toBeVisible()
+  await expect(page.locator("html")).toHaveAttribute("data-interface", "assistant")
+  const original = (await layoutBounds(page)).navigation!
+
+  for (const target of [b, a]) {
+    await page.locator(`[data-titlebar-tab-link][href="${sessionHref(target.id)}"]`).click()
+    await expectSessionTitle(page, target.title)
+    await expect.poll(async () => (await layoutBounds(page)).navigation).toEqual(original)
+  }
+
+  await navigation.getByRole("button", { name: "Application modules", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Application modules", exact: true })).toBeVisible()
+  expect((await layoutBounds(page)).navigation).toEqual(original)
+
+  for (const viewport of [
+    { width: 1000, height: 680 },
+    { width: 820, height: 600 },
+    { width: 600, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await expect
+      .poll(async () => {
+        const bounds = await layoutBounds(page)
+
+        return (
+          !bounds.overflow &&
+          !!bounds.content &&
+          bounds.content.right <= bounds.width + 1 &&
+          bounds.content.bottom <= bounds.height + 1 &&
+          (viewport.width < 768 ? !bounds.navigation : !!bounds.navigation)
+        )
+      })
+      .toBe(true)
+    await expect(page.getByRole("heading", { name: "Application modules", exact: true })).toBeVisible()
+    await page.screenshot({ path: test.info().outputPath(`assistant-modules-${viewport.width}.png`) })
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.locator(`[data-titlebar-tab-link][href="${sessionHref(a.id)}"]`).click()
+  await expect(workspace.editor).toBeEditable()
+  await expect.poll(async () => (await layoutBounds(page)).navigation).toEqual(original)
+  const bounds = await layoutBounds(page)
+  expect(bounds.editor!.bottom).toBeLessThanOrEqual(bounds.height)
+  expect(bounds.content!.x - original.right - bounds.sidebar!.width).toBeLessThanOrEqual(1)
+  await page.screenshot({ path: test.info().outputPath("assistant-conversation.png") })
+})
 
 test("whole backend: original references survive tab switching, reload and reopening without Session admission", async ({
   page,

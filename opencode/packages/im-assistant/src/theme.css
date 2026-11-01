@@ -1,0 +1,186 @@
+/* Product presentation only. Native workspace mode and explicitly chosen themes keep their own palette. */
+:root[data-interface="assistant"] {
+  --assistant-rail-size: 56px;
+  --assistant-accent: var(--v2-icon-icon-accent);
+  --assistant-selection: color-mix(in srgb, var(--assistant-accent) 10%, transparent);
+}
+
+:root[data-interface="assistant"][data-theme="oc-2"]:not([data-color-scheme="dark"]) {
+  --v2-background-bg-base: #ffffff;
+  --v2-background-bg-deep: #f5f8fa;
+  --v2-background-bg-layer-01: #f5f8fa;
+  --v2-background-bg-layer-02: #edf3f6;
+  --v2-background-bg-layer-03: #e5eef2;
+  --v2-text-text-base: #17313e;
+  --v2-text-text-muted: #5d7481;
+  --v2-text-text-faint: #6b818e;
+  --v2-icon-icon-base: #486575;
+  --v2-icon-icon-muted: #69818d;
+  --v2-icon-icon-accent: #008b9d;
+  --v2-icon-icon-accent-hover: #007586;
+  --v2-text-text-accent: #007e90;
+  --v2-text-text-accent-hover: #006a7c;
+  --v2-background-bg-accent: #008b9d;
+  --v2-border-border-base: #dce6eb;
+  --v2-border-border-muted: #e9eff2;
+  --v2-border-border-focus: #008b9d;
+}
+
+:root[data-interface="assistant"][data-theme="oc-2"][data-color-scheme="dark"] {
+  --v2-background-bg-base: #191919;
+  --v2-background-bg-deep: #202020;
+  --v2-background-bg-layer-01: #1c1c1c;
+  --v2-background-bg-layer-02: #262626;
+  --v2-background-bg-layer-03: #303030;
+  --v2-background-bg-layer-04: #3b3b3b;
+  --v2-background-bg-accent: #3a3a3a;
+  --v2-background-bg-code-path: #242424;
+  --v2-text-text-base: #dcdcdc;
+  --v2-text-text-muted: #a2a2a2;
+  --v2-text-text-faint: #8a8a8a;
+  --v2-icon-icon-base: #b8b8b8;
+  --v2-icon-icon-muted: #8f8f8f;
+  --v2-icon-icon-accent: #ececec;
+  --v2-icon-icon-accent-hover: #ffffff;
+  --v2-text-text-accent: #dedede;
+  --v2-text-text-accent-hover: #ffffff;
+  --v2-text-text-code-accent: #dedede;
+  --v2-text-text-code-path: #c8c8c8;
+  --v2-border-border-base: #303030;
+  --v2-border-border-muted: #292929;
+  --v2-border-border-focus: #969696;
+}
+
+:root[data-interface="assistant"] body {
+  font-size: 14px;
+  line-height: var(--line-height-base, 20px);
+}
+
+:root[data-interface="assistant"] [data-slot="application-shell"] {
+  --shell-inline-inset: 0px !important;
+  --shell-top-inset: 0px !important;
+  --shell-bottom-inset: 0px !important;
+}
+
+:root[data-interface="assistant"]
+  :is([data-slot="home-panel"], [data-slot="session-chat-panel"], [data-slot="content-surface"], .settings-screen) {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root[data-interface="assistant"] [data-slot="application-content"] {
+  border-block-start: 1px solid var(--v2-border-border-base);
+}
+
+:root[data-interface="assistant"] [data-slot="vertical-tabs-sidebar"] {
+  border-inline-end: 1px solid var(--v2-border-border-base);
+}
+
+:root[data-interface="assistant"] [data-titlebar-tab-slot][data-orientation="vertical"] {
+  min-block-size: 38px;
+}
+
+:root[data-interface="assistant"] [data-titlebar-tab-title] {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+:root[data-interface="assistant"] [data-titlebar-tab-slot][data-active="true"] {
+  --active-bg: var(--assistant-selection);
+}
+
+:root[data-interface="assistant"] :is([data-slot="user-message-text"], [data-slot="text-part-body"]) {
+  font-size: 15px;
+  line-height: 24px;
+}
+
+:root[data-interface="assistant"] [data-component="composer-editor"] {
+  font-size: 15px;
+  line-height: 24px;
+}
+
+:root[data-interface="assistant"] [data-session-title] h1,
+:root[data-interface="assistant"] .settings-tab-title {
+  font-size: 18px;
+  line-height: 26px;
+}
+
+:root[data-interface="assistant"] .settings-screen > .settings {
+  width: min(100%, 1200px);
+}
+
+:root[data-interface="assistant"] .settings-screen .settings-sidebar {
+  width: clamp(200px, 24vw, 264px) !important;
+  min-width: 200px !important;
+  padding: 28px 20px !important;
+  border-inline-end: 1px solid var(--v2-border-border-base);
+}
+
+:root[data-interface="assistant"] .settings-screen .settings-content {
+  max-width: none;
+  padding-inline: clamp(20px, 3vw, 44px);
+}
+
+:root[data-interface="assistant"] .settings-screen .settings-tab-header {
+  padding-block-start: 28px;
+}
+
+:root[data-interface="assistant"] .settings-nav-groups [data-slot="tabs-v2-trigger-wrapper"] {
+  height: 34px;
+}
+
+:root[data-interface="assistant"] :is(.settings-tab-body, .settings-panel) {
+  min-inline-size: 0;
+}
+
+:root[data-interface="assistant"] [data-component="application-navigation"] {
+  display: flex;
+  flex: 0 0 var(--assistant-rail-size);
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-block: 12px;
+  border-inline-end: 1px solid var(--v2-border-border-base);
+  background: var(--v2-background-bg-deep);
+}
+
+:root[data-interface="assistant"] .assistant-nav-action {
+  display: inline-flex;
+  flex: 0 0 40px;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  min-block-size: 40px;
+  border-radius: 10px;
+  color: var(--v2-icon-icon-base);
+  background: transparent;
+  cursor: pointer;
+}
+
+:root[data-interface="assistant"] .assistant-nav-action:is(:hover, [aria-current="page"], [aria-pressed="true"]) {
+  background: var(--assistant-selection);
+  color: var(--assistant-accent);
+}
+
+:root[data-interface="assistant"] .assistant-nav-action:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: 2px;
+}
+
+:root[data-interface="assistant"] .assistant-nav-bottom {
+  margin-block-start: auto;
+}
+
+:root[data-interface="assistant"] progress {
+  accent-color: var(--assistant-accent);
+}
+
+@media (max-width: 767px) {
+  :root[data-interface="assistant"] [data-component="application-navigation"] {
+    display: none;
+  }
+
+  :root[data-interface="assistant"] .settings-screen .settings-content {
+    padding-inline: 12px;
+  }
+}

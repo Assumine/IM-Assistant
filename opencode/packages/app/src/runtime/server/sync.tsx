@@ -96,6 +96,7 @@ function createServerSyncContextInner(serverSDK: ServerSDK, data: Data) {
 
   const worktrees = createWorktreeInventory({
     scope: serverSDK.scope,
+    enabled: platform.workspace !== false,
     queryClient,
     api: () => serverSDK.api.worktree,
     updated: (projectID, items) => {

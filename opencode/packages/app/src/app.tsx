@@ -21,6 +21,7 @@ import { TabsProvider } from "@/shell/tabs/tabs"
 import { ErrorPage } from "@/shell/errors/error"
 import { AppRoutes, File, preloadRoute } from "@/shell/routes/routes"
 import { PluginRoot } from "@/runtime/plugin/root"
+import { usePlatform } from "@/runtime/platform/platform"
 
 export { preloadRoute }
 
@@ -39,10 +40,14 @@ function QueryProvider(props: ParentProps) {
 }
 
 function BodyTypography() {
+  const platform = usePlatform()
   createRenderEffect(() => {
     if (typeof document === "undefined") return
     document.body.classList.remove("text-12-regular")
     document.body.classList.add("font-(family-name:--font-family-text)", "text-[13px]", "font-[440]")
+
+    if (platform.workspace === false) document.documentElement.dataset.interface = "assistant"
+    else delete document.documentElement.dataset.interface
   })
 
   return null

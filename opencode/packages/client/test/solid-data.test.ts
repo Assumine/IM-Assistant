@@ -171,7 +171,10 @@ test("reconciles a stale running tool when execution settles", async () => {
   let requests = 0
   const api = OpenCode.make({
     baseUrl: "http://opencode.local",
-    fetch: async () => {
+    fetch: async (input, init) => {
+      const url = new URL((input instanceof Request ? input : new Request(input, init)).url)
+      if (url.pathname === "/api/session/ses_refresh/inbox") return Response.json({ data: [] })
+      expect(url.pathname).toBe("/api/session/ses_refresh/message")
       requests++
       return Response.json({
         data: [

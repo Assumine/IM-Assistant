@@ -17,6 +17,46 @@ import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 import type { Capability } from "@opencode/schema/capability"
 import { capabilityEvent, capabilityRpc, capabilityVisibility } from "../utils/capabilities"
 
+test("assistant appearance: native theme, font roles and reduced motion survive reload", async ({ page }) => {
+  await openSession(page, { name: "AssistantAppearance", workspace: false })
+  const settings = await showSettings(page)
+  await settings.getByRole("tab", { name: "Appearance", exact: true }).click()
+  const fonts = { ui: "Arial", code: "Consolas", terminal: "Courier New" }
+
+  for (const [role, value] of Object.entries(fonts)) {
+    const input = settings.locator(`[data-action="settings-${role}-font"]`)
+    await input.fill(value)
+    await expect(input).toHaveCSS("font-family", new RegExp(value))
+  }
+
+  await settings.locator('[data-action="settings-color-scheme"]').click()
+  await page.getByRole("option", { name: "Dark", exact: true }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-color-scheme", "dark")
+  const navigation = page.getByRole("navigation", { name: "Application navigation", exact: true })
+  await expect(navigation).toHaveCSS("background-color", "rgb(32, 32, 32)")
+  await expect(navigation.getByRole("button", { name: "Open settings", exact: true })).toHaveCSS(
+    "color",
+    "rgb(236, 236, 236)",
+  )
+  await page.screenshot({ path: test.info().outputPath("assistant-dark.png") })
+  await settings.locator('[data-action="settings-theme"]').click()
+  await page.getByRole("option", { name: "Catppuccin", exact: true }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "catppuccin")
+  await settings.locator('[data-action="settings-reduce-motion"]').click()
+  await page.getByRole("option", { name: "On", exact: true }).click()
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "reduce")
+  await page.reload()
+  const reopened = await showSettings(page)
+  await reopened.getByRole("tab", { name: "Appearance", exact: true }).click()
+
+  for (const [role, value] of Object.entries(fonts))
+    await expect(reopened.locator(`[data-action="settings-${role}-font"]`)).toHaveValue(value)
+  await expect(reopened.locator(".settings-tab-title")).toHaveCSS("font-family", /Arial/)
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "catppuccin")
+  await expect(page.locator("html")).toHaveAttribute("data-color-scheme", "dark")
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "reduce")
+})
+
 test("capabilities: module failure and explicit stop leave the native conversation available", async ({ page }) => {
   const modules: Capability.Info[] = [
     { id: "healthy", title: "Independent service", state: "active", health: { phase: "ready" }, metrics: false },

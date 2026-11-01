@@ -28,8 +28,9 @@ import { createMediaQuery } from "@solid-primitives/media"
 import type { createTimelineProjection } from "./projection"
 import { observeElementOffsetReconnectAware } from "./observe-element-offset"
 import { filterVirtualIndexes } from "./virtual-items"
-import { prefersReducedMotion } from "@opencode/ui/motion"
+import { observeReducedMotion, prefersReducedMotion } from "@opencode/ui/motion"
 import { holdLandingWidth } from "@/shell/panel-motion"
+import { usePlatform } from "@/runtime/platform/platform"
 
 const fallbackItemSize = 60
 
@@ -108,6 +109,7 @@ type ViewProps = {
 
 export function createTimelineVirtualizer(input: Input) {
   const language = useLanguage()
+  const platform = usePlatform()
   const active = () => input.active?.() !== false
   const isDesktop = createMediaQuery("(min-width: 768px)")
   const topOffset = () => (input.showHeader() ? 64 : isDesktop() ? 0 : 16)
@@ -146,15 +148,28 @@ export function createTimelineVirtualizer(input: Input) {
 
   const knownKeys = new Set(rowKeys())
   const addedKeys = new Set<string>()
+  const enteringKeys = new Set<string>()
 
   const getItemKey = createMemo(() => {
     const keys = rowKeys()
-    keys
-      .filter((key) => !knownKeys.has(key))
-      .forEach((key) => {
-        knownKeys.add(key)
-        addedKeys.add(key)
-      })
+    const boundary = keys.findLastIndex((key) => knownKeys.has(key))
+    keys.forEach((key, index) => {
+      if (knownKeys.has(key)) return
+      knownKeys.add(key)
+      addedKeys.add(key)
+
+      // Prepending history, a cold mount or an inactive cached view never enters. The key is
+      // consumed by its first visible mount, so virtualization cannot replay a message.
+      if (
+        platform.workspace === false &&
+        active() &&
+        !rendering.initialTail &&
+        !document.hidden &&
+        !prefersReducedMotion() &&
+        index > boundary
+      )
+        enteringKeys.add(key)
+    })
 
     return (index: number) => keys[index] ?? `removed:${index}`
   })
@@ -923,11 +938,48 @@ export function createTimelineVirtualizer(input: Input) {
       const row = createMemo(() => rowByKey().get(rowProps.rowKey) ?? rows()[item().index] ?? initialRow)
       const [ready, setReady] = createSignal(initialItem.size <= fallbackItemSize || !props.deferred(initialRow))
       let contentMeasureFrame: number | undefined
+      let stopEntryPreference: (() => void) | undefined
 
-      onMount(() => virtualizer.measureElement(element))
+      const finishEntry = () => {
+        delete element.dataset.messageEntry
+        element.removeEventListener("animationend", finishEntry)
+        element.removeEventListener("animationcancel", finishEntry)
+        stopEntryPreference?.()
+        stopEntryPreference = undefined
+      }
+
+      onMount(() => {
+        virtualizer.measureElement(element)
+        const entering = enteringKeys.delete(rowProps.rowKey)
+
+        if (!entering || !active() || document.hidden || prefersReducedMotion()) return
+        const current = row()
+
+        const content =
+          Predicate.isTagged(current, "AssistantPart") && current.group.type === "part"
+            ? Timeline.resolveContent(
+                input.projection.messageByID().get(current.group.ref.messageID),
+                current.group.ref.partID,
+              )
+            : undefined
+
+        if (!Predicate.isTagged(current, "UserMessage") && content?.type !== "text") return
+        // CSS waits for a rendered Markdown block, including the worker's first streamed text.
+        element.addEventListener("animationend", finishEntry)
+        element.addEventListener("animationcancel", finishEntry)
+        stopEntryPreference = observeReducedMotion(() => {
+          if (prefersReducedMotion()) finishEntry()
+        })
+        element.dataset.messageEntry = ""
+      })
+      createEffect(() => {
+        if (!active()) finishEntry()
+      })
       // Prepending history changes data-index, not the keyed element's identity.
       // Its observer reads the current index and delivers any actual size change.
       onCleanup(() => {
+        finishEntry()
+
         if (contentMeasureFrame !== undefined) cancelAnimationFrame(contentMeasureFrame)
         queueMicrotask(() => virtualizer.measureElement(null))
       })

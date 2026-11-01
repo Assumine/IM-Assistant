@@ -6,10 +6,14 @@ import { fixture, installTimelineSettings, mockStressTimeline } from "../utils/s
 import {
   assistantMessage,
   historyMessages,
+  inboxDelivered,
+  inboxEnqueued,
   messageUpdated,
   partUpdated,
   sessionID,
+  session,
   setupTimeline,
+  stepStarted,
   status,
   textPart,
   userMessage,
@@ -17,11 +21,91 @@ import {
 } from "../utils/timeline"
 import { expectSessionTitle } from "../utils/waits"
 import { openSession } from "../utils/workspace"
+import { recordMessageEntries } from "../utils/presentation"
 
 test.use({ serviceWorkers: "block" })
 
 test.describe("timeline history", () => {
-  test("restoring a paged transcript in a conversation host waits for another upward scroll before loading history", async ({ page }) => {
+  test("assistant motion: only live text enters once; history, cached tabs and reduced motion do not replay", async ({
+    page,
+  }) => {
+    const entries = await recordMessageEntries(page)
+    await page.emulateMedia({ reducedMotion: "no-preference" })
+    const other = "ses_motion_other"
+    const messages = historyMessages(12)
+
+    const timeline = await setupTimeline(page, {
+      workspace: false,
+      sessions: [session(), session({ id: other, title: "Other conversation" })],
+      tabs: [sessionID, other],
+      pageMessages: (id) => ({ items: id === other ? [userMessage(undefined, { id: "msg_motion_other" })] : messages }),
+    })
+
+    await expect(page.locator("[data-timeline-virtual-content]")).toHaveCSS("visibility", "visible")
+    await expect(page.locator("html")).toHaveAttribute("data-motion", "full")
+    expect(await entries()).toEqual([])
+    const id = "msg_motion_new_user"
+
+    const item = {
+      id,
+      sessionID,
+      time: { created: Date.now() },
+      type: "user" as const,
+      delivery: "queue" as const,
+      payload: { text: "New input only" },
+    }
+
+    await timeline.send(inboxEnqueued({ sessionID, inboxID: id, item }))
+    await expect(page.getByText("New input only", { exact: true })).toBeVisible()
+    expect(await entries()).toEqual([])
+    await timeline.send(inboxDelivered({ sessionID, inboxID: id }))
+    await expect
+      .poll(async () => (await entries()).filter((entry) => entry.text.includes("New input only")).length)
+      .toBe(1)
+    messages.push(userMessage([textPart("prt_motion_user", item.payload.text)], { id, created: item.time.created }))
+
+    const part = {
+      id: "prt_motion_answer",
+      type: "text" as const,
+      text: "New response only",
+      messageID: "msg_motion_answer",
+    }
+
+    const answer = assistantMessage([], { id: part.messageID, parentID: id, completed: false, created: Date.now() })
+    await timeline.send(status("busy"))
+    await timeline.send(stepStarted(answer))
+    await timeline.send(partUpdated(part))
+    await expect(page.getByText("New response only", { exact: true })).toBeVisible()
+    await expect
+      .poll(async () => (await entries()).filter((entry) => entry.text.includes("New response only")).length)
+      .toBe(1)
+    await timeline.send(messageUpdated({ ...answer, time: { ...answer.time, completed: Date.now() } }))
+    messages.push({
+      ...answer,
+      content: [{ type: "text", text: part.text }],
+      time: { ...answer.time, completed: Date.now() },
+    })
+    await timeline.send(status("idle"))
+    await expect(page.locator("[data-message-entry]")).toHaveCount(0)
+    const observed = await entries()
+    await page.locator(`[data-titlebar-tab-link][href="${sessionHref(other)}"]`).click()
+    await expect(page.getByRole("heading", { name: "Other conversation", exact: true })).toBeVisible()
+    await page.locator(`[data-titlebar-tab-link][href="${sessionHref(sessionID)}"]`).click()
+    await expect(page.getByText("New response only", { exact: true })).toBeVisible()
+    expect(await entries()).toEqual(observed)
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    await expect(page.locator("html")).toHaveAttribute("data-motion", "reduce")
+    const quiet = { ...item, id: "msg_motion_quiet", payload: { text: "Reduced motion input" } }
+    await timeline.send(inboxEnqueued({ sessionID, inboxID: quiet.id, item: quiet }))
+    await timeline.send(inboxDelivered({ sessionID, inboxID: quiet.id }))
+    await expect(page.getByText(quiet.payload.text, { exact: true })).toBeVisible()
+    expect(await entries()).toEqual(observed)
+  })
+
+  test("restoring a paged transcript in a conversation host waits for another upward scroll before loading history", async ({
+    page,
+  }) => {
+    const entries = await recordMessageEntries(page)
     const id = "ses_history_restore"
     const other = "ses_history_other"
     const text = Array.from({ length: 40 }, (_, index) => `Paragraph ${index}.`).join("\n\n")
@@ -81,6 +165,7 @@ test.describe("timeline history", () => {
     })
     await expect(page.getByText("Original prompt", { exact: true })).toBeInViewport()
     expect(requests).toEqual([undefined, "older", "oldest"])
+    expect(await entries()).toEqual([])
   })
 
   test("keeps visible rows fixed while an older page prepends", async ({ page }) => {

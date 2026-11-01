@@ -29,6 +29,7 @@ export function withWorktreeInventory(project: Project, worktrees: readonly Work
 // Reads use saved inventory; explicit demand also discovers external worktree changes.
 export function createWorktreeInventory(input: {
   scope: ServerScope
+  enabled?: boolean
   queryClient: QueryClient
   api: () => Pick<ServerApi["worktree"], "list" | "refresh">
   updated: (projectID: string, worktrees: WorktreeDirectory[]) => void
@@ -54,11 +55,15 @@ export function createWorktreeInventory(input: {
     cached: (projectID: string) =>
       input.queryClient.getQueryData<WorktreeDirectory[]>(worktreeInventoryKey(input.scope, projectID)),
     list: (projectID: string) =>
-      input.queryClient.fetchQuery({ ...options(projectID), staleTime: 0 }).catch(() => undefined),
+      input.enabled === false
+        ? Promise.resolve(undefined)
+        : input.queryClient.fetchQuery({ ...options(projectID), staleTime: 0 }).catch(() => undefined),
     refresh: (projectID: string) =>
-      input
-        .api()
-        .refresh({ projectID })
-        .catch(() => undefined),
+      input.enabled === false
+        ? Promise.resolve(undefined)
+        : input
+            .api()
+            .refresh({ projectID })
+            .catch(() => undefined),
   }
 }

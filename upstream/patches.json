@@ -12,7 +12,7 @@
         {
           "path": "bun.lock",
           "action": "modified",
-          "sha256": "fc73dba901f785a8189de9fe0d556550e03b641b52d872b6ab1189905154808a"
+          "sha256": "c8bfbe6fc28fdf273ea64bc2db4b8b73f51c01b084757798cac24681cdd11d93"
         },
         {
           "path": "packages/cli/package.json",
@@ -308,7 +308,7 @@
         {
           "path": "packages/im-assistant/package.json",
           "action": "added",
-          "sha256": "acdb76fc196d795cda653a1874961bb153fb4b049f3216d921b7f6e98939ee77"
+          "sha256": "85595752aeecef6d337479ce3c49b2dbde5a8e99392891ef95ae0731e8e4f84e"
         },
         {
           "path": "packages/im-assistant/src/non-project-location.ts",
@@ -352,7 +352,7 @@
         {
           "path": "packages/app/e2e/regression/timeline-history.spec.ts",
           "action": "modified",
-          "sha256": "d0e721694d362d12ebbb5db2b5f19d56ef3c12cf39c1245a4725dae614e3293e"
+          "sha256": "56ad86e9fd2d69e0389fdb6b9d30ea1709ceb414f64f15aafe87c17db20f393d"
         },
         {
           "path": "packages/session-ui/component-tests/markdown.spec.ts",
@@ -471,7 +471,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "5660ebd6e235f091fcbab6475011c7ec8dc06e592c0e142d42cfe0fb3e193c26"
+          "sha256": "4036ff0dc5eb14d1b5097c2267f7082dd14cb094858cbb4a04a0e96dc21eed43"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -486,7 +486,7 @@
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
           "action": "modified",
-          "sha256": "c2f111b057d8e12437f6986f1dbba5a69e386bbf7d812d7641ae2f66f1c33fe5"
+          "sha256": "b27bd3c5ab725620ec6a234ccd3450fe7dff41e5783d64105a12ad3ec7a88904"
         },
         {
           "path": "packages/app/src/settings/providers/providers.tsx",
@@ -748,7 +748,7 @@
         {
           "path": "packages/app/e2e/regression/tabs.spec.ts",
           "action": "modified",
-          "sha256": "ff6273dce7b35f45a7a528d751d1e77a1c38792160b7354565f7253598bdd5ff"
+          "sha256": "6e7dac93724f50dc85934aade9a227d4a7a6645663dde1d463345a3ee68147ed"
         },
         {
           "path": "packages/app/src/runtime/plugin/backend-view.tsx",
@@ -1130,7 +1130,7 @@
         {
           "path": "packages/client/src/solid/data.ts",
           "action": "modified",
-          "sha256": "8f54d2d9def6b43b94e8e6ce721db46644ff506ba8d68a84056e285775a9d6fa"
+          "sha256": "fd12d68f0ed6cb4c2113eb89b7104100504cc9279ec01ff5488c1fa1f0a623ea"
         },
         {
           "path": "packages/client/test/solid-inbox-race.test.ts",
@@ -1533,6 +1533,145 @@
           "path": "packages/server/script/capabilities-smoke.ts",
           "action": "added",
           "sha256": "e560d7ffb688772b570551f813483a44b68a100215fe5557f991bcacc5e6aba4"
+        }
+      ]
+    },
+    {
+      "id": "R4-02-native-presentation-233",
+      "reason": "Apply scoped assistant presentation to the native shell, fonts and layout; animate only newly appended visible text rows once without changing history, input or queue ownership.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-02"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/performance/timeline/session-tab-switch-benchmark.spec.ts",
+          "action": "modified",
+          "sha256": "6f049c19926efffba3d897a6419e02fd519c1a0de84f05603f157fa9cf5c4750"
+        },
+        {
+          "path": "packages/app/package.json",
+          "action": "modified",
+          "sha256": "b84c657b6e1e4c1eb7615b402d3526c9163551919bbfe6fffb2b5fd7aae4b189"
+        },
+        {
+          "path": "packages/app/src/app.tsx",
+          "action": "modified",
+          "sha256": "4af9e5648e904569728ab18836083f1607b404d67e24edf1acc1fd2788307e6e"
+        },
+        {
+          "path": "packages/app/src/index.css",
+          "action": "modified",
+          "sha256": "1f06ebcca5ed4b8e5eeaf60dbb9353c55f695114a8246838c27768eac4b4e7c8"
+        },
+        {
+          "path": "packages/app/src/session/session-frame.tsx",
+          "action": "modified",
+          "sha256": "04b7bd897f45651669f4bc67937bed659b3768ef1cb2ea59b9634071e0333662"
+        },
+        {
+          "path": "packages/app/src/session/timeline/virtualizer.tsx",
+          "action": "modified",
+          "sha256": "9d73e6daf19f8fb6ec9a3b132bbf3c5d20ebbd6e0c52266e8bd3a61d311aa462"
+        },
+        {
+          "path": "packages/app/src/shell/conversation-navigation.tsx",
+          "action": "added",
+          "sha256": "e103be379587ec68ea42680346b05bc5b4c3f15783e5400934c8f5366a2c6179"
+        },
+        {
+          "path": "packages/app/src/shell/shell.tsx",
+          "action": "modified",
+          "sha256": "6855f965311f0cc7f3957f5ffcb1da9c881e14953ca9dbda3ec3ed3aeb1ddf14"
+        },
+        {
+          "path": "packages/im-assistant/src/motion.css",
+          "action": "added",
+          "sha256": "c85a4e4177eb3ca90c2b13c66e5052f1054819992f83242490146f62a8cad0fd"
+        },
+        {
+          "path": "packages/im-assistant/src/theme.css",
+          "action": "added",
+          "sha256": "f0700ed04456f4ee35f0d61d124cb097cd554ea74f2cfd248aeacca04ec8263e"
+        }
+      ]
+    },
+    {
+      "id": "R4-02-native-presentation-243",
+      "reason": "Apply scoped assistant presentation to the native shell, fonts and layout; animate only newly appended visible text rows once without changing history, input or queue ownership.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-02"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/utils/presentation.ts",
+          "action": "added",
+          "sha256": "63cb26e4e5fe2373e1e467e9f11c121539a212cd581ec4b2b729f7a5c2b26575"
+        }
+      ]
+    },
+    {
+      "id": "R4-02-native-presentation-244",
+      "reason": "Apply scoped assistant presentation to the native shell, fonts and layout; animate only newly appended visible text rows once without changing history, input or queue ownership.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-02"
+      ],
+      "files": [
+        {
+          "path": "packages/desktop/src/renderer/desktop-app.tsx",
+          "action": "modified",
+          "sha256": "24812bf8930787ab4e569468330b643a7b5ad662679c1567150cbbaf04a25b2a"
+        }
+      ]
+    },
+    {
+      "id": "R4-02-native-presentation-245",
+      "reason": "Apply scoped assistant presentation to the native shell, fonts and layout; animate only newly appended visible text rows once without changing history, input or queue ownership.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-02"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/utils/timeline.ts",
+          "action": "modified",
+          "sha256": "6a20f27cfaac160928c59ee3e6d8f8fa68135861e9e61e673b5793b3d2c05e50"
+        }
+      ]
+    },
+    {
+      "id": "R4-02-native-presentation-246",
+      "reason": "Apply scoped assistant presentation to the native shell, fonts and layout; animate only newly appended visible text rows once without changing history, input or queue ownership.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-02"
+      ],
+      "files": [
+        {
+          "path": "packages/app/src/runtime/server/runtime.tsx",
+          "action": "modified",
+          "sha256": "f196f4d45c92dbbf316726f55ff1f16d26a55cc263013bfe21d7d06c66c10346"
+        },
+        {
+          "path": "packages/app/src/runtime/server/sync.tsx",
+          "action": "modified",
+          "sha256": "41d08ba5485c36865d0910eb2c1e852afb2f7c55ea8bf28fa95737da7e1dfe79"
+        },
+        {
+          "path": "packages/app/src/workspaces/inventory.ts",
+          "action": "modified",
+          "sha256": "06805680b7e187fc053a18cca3ccf19403e8e2f38d0d4cc327cae98394abf08f"
+        }
+      ]
+    },
+    {
+      "id": "R4-02-native-presentation-249",
+      "reason": "Apply scoped assistant presentation to the native shell, fonts and layout; animate only newly appended visible text rows once without changing history, input or queue ownership.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-02"
+      ],
+      "files": [
+        {
+          "path": "packages/client/test/solid-data.test.ts",
+          "action": "modified",
+          "sha256": "bb255e312caeb89973b6835a8616b6af140526fec8464fa94100f09ecb863280"
         }
       ]
     }

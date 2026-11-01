@@ -68,6 +68,8 @@ type OpenCodeEventMap = { [Type in OpenCodeEvent["type"]]: Extract<OpenCodeEvent
 export type CreateDataInput = {
   readonly api: () => OpenCodeClient
   readonly directory: string
+  /** Skip project catalogs in a non-project host; the server still enforces capability permissions. */
+  readonly workspace?: boolean
   /** Raw-message window used for an initial transcript read. Older pages retain their normal size. */
   readonly initialMessageLimit?: () => number
   readonly event: {
@@ -1480,12 +1482,13 @@ export function createData(config: CreateDataInput) {
   function locationResource<Field extends keyof LocationData>(
     field: Field,
     load: (location: ReturnType<typeof locationQuery>) => Promise<{ location: LocationRef; data: LocationData[Field] }>,
-    options?: { alias?: boolean },
+    options?: { alias?: boolean; enabled?: boolean },
   ) {
     const publish = (key: string, value: LocationData[Field]) => setStore("location", key, { [field]: value })
     return {
       list: (ref?: LocationRef) => store.location[locationKey(ref ?? defaultLocation())]?.[field],
       sync: (ref?: LocationRef) => {
+        if (options?.enabled === false) return Promise.resolve()
         const location = ref ?? defaultLocation()
         const id = locationKey(location)
         return sync.run(`location.${field}:${id}`, async () => {
@@ -1499,16 +1502,21 @@ export function createData(config: CreateDataInput) {
     }
   }
 
-  const vcs = locationResource("vcs", (location) => api().vcs.get({ location }))
+  const workspace = { enabled: config.workspace !== false }
+  const vcs = locationResource("vcs", (location) => api().vcs.get({ location }), workspace)
   const usageLimits = locationResource("usageLimits", (location) => api().experimental.usage.limits({ location }))
-  const shells = locationResource("shell", async (location) => {
-    const response = await api().shell.list({ location })
-    const ref = { directory: response.location.directory }
-    return {
-      location: response.location,
-      data: Object.fromEntries(response.data.map((info) => [info.id, { ...info, location: ref }])),
-    }
-  })
+  const shells = locationResource(
+    "shell",
+    async (location) => {
+      const response = await api().shell.list({ location })
+      const ref = { directory: response.location.directory }
+      return {
+        location: response.location,
+        data: Object.fromEntries(response.data.map((info) => [info.id, { ...info, location: ref }])),
+      }
+    },
+    workspace,
+  )
 
   const result = {
     on: config.event.on,
@@ -2139,11 +2147,15 @@ export function createData(config: CreateDataInput) {
       })),
       integration: locationResource("integration", (location) => api().integration.list({ location })),
       mcp: {
-        server: locationResource("mcpServer", (location) => api().mcp.list({ location })),
-        resource: locationResource("mcpResource", async (location) => {
-          const response = await api().mcp.resource.catalog({ location })
-          return { location: response.location, data: response.data.resources }
-        }),
+        server: locationResource("mcpServer", (location) => api().mcp.list({ location }), workspace),
+        resource: locationResource(
+          "mcpResource",
+          async (location) => {
+            const response = await api().mcp.resource.catalog({ location })
+            return { location: response.location, data: response.data.resources }
+          },
+          workspace,
+        ),
       },
       model: locationResource("model", (location) => api().model.list({ location }), { alias: true }),
       provider: locationResource("provider", (location) => api().provider.list({ location }), { alias: true }),

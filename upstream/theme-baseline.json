@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "task": "R4-02",
+  "source_base_revision": "595905d0a4ed8ae6bb9319fc1b1658b9a496b905",
+  "source_overlay": "Only the new 40-message assistant benchmark scenario was applied to the existing native benchmark suite before the successful performance measurement; product presentation and timeline source were still the base revision.",
+  "benchmark_definition_sha256": "6f049c19926efffba3d897a6419e02fd519c1a0de84f05603f157fa9cf5c4750",
+  "interaction_cases": [
+    "regression/session-queue.spec.ts:/compact runs with the composer model and shows a queued compaction, as in the TUI",
+    "regression/session-queue.spec.ts:/undo of a pending steer keeps unmentioned file context",
+    "regression/session-queue.spec.ts:/undo returns a pending steer's review comment to the composer",
+    "regression/session-queue.spec.ts:/undo withdraws a pending steer without interrupting the running session",
+    "regression/session-queue.spec.ts:Delete on a starting pending steer replaces Revert, as in the TUI",
+    "regression/session-queue.spec.ts:Delete on a steering pending steer replaces Revert, as in the TUI",
+    "regression/session-queue.spec.ts:Move to queue on a starting pending steer replaces Revert, as in the TUI",
+    "regression/session-queue.spec.ts:Move to queue on a steering pending steer replaces Revert, as in the TUI",
+    "regression/session-queue.spec.ts:Undo appends to an existing draft and restores inline attachments",
+    "regression/session-queue.spec.ts:Undo cancels only the selected queued prompt and focuses the restored input",
+    "regression/session-queue.spec.ts:Undo keeps unmentioned file context",
+    "regression/session-queue.spec.ts:Undo of a comment-only prompt keeps the draft text and restores the comment once",
+    "regression/session-queue.spec.ts:Undo preserves mentioned file and agent references on resubmission",
+    "regression/session-queue.spec.ts:a edit that cannot re-admit a prompt leaves the queue unchanged",
+    "regression/session-queue.spec.ts:a guarded continuation cannot move into a later queued task",
+    "regression/session-queue.spec.ts:a partially cancelled reorder reconciles the server's queue instead of restoring stale rows",
+    "regression/session-queue.spec.ts:a reorder that cannot re-admit a prompt leaves the queue unchanged",
+    "regression/session-queue.spec.ts:a shell command cannot wait in the queue, as in the TUI",
+    "regression/session-queue.spec.ts:a staged revert refuses a queue edit, whose admission would commit it",
+    "regression/session-queue.spec.ts:a staged revert refuses a queue reorder, whose admission would commit it",
+    "regression/session-queue.spec.ts:a steer into an idle session leaves the finished turn finished until delivery",
+    "regression/session-queue.spec.ts:a steer moves a blocking shell to the background after its admission, so the next step reads it",
+    "regression/session-queue.spec.ts:a steer shows as pending in the timeline as the composer clears, before the server admits it",
+    "regression/session-queue.spec.ts:an edit sent as a queue stays interactive while the server is slow to confirm it",
+    "regression/session-queue.spec.ts:an edit sent as a steer stays interactive while the server is slow to confirm it",
+    "regression/session-queue.spec.ts:conversation host keeps an unacknowledged queued input in its own session across switching and reload",
+    "regression/session-queue.spec.ts:conversation host shows an idle submission before admission without a phantom queue",
+    "regression/session-queue.spec.ts:dragging reorders 2 queued prompts without bouncing",
+    "regression/session-queue.spec.ts:dragging reorders 6 queued prompts without bouncing",
+    "regression/session-queue.spec.ts:editing a comment-only prompt keeps its notes once",
+    "regression/session-queue.spec.ts:editing a prompt the server delivered meanwhile keeps the edit draft (queue)",
+    "regression/session-queue.spec.ts:editing a prompt the server delivered meanwhile keeps the edit draft (steer)",
+    "regression/session-queue.spec.ts:editing drops a file whose mention was deleted and keeps unmentioned context",
+    "regression/session-queue.spec.ts:editing restores the existing draft and replaces only the original queue position",
+    "regression/session-queue.spec.ts:follow-up preference controls Enter while Mod+Enter uses the alternate delivery",
+    "regression/session-queue.spec.ts:keeps finished tools above a pending queue-to-steer follow-up",
+    "regression/session-queue.spec.ts:keeps finished tools above a pending steer follow-up",
+    "regression/session-queue.spec.ts:remote pending text append refreshes the same queue row and survives reload without resubmission",
+    "regression/session-queue.spec.ts:reverting a delivered prompt leaves queued prompts alone, as in the TUI",
+    "regression/session-queue.spec.ts:reverting to another prompt replaces the file chips of an earlier restore",
+    "regression/session-queue.spec.ts:waiting steers group under one Pending line, each keeping its own actions beside its bubble",
+    "regression/session-queue.spec.ts:whole backend: direct guidance retains its turn guard and rejected text returns to the draft",
+    "regression/session-queue.spec.ts:whole backend: incomplete queues cannot reorder and late reads cannot cross native tabs",
+    "regression/session-queue.spec.ts:whole backend: native editor preserves scoped drafts and reconciles a lost reply with the original input",
+    "regression/session-queue.spec.ts:whole backend: native queue actions reconcile observations without Session admission",
+    "regression/session-queue.spec.ts:whole backend: queue edits preserve native IDs, draft stashes and unconfirmed edits across reload",
+    "regression/session-queue.spec.ts:whole backend: stop targets the observed turn and late controls cannot cross native tabs",
+    "regression/session-queue.spec.ts:whole backend: uncertain admission survives reload without automatic resend",
+    "regression/session-queue.spec.ts:whole backend: undo restores only confirmed withdrawals and preserves unknown source text",
+    "regression/timeline-history.spec.ts:keeps visible content through completion",
+    "regression/timeline-history.spec.ts:keeps visible content through interruption",
+    "regression/timeline-history.spec.ts:keeps visible rows fixed while an older page prepends",
+    "regression/timeline-history.spec.ts:mounts every part once and in order while paging to the start",
+    "regression/timeline-history.spec.ts:pages the timeline from the composer, resuming follow at the end and loading history at the top",
+    "regression/timeline-history.spec.ts:renders the assistant-only tail before parent hydration and preserves it afterward",
+    "regression/timeline-history.spec.ts:renders the mixed tail before parent hydration and preserves it afterward",
+    "regression/timeline-history.spec.ts:restoring a paged transcript in a conversation host waits for another upward scroll before loading history"
+  ],
+  "performance": {
+    "samples": [
+      {
+        "firstObservedMs": 87.5,
+        "stableObservedMs": 127.30000000447035
+      },
+      {
+        "firstObservedMs": 94.20000000298023,
+        "stableObservedMs": 138.89999999850988
+      },
+      {
+        "firstObservedMs": 93.70000000298023,
+        "stableObservedMs": 126.70000000298023
+      }
+    ],
+    "median": {
+      "firstObservedMs": 93.70000000298023,
+      "stableObservedMs": 127.30000000447035
+    }
+  },
+  "existing_e2e_diagnostics": [
+    "e2e/performance/terminals/probe.ts | TS2345 | Argument of type 'unknown[]' is not assignable to parameter of type '[image: CanvasImageSource, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number]'.",
+    "e2e/performance/timeline/composer-write-batch-benchmark.spec.ts | TS2769 | No overload matches this call.",
+    "e2e/regression/composer.spec.ts | TS2322 | Type '() => { all: ({ id: string; name: string; models: { \"big-pickle\": { id: string; name: string; cost: { input: number; output: number; }; limit: { context: number; }; }; \"glm-5-go\"?: undefined; }; integrationID?: undefined; } | ...)[]; connected: ...; default: { build: string; }; }' is not assignable to type 'Resolvable<MockProviderCatalog> | undefined'.",
+    "e2e/regression/composer.spec.ts | TS2322 | Type '() => { all: ({ id: string; name: string; models: { \"big-pickle\": { id: string; name: string; cost: { input: number; output: number; }; limit: { context: number; }; }; \"glm-5-go\"?: undefined; }; } | ...)[]; connected: ...; default: { build: string; }; }' is not assignable to type 'Resolvable<MockProviderCatalog> | undefined'.",
+    "e2e/regression/review.spec.ts | TS2353 | Object literal may only specify known properties, and 'recent' does not exist in type 'SessionMessageCompactionCompleted'.",
+    "e2e/regression/session-panel-scrollbar.spec.ts | TS6133 | 'chat' is declared but its value is never read.",
+    "e2e/regression/settings.spec.ts | TS2322 | Type '() => { items: ({ id: string; type: \"user\"; text: string; time: { created: number; }; agent?: undefined; model?: undefined; content?: undefined; } | { text?: undefined; id: string; type: \"assistant\"; agent: string; model: { id: string; providerID: string; }; content: ...; time: { created: number; }; })[]; }' is not assignable to type '(sessionId: string, limit: number, before?: string | undefined) => { items: SessionMessageInfo[]; cursor?: string | undefined; }'.",
+    "e2e/regression/settings.spec.ts | TS6196 | 'SessionMessageInfo' is declared but never used.",
+    "e2e/regression/timeline-geometry.spec.ts | TS2353 | Object literal may only specify known properties, and 'id' does not exist in type 'SessionMessageAssistantText'.",
+    "e2e/regression/timeline-stream.spec.ts | TS2345 | Argument of type '(event: AnimationEvent) => void' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.",
+    "e2e/regression/timeline-stream.spec.ts | TS2345 | Argument of type '(event: AnimationEvent) => void' is not assignable to parameter of type 'EventListenerOrEventListenerObject'.",
+    "e2e/regression/timeline-stream.spec.ts | TS2353 | Object literal may only specify known properties, and 'recent' does not exist in type '{ sessionID: string; reason: \"auto\" | \"manual\"; inputID?: string | undefined; }'.",
+    "e2e/regression/timeline-stream.spec.ts | TS2353 | Object literal may only specify known properties, and 'recent' does not exist in type '{ sessionID: string; reason: \"auto\" | \"manual\"; inputID?: string | undefined; }'.",
+    "e2e/regression/timeline-stream.spec.ts | TS2353 | Object literal may only specify known properties, and 'recent' does not exist in type '{ sessionID: string; reason: \"auto\" | \"manual\"; model?: ModelRef | undefined; native?: SessionMessageNative1 | undefined; text: string; cost?: number | undefined; tokens?: TokenUsageInfo | undefined; }'."
+  ],
+  "evidence": {
+    "r4-theme-interaction-before": {
+      "receipt": {
+        "args": [
+          "bun",
+          "run",
+          "test:e2e:built",
+          "--",
+          "e2e/regression/session-queue.spec.ts",
+          "e2e/regression/timeline-history.spec.ts",
+          "--project",
+          "chromium",
+          "--workers",
+          "2",
+          "--retries",
+          "0",
+          "--reporter",
+          "json"
+        ],
+        "cwd": "opencode/packages/app",
+        "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+        "exit_code": 0,
+        "duration_seconds": 120.5,
+        "isolated_home": true,
+        "log": ".reports/native/r4-theme-interaction-before.log",
+        "native_tests_passed": 57,
+        "native_tests_failed": 0,
+        "native_tests_skipped": 0
+      },
+      "raw_report_sha256": "5f43536d30bebff1e7b9cc6877aa09f3567a751f253ff1a0ddae4d1bbb910b18"
+    },
+    "r4-theme-profile-performance-before": {
+      "receipt": {
+        "args": [
+          "bun",
+          "x",
+          "--no-install",
+          "playwright",
+          "test",
+          "--config",
+          "e2e/performance/playwright.config.ts",
+          "timeline/session-tab-switch-benchmark.spec.ts",
+          "--grep",
+          "assistant conversation profile",
+          "--repeat-each",
+          "3",
+          "--workers",
+          "1",
+          "--retries",
+          "0",
+          "--max-failures",
+          "1",
+          "--reporter",
+          "json"
+        ],
+        "cwd": "opencode/packages/app",
+        "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+        "exit_code": 0,
+        "duration_seconds": 47.4,
+        "isolated_home": true,
+        "log": ".reports/native/r4-theme-profile-performance-before.log",
+        "native_tests_passed": 3,
+        "native_tests_failed": 0,
+        "native_tests_skipped": 0
+      },
+      "raw_report_sha256": "782dfa85314a0dd4f25113e30c65a7626b5d9338145376ac2dc6a3badc55f8e5"
+    }
+  },
+  "excluded_diagnostic": "An earlier heavy code-workspace trial failed its stable-bottom-anchor precondition before product edits; it is not this assistant baseline.",
+  "scope": "production build, Windows Chromium, two assistant-mode native sessions, 40 messages per session; three serial runs; no live data"
+}

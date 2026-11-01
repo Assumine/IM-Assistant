@@ -24,6 +24,7 @@ import type { SessionInfo } from "@opencode/client/promise"
 import { projectForSession } from "@/shell/layout/helpers"
 import { isProjectDirectory } from "@/workspaces/paths"
 import type { Project } from "@/runtime/server/types"
+import { usePlatform } from "@/runtime/platform/platform"
 
 export const { use: useGlobal, provider: GlobalProvider } = createSimpleContext({
   name: "Global",
@@ -196,6 +197,7 @@ function createServerController(
   notificationCoordinator: ReturnType<typeof createNotificationCoordinator>,
 ) {
   const language = useLanguage()
+  const platform = usePlatform()
   const settings = useSettings()
   const tabs = useTabs()
   const currentRoute = useCurrentRoute()
@@ -204,6 +206,7 @@ function createServerController(
 
   const source = createData({
     api: () => sdk.api,
+    workspace: platform.workspace,
     initialMessageLimit: () => (timelinePreset(settings.general.timelineDetail())?.id === "compact" ? 40 : 20),
     event: {
       on: sdk.event.on,

@@ -26,6 +26,7 @@ import {
 import { createPanelMotion, guardClosingFocus, panelOpacity } from "@/shell/panel-motion"
 import { createSidebarPeek } from "@/shell/sidebar-peek"
 import { windowDragEnabled } from "@/session/header/drag-area"
+import { ConversationNavigation } from "./conversation-navigation"
 
 // How far Home steps along a peek's header to clear the collapsed toggle: to the toggle's end, from the sidebar's 18px
 // start padding.
@@ -205,6 +206,7 @@ export default function Layout(props: ParentProps) {
 
   return (
     <div
+      data-slot="application-shell"
       class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
       style={{
         // Mobile panels only need clearance for their outer border.
@@ -222,7 +224,10 @@ export default function Layout(props: ParentProps) {
       }}
     >
       <Titlebar verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined} />
-      <div class="relative flex flex-1 min-h-0 min-w-0 flex-row">
+      <div data-slot="application-content" class="relative flex flex-1 min-h-0 min-w-0 flex-row">
+        <Show when={platform.workspace === false}>
+          <ConversationNavigation />
+        </Show>
         {/* The empty inset above the panels moves the window, as the titlebar does. */}
         <Show when={dragInset()}>
           <div

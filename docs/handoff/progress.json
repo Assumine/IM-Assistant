@@ -31,7 +31,10 @@
     "A26",
     "A27",
     "A28",
-    "A29"
+    "A29",
+    "A30",
+    "A31",
+    "A32"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -626,9 +629,61 @@
       "blocked_reason": null
     },
     "R4-02": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "opencode/packages/im-assistant/src/theme.css",
+        "opencode/packages/im-assistant/src/motion.css",
+        "opencode/packages/app/src/shell/conversation-navigation.tsx",
+        "opencode/packages/app/src/shell/shell.tsx",
+        "opencode/packages/app/src/app.tsx",
+        "opencode/packages/app/src/index.css",
+        "opencode/packages/app/src/session/session-frame.tsx",
+        "opencode/packages/app/src/session/timeline/virtualizer.tsx",
+        "opencode/packages/client/src/solid/data.ts",
+        "opencode/packages/client/test/solid-data.test.ts",
+        "opencode/packages/app/src/runtime/server/runtime.tsx",
+        "opencode/packages/app/src/runtime/server/sync.tsx",
+        "opencode/packages/app/src/workspaces/inventory.ts",
+        "opencode/packages/desktop/src/renderer/desktop-app.tsx",
+        "opencode/packages/app/e2e/regression/tabs.spec.ts",
+        "opencode/packages/app/e2e/regression/timeline-history.spec.ts",
+        "opencode/packages/app/e2e/regression/settings.spec.ts",
+        "opencode/packages/app/e2e/utils/presentation.ts",
+        "opencode/packages/app/e2e/utils/timeline.ts",
+        "opencode/packages/app/e2e/performance/timeline/session-tab-switch-benchmark.spec.ts",
+        "tools/assistant_theme_smoke.py",
+        "tools/assistant_theme_desktop.py",
+        "tools/assistant_theme_desktop.mjs",
+        "tools/assistant_theme_window.py",
+        "tests/rebase/test_r4_02.py",
+        "docs/handoff/助手主题与布局.md",
+        "upstream/theme-baseline.json",
+        "upstream/theme-checkpoint.json",
+        "upstream/theme-verification.json"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 3,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A30",
+            "A31",
+            "A32"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R4-02",
+          "evidence": "upstream/theme-verification.json",
+          "scope": "isolated-current-source-native-presentation-not-production-rollout",
+          "browser_executions": 72,
+          "native_unit_tests": 69,
+          "native_desktop_checks": 4,
+          "native_model_requests": 4,
+          "publication": "disabled"
+        }
+      ],
       "blocked_reason": null
     },
     "R5-01": {

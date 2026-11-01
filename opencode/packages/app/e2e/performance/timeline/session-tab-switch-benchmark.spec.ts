@@ -8,6 +8,9 @@ import { expected, messages } from "../../utils/markdown-sessions"
 import { workload } from "./session-tab-switch.fixture"
 import { createReviewDiffs } from "./timeline-test-helpers"
 import { measureSessionSwitch, waitForStableTimeline } from "./session-tab-switch-probe"
+import { measureNavigationMilestones } from "./navigation-milestones"
+import { mockWorkspace } from "../../utils/workspace"
+import { assistantMessage, textPart, userMessage } from "../../utils/timeline"
 
 const scenarios = [
   { cache: "cold", review: "closed" },
@@ -144,6 +147,58 @@ async function openReviewPane(page: Page) {
     await Promise.all(panel.getAnimations().map((animation) => animation.finished))
   })
 }
+
+benchmark("tab switch: assistant conversation profile", async ({ page, report }) => {
+  const ids = ["ses_assistant_source", "ses_assistant_destination"]
+
+  const transcript = Object.fromEntries(
+    ids.map((id) => [
+      id,
+      Array.from({ length: 20 }, (_, index) => [
+        userMessage([textPart(`prt_${id}_user_${index}`, `Question ${index}`)], {
+          id: `msg_${id}_user_${index}`,
+          created: index * 10000 + 1,
+        }),
+        assistantMessage(
+          [textPart(`prt_${id}_answer_${index}`, `Answer ${index}. The current task is ready for review.`)],
+          { id: `msg_${id}_answer_${index}`, parentID: `msg_${id}_user_${index}`, created: index * 10000 + 2 },
+        ),
+      ]).flat(),
+    ]),
+  )
+
+  await mockWorkspace(page, {
+    name: "AssistantNavigation",
+    workspace: false,
+    sessions: ids.map((id, index) => ({
+      id,
+      title: index === 0 ? "Original conversation" : "Destination conversation",
+    })),
+    pageMessages: (id) => ({ items: transcript[id] ?? [] }),
+  })
+  await page.goto(sessionHref(ids[0]))
+  await expect(page.getByText("Answer 19. The current task is ready for review.", { exact: true })).toBeVisible()
+  const trigger = `[data-titlebar-tab-link][href="${sessionHref(ids[1])}"]`
+  await expect(page.locator(trigger)).toBeVisible()
+  await benchmarkDiagnostics(page).startTrace()
+
+  const result = await measureNavigationMilestones(page, {
+    triggerSelector: trigger,
+    milestones: {
+      title: { selector: "h1", text: "Destination conversation" },
+      tail: {
+        selector: `[data-message-id="msg_${ids[1]}_user_19"][data-timeline-row="AssistantPart"] [data-component="markdown"] p`,
+        text: "Answer 19. The current task is ready for review.",
+      },
+      editor: { selector: '[data-component="composer-editor"][contenteditable="true"]' },
+    },
+    navigate: () => page.locator(trigger).click(),
+  })
+
+  await benchmarkDiagnostics(page).stop()
+  await expect(page.locator('[data-titlebar-tab-slot][data-active="true"]')).toContainText("Destination conversation")
+  report(result, { profile: "conversation", messagesPerSession: 40, inputEvent: "mousedown", viewport })
+})
 
 async function retainedRendererMemory(page: Page) {
   const cdp = await page.context().newCDPSession(page)

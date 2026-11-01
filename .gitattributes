@@ -1,6 +1,7 @@
 * text=auto
 *.md text eol=lf
 *.py text eol=lf
+*.mjs text eol=lf
 *.json text eol=lf
 *.txt text eol=lf
 # Keep module source fingerprints reproducible across Windows checkouts.

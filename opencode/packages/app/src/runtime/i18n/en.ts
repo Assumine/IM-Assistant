@@ -1,6 +1,9 @@
 import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
+  "assistant.navigation": "Application navigation",
+  "assistant.modules": "Application modules",
+  "assistant.notifications": "Module notifications",
   "backend.question.unavailable": "This question is no longer available. Refresh the native state.",
   "backend.question.incomplete": "Answer each question before submitting.",
   "backend.question.unknown": "The answer could not be confirmed. Refresh the native state before trying again.",
