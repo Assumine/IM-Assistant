@@ -15,6 +15,16 @@ if (process.argv[2] === "backend") {
     )
     process.exitCode = 1
   }
+} else if (process.argv[2] === "portal") {
+  const { Portals } = await import("./portals.js")
+  try {
+    console.log(JSON.stringify(await Portals.command(process.argv.slice(3))))
+  } catch {
+    console.error(
+      "QQ configuration failed; use portal qq init|enable|disable|status. This input-only integration has no automatic reply sender yet.",
+    )
+    process.exitCode = 1
+  }
 } else if (process.argv[2] === "models" && process.argv.length === 3) {
   const { Providers } = await import("./providers.js")
   try {

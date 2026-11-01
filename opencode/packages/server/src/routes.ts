@@ -1,4 +1,5 @@
 import { Database } from "@opencode/core/database/database"
+import { KV } from "@opencode/core/kv"
 import { V1Migration } from "@opencode/core/database/v1-migration"
 import { App } from "@opencode/core/app"
 import { LayerNode } from "@opencode/util/effect/layer-node"
@@ -66,6 +67,7 @@ const applicationServiceNodes = [
   Global.node,
   FSUtil.node,
   Database.node,
+  KV.node,
   Bus.node,
   EventLogger.node,
   httpClient,

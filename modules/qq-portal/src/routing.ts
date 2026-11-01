@@ -53,7 +53,8 @@ const commands = new Set(["list", "bind", "unbind", "queue", "unqueue", "stop", 
 export function command(text: string) {
   const input = text.trim()
   const match = /^(?:\/(?:codex\s+)?|codex\s+)([a-z][\w-]*)(?:\s+([\s\S]*))?$/i.exec(input)
-  if (match && commands.has(match[1].toLowerCase())) return { action: match[1].toLowerCase(), arguments: match[2] ?? "" }
+  const action = match?.[1]?.toLowerCase()
+  if (action && commands.has(action)) return { action, arguments: match?.[2] ?? "" }
   if (/^\/?codex$/i.test(input)) return { action: "help", arguments: "" }
   const bind = /^bind(?:\s+([\s\S]*))?$/i.exec(input)
   if (bind) return { action: "bind", arguments: bind[1] ?? "" }

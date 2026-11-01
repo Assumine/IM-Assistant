@@ -195,3 +195,5 @@ export { type ControlOptions, type ControlResponse, type ControlResult } from ".
 export { type Source, type SourceResult } from "./sources"
 export { openQQChannel, type ChannelOptions, type ChannelIssue } from "./channel"
 export { type WireState, type SendResult } from "./onebot"
+export { configuredModule } from "./module"
+export { configuration, readConfiguration, initialize, setEnabled, type Account, type Configuration } from "./configuration"

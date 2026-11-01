@@ -8,6 +8,8 @@ import { isAllowedCorsOrigin } from "./cors"
 import { createRoutes } from "./routes"
 import type { ServerOptions } from "./options"
 import type { Module } from "@opencode/plugin/effect/conversation"
+import type { ApplicationModule } from "@opencode/plugin/promise/application"
+import { ApplicationModules } from "./application-modules"
 
 export interface BootOptions {
   /**
@@ -17,6 +19,8 @@ export interface BootOptions {
   readonly overrides?: LayerNode.Replacements
   /** Trusted complete backend modules. Started independently, never loaded from request or project configuration. */
   readonly backends?: readonly Module[]
+  /** Trusted application-scoped capability resources; not per-Location plugins or conversation backends. */
+  readonly modules?: readonly ApplicationModule[]
 }
 
 /**
@@ -47,6 +51,11 @@ export const make = Effect.fn("ServerFetch.make")(function* (options: ServerOpti
       Layer.provide(HttpServer.layerServices),
     ),
   )
+  const handler = Context.get(context, HttpRouter.HttpRouter).asHttpEffect().pipe(HttpEffect.toWebHandlerWith(context))
+  yield* ApplicationModules.install(boot.modules ?? [], handler, {
+    password: options.password,
+    directory: options.runtime?.managedDirectory,
+  }).pipe(Effect.provide(context))
   // Forked so the returned handler is never delayed; resumed drains are already
   // logged and durably recorded by the execution layer.
   yield* Effect.forkDetach(Context.get(context, SessionRestart.Service).resumeSuspendedSessions)

@@ -112,6 +112,9 @@ def _run(checkpoint):
     steps.append(run_command(".", ["run", "check"], "r3-host-check"))
     version = subprocess.check_output([executable, "--version"], env=env, encoding="utf-8").strip()
     app_sources = [
+        "packages/plugin/src/promise/application.ts", "packages/plugin/src/promise/index.ts",
+        "packages/server/src/application-modules.ts", "packages/server/test/application-modules.test.ts",
+        "packages/im-assistant/src/portals.ts", "packages/server/package.json", "bun.lock",
         "packages/schema/src/conversation-backend.ts", "packages/plugin/src/effect/conversation.ts",
         "packages/plugin/src/effect/plugin.ts", "packages/core/src/conversation-backend.ts",
         "packages/core/src/kv.ts", "packages/core/src/plugin/host.ts",
@@ -183,6 +186,7 @@ def _run(checkpoint):
         "product_acceptance": product,
         "sources": {file.relative_to(ROOT).as_posix(): hashlib.sha256(file.read_bytes()).hexdigest()
                     for file in sorted([*module.glob("src/*.ts"), *module.rglob("test/**/*.ts"),
+                                        *(ROOT / "modules/qq-portal/src").glob("*.ts"),
                                         module / "package.json", module / "tsconfig.json", Path(__file__).resolve(),
                                         ROOT / "tests/rebase/test_r3_01.py",
                                         *(ROOT / "opencode" / name for name in app_sources)])},

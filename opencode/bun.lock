@@ -663,6 +663,7 @@
       "dependencies": {
         "@effect/platform-node": "catalog:",
         "@effect/platform-node-shared": "catalog:",
+        "@opencode/client": "workspace:*",
         "@opencode/core": "workspace:*",
         "@opencode/protocol": "workspace:*",
         "@opencode/schema": "workspace:*",
@@ -671,7 +672,6 @@
         "effect": "catalog:",
       },
       "devDependencies": {
-        "@opencode/client": "workspace:*",
         "@opencode/plugin": "workspace:*",
         "@opencode/pty": "0.3.3",
         "@tsconfig/bun": "catalog:",

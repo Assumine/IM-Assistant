@@ -8,7 +8,8 @@
     "./policy": "./src/policy.ts",
     "./non-project-location": "./src/non-project-location.ts",
     "./storage": "./src/storage.ts",
-    "./backends": "./src/backends.ts"
+    "./backends": "./src/backends.ts",
+    "./portals": "./src/portals.ts"
   },
   "scripts": {
     "desktop": "bun run script/desktop.ts",

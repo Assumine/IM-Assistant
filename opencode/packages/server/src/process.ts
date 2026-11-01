@@ -11,7 +11,7 @@ import { hasMcpClientTicketURL } from "@opencode/protocol/groups/mcp"
 import { isPairingConnectURL } from "@opencode/protocol/groups/server"
 import { Global } from "@opencode/util/global"
 import { Cause, Context, Effect, Exit, Latch, Layer, Option, Ref, Scope } from "effect"
-import { HttpMiddleware, HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http"
+import { HttpEffect, HttpMiddleware, HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http"
 import { NetAddress } from "effect/net"
 import { createServer } from "node:http"
 import { ServerAuth } from "./auth"
@@ -23,6 +23,8 @@ import { ServerInfo } from "./server-info"
 import { Status } from "./service-status"
 import type { ServerOptions } from "./options"
 import type { Module } from "@opencode/plugin/effect/conversation"
+import type { ApplicationModule } from "@opencode/plugin/promise/application"
+import { ApplicationModules } from "./application-modules"
 
 export interface Lifecycle<E = never, R = never> {
   readonly onListen: (
@@ -53,6 +55,7 @@ export const start = Effect.fn("ServerProcess.start")(function* <E, R>(
   transform?: Transform,
   remoteURLs?: () => ReadonlyArray<string>,
   backends: readonly Module[] = [],
+  modules: readonly ApplicationModule[] = [],
 ) {
   const password = options.password
   if (!password) return yield* Effect.fail(new Error("Missing server password"))
@@ -110,6 +113,13 @@ export const start = Effect.fn("ServerProcess.start")(function* <E, R>(
       ).pipe(Layer.provideMerge(NodeHttpServer.layerHttpServices)),
       applicationScope,
     )
+    const handler = Context.get(context, HttpRouter.HttpRouter)
+      .asHttpEffect()
+      .pipe(HttpEffect.toWebHandlerWith(context))
+    yield* ApplicationModules.install(modules, handler, {
+      password,
+      directory: options.runtime?.managedDirectory,
+    }).pipe(Effect.provide(context), Effect.provideService(Scope.Scope, applicationScope))
     if (lifecycle) {
       yield* installRestartContinuity(Context.get(context, SessionRestart.Service)).pipe(
         Effect.provideService(Scope.Scope, applicationScope),

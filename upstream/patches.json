@@ -12,7 +12,7 @@
         {
           "path": "bun.lock",
           "action": "modified",
-          "sha256": "912c1200a7719c88e1ea9ad6f7e149e4678fb9d27657e11ab35827bcc1b52a89"
+          "sha256": "4a2c6eb387254874cf63516d521fe548e0ee73d2ea34119bc37c6d018caacb71"
         },
         {
           "path": "packages/cli/package.json",
@@ -183,7 +183,7 @@
         {
           "path": "packages/cli/src/server-process.ts",
           "action": "modified",
-          "sha256": "af026122ffdf5cddd79dd8326d5dd0c21ab3e60505c2ff4e3328ffa513d8faef"
+          "sha256": "b5d7ebbbfa37f9c250168901158517a8243a1af85f5280d06490e064120676c9"
         },
         {
           "path": "packages/cli/src/services/web-ui.ts",
@@ -308,7 +308,7 @@
         {
           "path": "packages/im-assistant/package.json",
           "action": "added",
-          "sha256": "4ee1dd63c87372df494fd64aec5452c9a4b9d0ef5139bf847d3067053290319f"
+          "sha256": "371e5d58574a83501af83c6c50ea4933591ac005ef492a5ae5d41ba5a52c1a08"
         },
         {
           "path": "packages/im-assistant/src/non-project-location.ts",
@@ -377,7 +377,7 @@
         {
           "path": "packages/im-assistant/src/cli.ts",
           "action": "added",
-          "sha256": "c2705fdf59798f378a943bcab1f3bb8c42ccf0b4ec8f39634ff8d30f190728f9"
+          "sha256": "b160b6de18fe3ab6f7ded77abc55da39af7cb5ff53a557ff173cd03990136981"
         },
         {
           "path": "packages/im-assistant/src/providers.ts",
@@ -611,7 +611,7 @@
         {
           "path": "packages/server/src/routes.ts",
           "action": "modified",
-          "sha256": "3d7662952adc9eb92f0dd3595032ffa65739a46fd359199b0a3bc975d297143d"
+          "sha256": "95edd89366a7ab0f625ffe127ce98de08ff43ae8f2aa6b721964288090b7c1e8"
         }
       ]
     },
@@ -1005,12 +1005,12 @@
         {
           "path": "packages/server/src/fetch.ts",
           "action": "modified",
-          "sha256": "f074f8085089e29373e3d1f1260f9748e499e4271b15e99a04b333106dfb8f8f"
+          "sha256": "fbb410f7d1f5d6261935f8ad52a3ddf296c1fe63b826efb090441f0beee00049"
         },
         {
           "path": "packages/server/src/process.ts",
           "action": "modified",
-          "sha256": "04dcd71a45c811fd208963da679fcab8e6a9a0a5ea33af458a782133781f8e78"
+          "sha256": "2ef4a0832bcc79beeb0890488ac07ed64148f0deac97ea2795f8a5554d7df4b4"
         }
       ]
     },
@@ -1271,6 +1271,51 @@
           "path": "packages/server/script/qq-wire-smoke.ts",
           "action": "added",
           "sha256": "99a36f35926296f406f960299a35a1a2381d596a108fc9abbaf3dda2e344cf89"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-optional-application-modules",
+      "reason": "通用可信应用级资源契约与作用域释放，产品层显式装配可选QQ能力；复用公共会话客户端和原插件KV，不另建调度器。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/im-assistant/src/portals.ts",
+          "action": "added",
+          "sha256": "20c81e0fe7c20ef58e4e9a58a1cf0291771402c07bc819a40bfba41b8b36004f"
+        },
+        {
+          "path": "packages/plugin/src/promise/application.ts",
+          "action": "added",
+          "sha256": "1452688e4463acbcd33a61ab69ac7526d96f0a2a5e42c38c371efa65c0cdbf0f"
+        },
+        {
+          "path": "packages/plugin/src/promise/index.ts",
+          "action": "modified",
+          "sha256": "b5e671e51e4835e2c42db5fca51fdd614e9160cbaff75c32386ea73f56576748"
+        },
+        {
+          "path": "packages/server/package.json",
+          "action": "modified",
+          "sha256": "4662fa750e7c9efc35d563d05ebbb33bfdc109606cb7dbce60bbbe803056298a"
+        },
+        {
+          "path": "packages/server/script/qq-product-smoke.ts",
+          "action": "added",
+          "sha256": "a7e8aeabb4c011a67aa968c422ba80d0d052d5fb8d58c2cb832d57c8f391b919"
+        },
+        {
+          "path": "packages/server/src/application-modules.ts",
+          "action": "added",
+          "sha256": "21244355da348b81153f38173ffb547e883be9a73d76759debbdec6654c06a72"
+        },
+        {
+          "path": "packages/server/test/application-modules.test.ts",
+          "action": "added",
+          "sha256": "bd1526f8717428f8d4c0c1a54ea61d3bb70852ce14e7fb236cbbf278dc71878d"
         }
       ]
     }

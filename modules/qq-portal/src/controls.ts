@@ -156,8 +156,8 @@ export function controls(options: {
           if (found.kind !== "selected") return respond(found)
           destination = found.target; viewID = found.view.id
         } else if (parts.length === 1 && id(parts[0])) destination = target(parts[0])
-        else if (parts.length === 2 && parts[0].toLowerCase() === "session" && id(parts[1])) destination = target(parts[1])
-        else if (parts.length === 3 && parts[0].toLowerCase() === "backend" && id(parts[1]) && id(parts[2])) destination = target({ kind: "backend", ref: { backendID: parts[1], threadID: parts[2] } })
+        else if (parts.length === 2 && parts[0]?.toLowerCase() === "session" && id(parts[1])) destination = target(parts[1])
+        else if (parts.length === 3 && parts[0]?.toLowerCase() === "backend" && id(parts[1]) && id(parts[2])) destination = target({ kind: "backend", ref: { backendID: parts[1], threadID: parts[2] } })
         else return respond({ kind: "invalid" })
       } else {
         destination = await options.binding(input.scope)
