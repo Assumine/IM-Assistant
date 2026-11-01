@@ -868,10 +868,9 @@
   },
   "latest_qq_evidence": {
     "checkpoint": "upstream/qq-checkpoint.json",
-    "scope": "QQ-controlled-inline-images",
-    "native_implementation_changed": true,
+    "scope": "QQ-optional-queue-receipt-lifecycle",
+    "native_implementation_changed": false,
     "full_R3_01_rerun": false,
-    "browser_component_rerun": false,
-    "native_module_tests": 30
+    "browser_component_rerun": false
   }
 }

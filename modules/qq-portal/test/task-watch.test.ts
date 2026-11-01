@@ -34,3 +34,24 @@ test("a failed watch write cannot authorize the caller to advance its inbound re
     expect(receipts).toEqual([{ status: "uncertain" }])
   } finally { await sender.close() }
 })
+
+test("queue notification cleanup failures cannot suppress an unrelated final task reply", async () => {
+  const f = historyStorage(), sends: string[] = [], receipts: NotificationReceipt[] = [], sent = Promise.withResolvers<void>()
+  const unexpected = async () => { throw new Error("Unexpected operation") }
+  const source = { scope: { botID: "10001", kind: "private" as const, peerID: "20001" }, actorID: "20001", messageID: "1" }
+  const sender = openTaskReplies({ storage: f.storage, policy, ready: Promise.resolve(true),
+    client: { event: { subscribe: async function* () {} }, session: { message: { get: unexpected } },
+      experimental: { session: { input: { output: async () => ({ sessionID: "ses_original", inputID: "msg_1", rootID: "msg_1", status: "closed", last: { messageID: "msg_reply", text: "Final result", settled: true } }) } } } },
+    onObserved: async () => { throw new Error("Notification cleanup unavailable") },
+    sourceFor: async () => ({ status: "found", source }), linkReply: async () => {},
+    send: async (_source, text) => { sends.push(text); sent.resolve(); return { status: "sent", messageID: "-50" } },
+    onReceipt: (value) => receipts.push(value),
+  })
+  try {
+    expect(await sender.admitted("ses_original", "msg_1")).toBe(true)
+    await sent.promise
+  } finally { await sender.close() }
+  expect(sends).toEqual(["Final result"])
+  expect(receipts.some((value) => value.status === "uncertain")).toBe(true)
+  expect(receipts.some((value) => value.status === "sent")).toBe(true)
+})

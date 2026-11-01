@@ -14,7 +14,7 @@
     {
       "label": "r3-qq-module-tests",
       "exit_code": 0,
-      "passed": 226,
+      "passed": 241,
       "skipped": 0,
       "log": ".reports/native/r3-qq-module-tests.log"
     },
@@ -34,7 +34,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 5.13,
+      "duration_seconds": 4.42,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-http.log",
       "native_tests_passed": null,
@@ -50,7 +50,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.17,
+      "duration_seconds": 2.1,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-wire-http.log",
       "native_tests_passed": null,
@@ -66,7 +66,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 30.24,
+      "duration_seconds": 29.82,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-product-http.log",
       "native_tests_passed": null,
@@ -82,7 +82,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.2,
+      "duration_seconds": 1.14,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-notification-owner-http.log",
       "native_tests_passed": null,
@@ -114,7 +114,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.18,
+      "duration_seconds": 2.21,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-history-http.log",
       "native_tests_passed": null,
@@ -130,9 +130,25 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.95,
+      "duration_seconds": 2.93,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-images-http.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/qq-queue-receipts-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.92,
+      "isolated_home": true,
+      "log": ".reports/native/r3-qq-queue-receipts-http.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
@@ -166,7 +182,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 12.23,
+      "duration_seconds": 11.65,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-product-host-regression.log",
       "native_tests_passed": 20,
@@ -182,7 +198,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.9,
+      "duration_seconds": 2.8,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-http.log",
       "native_tests_passed": null,
@@ -198,7 +214,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.41,
+      "duration_seconds": 2.29,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-continuation-http.log",
       "native_tests_passed": null,
@@ -214,7 +230,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.8,
+      "duration_seconds": 2.68,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-guidance-http.log",
       "native_tests_passed": null,
@@ -230,7 +246,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.82,
+      "duration_seconds": 2.86,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-followup-http.log",
       "native_tests_passed": null,
@@ -249,7 +265,7 @@
       "cwd": "opencode/packages/sdk",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 5.77,
+      "duration_seconds": 5.47,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-sdk-regression.log",
       "native_tests_passed": 8,
@@ -270,7 +286,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.57,
+      "duration_seconds": 2.5,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-append-session-regression.log",
       "native_tests_passed": 96,
@@ -291,7 +307,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 12.43,
+      "duration_seconds": 10.74,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-continuation-required-runner.log",
       "native_tests_passed": 290,
@@ -309,7 +325,7 @@
       "cwd": "opencode/packages/client",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.23,
+      "duration_seconds": 0.24,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-append-client-unit.log",
       "native_tests_passed": 10,
@@ -325,10 +341,26 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.2,
+      "duration_seconds": 1.07,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-guidance-core.log",
       "native_tests_passed": 20,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/session-log.test.ts"
+      ],
+      "cwd": "opencode/packages/core",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.01,
+      "isolated_home": true,
+      "log": ".reports/native/r3-qq-native-queue-log.log",
+      "native_tests_passed": 5,
       "native_tests_failed": 0,
       "native_tests_skipped": 0
     }
@@ -600,6 +632,26 @@
     "external_messages_sent": 0,
     "production_credentials_used": false
   },
+  "queue_receipt_acceptance": {
+    "status": "passed",
+    "checks": [
+      "a busy desktop native task and QQ input share one real Inbox; the original message gets one correctly quoted queue receipt",
+      "recalling the task after rebinding cancels only its frozen original pending input and recalls only its bot queue notice",
+      "the actual acknowledged queue notice aliases the native task; quoting it with unqueue cancels that exact pending item",
+      "promotion clears stale queue text, a running task ignores recall, and failed notice deletion does not block its final reply",
+      "whole Codex cancellation uses its real native submission and confirmed delete response; it creates no shadow Session or second queue",
+      "the real native queue drains independently, withdraws stale queue feedback and forwards its final result to the original starting message",
+      "SQLite restart and native catch-up retain notice/recall receipts; lost delete acknowledgment never repeats deletion or model execution",
+      "managed native storage retains body-free cancellation/delivery facts for restart proof, without storing another executable inbox or full input log"
+    ],
+    "model_requests": 4,
+    "loopback_connections": 2,
+    "queue_notices": 6,
+    "recall_attempts": 6,
+    "actual_qq_connection": false,
+    "external_messages_sent": 0,
+    "production_credentials_used": false
+  },
   "execution_owner": {
     "session": "original-opencode-session-inbox",
     "backend": "whole-native-conversation-backend"
@@ -624,23 +676,24 @@
     "modules/codex-native/src/session-adapter.ts": "9069524701febc7507bda947a418803581d103ed832f4bfc8a8486c759f392a8",
     "modules/codex-native/test/input.test.ts": "38ba6aa72382096035a5b308b2230077aef90d6b08d714eb24331aa1051bbd6a",
     "modules/qq-portal/package.json": "6d27b0ac0e1477959947e9dd53165b4d0f3fd981aad526e8ebb56ee7f6f05b41",
-    "modules/qq-portal/src/channel.ts": "0f015bcc4d210d540adebd39a6741e2a9f6b37194dc3a4dc449c3576c3e571d7",
-    "modules/qq-portal/src/configuration.ts": "a235677ec8c57eafaef33c94db2cf2dd57e357ad1bf7fabd582627230ba9f2eb",
+    "modules/qq-portal/src/channel.ts": "e4b9b25a1f8635490210dd02f640e5352cf8c98539de8c9a4975e800d356e61a",
+    "modules/qq-portal/src/configuration.ts": "5724483bbeffdc5e4b0e650f46c7ed89605353c6944413d9f468cac71324976b",
     "modules/qq-portal/src/confirmation-channel.ts": "a67355b4b8db854d4e815eb6ebf1a1a9e0ddbca2fce969b77bfd2cf6779e5899",
     "modules/qq-portal/src/confirmation.ts": "8fc1f05ca057d7f120d6ed1ce1c6a1add691996040da382a322d8e470ae65ea4",
     "modules/qq-portal/src/control-reply.ts": "deba3d81f3b1d2feeba47ece765966df59925f4e0134ef05595d59e15bdb2036",
-    "modules/qq-portal/src/controls.ts": "d992cf3f836a1a7d930e658a35bd3cd5c52092b4595416fb656887345de6853d",
+    "modules/qq-portal/src/controls.ts": "6b98fb421547c24edff5a56a925e91cedd855162963884d345f93b3bc9a1e189",
     "modules/qq-portal/src/delivery.ts": "466e6b40e4a813d4c0afcde0ffc7b7e5caf827eb3a77ba99ac6e0363678ed862",
     "modules/qq-portal/src/history.ts": "b96bbf330d8e02fdfa0830cc611739b26edbe747227e0e4642cb865486c53c8b",
     "modules/qq-portal/src/images.ts": "2d0a28516edb80a7d61937aa6020c0ca06f860a852606508bdd2316ed548be82",
-    "modules/qq-portal/src/index.ts": "40e9bdf233494f75f5ef09ca30def6dc70fc8a7cc8b855ffbaa9041da224624d",
-    "modules/qq-portal/src/module.ts": "f369a6dafcfc9a5a32b477260259d3b0c947de57b1cf23a2c649ad0cf6c6cf38",
+    "modules/qq-portal/src/index.ts": "4f3b5c07056e05b6f42cb30553eeba1e4244401646f54cee6455fe4f329a6433",
+    "modules/qq-portal/src/module.ts": "d43f667b9411a686d571368b0c49d494646a18bdfefa56394e26b6444727c7be",
     "modules/qq-portal/src/notifications.ts": "4268b6a888059aa084beb0e8109db6a6e04bb4c4a8f5c4e947d876508fd20daf",
-    "modules/qq-portal/src/onebot.ts": "639e0235613bbb8345d44efb57693cbb8b7232da17a4358541575dfc9acc2d41",
+    "modules/qq-portal/src/onebot.ts": "84ec395d7607f2d8d9b227e80a89d1f189c950ef89f1f42d79e3dea83d4fab1d",
+    "modules/qq-portal/src/queue-replies.ts": "8caf03e455ef1b269cfa6c36c6fb9d8785192963f4cc3010352a6c0cc66d7383",
     "modules/qq-portal/src/routing.ts": "a9a9417e41e39c21b32d5accefbad59781236623ad7936909eb8e95d5577099a",
     "modules/qq-portal/src/sources.ts": "0fcaf0e05d2879553b9b3168b9bab328e85ffb308594b2d770aff793585dace7",
-    "modules/qq-portal/src/target.ts": "4806482aa7c7048b8c5ca405734821964b6717eaad201570480e7bf0f361a422",
-    "modules/qq-portal/src/task-replies.ts": "94c8ddd2297f3a4a8cce92aaa90b8b34a9a495678e32ba7e5a183c8b1db8f299",
+    "modules/qq-portal/src/target.ts": "20cd87da64f9445fb30b088b1691d92b40d5f75ee1a1b4b8ed7955c0746b5c45",
+    "modules/qq-portal/src/task-replies.ts": "5eff8b89bba6c52dfdcb08f7029cd8f72ead81961499764dd9c88d67e37c7809",
     "modules/qq-portal/src/views.ts": "ea1974f955097996b31748cfd00a0cba0dae53f2b947887d2a0f8a47d062b2da",
     "modules/qq-portal/test/backend-continuation.test.ts": "52589ec49b91b5b449c45ffd2c4aeda56a7d4ea376268b45864432f1233880a3",
     "modules/qq-portal/test/backend-followup.test.ts": "7f72c239c1bf4557a863283f8f0b023bb985418b4ecaee3bc1d432591a48141b",
@@ -658,13 +711,14 @@
     "modules/qq-portal/test/history.test.ts": "856f850c09fa5af7ddfd9c4186655142e609053eba1939f7ff9de0ee574e59d8",
     "modules/qq-portal/test/images.test.ts": "b13fe677fcadedae66ddf2aa9d27a1a6eeeb9d8391af5a7677bbaa3c181ecc99",
     "modules/qq-portal/test/notifications.test.ts": "a2ea3ce47353bf8792f33fc795820096726e516a55dc01835dd7b8c2c7c0862a",
-    "modules/qq-portal/test/onebot.test.ts": "1d9d328e9a02a4dec67c62b3858f5a5413a9c70543dc09cf03752c65ed03c86d",
+    "modules/qq-portal/test/onebot.test.ts": "75c7b3d99d122f6d50ebe178ae74895ce0f3391eeecc409301b133e4c60a4cc9",
+    "modules/qq-portal/test/queue-replies.test.ts": "871345e2e4b047c7cab5bf3ddd6aad3ab6947140597dc931b02cd53ac98f4f91",
     "modules/qq-portal/test/recall-owner.test.ts": "ece818a09a31a2645cee68eb14537817325cd7b02770fb45c09bed0ff9740d67",
     "modules/qq-portal/test/routing.test.ts": "7fe733e56696f7be6709aec9703094a3f77913faea5a27e991c9bf3e4c447239",
     "modules/qq-portal/test/sources.test.ts": "1dd8be93cb54d9c40eb6406cfa31cb6cac0bffcbbaaaa58995c529be094285b5",
     "modules/qq-portal/test/target.test.ts": "b2dda416c15d2bca896dacf06c5fd6d8120ee767cafa3218ea577081e9983c3e",
     "modules/qq-portal/test/task-replies.test.ts": "7c6eb179cc1ed832b2ba61a9201146c4c9150ef4298d1c0521397050c5aa39f5",
-    "modules/qq-portal/test/task-watch.test.ts": "4331bb291c24f23feed36f0924f3b91516c5400cc466734c41406e363a3c6758",
+    "modules/qq-portal/test/task-watch.test.ts": "f746eae00e3a0de0d9c50e2e1ac1b0e7d18b3c5f677f4b83ff8aa6c7f47815c2",
     "modules/qq-portal/test/views.test.ts": "34a26b142fe86678f1fc4cdb855df3a7c6af7c530ca1c4605db08a9ee8d974d4",
     "modules/qq-portal/tsconfig.json": "60b04ea374fcfbe69388b6980d7e074d71f27117eecc82f6c0d7527eb25c5947",
     "opencode/bun.lock": "4a2c6eb387254874cf63516d521fe548e0ee73d2ea34119bc37c6d018caacb71",
@@ -679,6 +733,7 @@
     "opencode/packages/client/src/promise/generated/types.ts": "4574d876ab866a6e83db37f5e9e26ac8a1e9da622128145832cab9b430d11f3c",
     "opencode/packages/client/src/solid/data.ts": "8f54d2d9def6b43b94e8e6ce721db46644ff506ba8d68a84056e285775a9d6fa",
     "opencode/packages/client/test/solid-inbox-race.test.ts": "cd68b9cdf08f722168002c2a4777c581cef7ae23af24b3e3cadbecb5810e04ed",
+    "opencode/packages/core/src/bus.ts": "96db0657244d76fea542c85bf77d0bdc432aa279d594774c5361564fa1ba1967",
     "opencode/packages/core/src/conversation-backend.ts": "e82618717550a8b0ebc09dcab9295ffd86723c9b55663f5525f46b132d6a3848",
     "opencode/packages/core/src/plugin/host.ts": "accbe150a8badfe578e5032fce3ba4220aa281cf903b6b06c22f68e4c43df2f5",
     "opencode/packages/core/src/plugin/sdk.ts": "1043c239d99e7f7cc72f8629657e1e7210b8b70ed55edc397642b36a4ae04a63",
@@ -698,6 +753,7 @@
     "opencode/packages/core/test/session-execution.test.ts": "3def15079687298eaa699b0d4c0c41fb93f0679b3e1c71319184f06ebbb4f33d",
     "opencode/packages/core/test/session-inbox-append.test.ts": "08a1af1128cfb0d710c734781ff5d965552d0c4f79a1a4fb9b8ae9bd911698cf",
     "opencode/packages/core/test/session-input.test.ts": "a7aff4b40af1b8728f812f6b2724c246d916eafeef528bbbb91591a0eff712bb",
+    "opencode/packages/core/test/session-log.test.ts": "a5e2a0f6980bbd224df96f989ee3c5761cc50c399a6ec497e2aa837b75cdcd8a",
     "opencode/packages/core/test/session-native-compaction.test.ts": "44fe5f0bf7a863e5afe4a3ffb6f109c4a5eae1940eb6bbcecd26d09d0c5696a7",
     "opencode/packages/core/test/session-native.test.ts": "2a599e886c2d84533e0b515ad0107a2c3165424d350373679e6eb86450b22f98",
     "opencode/packages/core/test/session-owned.test.ts": "e758068772fa82c4554b7fc6031f743e7539c957ac47fec9c5129676203b1f7b",
@@ -733,6 +789,7 @@
     "opencode/packages/server/script/qq-output-smoke.ts": "a1a8c401d283e8edfcd3d129c6c237398032c13a4833b1fcaa2ef7b9418ec9e7",
     "opencode/packages/server/script/qq-portal-smoke.ts": "5dcd01e33a4f04a715e05b45c791cd111fcc64f95ad5501c1e033db63bb27c11",
     "opencode/packages/server/script/qq-product-smoke.ts": "a7402e6eb127bf7f61af9a96101079875a7bfccd5c711d6a4cf3121ba67607a3",
+    "opencode/packages/server/script/qq-queue-receipts-smoke.ts": "a1fdacbe0f1bc11f2a0f7d078322e786ed65537a6930a0f0cacf8b39ea0d311c",
     "opencode/packages/server/script/qq-wire-smoke.ts": "99a36f35926296f406f960299a35a1a2381d596a108fc9abbaf3dda2e344cf89",
     "opencode/packages/server/src/application-modules.ts": "21244355da348b81153f38173ffb547e883be9a73d76759debbdec6654c06a72",
     "opencode/packages/server/src/fetch.ts": "fbb410f7d1f5d6261935f8ad52a3ddf296c1fe63b826efb090441f0beee00049",
@@ -740,7 +797,7 @@
     "opencode/packages/server/src/handlers/session.ts": "d3d0c9be933344e9a2babe3d4868861ff959b500c056e60213dcea3062fcb01d",
     "opencode/packages/server/src/middleware/runtime-policy.ts": "88b43767a2dbfc9ee44688901e64bf412c942675c8ad656391d8e7c3cd82ae2e",
     "opencode/packages/server/src/process.ts": "2ef4a0832bcc79beeb0890488ac07ed64148f0deac97ea2795f8a5554d7df4b4",
-    "opencode/packages/server/src/routes.ts": "95edd89366a7ab0f625ffe127ce98de08ff43ae8f2aa6b721964288090b7c1e8",
+    "opencode/packages/server/src/routes.ts": "2e1ee6e7122e6a4932369646c329fce67ccfce1088750c8d452e9be3106ef24a",
     "opencode/packages/server/test/application-modules.test.ts": "bd1526f8717428f8d4c0c1a54ea61d3bb70852ce14e7fb236cbbf278dc71878d",
     "opencode/packages/server/test/conversation-policy.test.ts": "94bc48433477c09c528335720b0311b923c1abda02fcfa37269c2eb126a473cd",
     "opencode/packages/server/test/fetch.test.ts": "6d16644f33b9b2bb70c091a00b0039ec817028d7f0c5ca7627ac056619b293fa",
@@ -749,13 +806,13 @@
     "opencode/packages/session-ui/src/actions.ts": "69459fc86ef6dfb5beef8a6dba3d782f2b41da9e7e4882bd3578e784d8b6cf2d",
     "opencode/packages/session-ui/src/message/message-content.tsx": "903e9a563b7f55abe6130a3b89f974c446403c07faa7a0050c72fb85781864e4",
     "opencode/packages/simulation/test/simulated-provider.test.ts": "58ae9918e390d2645d4c6a8770dcd8fc9193fff96a98cfb01f4535b8b6f22ae3",
-    "tools/qq_portal_smoke.py": "7deddc64d911242ccb395e4f23992493a888ab37c9b82f58d5b0afe89baf6944"
+    "tools/qq_portal_smoke.py": "9474512bab8c8bc6a35da18a8a43686f342b63cec55b6e4adc4e921919084f77"
   },
   "remaining": [
     "authenticated transport, product startup, scoped login-triggered NapCat history recovery and durable reply receipts verified only against loopback fixtures; live QQ, runtime module UI/status and automatic transport reconnect remain unverified or unimplemented",
     "quoted confirmation commands and published-view selections are connected; implicit latest-list selection, native stop fences and remaining commands are not connected",
     "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
-    "first/final public output requires proven native input/root/turn identity; unsupported whole backends remain unavailable; receipt recall, ordinary Session failure-only notifications and remote unknown-send recovery remain unimplemented",
+    "first/final public output requires proven native input/root/turn identity; optional queue notices and proved retirement are connected; ordinary Session failure-only notifications, native cancellation outside QQ without a native retained receipt and remote unknown-send recovery remain unimplemented",
     "history recovery requires an observed cursor, exact boundary proof and real_seq; gaps or provider limits are reported without partial admission or guessed initial imports; no executable offline spool is stored",
     "explicit NapCat inline images are verified on native Session and Codex only; Session quoted attachment amendments, general files/audio/video, backend image history UI and companion routing remain unavailable; unsupported input is refused without partial forwarding",
     "formal R3-02 acceptance is not implemented and A23-A26 are not completed"
@@ -847,7 +904,8 @@
     "history_read_concurrency": 4,
     "image_read": "authorized-received-content-filename-only-get_image-no-path-or-URL-fetch",
     "image_read_concurrency": 2,
-    "image_response_frame_max_bytes": 28027564
+    "image_response_frame_max_bytes": 28027564,
+    "recall_primitive": "host-only-delete_msg-for-original-acknowledged-bot-output"
   },
   "configuration_contract": {
     "owner": "product-composition-and-qq-capability-package",
@@ -893,6 +951,10 @@
       "maxBytes": 20971520,
       "default": "absent-and-disabled",
       "upstream_requirement": "get_image returns base64; enableLocalFile2Url is explicitly configured on NapCat, never changed by the assistant"
+    },
+    "optional_queue_replies": {
+      "setting": "queueReplies",
+      "default": false
     }
   },
   "notification_contract": {
@@ -1119,108 +1181,30 @@
       "image": 30000
     }
   },
+  "queue_receipt_contract": {
+    "owner": "QQ-notification-metadata-in-original-plugin-KV",
+    "enabled": "explicit-per-account-queueReplies-true",
+    "position": "fresh-native-user-queue-order-including-desktop-inputs-not-a-second-FIFO",
+    "idle": "no-queue-zero-or-late-notice-for-a-sole-idle-input",
+    "notice": "one-original-starting-message-quote-per-admission",
+    "aliases": "only-real-acknowledged-notice-IDs-publish-through-existing-task-reply-origin",
+    "retirement": "delivered-or-proven-cancelled-input-clears-only-its-acknowledged-queue-notice",
+    "session_proof": "finite-original-session-log-of-retained-body-free-InboxCancelled-and-InboxDelivered-events",
+    "backend_proof": "fresh-native-input-delivery-or-exact-confirmed-native-delete-receipt-with-original-submission-ID",
+    "native_cancellation_outside_qq_without_receipt": "unproven-no-guess-or-delete-from-absence",
+    "managed_log": "UsageRecorded-plus-minimal-cancel-deliver-events-no-enqueue-bodies-or-complete-event-log",
+    "uncertain_send_or_delete": "retained-unknown-no-automatic-repeat-or-model-replay",
+    "notification_failure": "reported-separately-never-suppresses-final-result-or-changes-native-work",
+    "authorization": "original-bot-peer-member-grants-rechecked-binding-never-used-for-recall",
+    "scope": "transport-notifications-no-polling-executor-or-context-store",
+    "protocol_source": "https://github.com/botuniverse/onebot-11/blob/master/api/public.md#delete_msg-撤回消息",
+    "actual_qq_connection": false
+  },
   "prior_additional_verification": {
-    "source_revision": "1b6566f3ce447ede01b3941a06776550bc0c42f0",
+    "source_revision": "3e42fc6adbd70fea344eb27cd8d89b2c9a4d18b7",
+    "evidence": "upstream/qq-checkpoint.json",
     "rerun_this_slice": false,
-    "checks": {
-      "canonical_check": {
-        "args": [
-          "bun",
-          "run",
-          "check"
-        ],
-        "cwd": "opencode",
-        "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-        "exit_code": 0,
-        "duration_seconds": 9.04,
-        "isolated_home": true,
-        "log": ".reports/native/r3-qq-history-check.log",
-        "native_tests_passed": null,
-        "native_tests_failed": null,
-        "native_tests_skipped": 0
-      },
-      "typescript_lint": [
-        {
-          "args": [
-            "bun",
-            "x",
-            "--no-install",
-            "oxlint",
-            "packages/server/script/qq-history-smoke.ts"
-          ],
-          "cwd": "opencode",
-          "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-          "exit_code": 0,
-          "duration_seconds": 1.15,
-          "isolated_home": true,
-          "log": ".reports/native/r3-qq-history-lint.log",
-          "native_tests_passed": null,
-          "native_tests_failed": null,
-          "native_tests_skipped": 0
-        },
-        {
-          "exit_code": 0,
-          "files": 17,
-          "log": ".reports/native/r3-qq-history-module-lint.log",
-          "args": [
-            "opencode/node_modules/.bin/oxlint.exe",
-            "modules/qq-portal/src/channel.ts",
-            "modules/qq-portal/src/configuration.ts",
-            "modules/qq-portal/src/confirmation-channel.ts",
-            "modules/qq-portal/src/confirmation.ts",
-            "modules/qq-portal/src/history.ts",
-            "modules/qq-portal/src/index.ts",
-            "modules/qq-portal/src/module.ts",
-            "modules/qq-portal/src/onebot.ts",
-            "modules/qq-portal/src/sources.ts",
-            "modules/qq-portal/src/task-replies.ts",
-            "modules/qq-portal/test/configuration.test.ts",
-            "modules/qq-portal/test/confirmation.test.ts",
-            "modules/qq-portal/test/fixture/history.ts",
-            "modules/qq-portal/test/history-channel.test.ts",
-            "modules/qq-portal/test/history.test.ts",
-            "modules/qq-portal/test/onebot.test.ts",
-            "modules/qq-portal/test/task-watch.test.ts"
-          ]
-        }
-      ],
-      "recovery_stability": {
-        "args": [
-          "test",
-          "test/history.test.ts",
-          "test/history-channel.test.ts",
-          "test/task-watch.test.ts",
-          "--rerun-each",
-          "10"
-        ],
-        "exit_code": 0,
-        "passed": 170,
-        "failed": 0,
-        "log": ".reports/native/r3-qq-history-stability.log",
-        "iterations": 10
-      },
-      "fixed_regression": {
-        "case": "An old unbound message above an unverified live sequence gap could become a new task after rebinding.",
-        "before": {
-          "passed": 0,
-          "failed": 1,
-          "log": ".reports/native/r3-qq-history-unbound-gap-before.log"
-        },
-        "after": {
-          "passed": 1,
-          "failed": 0,
-          "log": ".reports/native/r3-qq-history-unbound-gap-after.log"
-        },
-        "resolution": "The original portal retains an immutable unbound refusal. Recovery requires retained admission/proposal/refusal proof for previously observed input; missing proof is uncertainty, not a fresh target guess."
-      },
-      "shared_test_cleanup": {
-        "checked": 460,
-        "stopped": 0,
-        "unverified": 0
-      },
-      "frontend_or_public_protocol_changed": false,
-      "browser_component_rerun": false
-    }
+    "scope": "previous-controlled-images-native-module-and-stability-evidence-remains-in-the-original-revision"
   },
   "additional_verification": {
     "canonical_check": {
@@ -1232,9 +1216,9 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 11.01,
+      "duration_seconds": 9.83,
       "isolated_home": true,
-      "log": ".reports/native/r3-qq-images-check.log",
+      "log": ".reports/native/r3-qq-queue-check.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
@@ -1246,258 +1230,61 @@
           "x",
           "--no-install",
           "oxlint",
-          "packages/core/src/conversation-backend.ts",
-          "packages/schema/src/conversation-backend.ts",
-          "packages/server/script/qq-images-smoke.ts"
+          "packages/server/script/qq-queue-receipts-smoke.ts",
+          "packages/server/src/routes.ts"
         ],
         "cwd": "opencode",
         "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
         "exit_code": 0,
-        "duration_seconds": 0.96,
+        "duration_seconds": 1.06,
         "isolated_home": true,
-        "log": ".reports/native/r3-qq-images-lint.log",
+        "log": ".reports/native/r3-qq-queue-lint.log",
         "native_tests_passed": null,
         "native_tests_failed": null,
         "native_tests_skipped": 0
       },
       {
         "exit_code": 0,
-        "files": 13,
-        "log": ".reports/native/r3-qq-images-module-lint.log",
+        "files": 12,
+        "log": ".reports/native/r3-qq-queue-module-lint.log",
         "args": [
           "opencode/node_modules/.bin/oxlint.exe",
-          "modules/codex-native/src/backend.ts",
-          "modules/codex-native/src/session-adapter.ts",
           "modules/qq-portal/src/channel.ts",
           "modules/qq-portal/src/configuration.ts",
-          "modules/qq-portal/src/history.ts",
-          "modules/qq-portal/src/images.ts",
+          "modules/qq-portal/src/controls.ts",
           "modules/qq-portal/src/index.ts",
           "modules/qq-portal/src/module.ts",
           "modules/qq-portal/src/onebot.ts",
-          "modules/qq-portal/src/routing.ts",
+          "modules/qq-portal/src/queue-replies.ts",
           "modules/qq-portal/src/target.ts",
-          "modules/qq-portal/test/fixture/images.ts",
-          "modules/qq-portal/test/images.test.ts"
+          "modules/qq-portal/src/task-replies.ts",
+          "modules/qq-portal/test/onebot.test.ts",
+          "modules/qq-portal/test/queue-replies.test.ts",
+          "modules/qq-portal/test/task-watch.test.ts"
         ]
       }
     ],
-    "image_stability": {
+    "queue_stability": {
       "status": "passed",
       "unit_repetitions": 10,
-      "unit_checks": 130,
+      "unit_checks": 170,
       "chain_repetitions": 3,
       "chain_checks": 24,
-      "counted_in_primary_totals": false,
-      "unit_steps": [
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-1.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-2.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-3.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-4.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-5.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-6.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-7.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-8.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-9.log"
-        },
-        {
-          "exit_code": 0,
-          "tests": 13,
-          "log": ".reports/native/r3-qq-images-stability-10.log"
-        }
-      ],
-      "chain_steps": [
-        {
-          "step": {
-            "args": [
-              "bun",
-              "run",
-              "script/qq-images-smoke.ts"
-            ],
-            "cwd": "opencode/packages/server",
-            "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-            "exit_code": 0,
-            "duration_seconds": 4.09,
-            "isolated_home": true,
-            "log": ".reports/native/r3-qq-images-chain-stability-1.log",
-            "native_tests_passed": null,
-            "native_tests_failed": null,
-            "native_tests_skipped": 0
-          },
-          "acceptance": {
-            "status": "passed",
-            "checks": [
-              "QQ text and image share one durable native Inbox item; a live duplicate only reconciles",
-              "recalls before retrieval and during transfer never produce a model-visible task",
-              "the real original runner reads stored image bytes and sends them through the model image channel",
-              "unavailable bytes and text-only quoted Session endpoints refuse once, without partial text or repeated downloads",
-              "whole native backend queues image-only input, rejects conflicting reuse, and blocks text edits that erase images",
-              "a quoted image adjustment targets its observed active turn; unsettled interim text is withheld and the final result quotes the original task",
-              "pinned Codex receives real inline image input and a quoted terminal follow-up uses its original native thread",
-              "host restart preserves original image storage and native receipts without replay, shadow Sessions or duplicate output"
-            ],
-            "model_requests": 6,
-            "image_reads": 6,
-            "loopback_connections": 2,
-            "actual_qq_connection": false,
-            "external_messages_sent": 0,
-            "production_credentials_used": false
-          }
-        },
-        {
-          "step": {
-            "args": [
-              "bun",
-              "run",
-              "script/qq-images-smoke.ts"
-            ],
-            "cwd": "opencode/packages/server",
-            "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-            "exit_code": 0,
-            "duration_seconds": 5.63,
-            "isolated_home": true,
-            "log": ".reports/native/r3-qq-images-chain-stability-2.log",
-            "native_tests_passed": null,
-            "native_tests_failed": null,
-            "native_tests_skipped": 0
-          },
-          "acceptance": {
-            "status": "passed",
-            "checks": [
-              "QQ text and image share one durable native Inbox item; a live duplicate only reconciles",
-              "recalls before retrieval and during transfer never produce a model-visible task",
-              "the real original runner reads stored image bytes and sends them through the model image channel",
-              "unavailable bytes and text-only quoted Session endpoints refuse once, without partial text or repeated downloads",
-              "whole native backend queues image-only input, rejects conflicting reuse, and blocks text edits that erase images",
-              "a quoted image adjustment targets its observed active turn; unsettled interim text is withheld and the final result quotes the original task",
-              "pinned Codex receives real inline image input and a quoted terminal follow-up uses its original native thread",
-              "host restart preserves original image storage and native receipts without replay, shadow Sessions or duplicate output"
-            ],
-            "model_requests": 6,
-            "image_reads": 6,
-            "loopback_connections": 2,
-            "actual_qq_connection": false,
-            "external_messages_sent": 0,
-            "production_credentials_used": false
-          }
-        },
-        {
-          "step": {
-            "args": [
-              "bun",
-              "run",
-              "script/qq-images-smoke.ts"
-            ],
-            "cwd": "opencode/packages/server",
-            "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
-            "exit_code": 0,
-            "duration_seconds": 3.49,
-            "isolated_home": true,
-            "log": ".reports/native/r3-qq-images-chain-stability-3.log",
-            "native_tests_passed": null,
-            "native_tests_failed": null,
-            "native_tests_skipped": 0
-          },
-          "acceptance": {
-            "status": "passed",
-            "checks": [
-              "QQ text and image share one durable native Inbox item; a live duplicate only reconciles",
-              "recalls before retrieval and during transfer never produce a model-visible task",
-              "the real original runner reads stored image bytes and sends them through the model image channel",
-              "unavailable bytes and text-only quoted Session endpoints refuse once, without partial text or repeated downloads",
-              "whole native backend queues image-only input, rejects conflicting reuse, and blocks text edits that erase images",
-              "a quoted image adjustment targets its observed active turn; unsettled interim text is withheld and the final result quotes the original task",
-              "pinned Codex receives real inline image input and a quoted terminal follow-up uses its original native thread",
-              "host restart preserves original image storage and native receipts without replay, shadow Sessions or duplicate output"
-            ],
-            "model_requests": 6,
-            "image_reads": 6,
-            "loopback_connections": 2,
-            "actual_qq_connection": false,
-            "external_messages_sent": 0,
-            "production_credentials_used": false
-          }
-        }
-      ]
+      "counted_in_primary_totals": false
     },
-    "native_module": {
-      "status": "passed",
-      "tests": 30,
-      "failed": 0,
-      "skipped": 0,
-      "overlap_with_primary_tests": 7,
-      "log": ".reports/native/r3-qq-images-native-tests.log",
-      "sources": {
-        "modules/codex-native/src/activation.ts": "ca678904964f61237eab03959bc1bed148573b09635be43275c6f0122c9ff0e3",
-        "modules/codex-native/src/backend.ts": "93f5dbabea31af95e963580ee153499cab95e600b8ddeb271f863c9f94c0a430",
-        "modules/codex-native/src/connection.ts": "4f0ad78f9506aa5307f78926ff7c17cf0d2e2e901a5e023dd24592d2e66cd980",
-        "modules/codex-native/src/content.ts": "ae5d9be657fa2225420e31495609ba1f09e19780314649ebb9bb5c4e7402280a",
-        "modules/codex-native/src/index.ts": "ac1b673bd3d9f6c3b421b26a1508c76717d3f6f516d683427c6a93e7e05d76e6",
-        "modules/codex-native/src/launch.ts": "f26c9910629f110c4e7f57a278564fe04248388c1858f03cf7c375b3033b5c2f",
-        "modules/codex-native/src/module.ts": "9682ec018d8fa577eed3c871c748fc1ab3d98e2b3a8a620d4831568ac166fca0",
-        "modules/codex-native/src/permissions.ts": "10d00bfb1fa9200ed5d0ca7526faef1d43b2035e1f146394616ee94336d64129",
-        "modules/codex-native/src/profile.ts": "dc5dc2b09fbd23d766ea192abc7fd80f0c2548bb71da1e4aaae6d56eec647770",
-        "modules/codex-native/src/questions.ts": "eef695fbe7001ab4a2e1268c1d85a39053c88929754ea4fef57ee260ffed186a",
-        "modules/codex-native/src/session-adapter.ts": "9069524701febc7507bda947a418803581d103ed832f4bfc8a8486c759f392a8",
-        "modules/codex-native/src/shared.ts": "8703de972b5e59937e3f7ae992e02179cca5ea79c70e38e2b2c71fca44816f67",
-        "modules/codex-native/src/transport.ts": "4c6df81cd6923f73f82f411a90579c4f1ca302f54e86006485c54007ed7072bd",
-        "modules/codex-native/src/windows-security.ts": "34eeb758ebe4ce542c4b1f7ae97477fc5acbe3f8ae12667fd57b32c9b0b9c51a",
-        "modules/codex-native/test/activation.test.ts": "7da2732b24f9e1019d0ab159830619875d820670aa8de61d1c12d5de23090538",
-        "modules/codex-native/test/connection.test.ts": "7fd30ab639f552d71969780c36341b0d646ce75c85b6558a678f139ecd9ba466",
-        "modules/codex-native/test/fixture/shared-client.ts": "961aa8114b3ff02e3b77689c58f7572dfcd0627930e8420b3365a87e08c71268",
-        "modules/codex-native/test/input.test.ts": "38ba6aa72382096035a5b308b2230077aef90d6b08d714eb24331aa1051bbd6a",
-        "modules/codex-native/test/native.test.ts": "40c20107e5c398634fbfd8c5966ec5575e302b45c5c6e32103e6293616178934"
-      }
-    },
+    "queue_stability_evidence": ".reports/native/r3-qq-queue-stability.json",
     "shared_test_cleanup": {
-      "checked": 498,
+      "checked": 521,
       "stopped": 0,
       "unverified": 0
     },
-    "public_protocol_changed": true,
-    "frontend_changed": false,
-    "client_generation": {
-      "command": "bun run generate",
-      "cwd": "opencode/packages/client",
-      "log": ".reports/native/r3-qq-images-generate.log",
-      "exit_code": 0,
-      "generated_files_changed": false
+    "retention_prerequisite": {
+      "before": ".reports/native/r3-qq-queue-lifecycle-before.log",
+      "after": ".reports/native/r3-qq-queue-receipts-focused.log",
+      "finding": "default event persistence was disabled; add only body-free cancellation/delivery facts instead of enabling full logs"
     },
+    "public_protocol_changed": false,
+    "frontend_changed": false,
     "browser_component_rerun": false
   }
 }

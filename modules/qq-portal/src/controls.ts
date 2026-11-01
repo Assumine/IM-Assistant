@@ -1,6 +1,6 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
 import { fingerprint, inputID, originKey, type Message, type Policy, type Scope } from "./routing"
-import { sameTarget, target, targets, type Native, type Backend, type Target } from "./target"
+import { sameTarget, target, targets, type Native, type Backend, type Target, type Withdrawal } from "./target"
 import type { Origin } from "./sources"
 import { views, isViewID } from "./views"
 
@@ -37,9 +37,10 @@ export function controls(options: {
   binding: (scope: Scope) => Promise<Target | undefined>
   bind: (scope: Scope, value?: Target) => Promise<void>
   lookup: (scope: Scope, messageID: string) => Promise<Origin | undefined>
+  onWithdrawal?: (value: Withdrawal) => Promise<void>
 }) {
   const { storage, session, backend, permissions } = options
-  const native = targets(session, backend)
+  const native = targets(session, backend, options.onWithdrawal)
   const allowedTarget = (value: Target) => value.kind === "session" || !!permissions.backendIDs?.includes(value.ref.backendID)
   const selection = views({ storage, policy: options.policy, canPublish: (source) => permissions.allowedUsers.includes(source.actorID), allowedTarget })
   const parse = (value: unknown): Plan => {
@@ -203,6 +204,7 @@ export function controls(options: {
           if (!backend) throw new Error("Backend unavailable")
           const receipt = await backend.control({ backendID: destination.ref.backendID,
             control: { action: "withdraw", threadID: destination.ref.threadID, nativeID: plan.nativeID } })
+          if (receipt.status === "applied") await options.onWithdrawal?.({ target: destination, inputID: plan.inputID!, nativeID: plan.nativeID })
           resultNative = receipt.status === "applied" ? "withdrawn" : receipt.status === "not-found" ? "unchanged" : "uncertain"
         } else {
           const user = destination.kind !== "session" || (await queue(destination)).items.some((item) => item.inputID === plan.inputID)

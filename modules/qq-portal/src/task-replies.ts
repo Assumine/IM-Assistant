@@ -106,11 +106,18 @@ export function openTaskReplies(options: Parameters<typeof createTaskReplies>[0]
   ready: Promise<boolean>
   onReceipt?: (value: NotificationReceipt) => void
   onUnavailable?: () => void
+  onObserved?: (target: Target, inputID: string) => Promise<"cancelled" | "delivered" | undefined>
 }) {
   const replies = createTaskReplies(options), controller = new AbortController(), jobs = new Set<Promise<void>>()
   const report = (value: NotificationReceipt) => { try { options.onReceipt?.(value) } catch { /* Observer only. */ } }
   const check = async (destination: string | Target, inputID: string) => {
     if (!await options.ready || controller.signal.aborted) return
+    try {
+      if (await options.onObserved?.(target(destination), inputID) === "cancelled") {
+        await options.storage.remove(replies.watchKey(destination, inputID))
+        return
+      }
+    } catch { report({ status: "uncertain" }) }
     report(await replies.forward(destination, inputID))
   }
   const track = (job: Promise<void>) => { jobs.add(job); void job.finally(() => jobs.delete(job)); return job }
@@ -131,10 +138,11 @@ export function openTaskReplies(options: Parameters<typeof createTaskReplies>[0]
   }
   const observing = (async () => {
     try {
-      for await (const event of options.client.event.subscribe({ signal: controller.signal, types: ["session.step.streamed", "session.step.ended", "session.step.failed", "session.input.closed", "session.execution.succeeded", "session.execution.failed", "session.execution.interrupted"] })) {
+      for await (const event of options.client.event.subscribe({ signal: controller.signal, types: ["session.inbox.cancelled", "session.inbox.delivered", "session.step.streamed", "session.step.ended", "session.step.failed", "session.input.closed", "session.execution.succeeded", "session.execution.failed", "session.execution.interrupted"] })) {
         if (controller.signal.aborted) break
         try {
         if (event.type === "server.connected") { await reconcile(); continue }
+        if (event.type === "session.inbox.cancelled" || event.type === "session.inbox.delivered") { await check(event.data.sessionID, event.data.inboxID); continue }
         if (event.type === "session.input.closed") { await check(event.data.sessionID, event.data.rootID); continue }
         if (event.type === "session.step.streamed" || event.type === "session.step.ended" || event.type === "session.step.failed") {
           const message = await options.client.session.message.get({ sessionID: event.data.sessionID, messageID: event.data.assistantMessageID })

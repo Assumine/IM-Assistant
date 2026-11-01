@@ -611,7 +611,7 @@
         {
           "path": "packages/server/src/routes.ts",
           "action": "modified",
-          "sha256": "95edd89366a7ab0f625ffe127ce98de08ff43ae8f2aa6b721964288090b7c1e8"
+          "sha256": "2e1ee6e7122e6a4932369646c329fce67ccfce1088750c8d452e9be3106ef24a"
         }
       ]
     },
@@ -1413,6 +1413,20 @@
           "path": "packages/server/script/qq-images-smoke.ts",
           "action": "added",
           "sha256": "2aec52e209b9e0f6b73a817054b9b4e51bdfd55cb9f2543c2804328315f86086"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-qq-queue-receipts",
+      "reason": "Verify original native queue observation and optional QQ receipt lifecycle; retain only body-free native delivery/cancellation facts, without another task scheduler.",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-queue-receipts-smoke.ts",
+          "action": "added",
+          "sha256": "a1fdacbe0f1bc11f2a0f7d078322e786ed65537a6930a0f0cacf8b39ea0d311c"
         }
       ]
     }

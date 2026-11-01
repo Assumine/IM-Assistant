@@ -149,7 +149,9 @@ function makeRoutes<AuthError, AuthServices>(
     Bus.node.replace(
       Bus.configured({
         persist: options.events?.persist,
-        retain: options.runtime?.managedDirectory ? [SessionEvent.UsageRecorded] : undefined,
+        retain: options.runtime?.managedDirectory
+          ? [SessionEvent.UsageRecorded, SessionEvent.InboxCancelled, SessionEvent.InboxDelivered]
+          : undefined,
       }),
     ),
     App.node.replace(App.configured(options.app)),

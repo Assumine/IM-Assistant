@@ -5,6 +5,7 @@ import type { Source } from "./sources"
 
 export type WireState = { phase: "connecting" | "verifying" | "online" | "unavailable" | "closed"; reason?: "configuration" | "transport" | "deadline" | "identity" | "not-online" | "protocol" }
 export type SendResult = { status: "sent"; messageID: string } | { status: "unavailable" | "uncertain" | "rejected" }
+export type RecallResult = { status: "recalled" | "unavailable" | "uncertain" | "rejected" }
 export type OneBotOptions = {
   url: string; token: string; botID: string; connectTimeoutMs?: number; requestTimeoutMs?: number; maxFrameBytes?: number; maxRequests?: number
 }
@@ -106,6 +107,16 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
     ready: ready.promise,
     state: (): WireState => ({ ...current }),
     close() { stop("closed") },
+    /** Host-only notification cleanup. Callers must retain proof that this ID is their own acknowledged output. */
+    async recall(source: Source, messageID: string): Promise<RecallResult> {
+      const id = numericID(messageID)
+      if (current.phase !== "online" || source.scope.botID !== options.botID || !id || !accountID(source.actorID) ||
+        !accountID(source.scope.peerID) || !["private", "group"].includes(source.scope.kind) ||
+        source.scope.kind === "private" && source.scope.peerID !== source.actorID) return { status: "unavailable" }
+      const response = await request("delete_msg", { message_id: Number(id) })
+      return { status: response.kind === "not-sent" ? "unavailable" : response.kind !== "reply" ? "uncertain"
+        : response.reply.status === "ok" ? "recalled" : response.reply.status === "failed" ? "rejected" : "uncertain" }
+    },
     /** Received content identifier only. Returned path/URL fields are never opened. */
     async image(source: Source, file: string): Promise<unknown> {
       if (current.phase !== "online" || source.scope.botID !== options.botID || !accountID(source.actorID) ||

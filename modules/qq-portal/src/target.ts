@@ -4,6 +4,7 @@ import { isConflictError } from "../../../opencode/packages/client/src/promise"
 import type { PromptInput } from "../../../opencode/packages/schema/src/prompt-input"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
+export type Withdrawal = { target: Target; inputID: string; nativeID: string }
 export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & Partial<Pick<SessionApi, "list">> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> & Partial<Pick<SessionApi["input"], "position" | "followup" | "followupReceipt">> }
 export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input" | "threads" | "list">>
 export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-accepted" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled" | "followup-accepted" | "followup-pending" | "followup-delivered" | "followup-cancelled"
@@ -27,7 +28,7 @@ export const sameTarget = (left: Target, right: Target) => left.kind === "sessio
   : left.kind === "backend" && right.kind === "backend" && left.ref.backendID === right.ref.backendID && left.ref.threadID === right.ref.threadID
 
 /** Only public native APIs. This adapter does not own execution, pending work or a backend connection. */
-export function targets(session: Native, backend?: Backend) {
+export function targets(session: Native, backend?: Backend, onWithdrawal?: (value: Withdrawal) => Promise<void>) {
   const required = () => {
     if (!backend) throw new Error("Native conversation backend is unavailable")
     return backend
@@ -169,6 +170,7 @@ export function targets(session: Native, backend?: Backend) {
         if (pending[0]) {
           const result = await api.control({ backendID: destination.ref.backendID,
             control: { action: "withdraw", threadID: destination.ref.threadID, nativeID: pending[0].nativeID } })
+          if (result.status === "applied") await onWithdrawal?.({ target: destination, inputID, nativeID: pending[0].nativeID })
           return result.status === "applied" ? "withdrawn" : result.status === "not-found" ? "unchanged" : "uncertain"
         }
         cursor = snapshot.nextCursor

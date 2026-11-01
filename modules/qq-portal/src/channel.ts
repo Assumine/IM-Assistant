@@ -156,6 +156,7 @@ export function openQQChannel(options: ChannelOptions) {
     /** Trusted confirmation adapter only. Authorization precedes the exact OneBot message read. */
     read(source: Source) { return closing || !permitted(source) ? Promise.resolve(undefined) : wire.read(source) },
     image(source: Source, file: string) { return closing || !permitted(source) ? Promise.resolve(undefined) : wire.image(source, file) },
+    recall(source: Source, messageID: string) { return closing || !permitted(source) ? Promise.resolve({ status: "unavailable" as const }) : wire.recall(source, messageID) },
     /** Host-only primitive. Durable output identity, native completion and notification retry policy belong to the sender, not this wire. */
     async send(source: Source, text: string): Promise<SendResult | { status: "forbidden" }> {
       if (closing) return { status: "unavailable" }

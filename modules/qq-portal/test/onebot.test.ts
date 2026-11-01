@@ -91,6 +91,31 @@ test("async, malformed or lost send receipts remain uncertain and are never retr
   } finally { client.close(); fake.close() }
 })
 
+test("notification recall uses only the original acknowledged message ID and requires a definitive platform acknowledgment", async () => {
+  let deletes = 0
+  const fake = fakeOneBot({ call(socket, call) {
+    if (call.action !== "delete_msg") return
+    deletes++
+    expect(call.params).toEqual({ message_id: -500 })
+    if (deletes === 1) fake.answer(socket, call, null)
+    if (deletes === 2) fake.answer(socket, call, null, "async", 1)
+    if (deletes === 3) fake.answer(socket, call, null, "failed", 1000)
+    return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001", requestTimeoutMs: 30 }, { event() {} })
+  const source = { scope: { botID: "10001", kind: "private" as const, peerID: "20001" }, actorID: "20001", messageID: "1" }
+  try {
+    await client.ready
+    expect(await client.recall(source, "-500")).toEqual({ status: "recalled" })
+    expect(await client.recall(source, "-500")).toEqual({ status: "uncertain" })
+    expect(await client.recall(source, "-500")).toEqual({ status: "rejected" })
+    expect(await client.recall(source, "-500")).toEqual({ status: "uncertain" })
+    expect(await client.recall({ ...source, scope: { ...source.scope, botID: "10002" } }, "-500")).toEqual({ status: "unavailable" })
+    expect(await client.recall(source, "C:/private")).toEqual({ status: "unavailable" })
+    expect(deletes).toBe(4)
+  } finally { client.close(); fake.close() }
+})
+
 test("a malformed API status closes only the wire and settles its send as unknown", async () => {
   const fake = fakeOneBot({ call(socket, call) {
     if (!call.action.startsWith("send_")) return

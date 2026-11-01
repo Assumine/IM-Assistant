@@ -1,6 +1,6 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
 import { command, decode, fingerprint, inputID, originKey, scopeKey, type Policy, type Scope } from "./routing"
-import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence, type ParentInput } from "./target"
+import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence, type ParentInput, type Withdrawal } from "./target"
 import { sources, type Origin, type Source, type SourceResult } from "./sources"
 import { confirmations, type Choice, type Proposal } from "./confirmation"
 import { claimIngress, controls, type ControlOptions, type ControlResponse } from "./controls"
@@ -26,9 +26,9 @@ export type Result =
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
 export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy; controls?: ControlOptions;
-  images?: (input: Message) => Promise<PromptInput.FileAttachment[] | undefined> }) {
+  images?: (input: Message) => Promise<PromptInput.FileAttachment[] | undefined>; onWithdrawal?: (value: Withdrawal) => Promise<void> }) {
   const { storage, session, policy } = options
-  const native = targets(session, options.backend)
+  const native = targets(session, options.backend, options.onWithdrawal)
   const metadata = sources(storage, policy)
   const consent = confirmations(storage)
   const confirmationResult = (proposal: Proposal, duplicate: boolean): Result => ({ status: "confirmation-required", confirmationID: proposal.id, target: proposal.to, duplicate })
@@ -53,7 +53,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     if (destination) await native.validate(destination)
     await storage.set("binding:" + scopeKey(scope), destination ?? null)
   }
-  const dispatchControl = options.controls ? controls({ storage, policy, permissions: options.controls, session, backend: options.backend, binding, bind, lookup }) : undefined
+  const dispatchControl = options.controls ? controls({ storage, policy, permissions: options.controls, session, backend: options.backend, binding, bind, lookup, onWithdrawal: options.onWithdrawal }) : undefined
   const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", target: record.target,
     ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
   const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => (evidence === "followup-accepted" || evidence === "followup-pending" || evidence === "followup-delivered") && record.followupOf
@@ -235,3 +235,4 @@ export { createTaskReplies, openTaskReplies } from "./task-replies"
 export { createConfirmationChannel } from "./confirmation-channel"
 export { type HistoryConfig, type HistoricalInput } from "./history"
 export { createImages, type ImageConfig } from "./images"
+export { createQueueReplies } from "./queue-replies"

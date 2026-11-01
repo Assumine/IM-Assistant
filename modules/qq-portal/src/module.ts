@@ -6,6 +6,7 @@ import { createControlReplies } from "./notifications"
 import { openTaskReplies } from "./task-replies"
 import { createConfirmationChannel } from "./confirmation-channel"
 import { createImages, createImageReplies, imageFrameBytes } from "./images"
+import { createQueueReplies } from "./queue-replies"
 
 /** A complete application capability. Per-Location plugin setup never owns a bot connection. */
 export async function configuredModule(home: string, environment: NodeJS.ProcessEnv = process.env, observe: {
@@ -28,7 +29,13 @@ export async function configuredModule(home: string, environment: NodeJS.Process
         const backend = client.rpc(ConversationBackend.Api)
         let channel: ReturnType<typeof openQQChannel> | undefined
         const images = account.images ? createImages({ config: account.images, read: (source, file) => channel ? channel.image(source, file) : Promise.resolve(undefined) }) : undefined
-        const portal = createPortal({ storage, session: client.session, backend, policy: account.policy, controls: account.controls, images })
+        const portal = createPortal({ storage, session: client.session, backend, policy: account.policy, controls: account.controls, images,
+          onWithdrawal: async (entry) => { try { await queueReplies?.withdrawn(entry) } catch { observe.onIssue?.({ kind: "notification-uncertain" }) } } })
+        const queueReplies = account.queueReplies ? createQueueReplies({ storage, policy: account.policy, controls: account.controls, session: client.session, backend,
+          log: client.experimental.session.log, sourceFor: portal.sourceFor, linkReply: portal.linkReply,
+          send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
+          recall: (source, messageID) => channel ? channel.recall(source, messageID) : Promise.resolve({ status: "unavailable" as const }),
+        }) : undefined
         const imageReplies = createImageReplies({ storage, policy: account.policy,
           send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }) })
         const ready = Promise.withResolvers<boolean>()
@@ -37,6 +44,7 @@ export async function configuredModule(home: string, environment: NodeJS.Process
           publish: portal.linkControlView,
         }) : undefined
         const tasks = openTaskReplies({ client, backend, storage, policy: account.policy, sourceFor: portal.sourceFor, linkReply: portal.linkReply, ready: ready.promise,
+          onObserved: queueReplies?.observe,
           send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
           onReceipt: (receipt) => {
             if (receipt.status === "uncertain" || receipt.status === "conflict") observe.onIssue?.({ kind: "notification-uncertain" })
@@ -75,6 +83,10 @@ export async function configuredModule(home: string, environment: NodeJS.Process
           }
           if (result.status === "accepted" || result.status === "followup" || result.status === "steered" || result.status === "amended")
             if (!await tasks.admitted(result.target, result.inputID)) throw new Error("QQ result subscription was not retained")
+          if (queueReplies && (result.status === "accepted" || result.status === "followup")) {
+            const receipt = await queueReplies.admitted(result.target, result.inputID, result.duplicate)
+            if (receipt.status !== "sent" && receipt.status !== "ignored") observe.onIssue?.({ kind: "notification-uncertain", source: value.source })
+          }
           if (replies && value.message && value.result.status === "control") {
             const receipt = await replies.deliver(value.message, value.result)
             try {
