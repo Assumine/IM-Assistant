@@ -3,6 +3,7 @@ import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { AISDK } from "@opencode/core/aisdk"
 import { Command } from "@opencode/core/command"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
+import { Capabilities } from "@opencode/core/capabilities"
 import { Config } from "@opencode/core/config"
 import { Credential } from "@opencode/core/credential"
 import { Database } from "@opencode/core/database/database"
@@ -110,6 +111,7 @@ export const makePluginTestLayer = (permission = permissionLayer, generate = gen
       Model.node,
       Command.node,
       ConversationBackend.node,
+      Capabilities.node,
       Integration.node,
       Job.node,
       KV.node,

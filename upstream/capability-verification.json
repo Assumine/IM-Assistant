@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "task": "R4-01",
+  "plan_id": "opencode-app-base-v2",
+  "status": "passed",
+  "source_base_revision": "df84c067c47d7abebf201e88d35c4fa00555f88b",
+  "source_identity": "current-implementation-hashes-in-checkpoint-not-an-unchanged-HEAD-claim",
+  "scope": "isolated-current-source-native-application-not-live-account-rollout",
+  "checkpoint": "upstream/capability-checkpoint.json",
+  "checkpoint_sha256": "99e95cd4c2463de2e954a4300334ebd9bb112a579f1207ff4dbd96e501ba0702",
+  "runtime_entrypoint": {
+    "task": "R4-01",
+    "plan_id": "opencode-app-base-v2",
+    "archived_reference": false,
+    "status": "passed",
+    "tests_run": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "acceptance_ids": [
+      "A27",
+      "A28",
+      "A29"
+    ]
+  },
+  "native_tests": 704,
+  "chain_checks": 152,
+  "browser_tests": 34,
+  "stability": {
+    "native_tests": 50,
+    "browser_tests": 30,
+    "retries": 0,
+    "skipped": 0
+  },
+  "source_hashes": 300,
+  "acceptance": {
+    "A27": [
+      "original application Scope and native RPC",
+      "compiled native GUI plugin registrations",
+      "native GUI graph and host keepers"
+    ],
+    "A28": [
+      "empty application and failing/deferred/disabled configurations",
+      "owner stop and late-loader fences",
+      "current QQ product and original native Runner/Inbox chain"
+    ],
+    "A29": [
+      "immutable native KV notice/read/resolution facts",
+      "native SQLite restart and stable chronological pagination",
+      "visible-only GUI metrics and owner cancellation"
+    ]
+  },
+  "publication": "disabled",
+  "production_credentials_used": false,
+  "actual_qq_connection": false,
+  "external_messages_sent": 0,
+  "canonical_workspace_checks": 36,
+  "gui_changed_files_lint": "passed-11-files",
+  "remaining": [
+    "real accounts, other OS and packaged desktop remain unverified",
+    "optional module stop applies only to this service run; configuration enablement remains next-start",
+    "hardware/process metric providers and the independent QQ chatbot are not migrated",
+    "global navigation theme, marketplace and actual business-module UI are later work"
+  ],
+  "standalone_e2e_typecheck": {
+    "status": "failed-existing-diagnostics",
+    "diagnostics": 14,
+    "new_diagnostics": 0,
+    "compared_to": "r3-qq-target-e2e-types-local-report",
+    "required_before_release": true
+  }
+}

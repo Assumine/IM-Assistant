@@ -11,6 +11,7 @@ import { Agent } from "../agent.js"
 import { AISDK } from "../aisdk.js"
 import { Command } from "../command.js"
 import { ConversationBackend } from "../conversation-backend.js"
+import { Capabilities } from "../capabilities.js"
 import { Credential } from "../credential.js"
 import { Bus } from "../bus.js"
 import { Integration } from "../integration.js"
@@ -68,6 +69,8 @@ export const make = Effect.fn("PluginHost.make")(function* (
   const rpc = yield* Rpc.Service
   const conversation = yield* ConversationBackend.Service
   yield* conversation.bind(rpc).pipe(Effect.orDie)
+  const capabilities = yield* Capabilities.Service
+  yield* capabilities.bind(rpc).pipe(Effect.orDie)
   const skill = yield* Skill.Service
   const tools = yield* Tool.Service
   const vcs = yield* Vcs.Service
@@ -647,6 +650,7 @@ export const requirements = LayerNode.group([
   Reference.node,
   Rpc.node,
   ConversationBackend.node,
+  Capabilities.node,
   Skill.node,
   Tool.node,
   Vcs.node,

@@ -115,14 +115,7 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
           )
         : []
       const modules = Profile.active()
-        ? yield* Effect.tryPromise(async () => {
-            const { Portals } = await import("@im-assistant/profile/portals")
-            return Portals.load()
-          }).pipe(
-            Effect.catch(() =>
-              Effect.logWarning("Optional application module configuration is unavailable").pipe(Effect.as([])),
-            ),
-          )
+        ? (yield* Effect.promise(() => import("@im-assistant/profile/capabilities"))).Capabilities.load()
         : []
       const launch = start(
         {

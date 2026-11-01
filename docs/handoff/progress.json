@@ -28,7 +28,10 @@
     "A23",
     "A24",
     "A25",
-    "A26"
+    "A26",
+    "A27",
+    "A28",
+    "A29"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -572,9 +575,54 @@
       "blocked_reason": null
     },
     "R4-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "opencode/packages/im-assistant/src/capabilities.ts",
+        "opencode/packages/im-assistant/src/notifications.ts",
+        "opencode/packages/plugin/src/promise/application.ts",
+        "opencode/packages/schema/src/capability.ts",
+        "opencode/packages/core/src/capabilities.ts",
+        "opencode/packages/core/src/capability-notifications.ts",
+        "opencode/packages/server/src/application-modules.ts",
+        "opencode/packages/server/test/capabilities.test.ts",
+        "opencode/packages/server/script/capabilities-smoke.ts",
+        "opencode/packages/gui-plugins/src/capabilities/index.ts",
+        "opencode/packages/gui-plugins/src/capabilities/renderer.tsx",
+        "opencode/packages/gui-plugins/src/capabilities/page.tsx",
+        "opencode/packages/gui-plugins/src/capabilities/monitor.tsx",
+        "opencode/packages/app/e2e/regression/settings.spec.ts",
+        "opencode/packages/app/e2e/utils/capabilities.ts",
+        "modules/README.md",
+        "docs/handoff/公共能力接入契约.md",
+        "tools/capability_smoke.py",
+        "tests/rebase/test_r4_01.py",
+        "upstream/capability-checkpoint.json",
+        "upstream/capability-verification.json"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 4,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A27",
+            "A28",
+            "A29"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R4-01",
+          "evidence": "upstream/capability-verification.json",
+          "scope": "isolated-current-source-native-application-not-live-account-rollout",
+          "native_unit_tests": 704,
+          "native_chain_checks": 152,
+          "browser_tests": 34,
+          "stability_native_tests": 50,
+          "stability_browser_tests": 30,
+          "publication": "disabled"
+        }
+      ],
       "blocked_reason": null
     },
     "R4-02": {

@@ -17,6 +17,7 @@ import { PersistentPty } from "@opencode/core/persistent-pty"
 import { Project } from "@opencode/core/project"
 import { RuntimePolicy } from "@opencode/core/runtime-policy"
 import { ConversationBackend } from "@opencode/core/conversation-backend"
+import { Capabilities } from "@opencode/core/capabilities"
 import path from "node:path"
 import { ConfigPluginSource } from "@opencode/core/config/plugin/source"
 import { Worktree } from "@opencode/core/worktree"
@@ -64,6 +65,7 @@ import { BackendModules } from "./backend-modules"
 const applicationServiceNodes = [
   RuntimePolicy.node,
   ConversationBackend.node,
+  Capabilities.node,
   Global.node,
   FSUtil.node,
   Database.node,

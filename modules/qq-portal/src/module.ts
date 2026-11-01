@@ -7,6 +7,7 @@ import { openTaskReplies } from "./task-replies"
 import { createConfirmationChannel } from "./confirmation-channel"
 import { createImages, createImageReplies, imageFrameBytes } from "./images"
 import { createQueueReplies } from "./queue-replies"
+import type { WireState } from "./onebot"
 
 /** A complete application capability. Per-Location plugin setup never owns a bot connection. */
 export async function configuredModule(home: string, environment: NodeJS.ProcessEnv = process.env, observe: {
@@ -26,7 +27,16 @@ export async function configuredModule(home: string, environment: NodeJS.Process
   })
   return {
     id: "qq-portal",
-    open({ client, storage }) {
+    open({ client, storage, capability }) {
+      const states = new Map<string, WireState["phase"]>(accounts.map((account) => [account.policy.botID, "connecting"]))
+      const report = () => {
+        const phases = [...states.values()]
+        const online = phases.filter((phase) => phase === "online").length
+        if (online === phases.length) return capability.report({ phase: "ready" })
+        if (online > 0) return capability.report({ phase: "degraded" })
+        if (phases.some((phase) => phase === "connecting" || phase === "verifying")) return capability.report({ phase: "starting" })
+        capability.report({ phase: "unavailable" })
+      }
       const channels = accounts.map((account) => {
         const backend = client.rpc(ConversationBackend.Api)
         let channel: ReturnType<typeof openQQChannel> | undefined
@@ -98,7 +108,11 @@ export async function configuredModule(home: string, environment: NodeJS.Process
           }
           await observe.onResult?.(value)
         }, onIssue: observe.onIssue,
-        onState: (state) => observe.onState?.(account.policy.botID, state),
+        onState: (state) => {
+          states.set(account.policy.botID, state.phase)
+          report()
+          observe.onState?.(account.policy.botID, state)
+        },
         })
         void channel.ready.then((state) => ready.resolve(state.phase === "online"))
         return { close: async () => { await channel!.close(); await tasks.close() } }

@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 import { mkdtemp, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { OpenCode } from "@opencode/client"
+import { Capability } from "@opencode/schema/capability"
 import { fakeOneBot, until as observe, type Call } from "../../../../modules/qq-portal/test/fixture/onebot"
 import { inputID } from "../../../../modules/qq-portal/src/routing"
 
@@ -242,6 +243,11 @@ try {
     model: { providerID: "baseline", id: "baseline" },
   })
   assert.equal((await host.client.session.get({ sessionID: session.id })).id, session.id)
+  await until(async () =>
+    (await host!.client.rpc(Capability.Api).list({})).some(
+      (item) => item.id === "qq-portal" && item.state === "disabled",
+    ),
+  )
   assert.equal(first.upgrades.length + second.upgrades.length, 0)
   checks.push(
     "the actual product entry starts native sessions with configured but disabled QQ and opens no optional socket",
@@ -268,6 +274,11 @@ try {
     ["get_login_info", "get_status"],
   )
   assert.equal(second.calls.length, 0)
+  await until(async () =>
+    (await host!.client.rpc(Capability.Api).list({})).some(
+      (item) => item.id === "qq-portal" && item.health?.phase === "degraded",
+    ),
+  )
   assert.equal((await host.client.session.get({ sessionID: session.id })).id, session.id)
   checks.push(
     "actual product composition opens a verified account while another account's rejected token leaves the native core usable",
@@ -573,6 +584,10 @@ try {
   await observe(() => first.sockets.size === 0)
   second.event({ ...message(865, "/status"), self_id: 10002 })
   await observe(() => secondSends(865).length === 1)
+  assert.equal(
+    (await host.client.rpc(Capability.Api).list({})).find((item) => item.id === "qq-portal")?.health?.phase,
+    "degraded",
+  )
   for (const id of [860, 861, 862, 863]) assert.equal(sendsFor(id).length, 0)
   assert.equal(requests.length, 7)
   assert.equal(
@@ -608,6 +623,11 @@ try {
   await command("status", false)
   host = await boot()
   assert.equal((await host.client.session.get({ sessionID: session.id })).id, session.id)
+  await until(async () =>
+    (await host!.client.rpc(Capability.Api).list({})).some(
+      (item) => item.id === "qq-portal" && item.state === "failed",
+    ),
+  )
   assert.equal(first.upgrades.length + second.upgrades.length, connections)
   assert(!(await readFile(settings, "utf8")).includes(first.token))
   checks.push("malformed optional settings are rejected without opening sockets or blocking the actual product core")
@@ -622,6 +642,7 @@ try {
       product_entry: "packages/im-assistant/src/cli.ts",
       loopback_connection_attempts: first.upgrades.length + second.upgrades.length,
       independent_account_checks: 4,
+      capability_status: "native-application-owner",
       isolated_quote_followups: 2,
       second_account_task_replies: secondSends(801).length + secondSends(850).length + secondSends(851).length,
       isolated_bot_identities: ["10001", "10002"],

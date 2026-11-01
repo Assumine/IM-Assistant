@@ -12,7 +12,7 @@
         {
           "path": "bun.lock",
           "action": "modified",
-          "sha256": "4a2c6eb387254874cf63516d521fe548e0ee73d2ea34119bc37c6d018caacb71"
+          "sha256": "fc73dba901f785a8189de9fe0d556550e03b641b52d872b6ab1189905154808a"
         },
         {
           "path": "packages/cli/package.json",
@@ -183,7 +183,7 @@
         {
           "path": "packages/cli/src/server-process.ts",
           "action": "modified",
-          "sha256": "b5d7ebbbfa37f9c250168901158517a8243a1af85f5280d06490e064120676c9"
+          "sha256": "0ce1e1ec00e74cbaffda0acd986c3a431a25f9dcfa6a09f4387f1c24760ad72b"
         },
         {
           "path": "packages/cli/src/services/web-ui.ts",
@@ -258,7 +258,7 @@
         {
           "path": "packages/core/test/plugin/fixture.ts",
           "action": "modified",
-          "sha256": "86c0e8354742e2da44c310df7fefb6bb2a90d4cafaff392846fd7da1b2ffa9d8"
+          "sha256": "55cc5206c8218d1651c68c70a4f06e21cab2d689e1ac5143bef22c9c5370105f"
         },
         {
           "path": "packages/core/test/plugin/provider-dynamic.test.ts",
@@ -303,12 +303,12 @@
         {
           "path": "packages/gui-plugins/src/conversation.ts",
           "action": "added",
-          "sha256": "69d472e0fdf18f8cf3a652fbe0890c0c8eaa6f5361449a2a47eece3468eff5dc"
+          "sha256": "61f962028948a80f7c2530813b06f184838f36daa88c70f6b76f8d11bc603739"
         },
         {
           "path": "packages/im-assistant/package.json",
           "action": "added",
-          "sha256": "371e5d58574a83501af83c6c50ea4933591ac005ef492a5ae5d41ba5a52c1a08"
+          "sha256": "acdb76fc196d795cda653a1874961bb153fb4b049f3216d921b7f6e98939ee77"
         },
         {
           "path": "packages/im-assistant/src/non-project-location.ts",
@@ -471,7 +471,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "c10b1e6cb9feec6a180de1419909ab9ce5ab241f24ea271c75e9495ed8f029e5"
+          "sha256": "5660ebd6e235f091fcbab6475011c7ec8dc06e592c0e142d42cfe0fb3e193c26"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "88b43767a2dbfc9ee44688901e64bf412c942675c8ad656391d8e7c3cd82ae2e"
+          "sha256": "9c8985d27ab6b79b1523db4d89c342919f550a6d117983149d64a532c5e8b1df"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -611,7 +611,7 @@
         {
           "path": "packages/server/src/routes.ts",
           "action": "modified",
-          "sha256": "2e1ee6e7122e6a4932369646c329fce67ccfce1088750c8d452e9be3106ef24a"
+          "sha256": "2d7f166cc9c18c9b015a75f4fae0c4af82e67f5567bb84abf3999e139fe72061"
         }
       ]
     },
@@ -636,7 +636,7 @@
         {
           "path": "packages/core/src/plugin/host.ts",
           "action": "modified",
-          "sha256": "accbe150a8badfe578e5032fce3ba4220aa281cf903b6b06c22f68e4c43df2f5"
+          "sha256": "8d9bec5337bc84f3cb094f1830127d51095e2a0d67f15387eec35ee49e4e756a"
         },
         {
           "path": "packages/core/test/conversation-backend.test.ts",
@@ -685,7 +685,7 @@
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "788a39fbde8a2ca9d699c22fa7f683c4cf42b1f9651c83f0984e9c0f8854899e"
+          "sha256": "2ac6e7677d47054ecc80b69ff625bfd25c71cbab6bac532a7d8bb12273e8a188"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
@@ -710,12 +710,12 @@
         {
           "path": "packages/gui-plugins/src/main.ts",
           "action": "modified",
-          "sha256": "d84f0f9ad3385fd36235129073f9a2212de0da3629268da72efaaf264f0da50b"
+          "sha256": "4d342394c5b82562963eafefea8b00d1ccc5601079a48cd45e1b57f148f7a9b2"
         },
         {
           "path": "packages/gui-plugins/src/renderer.ts",
           "action": "modified",
-          "sha256": "d6eafc3dbbabc7356030b0823920df9034655aa16c4f271715363acebe45de8f"
+          "sha256": "2d13ddbc74e0897cc2fb0ba486e9905094c7d39dd79550f22f32f8f8e3586b4e"
         }
       ]
     },
@@ -1005,12 +1005,12 @@
         {
           "path": "packages/server/src/fetch.ts",
           "action": "modified",
-          "sha256": "fbb410f7d1f5d6261935f8ad52a3ddf296c1fe63b826efb090441f0beee00049"
+          "sha256": "68bd1dd2c65688f9de5bb039ddce4e7ab32f61e8f267595c1292edd0db30e637"
         },
         {
           "path": "packages/server/src/process.ts",
           "action": "modified",
-          "sha256": "2ef4a0832bcc79beeb0890488ac07ed64148f0deac97ea2795f8a5554d7df4b4"
+          "sha256": "9e2565ad9bfdce29dd8f2db32c455aec04f8f5a5ac566260600236e771dee23f"
         }
       ]
     },
@@ -1290,12 +1290,12 @@
         {
           "path": "packages/plugin/src/promise/application.ts",
           "action": "added",
-          "sha256": "1452688e4463acbcd33a61ab69ac7526d96f0a2a5e42c38c371efa65c0cdbf0f"
+          "sha256": "4c5c35dec913c60efbdd079eeed9f3d17f327796f1f7c5b94b98230e68028a8d"
         },
         {
           "path": "packages/plugin/src/promise/index.ts",
           "action": "modified",
-          "sha256": "b5e671e51e4835e2c42db5fca51fdd614e9160cbaff75c32386ea73f56576748"
+          "sha256": "175c1974bd78cf6d498fa5712ca952dbcf70370e555c1578a55fa72cbb23c03e"
         },
         {
           "path": "packages/server/package.json",
@@ -1305,12 +1305,12 @@
         {
           "path": "packages/server/script/qq-product-smoke.ts",
           "action": "added",
-          "sha256": "75b99ab8ecca8d5e4acdee85a966c58a0bdb049d3109184aa5c8edfb4995151f"
+          "sha256": "b1c2ab0e01c45abe8597ab806cb37e5f8f09037cf6cdc1522c9c65585f41d9ec"
         },
         {
           "path": "packages/server/src/application-modules.ts",
           "action": "added",
-          "sha256": "21244355da348b81153f38173ffb547e883be9a73d76759debbdec6654c06a72"
+          "sha256": "e3b52c1f8d5fa5018ed9d3959e1b2868d54b20d919648468271889d52760bc72"
         },
         {
           "path": "packages/server/test/application-modules.test.ts",
@@ -1427,6 +1427,112 @@
           "path": "packages/server/script/qq-queue-receipts-smoke.ts",
           "action": "added",
           "sha256": "a1fdacbe0f1bc11f2a0f7d078322e786ed65537a6930a0f0cacf8b39ea0d311c"
+        }
+      ]
+    },
+    {
+      "id": "R4-01-native-capabilities-219",
+      "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-01"
+      ],
+      "files": [
+        {
+          "path": "packages/core/src/capabilities.ts",
+          "action": "added",
+          "sha256": "38ee0af7688b0a4011d5a1440e1528d952b4ec3374ecd46e59dbe86e774344f7"
+        },
+        {
+          "path": "packages/core/src/capability-notifications.ts",
+          "action": "added",
+          "sha256": "dcaadb3c45688d48602729f8c93c8b3ed27f1aec98a630df0045d242775f12a5"
+        },
+        {
+          "path": "packages/im-assistant/src/capabilities.ts",
+          "action": "added",
+          "sha256": "636a56e46bda1e260378ae66dcaef651e357c1f7d758333ec5357154da1375df"
+        },
+        {
+          "path": "packages/im-assistant/src/notifications.ts",
+          "action": "added",
+          "sha256": "fdbfe83290b3be016e1290376eb166b0253cd66b9dc4b39754f3a6743f0a2e98"
+        },
+        {
+          "path": "packages/schema/src/capability.ts",
+          "action": "added",
+          "sha256": "5e8ba5dc63049f1f1911972b02e2928f7b8805c7452c49ae7bbe9c7db7eb7cf7"
+        }
+      ]
+    },
+    {
+      "id": "R4-01-native-capabilities-224",
+      "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-01"
+      ],
+      "files": [
+        {
+          "path": "packages/gui-plugins/src/capabilities/i18n/en.ts",
+          "action": "added",
+          "sha256": "ebfd147beb9dea9c00554c7dc12a2bc24ba3eb86aff7b55e8703a597e1b05304"
+        },
+        {
+          "path": "packages/gui-plugins/src/capabilities/index.ts",
+          "action": "added",
+          "sha256": "c1c64131448aae4e08f4aa3e1ef9de7abce0ade4d068af9ecb00bd159d14f2e2"
+        },
+        {
+          "path": "packages/gui-plugins/src/capabilities/monitor.tsx",
+          "action": "added",
+          "sha256": "dbfc9596078f05451333a053ae6a971715dd717f4ff4ae30dbc5c6736684ff87"
+        },
+        {
+          "path": "packages/gui-plugins/src/capabilities/page.tsx",
+          "action": "added",
+          "sha256": "65cc7c095563a923cfefca3ada1d09ecaa7bcb920dc0a8601a322d27ed5b3e8f"
+        },
+        {
+          "path": "packages/gui-plugins/src/capabilities/renderer.tsx",
+          "action": "added",
+          "sha256": "d022d6029fb7e2dd40c267c8ef9a97c368fab6743f6aa807816a2756eebcf9fe"
+        },
+        {
+          "path": "packages/server/test/capabilities.test.ts",
+          "action": "added",
+          "sha256": "8dd530b81d775a38ddfcc100d5978e00bc4bf28b0346cf03abddcd57aee7a218"
+        }
+      ]
+    },
+    {
+      "id": "R4-01-native-capabilities-230",
+      "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/utils/capabilities.ts",
+          "action": "added",
+          "sha256": "dcdc558204678ba6f04b435497978316ff2c2a136b1f3e7e72c13c5899e90210"
+        }
+      ]
+    },
+    {
+      "id": "R4-01-native-capabilities-231",
+      "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R4-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/utils/workspace.ts",
+          "action": "modified",
+          "sha256": "144add6190e7c0b8ae85c3fcbc9e800bb332c0991e0c13f587b3b78fe72258a0"
+        },
+        {
+          "path": "packages/server/script/capabilities-smoke.ts",
+          "action": "added",
+          "sha256": "e560d7ffb688772b570551f813483a44b68a100215fe5557f991bcacc5e6aba4"
         }
       ]
     }

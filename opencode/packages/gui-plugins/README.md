@@ -792,6 +792,7 @@ export const builtins = compose({
   sources,
   goal,
   backends,
+  capabilities,
 })
 ```
 
@@ -818,6 +819,7 @@ export const builtins = compose({
   sources: { ...sources, windowEntry: eager(sourcesRenderer) },
   goal: { ...goal, windowEntry: eager(goalRenderer) },
   backends: { ...backends, windowEntry: eager(backendsRenderer) },
+  capabilities: { ...capabilities, windowEntry: eager(capabilitiesRenderer) },
 })
 ```
 

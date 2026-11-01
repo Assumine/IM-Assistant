@@ -1,5 +1,10 @@
 export type { PluginOptions } from "../options.js"
-export type { ApplicationModule } from "./application.js"
+export type {
+  ApplicationModule,
+  ApplicationModuleLoader,
+  ApplicationModuleEntry,
+  ApplicationCapability,
+} from "./application.js"
 export type { StorageEntry, StorageScanOptions, StorageScanResult } from "../storage.js"
 export * as Plugin from "./plugin.js"
 

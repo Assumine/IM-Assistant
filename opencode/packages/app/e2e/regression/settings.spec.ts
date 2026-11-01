@@ -2,11 +2,166 @@ import { expect, test, type Page } from "@playwright/test"
 import type { ConfigEntry, OpenCodeEvent, SessionMessageInfo, WorktreeDirectory } from "@opencode/client/promise"
 import { NO_PROVIDER, REMOTE_SERVER, SERVER, holdRoute, project, seed, session } from "../utils/app"
 import { mockMissingLocation, mockOpenCodeServer } from "../utils/mock-server"
-import { mockRemoteServer, mockWorkspace, openSession, openSettings, type WorkspaceInput } from "../utils/workspace"
+import {
+  mockRemoteServer,
+  mockWorkspace,
+  openSession,
+  openSettings,
+  showSettings,
+  type WorkspaceInput,
+} from "../utils/workspace"
 import { recordNotifications } from "../utils/notifications"
 import { installSseTransport } from "../utils/sse-transport"
 import { backendEvent, backendRpc, backendTabs, backendHref } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
+import type { Capability } from "@opencode/schema/capability"
+import { capabilityEvent, capabilityRpc, capabilityVisibility } from "../utils/capabilities"
+
+test("capabilities: module failure and explicit stop leave the native conversation available", async ({ page }) => {
+  const modules: Capability.Info[] = [
+    { id: "healthy", title: "Independent service", state: "active", health: { phase: "ready" }, metrics: false },
+    { id: "qq-portal", title: "QQ task forwarding", state: "failed", metrics: false },
+    { id: "off", title: "Optional service", state: "disabled", metrics: false },
+  ]
+
+  const stopped: string[] = []
+
+  const workspace = await openSession(page, {
+    name: "IndependentModules",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => modules,
+      stop: (id) => {
+        stopped.push(id)
+        const index = modules.findIndex((item) => item.id === id)
+        modules[index] = { ...modules[index], state: "stopped", health: undefined, metrics: false }
+
+        return modules[index]
+      },
+    }),
+  })
+
+  const settings = await showSettings(page)
+  await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
+  const healthy = page.getByRole("article", { name: "Independent service" })
+  await expect(healthy.getByText("Ready", { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole("article", { name: "QQ task forwarding" }).getByText("Failed", { exact: true }),
+  ).toBeVisible()
+  await healthy.getByRole("button", { name: "Stop service", exact: true }).click()
+  await expect(healthy.getByText("Stopped for this run", { exact: true })).toBeVisible()
+  expect(stopped).toEqual(["healthy"])
+  await page.screenshot({ path: test.info().outputPath("application-modules.png"), fullPage: true })
+  await settings.getByRole("button", { name: "Back to app", exact: true }).click()
+  await page
+    .locator("[data-titlebar-tab-slot]")
+    .filter({ has: page.locator("[data-titlebar-tab-title]", { hasText: workspace.session.title! }) })
+    .locator("[data-titlebar-tab-link]")
+    .click()
+  await expect(workspace.editor).toBeVisible()
+  await expect(workspace.editor).toBeEditable()
+  expect(workspace.sessions).toHaveLength(1)
+})
+
+test("capabilities: reading a module notice clears unread without resolving its request", async ({ page }) => {
+  let notice: Capability.Notice = {
+    moduleID: "research",
+    id: "access",
+    title: "Manual verification needed",
+    message: "The original browser page is waiting for you.",
+    severity: "warning",
+    requiresAction: true,
+    createdAt: 1000,
+  }
+
+  const reads: Capability.NoticeRef[] = []
+
+  const workspace = await openSession(page, {
+    name: "ModuleNotifications",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => [],
+      notifications: ({ filter }) => ({
+        items: filter === "unread" && notice.readAt !== undefined ? [] : [notice],
+        counts: { unread: notice.readAt === undefined ? 1 : 0, attention: notice.resolvedAt === undefined ? 1 : 0 },
+      }),
+      markRead: (input) => {
+        reads.push(input)
+        notice = { ...notice, readAt: 2000 }
+
+        return notice
+      },
+    }),
+  })
+
+  const settings = await showSettings(page)
+  await settings.getByRole("tab", { name: "Module notifications", exact: true }).click()
+  const article = page.getByRole("article", { name: notice.title })
+  await expect(article.getByRole("img", { name: "Unread message", exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("module-notification-unread.png"), fullPage: true })
+  await article.getByRole("button", { name: "Read message", exact: true }).click()
+  const preview = page.getByRole("dialog", { name: notice.title })
+  await expect(preview.getByText(notice.message!, { exact: true })).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(article.getByRole("img", { name: "Unread message", exact: true })).toHaveCount(0)
+  await expect(article.getByText("Needs action", { exact: true })).toBeVisible()
+  expect(reads).toEqual([{ moduleID: "research", id: "access" }])
+  await expect(page.getByText("0 unread messages", { exact: true })).toBeVisible()
+  await expect(page.getByText("1 request needs action", { exact: true })).toBeVisible()
+  notice = { ...notice, resolvedAt: 3000 }
+  await workspace.push([capabilityEvent(workspace.directory)])
+  await expect(article.getByText("Resolved", { exact: true })).toBeVisible()
+  await expect(page.getByText("0 requests need action", { exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("module-notifications.png"), fullPage: true })
+})
+
+test("capabilities: monitoring samples only its visible panel and stops when settings closes", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") })
+  let samples = 0
+  await openSession(page, {
+    name: "OnDemandMetrics",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => [{ id: "worker", title: "Measured service", state: "active", metrics: true }],
+      metrics: (id) => {
+        samples++
+
+        return {
+          id,
+          status: "ready",
+          collectedAt: 1000 + samples,
+          items: [{ id: "load", label: "Owned work", value: 11 + samples, unit: "percent" }],
+        }
+      },
+    }),
+  })
+  const settings = await showSettings(page)
+  await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
+  const module = page.getByRole("article", { name: "Measured service" })
+  await expect(module).toBeVisible()
+  await page.clock.fastForward(3000)
+  expect(samples).toBe(0)
+  await module.getByRole("button", { name: "Monitor", exact: true }).click()
+  await expect(page.getByRole("progressbar", { name: "Owned work", exact: true })).toHaveAttribute("value", "12")
+  expect(samples).toBe(1)
+  await page.clock.fastForward(1000)
+  await expect.poll(() => samples).toBe(2)
+  await expect(page.getByRole("progressbar", { name: "Owned work", exact: true })).toHaveAttribute("value", "13")
+  await capabilityVisibility(page, true)
+  await page.clock.fastForward(5000)
+  expect(samples).toBe(2)
+  await capabilityVisibility(page, false)
+  await expect(page.getByRole("progressbar", { name: "Owned work", exact: true })).toHaveAttribute("value", "14")
+  expect(samples).toBe(3)
+  await page.screenshot({ path: test.info().outputPath("module-monitor.png"), fullPage: true })
+  await module.getByRole("button", { name: "Close monitor", exact: true }).click()
+  await expect(page.getByRole("progressbar", { name: "Owned work", exact: true })).toHaveCount(0)
+  await page.clock.fastForward(5000)
+  expect(samples).toBe(3)
+  await page.keyboard.press("Escape")
+  await page.clock.fastForward(5000)
+  expect(samples).toBe(3)
+})
 
 test("backends: live text deduplicates offsets, repairs one gap and preserves older reading", async ({ page }) => {
   const alpha: ConversationBackend.Thread = {

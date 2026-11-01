@@ -182,12 +182,19 @@ export async function openSettings(page: Page, input: WorkspaceInput) {
   const workspace = await mockWorkspace(page, { sessions: [], ...input })
   await page.goto("/")
 
+  return { ...workspace, settings: await showSettings(page) }
+}
+
+/** Opens Settings without replacing the existing sessions or server fixtures. */
+export async function showSettings(page: Page) {
+  await page.getByRole("button", { name: "Home", exact: true }).click()
+
   if ((page.viewportSize()?.width ?? 1280) < 800) await page.getByRole("button", { name: "Tabs", exact: true }).click()
   await page.getByRole("button", { name: "Settings", exact: true }).click()
   const settings = page.getByTestId("settings-screen")
   await expect(settings).toBeFocused({ timeout: APP_READY_TIMEOUT })
 
-  return { ...workspace, settings }
+  return settings
 }
 
 export function fileNode(directory: string, path: string, type: "file" | "directory" = "file") {

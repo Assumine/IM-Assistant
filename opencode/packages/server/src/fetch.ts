@@ -8,7 +8,7 @@ import { isAllowedCorsOrigin } from "./cors"
 import { createRoutes } from "./routes"
 import type { ServerOptions } from "./options"
 import type { Module } from "@opencode/plugin/effect/conversation"
-import type { ApplicationModule } from "@opencode/plugin/promise/application"
+import type { ApplicationModuleEntry } from "@opencode/plugin/promise/application"
 import { ApplicationModules } from "./application-modules"
 
 export interface BootOptions {
@@ -20,7 +20,7 @@ export interface BootOptions {
   /** Trusted complete backend modules. Started independently, never loaded from request or project configuration. */
   readonly backends?: readonly Module[]
   /** Trusted application-scoped capability resources; not per-Location plugins or conversation backends. */
-  readonly modules?: readonly ApplicationModule[]
+  readonly modules?: readonly ApplicationModuleEntry[]
 }
 
 /**

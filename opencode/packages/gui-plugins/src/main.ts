@@ -15,6 +15,7 @@ import microsoftOffice from "./microsoft-office"
 import sources from "./sources"
 import goal from "./goal"
 import backends from "./backends"
+import capabilities from "./capabilities"
 
 /** Built-in plugins with their main entries, by id. Lists every built-in so their ids stay reserved. */
 export const builtins = compose({
@@ -34,4 +35,5 @@ export const builtins = compose({
   sources,
   goal,
   backends,
+  capabilities,
 })

@@ -23,7 +23,7 @@ import { ServerInfo } from "./server-info"
 import { Status } from "./service-status"
 import type { ServerOptions } from "./options"
 import type { Module } from "@opencode/plugin/effect/conversation"
-import type { ApplicationModule } from "@opencode/plugin/promise/application"
+import type { ApplicationModuleEntry } from "@opencode/plugin/promise/application"
 import { ApplicationModules } from "./application-modules"
 
 export interface Lifecycle<E = never, R = never> {
@@ -55,7 +55,7 @@ export const start = Effect.fn("ServerProcess.start")(function* <E, R>(
   transform?: Transform,
   remoteURLs?: () => ReadonlyArray<string>,
   backends: readonly Module[] = [],
-  modules: readonly ApplicationModule[] = [],
+  modules: readonly ApplicationModuleEntry[] = [],
 ) {
   const password = options.password
   if (!password) return yield* Effect.fail(new Error("Missing server password"))
