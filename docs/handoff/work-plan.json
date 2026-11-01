@@ -345,5 +345,144 @@
       "native_verification": "Python 验收入口应调用锁定上游的原生测试/构建；实际命令和运行数在 R0-01 核对，不以合成断言替代原生运行。"
     }
   ],
-  "architecture_review": "每次改动核对核心/插件/依赖归属、原生入口、状态所有者和依赖方向；不因局部兼容恢复外层宿主或竞争状态机。"
+  "architecture_review": "每次改动核对核心/插件/依赖归属、原生入口、状态所有者和依赖方向；不因局部兼容恢复外层宿主或竞争状态机。",
+  "module_plan": {
+    "schema_version": 1,
+    "plan_id": "qq-plugin-migration-v1",
+    "foundation_plan_id": "opencode-app-base-v2",
+    "scope": "optional_qq_business_plugins",
+    "start_task": "Q1-01",
+    "progress_file": "docs/handoff/progress.json",
+    "production_switch": false,
+    "private_data_migration": false,
+    "acceptance_document": "docs/architecture/QQ聊天迁入验收.md",
+    "tasks": [
+      {
+        "id": "Q1-01",
+        "phase": "Q1",
+        "title": "分离可复用 QQ 协议依赖，验证账号与故障隔离",
+        "depends_on": [],
+        "outputs": [
+          "modules/qq-protocol/src/index.ts",
+          "modules/qq-protocol/src/onebot.ts",
+          "modules/qq-protocol/test/isolation.test.ts"
+        ],
+        "test_files": [
+          "tests/modules/test_q1_01.py"
+        ],
+        "acceptance_ids": [
+          "B01",
+          "B02",
+          "B03"
+        ],
+        "scope": "从任务转发中提取认证 OneBot 连接、协议寻址和受控图片标识；依赖库不得反向导入业务插件或接管任务、记忆、授权。转发通过同一公共实现运行。",
+        "done_when": [
+          "协议只有一个生产实现，公开入口可单独加载，不依赖 OpenCode 核心或任务转发；账号连接同进程唯一所有者。",
+          "两个合成账号在同群互不串事件、凭据和发送；停用、断线、身份或协议错误不影响另一账号；未知发送不重放。",
+          "保留原转发契约、原生 Session/Inbox/引用/图片和正式产品启动的隔离运行证据；不连接真实 QQ。"
+        ],
+        "verification_commands": [
+          "python tools/validate_design.py",
+          "python tools/run_runtime_checks.py --task Q1-01"
+        ],
+        "native_verification": "Python 编排实际 Bun/原生公共接口和产品进程；默认关闭，不连接真实 QQ、用户模型账号或旧数据库。"
+      },
+      {
+        "id": "Q1-02",
+        "phase": "Q1",
+        "title": "实现独立聊天插件的原生会话、人格与记忆边界",
+        "depends_on": [
+          "Q1-01"
+        ],
+        "outputs": [
+          "modules/qq-chatbot/package.json",
+          "modules/qq-chatbot/src/index.ts",
+          "modules/qq-chatbot/src/sessions.ts"
+        ],
+        "test_files": [
+          "tests/modules/test_q1_02.py"
+        ],
+        "acceptance_ids": [
+          "B04",
+          "B05",
+          "B06"
+        ],
+        "scope": "独立 ApplicationModule 使用公共原生客户端与本插件 KV；按机器人账号及私聊对象/群隔离原生 Session。人格通过原生支持的配置入口注入，保留原生 provider、上下文、压缩和用量；不复制旧模型循环。",
+        "done_when": [
+          "停用转发后聊天模块可单独启动，无聊天模块或模型配置失败时主程序与转发仍可运行。",
+          "群共享自身上下文，每条输入携带真实成员身份；跨群、私聊、任务上下文隔离，重启保留原生历史与身份。",
+          "重复输入幂等，不建立第二套队列或会话库；人格不继承任务控制权限，只使用原生已准许的公共接口；真实 HTTP/SQLite/合成模型验证。"
+        ],
+        "verification_commands": [
+          "python tools/validate_design.py",
+          "python tools/run_runtime_checks.py --task Q1-02"
+        ],
+        "native_verification": "Python 编排实际 Bun/原生公共接口和产品进程；默认关闭，不连接真实 QQ、用户模型账号或旧数据库。"
+      },
+      {
+        "id": "Q1-03",
+        "phase": "Q1",
+        "title": "接回聊天输入、独立回复策略与受控图片能力",
+        "depends_on": [
+          "Q1-02"
+        ],
+        "outputs": [
+          "modules/qq-chatbot/src/channel.ts",
+          "modules/qq-chatbot/src/policy.ts",
+          "modules/qq-chatbot/src/configuration.ts"
+        ],
+        "test_files": [
+          "tests/modules/test_q1_03.py"
+        ],
+        "acceptance_ids": [
+          "B07",
+          "B08",
+          "B09"
+        ],
+        "scope": "按当前有效规则实现聊天侧私聊白名单、群聊读取、独立回复开关与可配置参与策略，不复活旧的每条强制回复或 @ 才闲聊规则。结构化 @、图片理解和表情能力遵守受控内容接口；无可用资源明确报告，不假造实现。",
+        "done_when": [
+          "聊天策略和任务白名单/@规则独立；只读不回时可存入本群原生上下文但不能触发公开发送。",
+          "成员归属和结构化 @ 不串人；消息回复对应已保留来源，CQ 文本不作为协议执行；事件重复和发送结果未知不重发。",
+          "受控图片按内容标识和界限读取，可用模型能力不满足时不声称已理解；表情资源只使用已授权内容，停用时不残留读写和发送。"
+        ],
+        "verification_commands": [
+          "python tools/validate_design.py",
+          "python tools/run_runtime_checks.py --task Q1-03"
+        ],
+        "native_verification": "Python 编排实际 Bun/原生公共接口和产品进程；默认关闭，不连接真实 QQ、用户模型账号或旧数据库。"
+      },
+      {
+        "id": "Q1-04",
+        "phase": "Q1",
+        "title": "正式产品装配、真实配置与双插件联合回归",
+        "depends_on": [
+          "Q1-03"
+        ],
+        "outputs": [
+          "opencode/packages/im-assistant/src/capabilities.ts",
+          "modules/qq-chatbot/src/module.ts",
+          "tests/modules/qq-phase-evidence.json"
+        ],
+        "test_files": [
+          "tests/modules/test_q1_04.py"
+        ],
+        "acceptance_ids": [
+          "B10",
+          "B11",
+          "B12"
+        ],
+        "scope": "通过现有 CLI/原生公共能力位置装配独立聊天模块，提供独立账号/API/人格/回复策略配置与停用反馈。默认关闭，不改正式启动入口或迁私人数据。验证只转发、只聊天、不同账号共存与模型故障。",
+        "done_when": [
+          "配置实际进入对应模块，凭据不入公开事件或日志；状态、故障、启停和数据命名空间独立；依赖库不作为第三个业务模块展示。",
+          "真实产品进程 + 认证 loopback OneBot + 合成模型覆盖只启用其一/同时启用/故障/重启，原生会话队列历史与另一插件继续有效。",
+          "严格类型检查与受影响原生回归通过，记录确切源码与运行数；真实账号、私人历史和生产切换另验收，不以基座 36 项或文档检查抵扣。"
+        ],
+        "verification_commands": [
+          "python tools/validate_design.py",
+          "python tools/run_runtime_checks.py --task Q1-04"
+        ],
+        "native_verification": "Python 编排实际 Bun/原生公共接口和产品进程；默认关闭，不连接真实 QQ、用户模型账号或旧数据库。"
+      }
+    ]
+  }
 }

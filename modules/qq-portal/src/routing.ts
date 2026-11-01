@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto"
+import { imageFile } from "../../qq-protocol/src/index"
+import type { Scope } from "../../qq-protocol/src/index"
+export { imageFile } from "../../qq-protocol/src/index"
+export type { Scope } from "../../qq-protocol/src/index"
 
 export type Policy = { botID: string; allowedUsers: readonly string[]; allowedGroups: readonly string[] }
-export type Scope = { botID: string; kind: "private" | "group"; peerID: string }
 export type Message = { scope: Scope; actorID: string; messageID: string; text: string; quoteID?: string; mentions: string[]; images?: string[] }
 export type Recall = { scope: Scope; actorID: string; messageID: string }
 type RecordValue = Record<string, unknown>
@@ -10,8 +13,6 @@ const user = (value: unknown) => typeof value === "string" || typeof value === "
   ? (/^[1-9][0-9]{0,19}$/.test(String(value)) ? String(value) : undefined) : undefined
 const message = (value: unknown) => typeof value === "string" || typeof value === "number" && Number.isSafeInteger(value)
   ? (/^[A-Za-z0-9_-]{1,64}$/.test(String(value)) ? String(value) : undefined) : undefined
-// NapCat indexes received pictures by their content-derived filename. Never accept a path, URL or CQ text.
-export const imageFile = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{32}\.(?:png|jpe?g|gif|webp|bmp)$/i.test(value)
 
 /** Decode trusted transport's OneBot event; raw user text is never parsed as CQ markup or protocol instructions. */
 export function decode(value: unknown, policy: Policy): { kind: "message"; message: Message } | { kind: "recall"; recall: Recall } | { kind: "ignored" } | { kind: "unsupported" } {

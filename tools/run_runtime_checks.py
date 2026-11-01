@@ -3,10 +3,14 @@ from pathlib import Path
 import argparse, importlib.util, json, sys, unittest
 
 ROOT=Path(__file__).resolve().parents[1]
+if __package__ in {None, ''}:
+    sys.path.insert(0, str(ROOT))
+from tools.handoff_plan import select_plan
 
 def run(ident, archived=False):
     directory=ROOT/('docs/archive/python-host-plan' if archived else 'docs/handoff')
-    plan=json.loads((directory/'work-plan.json').read_text(encoding='utf-8'))
+    plan=(json.loads((directory/'work-plan.json').read_text(encoding='utf-8')) if archived
+          else select_plan(ROOT, task_id=ident)[0])
     task=next((t for t in plan['tasks'] if t['id']==ident),None)
     if not task:raise ValueError('Unknown task ID')
     files=[(ROOT/p).resolve() for p in task['test_files']]

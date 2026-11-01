@@ -1,17 +1,21 @@
 """Read the handoff plan and local reference; never starts or modifies anything."""
 from pathlib import Path
-import argparse, json
+import argparse, json, sys
+
+if __package__ in {None, ''}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.handoff_plan import select_plan
 
 ROOT=Path(__file__).resolve().parents[1]
 
-def local_reference():
-    p=ROOT/'handoff.local.json'
+def local_reference(root=ROOT):
+    p=root/'handoff.local.json'
     if not p.exists():return {'status':'not_configured','example':'handoff.local.example.json'}
     try:
         cfg=json.loads(p.read_text(encoding='utf-8'))
         if cfg.get('schema_version')!=1 or cfg.get('access')!='read_only':
             return {'status':'invalid_configuration','reason':'Only version 1 read_only references are supported'}
-        legacy=(ROOT/cfg['legacy_root']).resolve()
+        legacy=(root/cfg['legacy_root']).resolve()
         client=(legacy/cfg['client_relative_root']).resolve()
         if not client.is_relative_to(legacy):return {'status':'invalid_configuration','reason':'Client root escapes the configured legacy root'}
         required=cfg['required_reference_files']
@@ -26,25 +30,17 @@ def local_reference():
     except (OSError,ValueError,KeyError,TypeError) as error:
         return {'status':'invalid_configuration','reason':type(error).__name__}
 
-def next_task():
-    plan=json.loads((ROOT/'docs/handoff/work-plan.json').read_text(encoding='utf-8'))
-    progress=json.loads((ROOT/'docs/handoff/progress.json').read_text(encoding='utf-8'))
-    if plan.get('plan_id')!=progress.get('plan_id'):raise ValueError('Progress belongs to another plan')
+def next_task(root=None):
+    root=Path(ROOT if root is None else root)
+    plan,progress=select_plan(root)
     states=progress['tasks'];items=plan['tasks']
-    if set(states)!={t['id'] for t in items}:raise ValueError('Progress and task definitions do not match')
-    if any(s['status'] not in {'pending','in_progress','blocked','done'} for s in states.values()):
-        raise ValueError('Unknown task status')
-    for task in items:
-        if any(dep not in states for dep in task['depends_on']):raise ValueError('Unknown task dependency')
-        if states[task['id']]['status'] in {'in_progress','done'} and any(states[d]['status']!='done' for d in task['depends_on']):
-            raise ValueError('Active/completed task has incomplete dependencies')
     active=[t for t in items if states[t['id']]['status']=='in_progress']
     ready=[t for t in items if states[t['id']]['status']=='pending' and all(states[d]['status']=='done' for d in t['depends_on'])]
     chosen=(active or ready or [None])[0]
     blocked=[{'id':t['id'],'reason':states[t['id']].get('blocked_reason')} for t in items if states[t['id']]['status']=='blocked']
     return {'plan_id':plan.get('plan_id'),'status':'task_available' if chosen else 'blocked' if any(s['status']!='done' for s in states.values()) else 'all_tasks_recorded_done',
             'next_task':chosen,'completed_tasks':sum(s['status']=='done' for s in states.values()),
-            'total_tasks':len(items),'blocked':blocked,'local_client_reference':local_reference(),
+            'total_tasks':len(items),'blocked':blocked,'local_client_reference':local_reference(root),
             'note':'Read-only plan lookup. Recorded done status must still have real verification evidence.'}
 
 if __name__=='__main__':

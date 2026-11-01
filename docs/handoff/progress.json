@@ -732,5 +732,92 @@
       ],
       "blocked_reason": null
     }
+  },
+  "active_plan_id": "qq-plugin-migration-v1",
+  "module_plan": {
+    "plan_id": "qq-plugin-migration-v1",
+    "implementation_started": true,
+    "runtime_acceptance_completed": [
+      "B01",
+      "B02",
+      "B03"
+    ],
+    "tasks": {
+      "Q1-01": {
+        "status": "done",
+        "artifacts": [
+          "modules/qq-protocol/package.json",
+          "modules/qq-protocol/README.md",
+          "modules/qq-protocol/tsconfig.json",
+          "modules/qq-protocol/src/index.ts",
+          "modules/qq-protocol/src/types.ts",
+          "modules/qq-protocol/src/images.ts",
+          "modules/qq-protocol/src/onebot.ts",
+          "modules/qq-protocol/test/isolation.test.ts",
+          "modules/qq-protocol/test/fixture/onebot.ts",
+          "modules/qq-portal/src/onebot.ts",
+          "modules/qq-portal/src/routing.ts",
+          "modules/qq-portal/src/sources.ts",
+          "modules/qq-portal/src/images.ts",
+          "modules/qq-portal/test/fixture/onebot.ts",
+          "tools/handoff_plan.py",
+          "tools/next_task.py",
+          "tools/run_runtime_checks.py",
+          "tools/validate_design.py",
+          "tools/qq_protocol_smoke.py",
+          "tests/test_handoff_phases.py",
+          "tests/test_plan_tools.py",
+          "tests/modules/test_q1_01.py",
+          "tests/modules/qq-protocol-evidence.json",
+          "docs/architecture/QQ聊天迁入验收.md"
+        ],
+        "verification": [
+          {
+            "task": "Q1-01",
+            "plan_id": "qq-plugin-migration-v1",
+            "archived_reference": false,
+            "status": "passed",
+            "tests_run": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "acceptance_ids": [
+              "B01",
+              "B02",
+              "B03"
+            ],
+            "progress_updated": false,
+            "kind": "runtime",
+            "command": "python tools/run_runtime_checks.py --task Q1-01",
+            "exit_code": 0,
+            "evidence": "tests/modules/qq-protocol-evidence.json",
+            "native_test_executions": 798,
+            "native_chain_checks": 147,
+            "handoff_tests": 15,
+            "workspace_checks": 36,
+            "publication": "disabled"
+          }
+        ],
+        "blocked_reason": null
+      },
+      "Q1-02": {
+        "status": "pending",
+        "artifacts": [],
+        "verification": [],
+        "blocked_reason": null
+      },
+      "Q1-03": {
+        "status": "pending",
+        "artifacts": [],
+        "verification": [],
+        "blocked_reason": null
+      },
+      "Q1-04": {
+        "status": "pending",
+        "artifacts": [],
+        "verification": [],
+        "blocked_reason": null
+      }
+    }
   }
 }

@@ -5,7 +5,8 @@ import { target, sameTarget, type Target, type ParentInput } from "./target"
 import { historicalInput, type HistoricalInput } from "./history"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
-export type Source = { scope: Scope; messageID: string; actorID: string }
+import type { Source } from "../../qq-protocol/src/index"
+export type { Source } from "../../qq-protocol/src/index"
 export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; continuationID?: string; expectedTurnID?: string; followupOf?: ParentInput; source?: Source; historical?: HistoricalInput }
 export type SourceResult = { status: "found"; source: Source } | { status: "missing" | "forbidden" | "uncertain" | "not-accepted" }
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)

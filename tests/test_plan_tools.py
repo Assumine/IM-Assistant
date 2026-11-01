@@ -24,6 +24,9 @@ class PlanToolTests(unittest.TestCase):
         self.plan=json.loads((ROOT/'docs/handoff/work-plan.json').read_text(encoding='utf-8'))
         self.progress=json.loads((ROOT/'docs/handoff/progress.json').read_text(encoding='utf-8'))
         # A plan-tool fixture must not change meaning as real implementation advances.
+        self.plan.pop('module_plan',None)
+        self.progress.pop('module_plan',None)
+        self.progress.pop('active_plan_id',None)
         self.progress['implementation_started']=False
         self.progress['runtime_acceptance_completed']=[]
         for state in self.progress['tasks'].values():
@@ -87,7 +90,10 @@ class PlanToolTests(unittest.TestCase):
         path=ROOT/'docs/handoff/progress.json'
         before=hashlib.sha256(path.read_bytes()).hexdigest()
         report=validate_design.validate()
-        recorded=json.loads(path.read_text(encoding='utf-8'))['runtime_acceptance_completed']
+        progress=json.loads(path.read_text(encoding='utf-8'))
+        active=progress['module_plan'] if progress.get('active_plan_id')==progress.get('module_plan',{}).get('plan_id') else progress
+        recorded=active['runtime_acceptance_completed']
+        self.assertEqual(report['plan_id'],active['plan_id'])
         self.assertEqual(report['runtime_acceptance_recorded_completed'],len(recorded))
         self.assertEqual(report['runtime_acceptance_executed'],0)
         self.assertEqual(report['archived_recorded_tests'],49)

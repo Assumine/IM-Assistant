@@ -1,6 +1,6 @@
 # 当前开发约定
 
-- 活动计划为opencode-app-base-v2。先读docs/handoff/接手指南.md并运行python tools/next_task.py，不按旧聊天或归档任务继续旧P1。
+- 活动计划由progress.json的active_plan_id选择，当前为qq-plugin-migration-v1；opencode-app-base-v2基座已完成并保留原证据。先读docs/handoff/接手指南.md并运行python tools/next_task.py，不按旧聊天或归档任务继续旧P1。
 - 以完整OpenCode应用为基座二次开发；不再建设独立Python宿主后接入OpenCode，不将上游核心强制改写为Python。
 - 整体始终是“核心框架＋插件”。OpenCode承担应用/会话核心，个人助手业务按完整能力插件接入；不能把业务逐项硬编码进核心，也不能为了插件再造一个外层宿主。
 - 每次改动先确认核心与插件的职责、原生状态所有者和依赖方向。插件通过公共接口/展示位置接入，不覆盖全局发送/队列函数，不直接操作其他插件或核心的私有数据；依赖库/运行时不是功能插件。
@@ -12,6 +12,7 @@
 - Codex保留完整原生线程、账号、上下文和压缩，QQ只做可选转发；不能形成另一套抢占同一任务的执行队列。
 - 能力包放modules/<module-id>/，优先原生扩展；重负载可独立服务，不让QQ、网关或某一业务失败阻断主应用。
 - 原P0 SDK与49项测试保留为历史参考，旧计划在docs/archive/python-host-plan，不能计为新版任务完成。活动进度只由docs/handoff/progress.json记录。
+- 后续QQ阶段定义与状态分别在work-plan.json和progress.json的module_plan内，不复用基座36项完成率；依赖库不当作业务插件，小羊与任务转发各自持有账号、策略和原生会话。
 - 修改计划运行python tools/validate_design.py；完成运行任务还须执行对应tools/run_runtime_checks.py。缺失、0测试或跳过必需测试不能通过，Python验收应驱动真实上游运行证据。
 - 每轮更新最近交接.md，区分已核对源码、已选基线、已构建、已验收及已切换。文档修改不算实施完成。
 - 不提交凭据、账号、会话、数据库、浏览器资料、运行日志、缓存、下载、模型或第三方二进制。

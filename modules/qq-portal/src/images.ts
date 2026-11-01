@@ -9,8 +9,8 @@ import type { Result } from "./index"
 import type { NotificationReceipt } from "./notifications"
 
 export type ImageConfig = { provider: "napcat"; maxBytes: number }
-export const maximumImageBytes = 20 * 1024 * 1024
-export const imageFrameBytes = (maximum: number) => 4 * Math.ceil(maximum / 3) + 65536
+export { maximumImageBytes, imageFrameBytes } from "../../qq-protocol/src/index"
+import { maximumImageBytes } from "../../qq-protocol/src/index"
 
 export function imageConfiguration(value: unknown): ImageConfig | undefined {
   if (value === undefined) return undefined

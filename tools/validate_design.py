@@ -3,6 +3,11 @@ from pathlib import Path
 import hashlib
 import json
 import re
+import sys
+
+if __package__ in {None, ''}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from tools.handoff_plan import load_plans
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -21,7 +26,7 @@ def validate(root=ROOT):
     progress=load('docs/handoff/progress.json')
     scope=load('docs/architecture/scope.json')
     baseline=load('docs/handoff/dependency-baseline.json')
-    check('active plan is the OpenCode application rebase',
+    check('foundation plan is the OpenCode application rebase',
           plan['schema_version']==2 and plan['plan_id']=='opencode-app-base-v2' and
           plan['scope']=='opencode_application_rebase' and plan['integration_unit']=='modified_opencode_application')
     check('progress and scope belong to the active plan',progress['plan_id']==plan['plan_id']==scope['plan_id'])
@@ -81,6 +86,48 @@ def validate(root=ROOT):
             recorded.extend(task['acceptance_ids'])
     check('only current task evidence advances current acceptance',set(recorded)==set(progress['runtime_acceptance_completed']) and len(recorded)==len(progress['runtime_acceptance_completed']))
 
+    phases,active_id=load_plans(root)
+    module_receipt=None
+    if len(phases)>1:
+        module,module_progress=phases[1]
+        check('QQ phase extends the completed foundation without production or private migration',
+              module['schema_version']==1 and module['plan_id']=='qq-plugin-migration-v1' and
+              module['foundation_plan_id']==plan['plan_id'] and module['scope']=='optional_qq_business_plugins' and
+              module['production_switch'] is False and module['private_data_migration'] is False and
+              module['progress_file']=='docs/handoff/progress.json')
+        definitions=module['tasks'];module_states=module_progress['tasks']
+        check('four independently owned QQ migration tasks',len(definitions)==4 and
+              {t['id'] for t in definitions}=={'Q1-01','Q1-02','Q1-03','Q1-04'})
+        checklist=(root/module['acceptance_document']).read_text(encoding='utf-8')
+        module_ids=re.findall(r'- \[ \] (B\d{2})\b',checklist)
+        assigned=[case for task in definitions for case in task['acceptance_ids']]
+        check('12 QQ cases assigned once without inheriting foundation completion',
+              len(module_ids)==len(set(module_ids))==len(assigned)==len(set(assigned))==12 and set(module_ids)==set(assigned) and
+              '- [x]' not in checklist.lower() and not set(module_ids)&set(ids))
+        module_completed=[]
+        for task in definitions:
+            ident=task['id'];state=module_states[ident]
+            check(ident+' has outputs tests criteria and native verifier',
+                  bool(task['outputs']) and bool(task['test_files']) and len(task['done_when'])>=3 and bool(task['native_verification']) and
+                  'python tools/run_runtime_checks.py --task '+ident in task['verification_commands'])
+            check(ident+' has confined implementation and test paths',all((root/p).resolve().is_relative_to(root) and
+                  p.split('/')[0] in {'opencode','modules','tests'} for p in task['outputs']+task['test_files']))
+            if state['status'] in {'in_progress','done'}:
+                check(ident+' explicitly started in its own phase',module_progress['implementation_started'] is True)
+            if state['status']=='blocked':check(ident+' has a concrete blocker',bool(state.get('blocked_reason')))
+            if state['status']!='done':continue
+            check(ident+' has real artifacts and test files',bool(state['artifacts']) and all((root/p).resolve().is_relative_to(root) and
+                  (root/p).is_file() for p in state['artifacts']+task['outputs']+task['test_files']))
+            evidence=[v for v in state['verification'] if v.get('kind')=='runtime' and v.get('status')=='passed' and
+                      v.get('exit_code')==0 and v.get('tests_run',0)>0 and v.get('skipped',0)==0 and v.get('plan_id')==module['plan_id']]
+            check(ident+' has actual runtime evidence for the QQ phase',bool(evidence) and all((root/v.get('evidence','')).is_file() for v in evidence))
+            check(ident+' evidence covers its own cases',set(task['acceptance_ids'])<={case for v in evidence for case in v.get('acceptance_ids',[])})
+            module_completed.extend(task['acceptance_ids'])
+        check('only QQ phase runtime advances its own progress',set(module_completed)==set(module_progress['runtime_acceptance_completed']) and
+              len(module_completed)==len(module_progress['runtime_acceptance_completed']))
+        module_receipt={'plan_id':module['plan_id'],'implementation_work_items':len(definitions),
+                        'planned_runtime_acceptance_count':len(module_ids),'runtime_acceptance_recorded_completed':len(module_completed)}
+
     oldplan=load('docs/archive/python-host-plan/work-plan.json')
     oldprogress=load('docs/archive/python-host-plan/progress.json')
     check('superseded plan remains separately archived',len(oldplan['tasks'])==18 and plan['supersedes']=='docs/archive/python-host-plan/work-plan.json')
@@ -112,11 +159,15 @@ def validate(root=ROOT):
     check('private reference config is ignored','/handoff.local.json' in (root/'.gitignore').read_text(encoding='utf-8').splitlines())
     example=load('handoff.local.example.json')
     check('portable reference example remains read-only',example['access']=='read_only' and not Path(example['legacy_root']).is_absolute())
-    receipt={'status':'active_plan_validated','plan_id':plan['plan_id'],'count':len(passed),'checks':passed,
+    receipt={'status':'active_plan_validated','plan_id':active_id,'foundation_plan_id':plan['plan_id'],'module_plan':module_receipt,'count':len(passed),'checks':passed,
              'implementation_work_items':len(tasks),'planned_runtime_acceptance_count':len(ids),
              'runtime_acceptance_executed':0,'runtime_acceptance_recorded_completed':len(recorded),
              'archived_recorded_tests':49,'model_calls':0,'qq_calls':0,'production_deployments':0,
              'documents':{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in documents}}
+    if module_receipt and active_id==module_receipt['plan_id']:
+        receipt['foundation']={'plan_id':plan['plan_id'],'implementation_work_items':len(tasks),
+                               'planned_runtime_acceptance_count':len(ids),'runtime_acceptance_recorded_completed':len(recorded)}
+        receipt.update(module_receipt)
     output=root/'.reports/design-validation.json';output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     return receipt
