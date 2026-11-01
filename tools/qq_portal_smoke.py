@@ -36,8 +36,8 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 85),
-        (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 3),
+        (module, "r3-qq-module-tests", [bun, "test"], 90),
+        (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 5),
     ]:
         log = reports / (label + ".log")
         with log.open("wb") as output:
@@ -78,6 +78,13 @@ def _run():
     guidance = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
     if guidance["status"] != "passed" or len(guidance["checks"]) != 8 or guidance["model_requests"] != 3 or guidance["native_admissions"] != 5 or guidance["actual_qq_connection"] or guidance["external_messages_sent"] or guidance["production_credentials_used"]:
         raise RuntimeError("Real native guarded guidance acceptance was incomplete")
+    linked_directory = tempfile.mkdtemp(prefix="qq-native-followup-", dir=native_parent)
+    steps.append(run_command("packages/server", ["run", "script/qq-native-followup-smoke.ts"], "r3-qq-native-followup-http", timeout=180,
+                             extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_QQ_NATIVE_FOLLOWUP_ROOT": linked_directory}))
+    lines = (reports / "r3-qq-native-followup-http.log").read_text(encoding="utf-8").splitlines()
+    linked = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
+    if linked["status"] != "passed" or len(linked["checks"]) != 8 or linked["model_requests"] != 4 or linked["native_admissions"] != 7 or linked["followup_calls"] != 5 or linked["actual_qq_connection"] or linked["external_messages_sent"] or linked["production_credentials_used"]:
+        raise RuntimeError("Real native linked follow-up acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
         ("core", ["test/session-input.test.ts", "test/session-inbox-append.test.ts", "test/session-owned.test.ts", "test/session-prompt.test.ts"], "r3-qq-append-session-regression", 93, []),
@@ -94,7 +101,7 @@ def _run():
             raise RuntimeError("Required original SDK regression scenarios did not all execute")
         steps.append(result)
     steps.append(run_command("packages/core", ["test", "test/conversation-backend.test.ts"], "r3-qq-native-guidance-core"))
-    if steps[-1]["native_tests_passed"] != 17 or steps[-1]["native_tests_failed"] or steps[-1]["native_tests_skipped"]:
+    if steps[-1]["native_tests_passed"] != 19 or steps[-1]["native_tests_failed"] or steps[-1]["native_tests_skipped"]:
         raise RuntimeError("Required native input identity checks did not all execute")
     names = [
         "opencode/packages/core/src/plugin/host.ts", "opencode/packages/core/src/plugin/sdk.ts", "opencode/packages/core/src/plugin/supervisor.ts",
@@ -122,9 +129,10 @@ def _run():
         "opencode/packages/app/src/session/composer/region.tsx", "opencode/packages/app/src/session/composer/timeline-actions.ts",
         "opencode/packages/server/script/qq-backend-continuation-smoke.ts", "opencode/packages/plugin/src/effect/conversation.ts",
         "modules/codex-native/src/backend.ts", "modules/codex-native/src/session-adapter.ts", "modules/codex-native/test/input.test.ts",
+        "opencode/packages/server/script/qq-native-followup-smoke.ts",
     ]
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
-            "steps": steps, "http_acceptance": http, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance,
+            "steps": steps, "http_acceptance": http, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked,
             "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
             "source_routing": {"owner": "original-plugin-kv", "frozen_envelope": True,
                                "reverse_lookup_requires_native_admission": True, "legacy_missing_source_is_not_inferred": True,
@@ -133,7 +141,7 @@ def _run():
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",
                           "controls are classified only; remote control dispatch and authorization are not implemented",
-                          "ordinary Session pending append, guarded active continuation, proven-closed linked followups, whole-backend current-turn guidance and cross-conversation confirmation are supported; whole-backend pending append and completed quotes remain blocked",
+                          "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
                           "outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}

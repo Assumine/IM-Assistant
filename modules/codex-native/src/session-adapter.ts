@@ -98,6 +98,11 @@ export class CodexSessionAdapter {
       threadId: id(threadId), ...page(pagination), itemsView: "full", sortDirection: "desc",
     })
   }
+  turnStates(threadId: string, pagination: Pagination = {}) {
+    return this.native.request<Page<Turn>>("thread/turns/list", {
+      threadId: id(threadId), ...page(pagination), itemsView: "notLoaded", sortDirection: "desc",
+    })
+  }
   items(threadId: string, turnId?: string, pagination: Pagination = {}) {
     return this.native.request<Page<ItemEntry>>("thread/items/list", {
       threadId: id(threadId), turnId: turnId === undefined ? undefined : id(turnId), ...page(pagination), sortDirection: "asc",

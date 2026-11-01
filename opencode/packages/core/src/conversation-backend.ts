@@ -14,6 +14,7 @@ const Stored = Schema.Struct({
   fingerprint: Schema.String,
   receipt: Schema.optional(ConversationBackend.Receipt),
   rejection: Schema.optional(ConversationBackend.Rejection),
+  followupOf: Schema.optional(ConversationBackend.ParentInput),
 })
 
 interface Interface extends ConversationDomain {
@@ -243,39 +244,45 @@ const layer = Layer.effect(
             // No first-writer insert here: observing an unknown input must not claim it or send anything.
             if (value === undefined) return unknown
             const stored = yield* Schema.decodeUnknownEffect(Stored)(value).pipe(Effect.orDie)
+            const relation = stored.followupOf ? { followupOf: stored.followupOf } : {}
             if (
               stored.inputID !== input.inputID ||
               stored.ref.backendID !== input.ref.backendID ||
               stored.ref.threadID !== input.ref.threadID
             )
               return yield* Effect.fail(ctx.error("conflict", "Input ID belongs to a different request"))
-            if (stored.receipt) return { ...unknown, status: "accepted" as const, receipt: stored.receipt }
-            if (stored.rejection) return { ...stored.rejection, ref: input.ref, inputID: input.inputID }
+            if (stored.receipt) return { ...unknown, ...relation, status: "accepted" as const, receipt: stored.receipt }
+            if (stored.rejection) return { ...stored.rejection, ref: input.ref, inputID: input.inputID, ...relation }
             const backend = get(input.ref.backendID)
-            if (!backend) return unknown
+            if (!backend) return { ...unknown, ...relation }
             const result = yield* Effect.tryPromise({
               try: () => backend.reconcile(input.ref, input.inputID),
               catch: () => undefined,
             }).pipe(Effect.catch(() => Effect.succeed(undefined)))
-            if (!result || get(input.ref.backendID) !== backend) return unknown
+            if (!result || get(input.ref.backendID) !== backend) return { ...unknown, ...relation }
             const receipt = yield* Schema.decodeUnknownEffect(ConversationBackend.Receipt)(result).pipe(Effect.orDie)
             yield* kv.set(key, { ...stored, receipt })
-            return { ...unknown, status: "accepted" as const, receipt }
+            return { ...unknown, ...relation, status: "accepted" as const, receipt }
           }),
         send: (input, ctx) =>
           Effect.gen(function* () {
             const key = `conversation:admission:${Hash.sha256(input.inputID)}`
+            const parent = input.delivery !== "steer" ? input.followupOf : undefined
+            const identity = { ref: input.ref, inputID: input.inputID, ...(parent ? { followupOf: parent } : {}) }
             const fingerprint = Hash.sha256(
               JSON.stringify([
                 input.ref.backendID,
                 input.ref.threadID,
                 input.text,
                 input.delivery === "steer" ? input.expectedTurnID : null,
+                ...(parent ? [[parent.inputID, parent.turnID, parent.nativeID]] : []),
               ]),
             )
-            const stored = { ref: input.ref, inputID: input.inputID, fingerprint }
+            const stored = { ...identity, fingerprint }
             const backend = get(input.ref.backendID)
             if (!backend) return yield* Effect.fail(ctx.error("unavailable", "Conversation backend is unavailable"))
+            if (parent && !backend.followup)
+              return yield* Effect.fail(ctx.error("unavailable", "Backend linked input is unavailable"))
             // A native SQLite first-writer fact, not a second pending-work queue. No payload is stored.
             const first = yield* kv.insert(key, stored)
             const current = first
@@ -289,25 +296,29 @@ const layer = Layer.effect(
               return yield* Effect.fail(ctx.error("conflict", "Input ID belongs to a different request"))
             }
             if ("receipt" in current && current.receipt)
-              return { status: "accepted" as const, ref: input.ref, inputID: input.inputID, receipt: current.receipt }
-            if ("rejection" in current && current.rejection)
-              return { ...current.rejection, ref: input.ref, inputID: input.inputID }
+              return { status: "accepted" as const, ...identity, receipt: current.receipt }
+            if ("rejection" in current && current.rejection) return { ...current.rejection, ...identity }
             // An interrupted or concurrent request is never sent again. Only native state can confirm delivery.
             const result = yield* Effect.tryPromise({
-              try: () => (first ? backend.enqueue(input) : backend.reconcile(input.ref, input.inputID)),
+              try: () =>
+                first
+                  ? parent
+                    ? backend.followup!({ ...input, delivery: "queue", followupOf: parent })
+                    : backend.enqueue(input)
+                  : backend.reconcile(input.ref, input.inputID),
               catch: () => undefined,
             }).pipe(Effect.catch(() => Effect.succeed(undefined)))
-            if (!result) return { status: "uncertain" as const, ref: input.ref, inputID: input.inputID }
+            if (!result) return { status: "uncertain" as const, ...identity }
             if ("status" in result && result.status === "rejected") {
               const rejection = yield* Schema.decodeUnknownEffect(ConversationBackend.Rejection)(result).pipe(
                 Effect.orDie,
               )
               yield* kv.set(key, { ...stored, rejection })
-              return { ...rejection, ref: input.ref, inputID: input.inputID }
+              return { ...rejection, ...identity }
             }
             const receipt = yield* Schema.decodeUnknownEffect(ConversationBackend.Receipt)(result).pipe(Effect.orDie)
             yield* kv.set(key, { ...stored, receipt })
-            return { status: "accepted" as const, ref: input.ref, inputID: input.inputID, receipt }
+            return { status: "accepted" as const, ...identity, receipt }
           }),
       })
       const runtime = yield* Effect.context<Scope.Scope>()

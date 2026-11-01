@@ -39,13 +39,24 @@ export const origin = (value: unknown): Origin | undefined => {
   if ("continuationID" in value && (!controlledID(value.continuationID) || "amendmentID" in value)) throw new Error("Invalid QQ continuation metadata")
   if ("expectedTurnID" in value && (destination.kind !== "backend" || !value.continuationID || typeof value.expectedTurnID !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value.expectedTurnID))) throw new Error("Invalid native continuation fence")
   if (destination.kind === "backend" && value.continuationID && !value.expectedTurnID) throw new Error("Missing native continuation fence")
-  if ("followupOf" in value && (destination.kind !== "session" || "amendmentID" in value || "continuationID" in value || "expectedTurnID" in value || !record(value.followupOf) ||
-    !controlledID(value.followupOf.inputID) || !controlledID(value.followupOf.rootID) || value.followupOf.inputID === value.inputID || value.followupOf.rootID === value.inputID)) throw new Error("Invalid native follow-up relation")
+  let parent: ParentInput | undefined
+  if ("followupOf" in value) {
+    const p = value.followupOf
+    if ("amendmentID" in value || "continuationID" in value || "expectedTurnID" in value || !record(p) || !controlledID(p.inputID) || p.inputID === value.inputID) throw new Error("Invalid native follow-up relation")
+    if (destination.kind === "session") {
+      if (!controlledID(p.rootID) || p.rootID === value.inputID || Object.keys(p).length !== 2) throw new Error("Invalid native Session parent")
+      parent = { inputID: p.inputID, rootID: p.rootID }
+    } else {
+      const id = (v: unknown): v is string => typeof v === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(v)
+      if (!id(p.turnID) || !id(p.nativeID) || Object.keys(p).length !== 3) throw new Error("Invalid native backend parent")
+      parent = { inputID: p.inputID, turnID: p.turnID, nativeID: p.nativeID }
+    }
+  }
   const envelope = "source" in value ? source(value.source) : undefined
   if (envelope && (envelope.actorID !== value.actorID || inputID(envelope) !== (value.continuationID ?? value.amendmentID ?? value.inputID)))
     throw new Error("Conflicting QQ source envelope")
   return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint,
-    ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(value.continuationID ? { continuationID: value.continuationID as string } : {}), ...(value.expectedTurnID ? { expectedTurnID: value.expectedTurnID as string } : {}), ...(value.followupOf ? { followupOf: { inputID: (value.followupOf as ParentInput).inputID, rootID: (value.followupOf as ParentInput).rootID } } : {}), ...(envelope ? { source: envelope } : {}) }
+    ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(value.continuationID ? { continuationID: value.continuationID as string } : {}), ...(value.expectedTurnID ? { expectedTurnID: value.expectedTurnID as string } : {}), ...(parent ? { followupOf: parent } : {}), ...(envelope ? { source: envelope } : {}) }
 }
 
 /** Only immutable routing metadata in the original plugin KV. No message bodies, execution state or delivery queue. */

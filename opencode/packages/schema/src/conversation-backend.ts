@@ -8,20 +8,30 @@ const ID = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{1,128}$/))
 export const Ref = Schema.Struct({ backendID: ID, threadID: ID })
 export type Ref = typeof Ref.Type
 const fields = { ref: Ref, inputID: ID, text: Schema.String.check(Schema.isPattern(/\S/)) }
+// Native user input and its exact, observed terminal turn. This is a relationship, not another execution state.
+export const ParentInput = Schema.Struct({ inputID: ID, turnID: ID, nativeID: ID })
+export type ParentInput = typeof ParentInput.Type
 export const Input = Schema.Union([
-  Schema.Struct({ ...fields, delivery: Schema.optional(Schema.Literal("queue")) }),
+  Schema.Struct({ ...fields, delivery: Schema.optional(Schema.Literal("queue")), followupOf: optional(ParentInput) }),
   Schema.Struct({ ...fields, delivery: Schema.Literal("steer"), expectedTurnID: ID }),
 ])
 export type Input = typeof Input.Type
+export type FollowupInput = Extract<Input, { delivery?: "queue" }> & { followupOf: ParentInput }
 export const Receipt = Schema.Struct({ nativeID: ID, kind: Schema.Literals(["queued", "steered", "message"]) })
 export type Receipt = typeof Receipt.Type
 // A definitive backend refusal, not a timeout or an ambiguous delivery failure. Never contains private error text.
 export const Rejection = Schema.Struct({ status: Schema.Literal("rejected"), reason: Schema.Literal("not-accepted") })
 export interface Rejection extends Schema.Schema.Type<typeof Rejection> {}
 export const Admission = Schema.Union([
-  Schema.Struct({ status: Schema.Literal("accepted"), ref: Ref, inputID: ID, receipt: Receipt }),
-  Schema.Struct({ status: Schema.Literal("uncertain"), ref: Ref, inputID: ID }),
-  Schema.Struct({ ...Rejection.fields, ref: Ref, inputID: ID }),
+  Schema.Struct({
+    status: Schema.Literal("accepted"),
+    ref: Ref,
+    inputID: ID,
+    receipt: Receipt,
+    followupOf: optional(ParentInput),
+  }),
+  Schema.Struct({ status: Schema.Literal("uncertain"), ref: Ref, inputID: ID, followupOf: optional(ParentInput) }),
+  Schema.Struct({ ...Rejection.fields, ref: Ref, inputID: ID, followupOf: optional(ParentInput) }),
 ])
 export type Admission = typeof Admission.Type
 // Fresh native identity observation, independent of cached admission receipts. It is not an active-turn claim.
@@ -29,6 +39,14 @@ export const InputPosition = Schema.Union([
   Schema.Struct({ ref: Ref, inputID: ID, status: Schema.Literal("unknown") }),
   Schema.Struct({ ref: Ref, inputID: ID, status: Schema.Literal("queued"), nativeID: ID }),
   Schema.Struct({ ref: Ref, inputID: ID, status: Schema.Literal("delivered"), nativeID: ID, turnID: ID }),
+  Schema.Struct({
+    ref: Ref,
+    inputID: ID,
+    status: Schema.Literal("closed"),
+    nativeID: ID,
+    turnID: ID,
+    state: Schema.Literals(["completed", "interrupted", "failed"]),
+  }),
 ])
 export type InputPosition = typeof InputPosition.Type
 export const Page = {

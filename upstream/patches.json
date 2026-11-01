@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "14ea6d9a9afbf654beef6fc5c35e8f6cec58a8c0a3d3f6db7601ae6befede7e5"
+          "sha256": "57c32971f5ac89e6b306d28dfd81423abfd931de5da68cd808beb6d6fe000c5c"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -641,12 +641,12 @@
         {
           "path": "packages/core/test/conversation-backend.test.ts",
           "action": "added",
-          "sha256": "8eaf0b88bfb449fa79cdb11bc2b83ba684dece06ffd8eb2cbc1350275c379c77"
+          "sha256": "ba3bec6964e499c8d95c24d4c5e83c731cb505cd5a3d11bdacc1665807892b95"
         },
         {
           "path": "packages/plugin/src/effect/conversation.ts",
           "action": "added",
-          "sha256": "057154872addbe8d9ba66272ce034734cb47565b40ff74ea7ca42b3a5e7bd912"
+          "sha256": "5c2ba443fd9e6e315571d3a11998c1763355235228edf14fcd50b922f57b1f6a"
         },
         {
           "path": "packages/plugin/src/effect/plugin.ts",
@@ -656,7 +656,7 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "6f34b86fa67e9107f2c9653125c4da51127502854a47c2e47faf88c5759bad72"
+          "sha256": "524550cff25237946077707f5b35d29ff257af4bb4b031b0ce1931223ea7949e"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
@@ -1240,7 +1240,22 @@
         {
           "path": "packages/server/script/qq-backend-continuation-smoke.ts",
           "action": "added",
-          "sha256": "d1cf6c61a3ae4077b76987c4fb654b65fe996e63ade135110c77e1d6c2af8fc6"
+          "sha256": "92e48ad720b20596572a31ae0dca3a444a2334ea5675c2df2c84dceeaa7fc8a9"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-native-backend-followup",
+      "reason": "整后端终结输入观察与可选关联后续接纳契约；原接纳元数据保存父身份，沿原生队列移交并只读核对，保持旧普通输入摘要兼容。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-native-followup-smoke.ts",
+          "action": "added",
+          "sha256": "3d087b880ecca939e6823f7a4641382ed55149f026ac86e055e9bbcc186928c7"
         }
       ]
     }

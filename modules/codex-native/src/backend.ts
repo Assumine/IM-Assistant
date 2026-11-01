@@ -17,7 +17,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
     if (ref.backendID !== descriptor.id) throw new Error("Different native backend")
     return adapter.readOwned(ref.threadID)
   }
-  const input = async (ref: ConversationBackend.Ref, inputID: string): Promise<ConversationBackend.InputPosition> => {
+  const locate = async (ref: ConversationBackend.Ref, inputID: string, terminal: boolean): Promise<ConversationBackend.InputPosition> => {
     await owned(ref)
     const positions: ConversationBackend.InputPosition[] = []
     const pages = async <T>(read: (cursor?: string) => Promise<{ data: T[]; nextCursor: string | null }>, each: (item: T) => void) => {
@@ -42,11 +42,39 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
         positions.push({ ref, inputID, status: "delivered", nativeID: entry.item.id, turnID: entry.turnId })
     })
     if (positions.length > 1) throw new Error("Ambiguous native input identity")
-    return positions[0] ?? { ref, inputID, status: "unknown" }
+    const found = positions.at(0)
+    if (!found || found.status !== "delivered" || !terminal) return found ?? { ref, inputID, status: "unknown" }
+    const turns: { id: string; status: string }[] = []
+    await pages((cursor) => adapter.turnStates(ref.threadID, { cursor, limit: 100 }), (turn) => {
+      if (turn.id === found.turnID) turns.push(turn)
+    })
+    if (turns.length > 1) throw new Error("Ambiguous native input turn")
+    const state = turns[0]?.status
+    if (state === "inProgress") return found
+    if (state === "completed" || state === "interrupted" || state === "failed") return { ...found, status: "closed", state }
+    return { ref, inputID, status: "unknown" }
   }
+  const input = (ref: ConversationBackend.Ref, inputID: string) => locate(ref, inputID, true)
   return {
     descriptor,
     input,
+    followup: async (request) => {
+      if (request.inputID === request.followupOf.inputID) return { status: "rejected", reason: "not-accepted" }
+      const valid = async () => {
+        const parent = await input(request.ref, request.followupOf.inputID)
+        return parent.status === "closed" && parent.turnID === request.followupOf.turnID && parent.nativeID === request.followupOf.nativeID
+      }
+      if (!await valid()) return { status: "rejected", reason: "not-accepted" }
+      const thread = await owned(request.ref)
+      if (thread.status.type === "notLoaded") {
+        await adapter.resume(request.ref.threadID)
+        if (!await valid()) return { status: "rejected", reason: "not-accepted" }
+      }
+      // Native queue/add cannot atomically fence the historical parent. This validates an observed terminal fact,
+      // then adds a new independent input; it does not edit the parent, interrupt a successor or claim atomicity.
+      const result = await adapter.enqueue(request.ref.threadID, request.inputID, request.text)
+      return { kind: "queued", nativeID: result.queuedSubmission.id }
+    },
     content: { subscribe: content.subscribe },
     execution: {
       read: async (ref, pagination) => {
@@ -144,6 +172,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       return { status: "applied" }
     },
     enqueue: async (input) => {
+      if (input.delivery !== "steer" && input.followupOf) throw new Error("Linked input requires native follow-up admission")
       const thread = await owned(input.ref)
       if (input.delivery === "steer") {
         const result = await adapter.steer(input.ref.threadID, input.expectedTurnID, input.inputID, input.text).catch((error) => {
@@ -162,7 +191,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       return { nativeID: result.queuedSubmission.id, kind: "queued" }
     },
     reconcile: async (ref, inputID) => {
-      const position = await input(ref, inputID)
+      const position = await locate(ref, inputID, false)
       if (position.status !== "unknown") return { nativeID: position.nativeID, kind: position.status === "queued" ? "queued" : "message" }
     },
     subscribe: (listener) => adapter.subscribe((event) => {

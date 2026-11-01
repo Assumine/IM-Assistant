@@ -186,7 +186,19 @@ async function round(restored: boolean) {
       const backend: Backend = {
         send: (input) => rpc.send(input, options),
         reconcile: (input) => rpc.reconcile(input, options),
-        input: (input) => rpc.input(input, options),
+        // Old facade intentionally has input identity but no terminal evidence. It must keep rejecting stale guidance.
+        input: async (input) => {
+          const value = await rpc.input(input, options)
+          return value.status === "closed"
+            ? {
+                ref: value.ref,
+                inputID: value.inputID,
+                status: "delivered",
+                nativeID: value.nativeID,
+                turnID: value.turnID,
+              }
+            : value
+        },
         execution: (input) => rpc.execution(input, options),
         query: (input) => rpc.query(input, options),
         control: (input) => rpc.control(input, options),

@@ -17,6 +17,7 @@ import { Location } from "@opencode/core/location"
 import { AppNodeBuilder } from "@opencode/core/effect/app-node-builder"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { AbsolutePath } from "@opencode/core/schema"
+import { Hash } from "@opencode/util/hash"
 import { location } from "./fixture/location"
 import { testEffect } from "./lib/effect"
 
@@ -56,6 +57,103 @@ const input = {
   inputID: "input-1",
   text: "private-input-not-stored-in-receipts",
 }
+
+it.effect("linked native admission requires whole-backend support and retains an immutable parent across retries", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service,
+      rpc = yield* Rpc.Service,
+      kv = yield* KV.Service
+    yield* host.bind(rpc)
+    const client = rpc.client(Api),
+      example = fixture()
+    const request = {
+      ...input,
+      followupOf: { inputID: "parent-input", turnID: "ended-turn", nativeID: "native-parent" },
+    }
+    const missing = yield* host.register(example.backend)
+    expect(Exit.isFailure(yield* client.send(request).pipe(Effect.exit))).toBe(true)
+    expect((yield* kv.scan({ prefix: "conversation:admission:" })).entries).toHaveLength(0)
+    yield* missing.dispose
+    const calls: object[] = []
+    const registered = yield* host.register({
+      ...example.backend,
+      followup: async (next) => {
+        calls.push(next)
+        return { nativeID: "child-native", kind: "queued" }
+      },
+    })
+    // Persisted pre-follow-up format: its fingerprint contains the original four fields only.
+    yield* kv.insert(`conversation:admission:${Hash.sha256("legacy-plain")}`, {
+      ref: input.ref,
+      inputID: "legacy-plain",
+      fingerprint: "21bb3db13d4f988435a98a19195190cf51c2537d379cda817f4e6757dfb14d09",
+      receipt: { nativeID: "legacy-native", kind: "queued" },
+    })
+    expect(yield* client.send({ ...input, inputID: "legacy-plain" })).toEqual({
+      status: "accepted",
+      ref: input.ref,
+      inputID: "legacy-plain",
+      receipt: { nativeID: "legacy-native", kind: "queued" },
+    })
+    const admitted = yield* client.send(request)
+    expect(admitted).toEqual({
+      ref: input.ref,
+      inputID: input.inputID,
+      followupOf: request.followupOf,
+      status: "accepted",
+      receipt: { nativeID: "child-native", kind: "queued" },
+    })
+    expect(yield* client.send(request)).toEqual(admitted)
+    expect(
+      Exit.isFailure(
+        yield* client
+          .send({ ...request, followupOf: { ...request.followupOf, turnID: "different" } })
+          .pipe(Effect.exit),
+      ),
+    ).toBe(true)
+    expect(Exit.isFailure(yield* client.send(input).pipe(Effect.exit))).toBe(true)
+    expect(calls).toHaveLength(1)
+    expect(example.admissions).toHaveLength(0)
+    yield* registered.dispose
+    expect(yield* client.reconcile(request)).toEqual(admitted)
+  }),
+)
+
+it.effect("native follow-up lost acknowledgments repair only the original relation and never resend", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service,
+      rpc = yield* Rpc.Service
+    yield* host.bind(rpc)
+    const example = fixture(),
+      request = { ...input, followupOf: { inputID: "parent-input", turnID: "parent-turn", nativeID: "parent-native" } }
+    let calls = 0
+    yield* host.register({
+      ...example.backend,
+      followup: async (next) => {
+        calls++
+        example.receipts.set(next.inputID, { nativeID: "new-native", kind: "queued" })
+        throw new Error("Native acknowledgment lost")
+      },
+    })
+    const client = rpc.client(Api)
+    expect(yield* client.send(request)).toEqual({
+      status: "uncertain",
+      ref: input.ref,
+      inputID: input.inputID,
+      followupOf: request.followupOf,
+    })
+    expect(yield* client.reconcile(request)).toEqual({
+      status: "accepted",
+      ref: input.ref,
+      inputID: input.inputID,
+      followupOf: request.followupOf,
+      receipt: { nativeID: "new-native", kind: "queued" },
+    })
+    expect((yield* client.send(request)).status).toBe("accepted")
+    expect(calls).toBe(1)
+    expect(example.admissions).toEqual([])
+  }),
+)
 
 it.effect("native input lookup is fresh, read-only and independent of cached queue admissions", () =>
   Effect.gen(function* () {

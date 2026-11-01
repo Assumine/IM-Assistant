@@ -15,7 +15,7 @@ export type Result =
   | { status: "steered"; target: Target; inputID: string; continuationID: string; delivery: "accepted" | "pending" | "delivered"; duplicate: boolean }
   | { status: "confirmation-required"; confirmationID: string; target: Target; duplicate: boolean }
   | { status: "confirmation-declined" }
-  | { status: "followup"; target: Target; inputID: string; parentInputID: string; delivery: "pending" | "delivered"; duplicate: boolean }
+  | { status: "followup"; target: Target; inputID: string; parentInputID: string; delivery: "accepted" | "pending" | "delivered"; duplicate: boolean }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
 export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy }) {
@@ -35,8 +35,8 @@ export function createPortal(options: { storage: Storage; session: Native; backe
   }
   const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", target: record.target,
     ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
-  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => (evidence === "followup-pending" || evidence === "followup-delivered") && record.followupOf
-    ? { status: "followup", target: record.target, inputID: record.inputID, parentInputID: record.followupOf.inputID, delivery: evidence === "followup-pending" ? "pending" : "delivered", duplicate }
+  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => (evidence === "followup-accepted" || evidence === "followup-pending" || evidence === "followup-delivered") && record.followupOf
+    ? { status: "followup", target: record.target, inputID: record.inputID, parentInputID: record.followupOf.inputID, delivery: evidence === "followup-accepted" ? "accepted" : evidence === "followup-pending" ? "pending" : "delivered", duplicate }
     : evidence === "followup-cancelled" ? { status: "blocked", reason: "quoted-adjustment-cancelled" }
     : evidence === "amended" && record.amendmentID
     ? { status: "amended", target: record.target, inputID: record.inputID, amendmentID: record.amendmentID, duplicate }
@@ -98,7 +98,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       try {
         const found = await native.quote(destination, quoted.inputID)
         if (found.status === "unknown") return { status: "uncertain" }
-        if (found.status === "closed" && native.canFollowup(destination) && found.rootID) followupOf = { inputID: quoted.inputID, rootID: found.rootID }
+        if (found.status === "closed" && native.canFollowup(destination) && found.parent) followupOf = found.parent
         else if (found.status === "closed") return { status: "blocked", reason: "quoted-adjustment-unavailable" }
         else if (found.status === "pending" && native.canAppend(destination)) adjustment = "amendmentID"
         else if (found.status === "delivered" && native.canContinue(destination)) { adjustment = "continuationID"; expectedTurnID = found.expectedTurnID }
@@ -124,11 +124,11 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       const metadata = { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } }
       const state = record.followupOf ? await native.followup(record.target, record.inputID, record.followupOf, input.text, metadata) : record.continuationID ? await native.continueInput(record.target, record.inputID, record.continuationID, input.text, metadata, record.expectedTurnID)
         : record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text, metadata)
-      if (record.followupOf && (state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
+      if (record.followupOf && (state === "followup-accepted" || state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
       if (state !== "accepted") return result(record, state, false)
     } catch {
       const state = await evidence(record)
-      if (record.followupOf && (state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
+      if (record.followupOf && (state === "followup-accepted" || state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
       return result(record, state, true)
     }
     if (await recalled(input)) return withdraw(record)
@@ -155,7 +155,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     async linkReply(source: Source, outgoingMessageID: string) {
       const record = await metadata.replyOrigin(source, outgoingMessageID)
       const state = await evidence(record)
-      if (state !== "accepted" && state !== "amended" && state !== "continuation-accepted" && state !== "continuation-pending" && state !== "continuation-delivered" && state !== "followup-pending" && state !== "followup-delivered") throw new Error("QQ source input is not confirmed accepted")
+      if (state !== "accepted" && state !== "amended" && state !== "continuation-accepted" && state !== "continuation-pending" && state !== "continuation-delivered" && state !== "followup-accepted" && state !== "followup-pending" && state !== "followup-delivered") throw new Error("QQ source input is not confirmed accepted")
       await metadata.linkReply(source, outgoingMessageID)
     },
     /** Trusted transport calls this only after explicit user consent, with the original message fetched by ID. */

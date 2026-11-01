@@ -14,6 +14,10 @@ export interface Definition {
   readonly enqueue: (
     input: ConversationBackend.Input,
   ) => Promise<ConversationBackend.Receipt | ConversationBackend.Rejection>
+  // Optional native follow-up admission. Must revalidate the observed parent and retain the backend's own queue.
+  readonly followup?: (
+    input: ConversationBackend.FollowupInput,
+  ) => Promise<ConversationBackend.Receipt | ConversationBackend.Rejection>
   readonly reconcile: (
     ref: ConversationBackend.Ref,
     inputID: string,
