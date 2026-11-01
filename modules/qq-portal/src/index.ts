@@ -193,3 +193,5 @@ export { decode, command, type Message, type Policy, type Scope } from "./routin
 export { type Target, type Backend } from "./target"
 export { type ControlOptions, type ControlResponse, type ControlResult } from "./controls"
 export { type Source, type SourceResult } from "./sources"
+export { openQQChannel, type ChannelOptions, type ChannelIssue } from "./channel"
+export { type WireState, type SendResult } from "./onebot"

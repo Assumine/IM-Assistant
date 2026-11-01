@@ -1,0 +1,153 @@
+import { expect, test } from "bun:test"
+import type { ServerWebSocket } from "bun"
+import { openOneBot, type OneBotOptions, type WireState } from "../src/onebot"
+import { event, fakeOneBot, until, type Call } from "./fixture/onebot"
+
+test("authenticated universal socket verifies account and online state before forwarding any event", async () => {
+  const fake = fakeOneBot({ early: event(1, "Too early") }), seen: unknown[] = []
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event: (value) => seen.push(value) })
+  try {
+    expect((await client.ready).phase).toBe("online")
+    expect(fake.calls.map((call) => call.action)).toEqual(["get_login_info", "get_status"])
+    expect(fake.upgrades[0]).toEqual({ header: "Bearer " + fake.token, url: fake.url.replace("ws:", "http:") })
+    expect(seen).toEqual([])
+    fake.event(event(2, "Verified")); await until(() => seen.length === 1)
+    expect(seen).toEqual([event(2, "Verified")])
+  } finally { client.close(); fake.close() }
+})
+
+for (const mode of ["token", "identity", "offline"] as const) test("unverified connection is isolated: " + mode, async () => {
+  const fake = fakeOneBot({ ...(mode === "identity" ? { botID: "10002" } : {}), ...(mode === "offline" ? { online: false } : {}) })
+  const seen: unknown[] = [], states: WireState[] = []
+  const client = openOneBot({ url: fake.url, token: mode === "token" ? "wrong-fixture-token" : fake.token, botID: "10001" }, { event: (value) => seen.push(value), state: (value) => states.push(value) })
+  try {
+    expect((await client.ready).phase).toBe("unavailable")
+    expect(seen).toEqual([])
+    expect(JSON.stringify(states)).not.toContain(fake.token)
+    if (mode === "token") expect(fake.calls).toEqual([])
+  } finally { client.close(); fake.close() }
+})
+
+test("heartbeat loss changes state without background status polling or automatic reconnection", async () => {
+  const fake = fakeOneBot(), client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event() {} })
+  try {
+    await client.ready; fake.event({ post_type: "meta_event", meta_event_type: "heartbeat", self_id: "10001", status: { online: false, good: false } })
+    await until(() => client.state().phase === "unavailable")
+    await Bun.sleep(30)
+    expect(fake.upgrades).toHaveLength(1); expect(fake.calls).toHaveLength(2)
+  } finally { client.close(); fake.close() }
+})
+
+test("malformed, binary and oversized frames close only their own connection", async () => {
+  for (const frame of ["<!DOCTYPE html>", Buffer.from("{}"), "x".repeat(1025)]) {
+    const fake = fakeOneBot(), seen: unknown[] = []
+    const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001", maxFrameBytes: 1024 }, { event: (value) => seen.push(value) })
+    try { await client.ready; fake.frame(frame); await until(() => client.state().phase === "unavailable"); expect(seen).toEqual([]) }
+    finally { client.close(); fake.close() }
+  }
+})
+
+test("outgoing structured replies retain literal text and correlate out-of-order API echoes", async () => {
+  const sends: { socket: ServerWebSocket<undefined>; call: Call }[] = []
+  const fake = fakeOneBot({ call(socket, call) {
+    if (!call.action.startsWith("send_")) return
+    sends.push({ socket, call })
+    if (sends.length === 2) {
+      fake.answer(socket, call, { message_id: -502 })
+      const first = sends[0]!.call
+      fake.answer(sends[0]!.socket, first, { message_id: -501 })
+    }
+    return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event() {} })
+  try {
+    await client.ready
+    const result = await Promise.all([
+      client.send({ botID: "10001", kind: "private", peerID: "20001" }, "[CQ:at,qq=all]", "1"),
+      client.send({ botID: "10001", kind: "group", peerID: "30001" }, "Group", "2"),
+    ])
+    expect(result).toEqual([{ status: "sent", messageID: "-501" }, { status: "sent", messageID: "-502" }])
+    expect(fake.calls[2]!.params).toEqual({ user_id: 20001, message: [{ type: "reply", data: { id: "1" } }, { type: "text", data: { text: "[CQ:at,qq=all]" } }] })
+  } finally { client.close(); fake.close() }
+})
+
+test("async, malformed or lost send receipts remain uncertain and are never retried", async () => {
+  let sent = 0
+  const fake = fakeOneBot({ call(socket, call) {
+    if (!call.action.startsWith("send_")) return
+    sent++
+    if (sent === 1) fake.answer(socket, call, null, "async", 1)
+    if (sent === 2) fake.answer(socket, call, {})
+    if (sent === 4) fake.answer(socket, call, null, "failed", 1000)
+    return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001", requestTimeoutMs: 30 }, { event() {} })
+  try {
+    await client.ready
+    const scope = { botID: "10001", kind: "private" as const, peerID: "20001" }
+    for (let index = 1; index <= 3; index++) expect(await client.send(scope, "Different explicit notice", String(index))).toEqual({ status: "uncertain" })
+    expect(await client.send(scope, "Definitive refusal", "4")).toEqual({ status: "rejected" })
+    await Bun.sleep(40); expect(sent).toBe(4)
+  } finally { client.close(); fake.close() }
+})
+
+test("a malformed API status closes only the wire and settles its send as unknown", async () => {
+  const fake = fakeOneBot({ call(socket, call) {
+    if (!call.action.startsWith("send_")) return
+    socket.send(JSON.stringify({ echo: call.echo, retcode: 0, status: { toString: null }, data: { message_id: -600 } }))
+    return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event() {} })
+  try {
+    await client.ready
+    expect(await client.send({ botID: "10001", kind: "private", peerID: "20001" }, "One explicit notice", "1")).toEqual({ status: "uncertain" })
+    expect(client.state()).toEqual({ phase: "unavailable", reason: "protocol" })
+    expect(fake.calls.filter((call) => call.action.startsWith("send_"))).toHaveLength(1)
+  } finally { client.close(); fake.close() }
+})
+
+test("pending request bounds and close settle unknown effects without replay", async () => {
+  const fake = fakeOneBot({ call: (_socket, call) => call.action.startsWith("send_") || undefined })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001", maxRequests: 1 }, { event() {} })
+  try {
+    await client.ready
+    const scope = { botID: "10001", kind: "private" as const, peerID: "20001" }
+    const first = client.send(scope, "One", "1")
+    await until(() => fake.calls.length === 3)
+    expect(await client.send(scope, "Not submitted", "2")).toEqual({ status: "unavailable" })
+    client.close(); expect(await first).toEqual({ status: "uncertain" })
+    expect(client.state().phase).toBe("closed"); expect(fake.calls).toHaveLength(3)
+  } finally { client.close(); fake.close() }
+})
+
+test("bad configuration fails locally without throwing, opening sockets or exposing credentials", async () => {
+  const fake = fakeOneBot()
+  try {
+    const base = { url: fake.url, token: fake.token, botID: "10001" }
+    const changes: Partial<OneBotOptions>[] = [
+      { url: fake.url + "?access_token=private-value" }, { token: "" }, { token: "bad\r\nheader" },
+      { url: "ws://example.com/" }, { url: fake.url + "api" }, { maxRequests: 0 },
+    ]
+    for (const change of changes) {
+      const client = openOneBot({ ...base, ...change }, { event() {} })
+      expect(await client.ready).toEqual({ phase: "unavailable", reason: "configuration" }); client.close()
+    }
+    const cancelled = openOneBot(base, { event() {} }); cancelled.close()
+    expect((await cancelled.ready).phase).toBe("closed")
+    expect(fake.upgrades).toEqual([])
+  } finally { fake.close() }
+})
+
+test("the pinned client refuses redirects instead of forwarding its authorization to another endpoint", async () => {
+  const target = fakeOneBot(), redirect = fakeOneBot({ redirect: target.url.replace("ws:", "http:") })
+  const client = openOneBot({ url: redirect.url, token: redirect.token, botID: "10001", connectTimeoutMs: 100 }, { event() {} })
+  try { expect((await client.ready).phase).toBe("unavailable"); expect(target.upgrades).toEqual([]) }
+  finally { client.close(); redirect.close(); target.close() }
+})
+
+test("startup verification has a bounded deadline and never forwards buffered events", async () => {
+  const fake = fakeOneBot({ early: event(1, "No verification"), call: () => true }), seen: unknown[] = []
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001", connectTimeoutMs: 30 }, { event: (value) => seen.push(value) })
+  try { expect(await client.ready).toEqual({ phase: "unavailable", reason: "deadline" }); expect(fake.calls).toHaveLength(1); expect(seen).toEqual([]) }
+  finally { client.close(); fake.close() }
+})

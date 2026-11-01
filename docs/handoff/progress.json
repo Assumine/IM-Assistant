@@ -461,7 +461,13 @@
         "modules/qq-portal/src/controls.ts",
         "modules/qq-portal/test/controls.test.ts",
         "modules/qq-portal/src/views.ts",
-        "modules/qq-portal/test/views.test.ts"
+        "modules/qq-portal/test/views.test.ts",
+        "modules/qq-portal/src/channel.ts",
+        "modules/qq-portal/src/onebot.ts",
+        "modules/qq-portal/test/channel.test.ts",
+        "modules/qq-portal/test/fixture/onebot.ts",
+        "modules/qq-portal/test/onebot.test.ts",
+        "opencode/packages/server/script/qq-wire-smoke.ts"
       ],
       "verification": [
         {
@@ -469,12 +475,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 548,
+          "tests_run": 566,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 72,
+          "http_checks": 83,
           "publication": "disabled"
         }
       ],

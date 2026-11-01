@@ -1,13 +1,13 @@
 # QQ 可选转发入口：隔离接回中
 
-`createPortal({ storage, session, backend?, policy })`消费已认证OneBot通道交来的结构化事件。普通会话调用原生Promise客户端的Session/Inbox接口，Codex整套后端调用同一应用的ConversationBackend公共RPC；不直接导入Codex模块。它不登录QQ、不监听网络端口、不轮询、不创建会话/任务库，不负责挑选或执行下一条任务。生产产品尚未装配此入口，也没有使用旧账号、绑定或历史。
+`createPortal({ storage, session, backend?, policy })`处理结构化事件；新增`openQQChannel`通过认证OneBot通道转交它。普通会话调用原生Promise客户端的Session/Inbox接口，Codex整套后端调用同一应用的ConversationBackend公共RPC；不直接导入Codex模块。它不登录QQ、不监听网络端口、不轮询、不创建会话/任务库，不负责挑选或执行下一条任务。生产产品尚未装配此入口，也没有使用旧账号、绑定或历史。
 
 当前支持：
 
 - 分离机器人、群/私聊、实际成员和消息ID；群必须同时满足允许群、允许成员和@任务机器人。其他机器人（包括小羊）、机器人自己及发出事件不进入任务链。
 - 只消费明确支持的text/at/reply分段，保留正文空白和用户字面标记。图片/表情等未实现输入整体返回unsupported，不丢弃附件后只转文字，也不解析字符串中的CQ代码。
 - `/list`、`/codex list`及大小写形式先分类为控制请求，返回给控制分发层；不因会话忙碌而作为AI任务。默认只做分类；可信宿主显式提供controls后才执行已支持的控制命令。未实现命令返回unsupported，不作为AI任务。
-- `bind`为可信宿主控制函数，目标显式分为`{ kind: "session", sessionID }`和`{ kind: "backend", ref: { backendID, threadID } }`。先只读核对Session或后端线程归属，再保存绑定；后端不可用不回退普通会话。新建但无首条消息的Codex线程只核对read，不为绑定读取尚不存在的执行记录或调用resume。它不承担远程身份认证；未来传输层必须先验证命令权限。旧字符串绑定和sessionID来源记录继续只读兼容，不自动改写。绑定变化不移动既有输入。
+- `bind`为可信宿主控制函数，目标显式分为`{ kind: "session", sessionID }`和`{ kind: "backend", ref: { backendID, threadID } }`。先只读核对Session或后端线程归属，再保存绑定；后端不可用不回退普通会话。新建但无首条消息的Codex线程只核对read，不为绑定读取尚不存在的执行记录或调用resume。它不承担远程身份认证；传输必须先验证机器人身份，命令仍须通过独立controls授权。旧字符串绑定和sessionID来源记录继续只读兼容，不自动改写。绑定变化不移动既有输入。
 - 普通消息用稳定原生输入ID调用对应目标的公共接纳入口：Session.prompt(queue)或ConversationBackend.send。Codex不会产生影子Session/Inbox记录，也不由QQ维护原生连接。公共插件KV的原子insert只冻结来源/目标/摘要元数据，不保存正文、执行状态或模型上下文。
 - 新来源记录包含不可变的原QQ信封（机器人、群/私聊、接收范围、发送成员、起始消息ID），并按完整Target＋原生inputID保存反查索引。`sourceFor(target, inputID)`仅在双向元数据一致、现行权限允许且原生接纳已确认时返回原始来源；不读当前绑定、不枚举会话、不轮询执行、不发送消息。重启、取消绑定、重新绑定和待办补充均不会更换任务起始引用。整套后端同样可反查，不需要影子Session。
 - 原生接纳回执不表示正在运行或已完成。来源反查也不是完成通知；后续发送端仍须核对原生输出/完成事实，并在实际发送时重新检查权限。查不到来源或通知发送未知时不能重跑AI任务。
@@ -21,7 +21,7 @@
 - 整套后端引用当前输入时，先经公共`ConversationBackend.input`读取原生inputID对应的实际用户记录和turnID；该只读观察不取代接纳回执，不写KV、不resume、不创建输入，也不声称轮次仍活动。QQ将expectedTurnID与本条continuationID一起冻结，再通过原公共send(steer)交给Codex原生轮次校验。原任务恰好结束或已进入下一轮时明确拒绝，不回退为queue。重复和重启只reconcile，不重新读取当前轮次来更换护栏。
 - Codex的steered delivery=accepted仅确认原生接纳，不等于已进入模型上下文或实际修改成功；失回执修复为原生message时，还需用input接口核对同一nativeID和冻结turnID，才能返回delivered。引用补充的回复仍归原任务；撤回补充不撤销父任务。历史缓存的queued回执不能用来判断输入是否仍待办。原生队列只提供整条update，当前没有安全的原子追加/CAS接口，故Codex待办引用仍blocked，不做读后覆盖。
 - 撤回只调用原生Inbox.cancel或后端withdraw，不调用interrupt或发送“停止修改”。后端按原生队列分页查inputID，使用匹配的nativeID撤回；分页异常、竞争或故障不伪报成功。撤回先到时保存同来源/作者墓碑；已交付输入保持不变。
-- `linkReply(source, outgoingMessageID)`仅在外发实际收到消息ID后由可信宿主调用。它先核对完整原始来源、当前权限与原生接纳/追加回执，再将AI回复/回执关联到原始输入；不能用别名冒充原始消息，非法ID和冲突不可覆盖。`sourceFor`返回的Source可直接用于首轮/最终引用别名，原始Source不变。当前未实现外发，测试只登记合成ID，不制造发送成功或自动通知。
+- `linkReply(source, outgoingMessageID)`仅在外发实际收到消息ID后由可信宿主调用。它先核对完整原始来源、当前权限与原生接纳/追加回执，再将AI回复/回执关联到原始输入；不能用别名冒充原始消息，非法ID和冲突不可覆盖。`sourceFor`返回的Source可直接用于首轮/最终引用别名，原始Source不变。当前只有可信宿主的结构化发送原语；协议联调使用本地测试端返回的ID，其余单元测试使用合成ID。不制造实际QQ发送成功或自动通知。
 - 回复别名用于定位引用所属任务，不能视为原始用户输入。撤回前会比对来源消息计算的稳定inputID，撤回机器人回执/回复不会取消原任务；旧别名同样适用，不靠补写角色标记猜测。
 - 跨会话引用返回`confirmation-required`、稳定confirmationID、原目标及duplicate标志。同一消息并发只建立一份提案，只有首次duplicate=false，后续传输应据此去重确认提示。提案只保存不可变来源、原绑定/目标、父输入ID和内容摘要，不存正文或等待执行任务。重绑或取消绑定后仍提示同一目标，不悄悄换目标。
 - `confirm(originalRaw, { confirmationID, scope, actorID, choice })`为可信宿主控制API，必须由认证传输在用户明确同意或取消后调用；不能把普通AI工具或消息正文直接映射到它。需获取原消息并核对完整摘要，确认者必须为原成员、原范围，当前权限再次检查。原消息不可读时不得从摘要重构或猜测正文。choice原子首写且持久，取消后不自动改同意。确认不会修改binding，已批准输入仍通过原发送/append/guarded steer路径去重和核对；确认成功不等于原生任务接纳成功。撤回待确认原消息后不能再确认。
@@ -49,7 +49,7 @@ list与queue展示公共原生接口的一页观察，保留incomplete；不伪�
 
 写意图与操作回执仍是原插件KV的路由元数据，不保存正文、模型上下文或可执行任务。记录/通知失败不伪报成功，失回执保留uncertain，不重试副作用；历史bound/unbound回执不代表此刻绑定。unqueue固定原输入，不按变化后的序号删除、不interrupt；withdraw-requested只证明已向原生接口发出撤回并收到响应，不保证竞争中输入一定未被消费，尤其Session cancel无条件回执不能当作取消成功证据。
 
-实际认证传输、命令回执外发、未引用清单的序号快选及其余命令仍待实现；清单回复的可信别名接口已隔离验证。控制结果不作为AI回复，不替代原生执行器；无第二套调度器、任务库或持久化正文。
+认证传输原语已通过本地协议端验证；正式产品装配、自动命令回执外发、未引用清单的序号快选及其余命令仍待实现。清单回复的可信别名接口已隔离验证。控制结果不作为AI回复，不替代原生执行器；无第二套调度器、任务库或持久化正文。
 
 ## 稳定的清单序号
 
@@ -61,7 +61,19 @@ list/queue返回viewID与从1开始的index。快照仅在原插件KV保存来�
 
 数字撤回同时冻结inputID和nativeID，Codex直接撤回原生submission ID；同一client ID后来出现新submission也不能重映射到它。普通Session沿原cancel语义，只确认撤回请求响应，不保证竞争中任务未消费。重复、重绑、重启和丢回执仍只读原控制回执，不再选一次序号。未发布/被拒绝的旧写命令不会在发布后自动生效，需要新的用户消息。
 
-别名是控制清单的显示引用，不冒充AI任务来源；控制发布接口不发送QQ消息。真实发送端尚未连接，测试中的出站ID均是明确的合成夹具，不能将其记为QQ交付验收。
+别名是控制清单的显示引用，不冒充AI任务来源；控制发布接口不发送QQ消息。产品自动发送端尚未连接；本地OneBot夹具可以返回发送ID并发布映射，其余用例使用明确的合成ID，均不能记为实际QQ交付验收。
+
+## 可选认证通道与生命周期
+
+`openQQChannel({ portal, policy, connection, onResult, onIssue?, onState? })`由可信调用方显式创建。connection仅接受OneBot-11正向通用WebSocket根路径：远端wss或本机ws，必须使用Authorization Bearer头；不接受URL凭据、查询token或无认证降级。锁定Bun客户端的重定向拒绝行为有独立验证。连接先核对get_login_info的机器人ID，再检查get_status的online/good；验证前事件不进入portal。协议依据为[官方认证规则](https://github.com/botuniverse/onebot-11/blob/master/communication/authorization.md)、[WebSocket通信](https://github.com/botuniverse/onebot-11/blob/master/communication/ws.md)和[公共API](https://github.com/botuniverse/onebot-11/blob/master/api/public.md)。
+
+它不是新的ConversationBackend，也不在按Location调用的Plugin.setup内建立连接。正式产品尚未安装此资源；调用方未来须在应用Scope拥有它，并在释放Session/Storage客户端之前await channel.close()。真实SDK夹具用原生Effect.acquireRelease/Scope.close验证这一顺序，但不代表任意SDK app.close已自动管理它，也不提供跨进程单实例锁。close发起socket关闭并隔离晚到事件，不承诺等待底层OS关闭确认。
+
+同机器人/群或私聊范围只排序入口接纳，让bind与紧随的输入按到达顺序交给portal；不同范围不互相等待。它不消费原生执行队列，不等待AI完成。onResult可完成短暂的接纳/通知处理，不能等待模型结束。原生接纳未知或处理异常时只阻塞并报告该范围；其他范围继续。阻塞状态只属于当前资源，重新创建通道前需由所有者核对未知结果，不能靠重连猜测恢复。
+
+入口仅有默认128、最大512条的有界内存等待，不保存正文或离线任务队列，也不把它当作已接收成功。过载关闭通道并报告；关闭时未开始的输入丢弃并报告，已开始的接纳等待结算，不interrupt/cancel/resume原生任务。自动重连、定时状态轮询、登录、离线恢复和自动重投均未启用。ready只确认首次验证结果；后续状态由state/onState读取。
+
+channel.send(source, text)仅是可信宿主原语：重新检查机器人/成员/范围白名单，以reply＋text分段发出，不解释字面CQ码。并发API用echo关联，只有确认ok且返回有效message_id才是sent；失败为rejected，超时/断线/异步或缺ID为uncertain，未提交为unavailable。未知发送不自动重试；拿到确认ID后才可调用linkReply/linkControlView。自动首轮/最终发送、持久通知身份、结果未知核对及提示撤回仍待实现，当前没有正式出站调度器。
 
 验证：
 
@@ -69,10 +81,10 @@ list/queue返回viewID与从1开始的index。快照仅在原插件KV保存来�
 python -m tools.qq_portal_smoke
 ```
 
-123项QQ规则/权限/目标/确认/后续/控制用例＋8项原SDK实例＋93项原生Session测试＋290项原生执行/Runner/压缩回归＋10项客户端竞争＋19项后端契约＋5项原生身份查询＝548项，必需零跳过。真实SDK/HTTP/SQLite的31项普通会话、真实Codex CLI/应用RPC的18项后端、7项旧护栏续接、8项Codex引用及8项Codex历史后续，共72项链路检查；各7/4/6/3/4次本地合成模型请求，无QQ外发。覆盖原任务终态与下一项并行、独立子来源、跨会话确认、只撤回子输入、失回执、SQLite重启、精确父关系以及旧版普通接纳格式兼容。旧护栏夹具明确保留不暴露终态/后续能力的facade，验证缺证据时仍拒绝新建；完整能力在对应真实原生链路单独验收。其余原生事务、事件回放、关闭恢复和零影子Session/Inbox回归保留。
+141项QQ规则/权限/目标/确认/后续/控制用例＋8项原SDK实例＋93项原生Session测试＋290项原生执行/Runner/压缩回归＋10项客户端竞争＋19项后端契约＋5项原生身份查询＝566项，必需零跳过。真实SDK/HTTP/SQLite的31项普通会话、真实Codex CLI/应用RPC的18项后端、7项旧护栏续接、8项Codex引用、8项Codex历史后续及11项认证通道，共83项链路检查；各7/4/6/3/4/2次本地合成模型请求，无QQ外发。协议联调仅连接本机OneBot测试端、发送2条本地测试消息、3次连接尝试，不使用生产凭据。覆盖原任务终态与下一项并行、独立子来源、跨会话确认、只撤回子输入、失回执、SQLite重启、精确父关系以及旧版普通接纳格式兼容。旧护栏夹具明确保留不暴露终态/后续能力的facade，验证缺证据时仍拒绝新建；完整能力在对应真实原生链路单独验收。其余原生事务、事件回放、关闭恢复和零影子Session/Inbox回归保留。
 
 框架的新增点是通用原生Inbox追加及输入归属护栏、POST continue/GET continuation接口和可重放的输入关闭事件；HTTP客户端由锁定生成器同步更新。归属及去重元数据在核心原KV内投影，不是QQ任务状态或第二份会话正文。Solid数据层只复用原生pending缓存、读期间的事件合并和串行重校验，不另存一套消息状态或手工改队列顺序。待办append保留原ID/序位/附件/metadata/投递方式；当前续接使用新的原生steer输入，归属固定于原输入边界。运行、恢复、上下文和队列仍由原生执行器拥有。
 
-助手模式继续禁止普通SDK插件、实例插件、配置目录扫描和任意路径加载。新增的SDK `trustedPlugins`只由可信程序代码显式贡献，通过原生插件生命周期加载；不能放在用户消息、模型工具或项目JSON中。公共storage.insert按插件命名空间原子首写，Promise和Effect接口一致。不要在每个会话实例的setup里重复登录同一个机器人；实际传输连接生命周期和产品装配尚未接入。
+助手模式继续禁止普通SDK插件、实例插件、配置目录扫描和任意路径加载。新增的SDK `trustedPlugins`只由可信程序代码显式贡献，通过原生插件生命周期加载；不能放在用户消息、模型工具或项目JSON中。公共storage.insert按插件命名空间原子首写，Promise和Effect接口一致。不要在每个会话实例的setup里重复登录同一个机器人；正式产品的传输资源生命周期和启动装配尚未接入。
 
 `upstream/qq-checkpoint.json`仅记录partial_verified，publication=disabled。正式`tests/rebase/test_r3_02.py`尚未实现，A23–A26不计完成；本阶段不代表真实机器人已连接或可发布。

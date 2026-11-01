@@ -1258,6 +1258,21 @@
           "sha256": "3d087b880ecca939e6823f7a4641382ed55149f026ac86e055e9bbcc186928c7"
         }
       ]
+    },
+    {
+      "id": "R3-02-authenticated-qq-channel",
+      "reason": "通过真实 SDK、SQLite 和显式调用方 Effect Scope 验证可选认证 OneBot 通道；本地协议夹具，不连接实际 QQ，也不新增任务调度器。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "bun run check"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-wire-smoke.ts",
+          "action": "added",
+          "sha256": "99a36f35926296f406f960299a35a1a2381d596a108fc9abbaf3dda2e344cf89"
+        }
+      ]
     }
   ]
 }
