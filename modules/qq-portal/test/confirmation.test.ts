@@ -124,3 +124,12 @@ test("consent is not admission: recovery before the origin exists can hand off o
     expect(f.posts).toHaveLength(retained ? 0 : 1)
   }
 })
+
+test("historical timing survives cross-session consent and is not replaced by the later confirmation time", async () => {
+  const f = await fixture(), historical = { sentAt: 1700000000000, recoveredAt: 1700086400000 }
+  expect((await f.portal().receive(f.request, historical)).status).toBe("confirmation-required")
+  expect((await f.portal().confirm(f.request, f.consent)).status).toBe("steered")
+  expect(f.posts[0]).toMatchObject({ sessionID: "ses_original", metadata: { qq: { historical } } })
+  expect(JSON.stringify(f.posts[0])).toContain("2023-11-14T22:13:20.000Z")
+  expect(JSON.stringify([...f.values.values()])).not.toContain("Body cross")
+})

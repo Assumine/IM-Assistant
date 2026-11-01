@@ -868,7 +868,7 @@
   },
   "latest_qq_evidence": {
     "checkpoint": "upstream/qq-checkpoint.json",
-    "scope": "QQ-cross-conversation-confirmation",
+    "scope": "QQ-login-triggered-history-recovery",
     "native_implementation_changed": false
   }
 }

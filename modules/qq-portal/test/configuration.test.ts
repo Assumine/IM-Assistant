@@ -70,3 +70,10 @@ test("loading configured code consumes only enabled dedicated token variables wi
     expect(await readFile(path.join(home, "channels.json"), "utf8")).not.toContain(fake.token)
   } finally { fake.close(); await rm(home, { recursive: true, force: true }) }
 })
+
+test("history is an explicit bounded account capability rather than an implicit universal OneBot assumption", () => {
+  const value = configuration({ version: 1, enabled: true, accounts: [{ ...account(), history: { provider: "napcat", pageSize: 20, maxPages: 5 } }] })
+  expect(value.accounts[0]!.history).toEqual({ provider: "napcat", pageSize: 20, maxPages: 5 })
+  expect(configuration({ version: 1, enabled: true, accounts: [account()] }).accounts[0]!.history).toBeUndefined()
+  expect(() => configuration({ version: 1, enabled: true, accounts: [{ ...account(), history: { provider: "arbitrary", code: "no" } }] })).toThrow()
+})

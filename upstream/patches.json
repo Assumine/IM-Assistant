@@ -1387,6 +1387,20 @@
           "sha256": "b7d9cff9f156a8c9e3f1c1f92abc798ed73b5813ec5699aeeb636a499a9d01b7"
         }
       ]
+    },
+    {
+      "id": "R3-02-qq-history-recovery",
+      "files": [
+        {
+          "path": "packages/server/script/qq-history-smoke.ts",
+          "action": "added",
+          "sha256": "f805f0727e61e8190edb550a2fac3c6c1fd818353d389e47b01d7859286a5cc4"
+        }
+      ],
+      "reason": "Actual application and native Inbox verification for bounded login-triggered QQ history recovery with original ownership and no executable spool.",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke"
+      ]
     }
   ]
 }

@@ -9,6 +9,7 @@ import type { Source } from "./sources"
 import { sameTarget, type Target } from "./target"
 import type { SendResult } from "./onebot"
 import type { NotificationReceipt } from "./notifications"
+import type { HistoricalInput } from "./history"
 
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex")
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
@@ -55,12 +56,12 @@ export function createConfirmationChannel(options: {
     }, (id) => consent.publish(input, id))
   }
   return {
-    async receive(raw: unknown): Promise<Result> {
+    async receive(raw: unknown, recovery?: HistoricalInput): Promise<Result> {
       const event = decode(raw, options.policy)
-      if (event.kind !== "message") return options.portal.receive(raw)
+      if (event.kind !== "message") return options.portal.receive(raw, recovery)
       const input = event.message, action = command(input.text)
       if (action?.action !== "confirm" && action?.action !== "cancel") {
-        const result = await options.portal.receive(raw)
+        const result = await options.portal.receive(raw, recovery)
         if (result.status === "confirmation-required") await prompt(input, result)
         return result
       }

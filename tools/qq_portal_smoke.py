@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 193),
+        (module, "r3-qq-module-tests", [bun, "test"], 213),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 7),
     ]:
         log = reports / (label + ".log")
@@ -94,6 +94,15 @@ def _run():
             output["actual_qq_connection"] or output["external_messages_sent"] or output["production_credentials_used"] or
             output["loopback_task_send_attempts"] != 4 or output["loopback_connections"] != 2 or output["loopback_original_reads"] != 4):
         raise RuntimeError("Native input output and first/final forwarding acceptance was incomplete")
+    history_directory = tempfile.mkdtemp(prefix="qq-history-", dir=parent)
+    steps.append(run_command("packages/server", ["run", "script/qq-history-smoke.ts"], "r3-qq-history-http", timeout=120,
+                             extra_env={"IM_QQ_HISTORY_ROOT": history_directory}))
+    lines = (reports / "r3-qq-history-http.log").read_text(encoding="utf-8").splitlines()
+    history = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
+    if (history["status"] != "passed" or len(history["checks"]) != 7 or history["model_requests"] != 4 or
+            history["actual_qq_connection"] or history["external_messages_sent"] or history["production_credentials_used"] or
+            history["loopback_connections"] != 3 or history["loopback_history_reads"] != 5 or history["loopback_task_send_attempts"] != 3):
+        raise RuntimeError("Native history recovery and original queue acceptance was incomplete")
     backend_output_parent = ROOT / "runtime/codex-native"
     backend_output_parent.mkdir(parents=True, exist_ok=True)
     backend_output_directory = tempfile.mkdtemp(prefix="qq-backend-output-", dir=backend_output_parent)
@@ -197,9 +206,10 @@ def _run():
         "opencode/packages/core/src/session/output.ts", "opencode/packages/protocol/src/groups/session-output.ts",
         "opencode/packages/server/src/handlers/session-output.ts",
         "opencode/packages/server/script/qq-backend-output-smoke.ts",
+        "opencode/packages/server/script/qq-history-smoke.ts",
     ]
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
-            "steps": steps, "http_acceptance": http, "transport_acceptance": wire, "product_acceptance": product, "notification_acceptance": owner, "output_acceptance": output, "backend_output_acceptance": backend_output, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked,
+            "steps": steps, "http_acceptance": http, "transport_acceptance": wire, "product_acceptance": product, "notification_acceptance": owner, "output_acceptance": output, "backend_output_acceptance": backend_output, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked, "history_acceptance": history,
             "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
             "source_routing": {"owner": "original-plugin-kv", "frozen_envelope": True,
                                "reverse_lookup_requires_native_admission": True, "legacy_missing_source_is_not_inferred": True,
@@ -207,10 +217,11 @@ def _run():
                                "outbound_task_transport_connected": True, "task_reply_targets": ["session", "backend"], "backend_task_replies_connected": True},
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *(module / "test").rglob("*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
-            "remaining": ["authenticated transport, product startup and durable control reply receipts verified only against loopback OneBot fixtures; live QQ, runtime module UI/status and durable offline input recovery are not connected",
+            "remaining": ["authenticated transport, product startup, scoped login-triggered NapCat history recovery and durable reply receipts verified only against loopback fixtures; live QQ, runtime module UI/status and automatic transport reconnect remain unverified or unimplemented",
                           "quoted confirmation commands and published-view selections are connected; implicit latest-list selection, native stop fences and remaining commands are not connected",
                           "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
                           "first/final public output requires proven native input/root/turn identity; unsupported whole backends remain unavailable; receipt recall, ordinary Session failure-only notifications and remote unknown-send recovery remain unimplemented",
+                          "history recovery requires an observed cursor, exact boundary proof and real_seq; gaps or provider limits are reported without partial admission or guessed initial imports; no executable offline spool is stored",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}
 

@@ -166,7 +166,12 @@ export function openTaskReplies(options: Parameters<typeof createTaskReplies>[0]
   })() : Promise.resolve()
   return {
     admitted(destination: string | Target, inputID: string) {
-      return track((async () => { try { await replies.remember(destination, inputID); await check(destination, inputID) } catch { report({ status: "uncertain" }) } })())
+      const retained = Promise.withResolvers<boolean>()
+      track((async () => {
+        try { await replies.remember(destination, inputID); retained.resolve(true); await check(destination, inputID) }
+        catch { retained.resolve(false); report({ status: "uncertain" }) }
+      })())
+      return retained.promise
     },
     async close() { controller.abort(); await Promise.all([observing, backendObserving, backendChanges]); await Promise.allSettled(jobs) },
   }

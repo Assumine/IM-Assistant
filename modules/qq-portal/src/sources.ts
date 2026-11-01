@@ -2,10 +2,11 @@ import { createHash } from "node:crypto"
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
 import { inputID, originKey, type Policy, type Scope } from "./routing"
 import { target, sameTarget, type Target, type ParentInput } from "./target"
+import { historicalInput, type HistoricalInput } from "./history"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
 export type Source = { scope: Scope; messageID: string; actorID: string }
-export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; continuationID?: string; expectedTurnID?: string; followupOf?: ParentInput; source?: Source }
+export type Origin = { target: Target; inputID: string; actorID: string; fingerprint: string; amendmentID?: string; continuationID?: string; expectedTurnID?: string; followupOf?: ParentInput; source?: Source; historical?: HistoricalInput }
 export type SourceResult = { status: "found"; source: Source } | { status: "missing" | "forbidden" | "uncertain" | "not-accepted" }
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 const account = (value: unknown): value is string => typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value)
@@ -55,7 +56,8 @@ export const origin = (value: unknown): Origin | undefined => {
   const envelope = "source" in value ? source(value.source) : undefined
   if (envelope && (envelope.actorID !== value.actorID || inputID(envelope) !== (value.continuationID ?? value.amendmentID ?? value.inputID)))
     throw new Error("Conflicting QQ source envelope")
-  return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint,
+  const historical = historicalInput(value.historical)
+  return { target: destination, inputID: value.inputID, actorID: value.actorID, fingerprint: value.fingerprint, ...(historical ? { historical } : {}),
     ...(value.amendmentID ? { amendmentID: value.amendmentID as string } : {}), ...(value.continuationID ? { continuationID: value.continuationID as string } : {}), ...(value.expectedTurnID ? { expectedTurnID: value.expectedTurnID as string } : {}), ...(parent ? { followupOf: parent } : {}), ...(envelope ? { source: envelope } : {}) }
 }
 

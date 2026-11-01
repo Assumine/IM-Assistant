@@ -191,3 +191,23 @@ test("message reads reject wrong identities and string markup rather than recons
     expect(fake.calls.filter((call) => call.action === "get_msg")).toHaveLength(changes.length)
   } finally { client.close(); fake.close() }
 })
+
+test("explicit history reads use scoped NapCat operations with opaque anchors and no attachment URL expansion", async () => {
+  const fake = fakeOneBot({ call(socket, call) {
+    if (!call.action.endsWith("msg_history")) return
+    fake.answer(socket, call, { messages: [] }); return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event() {} })
+  try {
+    await client.ready
+    const scope = { botID: "10001", kind: "private" as const, peerID: "20001" }
+    expect(await client.history(scope, "-123", 2)).toEqual([])
+    expect(await client.history({ ...scope, kind: "group", peerID: "30001" }, undefined, 2)).toEqual([])
+    expect(fake.calls[2]).toMatchObject({ action: "get_friend_msg_history", params: { user_id: "20001", message_seq: "-123", count: 2, reverse_order: false, parse_mult_msg: false, disable_get_url: true, quick_reply: false } })
+    expect(fake.calls[3]).toMatchObject({ action: "get_group_msg_history", params: { group_id: "30001", count: 2 } })
+    expect(await client.history({ ...scope, botID: "10002" }, undefined, 2)).toBeUndefined()
+    expect(await client.history(scope, "not-a-message", 2)).toBeUndefined()
+    expect(await client.history(scope, undefined, 101)).toBeUndefined()
+    expect(fake.calls).toHaveLength(4)
+  } finally { client.close(); fake.close() }
+})

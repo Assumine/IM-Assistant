@@ -2,20 +2,21 @@ import type { StorageDomain } from "../../../opencode/packages/plugin/src/promis
 import { fingerprint, inputID, originKey, type Message, type Scope } from "./routing"
 import { origin, source, type Origin, type Source } from "./sources"
 import { target, type Target } from "./target"
+import type { HistoricalInput } from "./history"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
 export type Choice = "approve" | "decline"
-export type Proposal = { id: string; source: Source; fingerprint: string; from: Target; to: Target; parentInputID: string }
+export type Proposal = { id: string; source: Source; fingerprint: string; from: Target; to: Target; parentInputID: string; historical?: HistoricalInput }
 const key = (input: Source) => "confirmation:" + originKey(input.scope, input.messageID)
 const decisionKey = (value: Proposal) => "confirmation-choice:" + originKey(value.source.scope, value.source.messageID)
 const parse = (value: unknown): Proposal => {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid QQ confirmation")
   const row = value as Record<string, unknown>
   const to = target(row.to), from = target(row.from)
-  const identity = origin({ target: to, inputID: row.id, actorID: row.actorID, fingerprint: row.fingerprint, source: row.source })
+  const identity = origin({ target: to, inputID: row.id, actorID: row.actorID, fingerprint: row.fingerprint, source: row.source, historical: row.historical })
   if (!identity?.source || typeof row.parentInputID !== "string" || !/^msg_[A-Za-z0-9_-]+$/.test(row.parentInputID) ||
     !/^[0-9a-f]{64}$/.test(identity.fingerprint)) throw new Error("Invalid QQ confirmation identity")
-  return { id: identity.inputID, source: identity.source, fingerprint: identity.fingerprint, from, to, parentInputID: row.parentInputID }
+  return { id: identity.inputID, source: identity.source, fingerprint: identity.fingerprint, from, to, parentInputID: row.parentInputID, ...(identity.historical ? { historical: identity.historical } : {}) }
 }
 
 /** Consent and immutable routing metadata only. No body, execution status, retries or pending-work queue. */
@@ -60,9 +61,9 @@ export function confirmations(storage: Storage) {
       if (!proposal || proposal.id !== row.id || proposal.fingerprint !== row.fingerprint) throw new Error("Unproven confirmation prompt")
       return proposal
     },
-    async propose(input: Message, from: Target, quoted: Origin) {
+    async propose(input: Message, from: Target, quoted: Origin, historical?: HistoricalInput) {
       const value = { id: inputID(input), source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
-        actorID: input.actorID, fingerprint: fingerprint(input), from, to: quoted.target, parentInputID: quoted.inputID }
+        actorID: input.actorID, fingerprint: fingerprint(input), from, to: quoted.target, parentInputID: quoted.inputID, ...(historical ? { historical } : {}) }
       const created = await storage.insert(key(input), value)
       const proposal = await read(input)
       if (!proposal) throw new Error("QQ confirmation was not retained")

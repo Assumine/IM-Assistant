@@ -525,7 +525,13 @@
         "opencode/packages/server/script/qq-output-smoke.ts",
         "opencode/packages/server/script/qq-backend-output-smoke.ts",
         "modules/qq-portal/src/confirmation-channel.ts",
-        "modules/qq-portal/test/confirmation-channel.test.ts"
+        "modules/qq-portal/test/confirmation-channel.test.ts",
+        "modules/qq-portal/src/history.ts",
+        "modules/qq-portal/test/history.test.ts",
+        "modules/qq-portal/test/history-channel.test.ts",
+        "modules/qq-portal/test/fixture/history.ts",
+        "modules/qq-portal/test/task-watch.test.ts",
+        "opencode/packages/server/script/qq-history-smoke.ts"
       ],
       "verification": [
         {
@@ -533,12 +539,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 644,
+          "tests_run": 664,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 120,
+          "http_checks": 127,
           "publication": "disabled"
         }
       ],

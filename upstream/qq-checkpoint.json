@@ -14,7 +14,7 @@
     {
       "label": "r3-qq-module-tests",
       "exit_code": 0,
-      "passed": 193,
+      "passed": 213,
       "skipped": 0,
       "log": ".reports/native/r3-qq-module-tests.log"
     },
@@ -50,7 +50,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.88,
+      "duration_seconds": 1.83,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-wire-http.log",
       "native_tests_passed": null,
@@ -66,7 +66,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 25.02,
+      "duration_seconds": 28.79,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-product-http.log",
       "native_tests_passed": null,
@@ -82,7 +82,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.13,
+      "duration_seconds": 1.11,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-notification-owner-http.log",
       "native_tests_passed": null,
@@ -98,9 +98,25 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.48,
+      "duration_seconds": 2.15,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-output-http.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/qq-history-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.1,
+      "isolated_home": true,
+      "log": ".reports/native/r3-qq-history-http.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
@@ -114,7 +130,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 3.2,
+      "duration_seconds": 3.62,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-backend-output-http.log",
       "native_tests_passed": null,
@@ -134,7 +150,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 11.77,
+      "duration_seconds": 11.84,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-product-host-regression.log",
       "native_tests_passed": 20,
@@ -150,7 +166,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.83,
+      "duration_seconds": 2.73,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-http.log",
       "native_tests_passed": null,
@@ -166,7 +182,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.17,
+      "duration_seconds": 2.23,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-continuation-http.log",
       "native_tests_passed": null,
@@ -182,7 +198,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.67,
+      "duration_seconds": 2.65,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-guidance-http.log",
       "native_tests_passed": null,
@@ -198,7 +214,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.72,
+      "duration_seconds": 2.71,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-followup-http.log",
       "native_tests_passed": null,
@@ -217,7 +233,7 @@
       "cwd": "opencode/packages/sdk",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 5.19,
+      "duration_seconds": 5.61,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-sdk-regression.log",
       "native_tests_passed": 8,
@@ -238,7 +254,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.46,
+      "duration_seconds": 2.47,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-append-session-regression.log",
       "native_tests_passed": 96,
@@ -259,7 +275,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 10.23,
+      "duration_seconds": 11.87,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-continuation-required-runner.log",
       "native_tests_passed": 290,
@@ -277,7 +293,7 @@
       "cwd": "opencode/packages/client",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.22,
+      "duration_seconds": 0.24,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-append-client-unit.log",
       "native_tests_passed": 10,
@@ -293,7 +309,7 @@
       "cwd": "opencode/packages/core",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.0,
+      "duration_seconds": 1.07,
       "isolated_home": true,
       "log": ".reports/native/r3-qq-native-guidance-core.log",
       "native_tests_passed": 20,
@@ -530,6 +546,25 @@
     "external_messages_sent": 0,
     "production_credentials_used": false
   },
+  "history_acceptance": {
+    "status": "passed",
+    "checks": [
+      "first use establishes only an observed live checkpoint and never imports arbitrary pre-existing chat history",
+      "the real application and desktop native runner remain available while a scoped history request is held",
+      "complete history pages enter the same real Inbox in per-peer sequence order; a quoted supplement appends to its original pending input and a buffered live input stays live",
+      "a recall observed during history loading suppresses only its recovered pending message without interrupting the active desktop task",
+      "only the original native runner drains desktop and recovered QQ work; result notifications quote each original task rather than its supplement or the current live message",
+      "SQLite reopen restores the exact history boundary, native inputs, original sources and notification watches; overlapping deliveries never repeat model work, append text or send a result twice",
+      "recovery uses bounded login-triggered scoped reads, without a second Session, history store, background poller or native execution scheduler"
+    ],
+    "model_requests": 4,
+    "loopback_connections": 3,
+    "loopback_history_reads": 5,
+    "loopback_task_send_attempts": 3,
+    "actual_qq_connection": false,
+    "external_messages_sent": 0,
+    "production_credentials_used": false
+  },
   "execution_owner": {
     "session": "original-opencode-session-inbox",
     "backend": "whole-native-conversation-backend"
@@ -554,39 +589,44 @@
     "modules/codex-native/src/session-adapter.ts": "51954171a6f98cf81e13c06699e9864c23985ed8c58ea113bedab7d83b88502f",
     "modules/codex-native/test/input.test.ts": "38ba6aa72382096035a5b308b2230077aef90d6b08d714eb24331aa1051bbd6a",
     "modules/qq-portal/package.json": "6d27b0ac0e1477959947e9dd53165b4d0f3fd981aad526e8ebb56ee7f6f05b41",
-    "modules/qq-portal/src/channel.ts": "b2ee97930155c66e88605a28ae6eb47c71b59df742e7f624a43483416950a3ec",
-    "modules/qq-portal/src/configuration.ts": "57f8a83cf3ea4d292eeec257105ea0f8729187cc57b0b01619a4ca95563c0e3d",
-    "modules/qq-portal/src/confirmation-channel.ts": "386d7c7483e846b23c5e3dd572877a135028ab6373e1a5c6f3f89cbe3a7d9d61",
-    "modules/qq-portal/src/confirmation.ts": "d607cfc8718a1b25822ad5f5181eaa3ee623eedb338bcbd70b174c9c8516d811",
+    "modules/qq-portal/src/channel.ts": "16c540a449e6e855a3c98c08b1ab217e56ae4c2b041581436dd6778220a6bc17",
+    "modules/qq-portal/src/configuration.ts": "9003c76b5a0f74950eea8379500a0501ad943b9f01431f8bf6f8ea2d736d24e1",
+    "modules/qq-portal/src/confirmation-channel.ts": "a67355b4b8db854d4e815eb6ebf1a1a9e0ddbca2fce969b77bfd2cf6779e5899",
+    "modules/qq-portal/src/confirmation.ts": "8fc1f05ca057d7f120d6ed1ce1c6a1add691996040da382a322d8e470ae65ea4",
     "modules/qq-portal/src/control-reply.ts": "deba3d81f3b1d2feeba47ece765966df59925f4e0134ef05595d59e15bdb2036",
     "modules/qq-portal/src/controls.ts": "d992cf3f836a1a7d930e658a35bd3cd5c52092b4595416fb656887345de6853d",
     "modules/qq-portal/src/delivery.ts": "466e6b40e4a813d4c0afcde0ffc7b7e5caf827eb3a77ba99ac6e0363678ed862",
-    "modules/qq-portal/src/index.ts": "0393fbbc8741877b4adf7d71014ce81b957cc091218a341c1d4d39464a05cffd",
-    "modules/qq-portal/src/module.ts": "1f721d484369670a06bfbf46b4ffb574e8e1fc8e5fcd62c097144604aa554cd2",
+    "modules/qq-portal/src/history.ts": "61fecf9261d8bfd1f9453f95d8d6ab3196ccefb31dd8fcab517689b26ff36bf7",
+    "modules/qq-portal/src/index.ts": "0fb96c731233ea7f4113dbbe192247ae86a31d6ba2885eded0b7054fd09f8cbe",
+    "modules/qq-portal/src/module.ts": "a4fbb19469bd806c8019ccc194506da2c170e0fdfebcb750a88d1479c3579817",
     "modules/qq-portal/src/notifications.ts": "4268b6a888059aa084beb0e8109db6a6e04bb4c4a8f5c4e947d876508fd20daf",
-    "modules/qq-portal/src/onebot.ts": "f5ee494240e42967b24295b38c505c5a5da51fdcd10e35523da704d395c56a5c",
+    "modules/qq-portal/src/onebot.ts": "1ae6503dd6e9b086e3bd92be7476e471f26f03577d19f64213e6fd015ed0bf4b",
     "modules/qq-portal/src/routing.ts": "36d1b35001fb03da89ed24b8a292aae80e8067f7cb4b36ab883439cd2ff21ee5",
-    "modules/qq-portal/src/sources.ts": "a42bb6287ff1de7d3c6125d66d811332a8e7010f5e4ecaf9f27e713b908e2a9f",
+    "modules/qq-portal/src/sources.ts": "0fcaf0e05d2879553b9b3168b9bab328e85ffb308594b2d770aff793585dace7",
     "modules/qq-portal/src/target.ts": "a4d35fcdb5efd702413e6ef5fdc4a7723a84e43649b385180b26ea84b85dbba9",
-    "modules/qq-portal/src/task-replies.ts": "d41cbef9811a7310edb755848c5a8d4c148bb4ba0ff4deb445964d5334697239",
+    "modules/qq-portal/src/task-replies.ts": "94c8ddd2297f3a4a8cce92aaa90b8b34a9a495678e32ba7e5a183c8b1db8f299",
     "modules/qq-portal/src/views.ts": "ea1974f955097996b31748cfd00a0cba0dae53f2b947887d2a0f8a47d062b2da",
     "modules/qq-portal/test/backend-continuation.test.ts": "52589ec49b91b5b449c45ffd2c4aeda56a7d4ea376268b45864432f1233880a3",
     "modules/qq-portal/test/backend-followup.test.ts": "7f72c239c1bf4557a863283f8f0b023bb985418b4ecaee3bc1d432591a48141b",
     "modules/qq-portal/test/channel.test.ts": "2f2d083a759ad482720fb21f83a0703ec6a8e77aacd185f03574ac1369119b17",
-    "modules/qq-portal/test/configuration.test.ts": "e888ca469bf7b86978cdb6a4b7e1ec7b743eadde77d3a10bd89a4b5bf54ed53e",
+    "modules/qq-portal/test/configuration.test.ts": "e000bca30ed6118d42bd49fe33d74af4a550a7ec6a8524ac6cfb9bf9f051542a",
     "modules/qq-portal/test/confirmation-channel.test.ts": "1262698b460a1eb1abcdc42ce7a9e59c9b1500f3be61d9e40fb32696af545f43",
-    "modules/qq-portal/test/confirmation.test.ts": "91004aaaaa7a98afd765d2bd83884e5336e98088ef5ce706586d7aa4db112a0e",
+    "modules/qq-portal/test/confirmation.test.ts": "bfee2722bb89c1d0bce94a66f8814a4d4ba9d404679878e707e6ad6cf434fff3",
     "modules/qq-portal/test/continuation.test.ts": "5aa3a827f3e02d6205586ca0d2d4a519b982b40db2c0161baa03bb24f4add5b7",
     "modules/qq-portal/test/controls.test.ts": "e9faa9e8486e3a2e4515b0704a48aa12463e4eddeb07b86a9ed610b32cd8154b",
+    "modules/qq-portal/test/fixture/history.ts": "86d5a606cfb14030dc682a88a4cc6bf85d28d43de6719151d500ad1e0a09fda6",
     "modules/qq-portal/test/fixture/onebot.ts": "741e9eaf6dbeaa73cc0b4958d429ab7c857f89f72e48eea25beb3c031a2bee65",
     "modules/qq-portal/test/followup.test.ts": "8facd196467020958c57010cf2a092e2ddeeeb8091a6ffb519ab7b55159341bf",
+    "modules/qq-portal/test/history-channel.test.ts": "5982be1078a54ff745630cf136f88e074db510509febb0f4993545a20f0f23e3",
+    "modules/qq-portal/test/history.test.ts": "856f850c09fa5af7ddfd9c4186655142e609053eba1939f7ff9de0ee574e59d8",
     "modules/qq-portal/test/notifications.test.ts": "a2ea3ce47353bf8792f33fc795820096726e516a55dc01835dd7b8c2c7c0862a",
-    "modules/qq-portal/test/onebot.test.ts": "b08e482d75fbeba5c233715822bd7a92c5e3261b64d678ac642cb34a1a938174",
+    "modules/qq-portal/test/onebot.test.ts": "1d9d328e9a02a4dec67c62b3858f5a5413a9c70543dc09cf03752c65ed03c86d",
     "modules/qq-portal/test/recall-owner.test.ts": "ece818a09a31a2645cee68eb14537817325cd7b02770fb45c09bed0ff9740d67",
     "modules/qq-portal/test/routing.test.ts": "7fe733e56696f7be6709aec9703094a3f77913faea5a27e991c9bf3e4c447239",
     "modules/qq-portal/test/sources.test.ts": "1dd8be93cb54d9c40eb6406cfa31cb6cac0bffcbbaaaa58995c529be094285b5",
     "modules/qq-portal/test/target.test.ts": "b2dda416c15d2bca896dacf06c5fd6d8120ee767cafa3218ea577081e9983c3e",
     "modules/qq-portal/test/task-replies.test.ts": "7c6eb179cc1ed832b2ba61a9201146c4c9150ef4298d1c0521397050c5aa39f5",
+    "modules/qq-portal/test/task-watch.test.ts": "4331bb291c24f23feed36f0924f3b91516c5400cc466734c41406e363a3c6758",
     "modules/qq-portal/test/views.test.ts": "34a26b142fe86678f1fc4cdb855df3a7c6af7c530ca1c4605db08a9ee8d974d4",
     "modules/qq-portal/tsconfig.json": "60b04ea374fcfbe69388b6980d7e074d71f27117eecc82f6c0d7527eb25c5947",
     "opencode/bun.lock": "4a2c6eb387254874cf63516d521fe548e0ee73d2ea34119bc37c6d018caacb71",
@@ -648,6 +688,7 @@
     "opencode/packages/server/script/qq-backend-output-smoke.ts": "b7d9cff9f156a8c9e3f1c1f92abc798ed73b5813ec5699aeeb636a499a9d01b7",
     "opencode/packages/server/script/qq-backend-smoke.ts": "1d97e4deb39eeabc0f2debdc2e7d727785d6deb28816834abfbac51d5e5781ac",
     "opencode/packages/server/script/qq-continuation-smoke.ts": "aea560e8069c8fc2a0880223aa30436fc92539a110fb0a17d3bcc21759ea1826",
+    "opencode/packages/server/script/qq-history-smoke.ts": "f805f0727e61e8190edb550a2fac3c6c1fd818353d389e47b01d7859286a5cc4",
     "opencode/packages/server/script/qq-native-followup-smoke.ts": "3d087b880ecca939e6823f7a4641382ed55149f026ac86e055e9bbcc186928c7",
     "opencode/packages/server/script/qq-notification-owner-smoke.ts": "6ee2ffe91dfd87909db98e4c9369ed4221d0335c95c10338fe6b3426e32460de",
     "opencode/packages/server/script/qq-output-smoke.ts": "a1a8c401d283e8edfcd3d129c6c237398032c13a4833b1fcaa2ef7b9418ec9e7",
@@ -669,13 +710,14 @@
     "opencode/packages/session-ui/src/actions.ts": "69459fc86ef6dfb5beef8a6dba3d782f2b41da9e7e4882bd3578e784d8b6cf2d",
     "opencode/packages/session-ui/src/message/message-content.tsx": "903e9a563b7f55abe6130a3b89f974c446403c07faa7a0050c72fb85781864e4",
     "opencode/packages/simulation/test/simulated-provider.test.ts": "58ae9918e390d2645d4c6a8770dcd8fc9193fff96a98cfb01f4535b8b6f22ae3",
-    "tools/qq_portal_smoke.py": "8ca7ee5fc4b5e7321303da3263e883098db22a781765331de723cfbd79674190"
+    "tools/qq_portal_smoke.py": "5f219d6a084a4e2423d61ab0e28d7f62bdd931fd0a8b058e6fc3b8c444b35535"
   },
   "remaining": [
-    "authenticated transport, product startup and durable control reply receipts verified only against loopback OneBot fixtures; live QQ, runtime module UI/status and durable offline input recovery are not connected",
+    "authenticated transport, product startup, scoped login-triggered NapCat history recovery and durable reply receipts verified only against loopback fixtures; live QQ, runtime module UI/status and automatic transport reconnect remain unverified or unimplemented",
     "quoted confirmation commands and published-view selections are connected; implicit latest-list selection, native stop fences and remaining commands are not connected",
     "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
     "first/final public output requires proven native input/root/turn identity; unsupported whole backends remain unavailable; receipt recall, ordinary Session failure-only notifications and remote unknown-send recovery remain unimplemented",
+    "history recovery requires an observed cursor, exact boundary proof and real_seq; gaps or provider limits are reported without partial admission or guessed initial imports; no executable offline spool is stored",
     "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
     "formal R3-02 acceptance is not implemented and A23-A26 are not completed"
   ],
@@ -760,7 +802,10 @@
       "backend"
     ],
     "backend_first_final_sender": true,
-    "read_original": "exact-OneBot-get_msg-after-current-source-authorization"
+    "read_original": "exact-OneBot-get_msg-after-current-source-authorization",
+    "login_triggered_history": true,
+    "history_provider": "explicit-napcat-account-capability",
+    "history_read_concurrency": 4
   },
   "configuration_contract": {
     "owner": "product-composition-and-qq-capability-package",
@@ -794,7 +839,13 @@
     "task_reply_targets": [
       "session",
       "backend"
-    ]
+    ],
+    "optional_history": {
+      "provider": "napcat",
+      "pageSize": 100,
+      "maxPages": 10,
+      "default": "absent-and-disabled"
+    }
   },
   "notification_contract": {
     "owner": "original-plugin-KV-notification-metadata",
@@ -854,7 +905,6 @@
     "unsupported": [
       "backends-without-native-output-proof",
       "ordinary-Session-failure-only-notifications",
-      "durable-offline-ingress",
       "automatic-transport-reconnect"
     ],
     "backend_identity": "exact-ref-input-root-turn-and-native-user-item",
@@ -866,7 +916,34 @@
       "completed-without-public-text"
     ],
     "backend_output_optional": true,
-    "existing_session_watch_and_intent_format": "preserved"
+    "existing_session_watch_and_intent_format": "preserved",
+    "admission_watch": "durably-retained-before-inbound-checkpoint-without-waiting-for-output-inspection"
+  },
+  "confirmation_contract": {
+    "owner": "qq-capability-original-consent-metadata-and-portal",
+    "prompt": "one-durable-send-intent-quoting-original-request",
+    "prompt_title": "read-only-native-target-title-or-explicit-identity",
+    "selector": "explicit-quote-of-acknowledged-confirmation-prompt-only",
+    "commands": [
+      "/confirm",
+      "/cancel"
+    ],
+    "codex_prefix_and_case_variants": true,
+    "permission": "original-actor-bot-and-peer-current-task-allowlist-plus-group-at",
+    "management_grant_required_for_own_consent": false,
+    "source_read": "actual-original-ID-actor-kind-structured-segments-and-immutable-fingerprint",
+    "read_failure": "explicit-unavailable-no-guessed-body-or-model-input",
+    "decision": "existing-immutable-first-choice",
+    "command_replay": "first-immutable-ingress-only-duplicates-reconcile-notifications-never-apply-a-later-choice",
+    "invalid_command_revival": false,
+    "binding_changed": false,
+    "shadow_execution_queue": false,
+    "stored_bodies_titles_or_context": false,
+    "unknown_send_retry": false,
+    "acknowledged_prompt_alias_repair": "metadata-only-no-resend",
+    "protocol_reference": "https://github.com/botuniverse/onebot-11/blob/master/api/public.md#get_msg-获取消息",
+    "actual_qq_connection": false,
+    "historical_timing_metadata": "original-sentAt-and-recoveredAt-preserved-through-consent"
   },
   "previous_e2e_type_verification": {
     "source_revision": "825f05ff9e85626d4a324679c1019e3c3d4b57a1",
@@ -894,9 +971,9 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 8.9,
+      "duration_seconds": 9.04,
       "isolated_home": true,
-      "log": ".reports/native/r3-qq-confirm-check.log",
+      "log": ".reports/native/r3-qq-history-check.log",
       "native_tests_passed": null,
       "native_tests_failed": null,
       "native_tests_skipped": 0
@@ -908,39 +985,75 @@
           "x",
           "--no-install",
           "oxlint",
-          "packages/server/script/qq-output-smoke.ts"
+          "packages/server/script/qq-history-smoke.ts"
         ],
         "cwd": "opencode",
         "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
         "exit_code": 0,
-        "duration_seconds": 1.23,
+        "duration_seconds": 1.15,
         "isolated_home": true,
-        "log": ".reports/native/r3-qq-confirm-lint.log",
+        "log": ".reports/native/r3-qq-history-lint.log",
         "native_tests_passed": null,
         "native_tests_failed": null,
         "native_tests_skipped": 0
       },
       {
         "exit_code": 0,
-        "files": 10,
-        "log": ".reports/native/r3-qq-confirm-module-lint.log",
+        "files": 17,
+        "log": ".reports/native/r3-qq-history-module-lint.log",
         "args": [
-          "opencode\\node_modules\\.bin\\oxlint.exe",
-          "modules/qq-portal/src/routing.ts",
-          "modules/qq-portal/src/confirmation.ts",
-          "modules/qq-portal/src/onebot.ts",
+          "opencode/node_modules/.bin/oxlint.exe",
           "modules/qq-portal/src/channel.ts",
-          "modules/qq-portal/src/index.ts",
-          "modules/qq-portal/src/sources.ts",
-          "modules/qq-portal/src/module.ts",
+          "modules/qq-portal/src/configuration.ts",
           "modules/qq-portal/src/confirmation-channel.ts",
-          "modules/qq-portal/test/confirmation-channel.test.ts",
-          "modules/qq-portal/test/onebot.test.ts"
+          "modules/qq-portal/src/confirmation.ts",
+          "modules/qq-portal/src/history.ts",
+          "modules/qq-portal/src/index.ts",
+          "modules/qq-portal/src/module.ts",
+          "modules/qq-portal/src/onebot.ts",
+          "modules/qq-portal/src/sources.ts",
+          "modules/qq-portal/src/task-replies.ts",
+          "modules/qq-portal/test/configuration.test.ts",
+          "modules/qq-portal/test/confirmation.test.ts",
+          "modules/qq-portal/test/fixture/history.ts",
+          "modules/qq-portal/test/history-channel.test.ts",
+          "modules/qq-portal/test/history.test.ts",
+          "modules/qq-portal/test/onebot.test.ts",
+          "modules/qq-portal/test/task-watch.test.ts"
         ]
       }
     ],
+    "recovery_stability": {
+      "args": [
+        "test",
+        "test/history.test.ts",
+        "test/history-channel.test.ts",
+        "test/task-watch.test.ts",
+        "--rerun-each",
+        "10"
+      ],
+      "exit_code": 0,
+      "passed": 170,
+      "failed": 0,
+      "log": ".reports/native/r3-qq-history-stability.log",
+      "iterations": 10
+    },
+    "fixed_regression": {
+      "case": "An old unbound message above an unverified live sequence gap could become a new task after rebinding.",
+      "before": {
+        "passed": 0,
+        "failed": 1,
+        "log": ".reports/native/r3-qq-history-unbound-gap-before.log"
+      },
+      "after": {
+        "passed": 1,
+        "failed": 0,
+        "log": ".reports/native/r3-qq-history-unbound-gap-after.log"
+      },
+      "resolution": "The original portal retains an immutable unbound refusal. Recovery requires retained admission/proposal/refusal proof for previously observed input; missing proof is uncertainty, not a fresh target guess."
+    },
     "shared_test_cleanup": {
-      "checked": 452,
+      "checked": 460,
       "stopped": 0,
       "unverified": 0
     },
@@ -953,29 +1066,54 @@
     "acceptance_ids": [],
     "entrypoint_result": "blocked"
   },
-  "confirmation_contract": {
-    "owner": "qq-capability-original-consent-metadata-and-portal",
-    "prompt": "one-durable-send-intent-quoting-original-request",
-    "prompt_title": "read-only-native-target-title-or-explicit-identity",
-    "selector": "explicit-quote-of-acknowledged-confirmation-prompt-only",
-    "commands": [
-      "/confirm",
-      "/cancel"
-    ],
-    "codex_prefix_and_case_variants": true,
-    "permission": "original-actor-bot-and-peer-current-task-allowlist-plus-group-at",
-    "management_grant_required_for_own_consent": false,
-    "source_read": "actual-original-ID-actor-kind-structured-segments-and-immutable-fingerprint",
-    "read_failure": "explicit-unavailable-no-guessed-body-or-model-input",
-    "decision": "existing-immutable-first-choice",
-    "command_replay": "first-immutable-ingress-only-duplicates-reconcile-notifications-never-apply-a-later-choice",
-    "invalid_command_revival": false,
-    "binding_changed": false,
-    "shadow_execution_queue": false,
-    "stored_bodies_titles_or_context": false,
-    "unknown_send_retry": false,
-    "acknowledged_prompt_alias_repair": "metadata-only-no-resend",
-    "protocol_reference": "https://github.com/botuniverse/onebot-11/blob/master/api/public.md#get_msg-获取消息",
-    "actual_qq_connection": false
+  "history_contract": {
+    "owner": "QQ-peer-observation-checkpoints-in-existing-plugin-KV",
+    "trigger": "verified-OneBot-channel-online-no-timer-or-automatic-reconnect",
+    "provider": "explicit-napcat",
+    "first_use": "first-valid-live-peer-observation-no-import-before-a-proven-boundary",
+    "checkpoint": "bot-kind-peer-messageID-real_seq-and-original-time",
+    "ordering": "validated-BigInt-real_seq-never-message_id-or-message_seq-size",
+    "paging": "opaque-message-ID-inclusive-older-pages-with-exact-boundary-proof-before-any-admission",
+    "limits": {
+      "pageSize": [
+        2,
+        100
+      ],
+      "maxPages": [
+        1,
+        20
+      ],
+      "maximum_rows": 1000,
+      "concurrent_reads": 4
+    },
+    "scope_authorization": "current-private-peer-or-group-allowlist-before-history-query-original-member-and-group-at-gates-before-admission",
+    "live_barrier": "same-peer-history-before-buffered-live-other-peers-independent",
+    "live_overlap": "same-ID-reconciles-once-live-context-is-preserved",
+    "live_gap": "unverified-sequence-jumps-do-not-advance-checkpoint",
+    "recall": "live-recalls-drained-through-original-portal-before-recovered-input-at-safe-admission-boundaries",
+    "routing": "original-portal-and-native-Session-or-whole-backend-input",
+    "timestamps": "historical-task-note-plus-structured-timing-metadata-unchanged-original-fingerprint",
+    "expired_intents": "model-receives-original-time-and-instruction-to-interpret-expired-or-unclear-intents-before-action",
+    "unbound_refusal": "immutable-original-portal-admission-refusal-no-revival-after-binding",
+    "missing_previous_admission_proof": "reported-uncertain-no-new-target-or-blind-resubmit",
+    "checkpoint_commit": "after-proven-native-handoff-and-durable-task-reply-watch",
+    "failure": "affected-peer-stops-and-reports-no-partial-page-admission-or-unproven-high-water",
+    "stored_bodies_model_context_or_executable_spool": false,
+    "recovered_counter": "historical-observations-not-new-or-completed-task-count",
+    "actual_qq_connection": false,
+    "protocol_sources": [
+      {
+        "url": "https://github.com/NapNeko/NapCatQQ/blob/main/packages/napcat-onebot/action/go-cqhttp/GetFriendMsgHistory.ts",
+        "blob_sha": "feb2218fb0f2e798710956bf9778d63a7f059c43"
+      },
+      {
+        "url": "https://github.com/NapNeko/NapCatQQ/blob/main/packages/napcat-onebot/action/go-cqhttp/GetGroupMsgHistory.ts",
+        "blob_sha": "a5718edac80b57f8afc83ad856fc1aa23ea2df68"
+      },
+      {
+        "url": "https://github.com/NapNeko/NapCatQQ/blob/main/packages/napcat-onebot/api/msg.ts",
+        "blob_sha": "c1a43a76cee8326b3a4c72e77a3fa5d017cf5abb"
+      }
+    ]
   }
 }

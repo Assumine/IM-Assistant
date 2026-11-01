@@ -105,6 +105,19 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
     ready: ready.promise,
     state: (): WireState => ({ ...current }),
     close() { stop("closed") },
+    /** Explicit NapCat history capability. Its message_seq is an opaque short-ID anchor, not an ordering key. */
+    async history(scope: Scope, before: string | undefined, count: number): Promise<unknown[] | undefined> {
+      if (current.phase !== "online" || scope.botID !== options.botID || !accountID(scope.peerID) ||
+        !["private", "group"].includes(scope.kind) || before !== undefined && !numericID(before) ||
+        !Number.isSafeInteger(count) || count < 2 || count > 100) return undefined
+      const response = await request(scope.kind === "private" ? "get_friend_msg_history" : "get_group_msg_history", {
+        [scope.kind === "private" ? "user_id" : "group_id"]: scope.peerID,
+        ...(before !== undefined ? { message_seq: before } : {}), count, reverse_order: false,
+        parse_mult_msg: false, disable_get_url: true, quick_reply: false,
+      })
+      return response.kind === "reply" && response.reply.status === "ok" && record(response.reply.data) && Array.isArray(response.reply.data.messages)
+        ? response.reply.data.messages : undefined
+    },
     /** Read the exact retained source, not arbitrary history. get_msg has no required group_id in OneBot 11. */
     async read(source: Source): Promise<unknown | undefined> {
       const id = numericID(source.messageID)

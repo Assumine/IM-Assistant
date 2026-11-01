@@ -1,9 +1,10 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
-import { command, decode, fingerprint, inputID, originKey, scopeKey, type Message, type Policy, type Scope } from "./routing"
+import { command, decode, fingerprint, inputID, originKey, scopeKey, type Policy, type Scope } from "./routing"
 import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence, type ParentInput } from "./target"
 import { sources, type Origin, type Source, type SourceResult } from "./sources"
 import { confirmations, type Choice, type Proposal } from "./confirmation"
 import { claimIngress, controls, type ControlOptions, type ControlResponse } from "./controls"
+import { historicalInput, historicalText, type HistoricalInput } from "./history"
 
 type Storage = Pick<StorageDomain, "get" | "set" | "insert">
 export type Result =
@@ -64,7 +65,8 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     try { return { status: await native.withdraw(record.target, record.inputID) } }
     catch { return { status: "uncertain" } }
   }
-  const receive = async (raw: unknown): Promise<Result> => {
+  const receive = async (raw: unknown, recovery?: HistoricalInput): Promise<Result> => {
+    const historical = historicalInput(recovery)
     const event = decode(raw, policy)
     if (event.kind === "ignored" || event.kind === "unsupported") return { status: event.kind }
     if (event.kind === "recall") {
@@ -88,6 +90,11 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     try { ingress = await claimIngress(storage, input, !!control) } catch { return { status: "uncertain" } }
     if (ingress === "conflict") return { status: "conflict" }
     if (control) return dispatchControl ? dispatchControl.receive(input, control, ingress === "duplicate") : { status: "command", ...control }
+    const refusalKey = "input-refusal:" + originKey(input.scope, input.messageID)
+    const refused = await storage.get(refusalKey)
+    if (refused !== undefined) return refused && typeof refused === "object" && !Array.isArray(refused) &&
+      "fingerprint" in refused && refused.fingerprint === fingerprint(input) && "reason" in refused && refused.reason === "unbound"
+      ? { status: "unbound" } : { status: "conflict" }
     let proposal: Proposal | undefined
     try { proposal = await consent.read(input) } catch { return { status: "conflict" } }
     if (proposal) {
@@ -96,7 +103,11 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       if (choice === "decline") return { status: "confirmation-declined" }
     }
     const destination = proposal?.to ?? await binding(input.scope)
-    if (!destination) return { status: "unbound" }
+    if (!destination) {
+      const refusal = { fingerprint: fingerprint(input), reason: "unbound" }
+      if (!await storage.insert(refusalKey, refusal) && JSON.stringify(await storage.get(refusalKey)) !== JSON.stringify(refusal)) return { status: "uncertain" }
+      return { status: "unbound" }
+    }
     const quoted = input.quoteID ? await lookup(input.scope, input.quoteID) : undefined
     if (proposal && (!quoted || !sameTarget(quoted.target, proposal.to) || quoted.inputID !== proposal.parentInputID)) return { status: "conflict" }
     let adjustment: "amendmentID" | "continuationID" | undefined
@@ -104,7 +115,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     let followupOf: ParentInput | undefined
     if (quoted) {
       if (!sameTarget(quoted.target, destination)) {
-        const { proposal, created } = await consent.propose(input, destination, quoted)
+        const { proposal, created } = await consent.propose(input, destination, quoted, historical)
         return confirmationResult(proposal, !created)
       }
       if (!native.canAppend(destination) && !native.canContinue(destination)) return { status: "blocked", reason: "quoted-adjustment-unavailable" }
@@ -123,6 +134,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
       ...(expectedTurnID ? { expectedTurnID } : {}),
       ...(followupOf ? { followupOf } : {}),
+      ...(proposal?.historical ?? historical ? { historical: proposal?.historical ?? historical } : {}),
       ...(adjustment ? { [adjustment]: inputID(input) } : {}) }
     if (!(await storage.insert(key(input.scope, input.messageID), record))) {
       const winner = await lookup(input.scope, input.messageID)
@@ -134,9 +146,10 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     await metadata.retain(record)
     if (await recalled(input)) return { status: "recalled" }
     try {
-      const metadata = { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } }
-      const state = record.followupOf ? await native.followup(record.target, record.inputID, record.followupOf, input.text, metadata) : record.continuationID ? await native.continueInput(record.target, record.inputID, record.continuationID, input.text, metadata, record.expectedTurnID)
-        : record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text, metadata)
+      const text = historicalText(input.text, record.historical)
+      const metadata = { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions, ...(record.historical ? { historical: record.historical } : {}) } }
+      const state = record.followupOf ? await native.followup(record.target, record.inputID, record.followupOf, text, metadata) : record.continuationID ? await native.continueInput(record.target, record.inputID, record.continuationID, text, metadata, record.expectedTurnID)
+        : record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, text) : await native.send(record.target, record.inputID, text, metadata)
       if (record.followupOf && (state === "followup-accepted" || state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
       if (state !== "accepted") return result(record, state, false)
     } catch {
@@ -204,3 +217,4 @@ export { createControlReplies, type NotificationReceipt } from "./notifications"
 export { controlReply } from "./control-reply"
 export { createTaskReplies, openTaskReplies } from "./task-replies"
 export { createConfirmationChannel } from "./confirmation-channel"
+export { type HistoryConfig, type HistoricalInput } from "./history"

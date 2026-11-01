@@ -11,6 +11,7 @@ export async function configuredModule(home: string, environment: NodeJS.Process
   onState?: (botID: string, state: Parameters<NonNullable<ChannelOptions["onState"]>>[0]) => void
   onIssue?: ChannelOptions["onIssue"]
   onResult?: ChannelOptions["onResult"]
+  onRecovery?: (botID: string, state: Parameters<NonNullable<ChannelOptions["onRecovery"]>>[0]) => void
 } = {}): Promise<ApplicationModule | undefined> {
   const config = await readConfiguration(home)
   if (!config.enabled) return undefined
@@ -60,10 +61,12 @@ export async function configuredModule(home: string, environment: NodeJS.Process
         channel = openQQChannel({
         policy: account.policy, connection: { url: account.url, token: account.token },
         portal: confirmations,
+        ...(account.history ? { history: { config: account.history, storage } } : {}),
+        onRecovery: (value) => observe.onRecovery?.(account.policy.botID, value),
         onResult: async (value) => {
           const result = value.result.status === "confirmation-control" ? value.result.result : value.result
           if (result.status === "accepted" || result.status === "followup" || result.status === "steered" || result.status === "amended")
-            void tasks.admitted(result.target, result.inputID)
+            if (!await tasks.admitted(result.target, result.inputID)) throw new Error("QQ result subscription was not retained")
           if (replies && value.message && value.result.status === "control") {
             const receipt = await replies.deliver(value.message, value.result)
             try {
