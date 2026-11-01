@@ -3,12 +3,12 @@ export * as SessionInput from "./input.js"
 import { Hash } from "@opencode/util/hash"
 import { and, eq, gte, inArray, lt, sql } from "drizzle-orm"
 import { Effect, Schema } from "effect"
-import { Continuation } from "@opencode/schema/session-inbox"
+import { Continuation, Followup, InputPosition } from "@opencode/schema/session-inbox"
 import { Database } from "../database/database.js"
 import { KVTable } from "../kv/sql.js"
 import { SessionMessage } from "./message.js"
 import { SessionSchema } from "./schema.js"
-import { SessionInboxTable, SessionMessageTable } from "./sql.js"
+import { SessionInboxTable, SessionMessageTable, SessionTable } from "./sql.js"
 import { SessionBlob } from "./blob.js"
 
 type DB = Database.Interface["db"]
@@ -19,6 +19,9 @@ export type Ref = {
 }
 const currentKey = (sessionID: SessionSchema.ID) => `session:input-current:${Hash.sha256(sessionID)}`
 const ownerKey = (id: SessionMessage.ID) => `session:input-owner:${Hash.sha256(id)}`
+const closedKey = (id: SessionMessage.ID) => `session:input-closed:${Hash.sha256(id)}`
+const followupKey = (sessionID: SessionSchema.ID, id: SessionMessage.ID) =>
+  `session:input-followup:${Hash.sha256(sessionID)}:${Hash.sha256(id)}`
 const prefix = (sessionID: SessionSchema.ID) => `session:input-continuation:${Hash.sha256(sessionID)}:`
 const key = (sessionID: SessionSchema.ID, id: SessionMessage.ID) => prefix(sessionID) + Hash.sha256(id)
 const Owner = Schema.Struct({ sessionID: SessionSchema.ID, rootID: SessionMessage.ID })
@@ -27,6 +30,12 @@ const Record = Schema.Struct({
   rootID: SessionMessage.ID,
   requestHash: Schema.String,
   status: Schema.Literals(["pending", "delivered", "cancelled", "expired"]),
+})
+const FollowupRecord = Schema.Struct({
+  ...Followup.fields,
+  rootID: SessionMessage.ID,
+  requestHash: Schema.String,
+  status: Schema.Literals(["pending", "delivered", "cancelled"]),
 })
 
 const read = Effect.fn("SessionInput.read")(function* (db: DB, name: string) {
@@ -77,6 +86,100 @@ export const belongs = Effect.fn("SessionInput.belongs")(function* (
   return rows.some((row) => row.id === expectedInputID) && rows.some((row) => row.id === active.rootID)
     ? active.rootID
     : undefined
+})
+
+export const inspect = Effect.fn("SessionInput.inspect")(function* (
+  db: DB,
+  sessionID: SessionSchema.ID,
+  inputID: SessionMessage.ID,
+) {
+  const unknown = { sessionID, inputID, status: "unknown" as const }
+  const pending = yield* db
+    .select({ type: SessionInboxTable.type })
+    .from(SessionInboxTable)
+    .where(and(eq(SessionInboxTable.session_id, sessionID), eq(SessionInboxTable.id, inputID)))
+    .get()
+    .pipe(Effect.orDie)
+  if (pending?.type === "user") return InputPosition.make({ sessionID, inputID, status: "pending" })
+  const value = yield* read(db, ownerKey(inputID))
+  if (value === undefined) return InputPosition.make(unknown)
+  const owner = yield* Schema.decodeUnknownEffect(Owner)(value).pipe(Effect.orDie)
+  if (owner.sessionID !== sessionID) return InputPosition.make(unknown)
+  const rows = yield* db
+    .select({ id: SessionMessageTable.id })
+    .from(SessionMessageTable)
+    .where(
+      and(
+        eq(SessionMessageTable.session_id, sessionID),
+        eq(SessionMessageTable.type, "user"),
+        inArray(SessionMessageTable.id, [inputID, owner.rootID]),
+      ),
+    )
+    .all()
+    .pipe(Effect.orDie)
+  if (!rows.some((row) => row.id === inputID) || !rows.some((row) => row.id === owner.rootID))
+    return InputPosition.make(unknown)
+  const active = yield* current(db, sessionID)
+  if (active?.rootID === owner.rootID)
+    return InputPosition.make({ sessionID, inputID, rootID: owner.rootID, status: "open" })
+  const ended = yield* read(db, closedKey(owner.rootID))
+  if (ended === undefined) return InputPosition.make(unknown)
+  const closed = yield* Schema.decodeUnknownEffect(Owner)(ended).pipe(Effect.orDie)
+  return InputPosition.make(
+    closed.sessionID === sessionID && closed.rootID === owner.rootID
+      ? { sessionID, inputID, rootID: owner.rootID, status: "closed" }
+      : unknown,
+  )
+})
+
+export const followed = Effect.fn("SessionInput.followed")(function* (
+  db: DB,
+  sessionID: SessionSchema.ID,
+  id: SessionMessage.ID,
+) {
+  const value = yield* read(db, followupKey(sessionID, id))
+  return value === undefined ? undefined : yield* Schema.decodeUnknownEffect(FollowupRecord)(value).pipe(Effect.orDie)
+})
+export const followupReceipt = (input: Ref, record?: typeof FollowupRecord.Type) =>
+  Followup.make({
+    sessionID: input.sessionID,
+    inboxID: input.id,
+    expectedInputID: input.expectedInputID,
+    ...(record ? { rootID: record.rootID } : {}),
+    status: record?.status ?? "unknown",
+  })
+export const projectFollowup = Effect.fn("SessionInput.projectFollowup")(function* (
+  db: DB,
+  input: Ref & { expectedRootID: SessionMessage.ID; requestHash: string },
+) {
+  if (input.id === input.expectedInputID || input.id === input.expectedRootID) return false
+  const session = yield* db
+    .select({ revert: SessionTable.revert })
+    .from(SessionTable)
+    .where(eq(SessionTable.id, input.sessionID))
+    .get()
+    .pipe(Effect.orDie)
+  if (!session || session.revert) return false
+  const position = yield* inspect(db, input.sessionID, input.expectedInputID)
+  if (position.status !== "closed" || position.rootID !== input.expectedRootID) return false
+  const row = yield* db
+    .insert(KVTable)
+    .values({
+      key: followupKey(input.sessionID, input.id),
+      value: {
+        sessionID: input.sessionID,
+        inboxID: input.id,
+        expectedInputID: input.expectedInputID,
+        rootID: input.expectedRootID,
+        requestHash: input.requestHash,
+        status: "pending",
+      },
+    })
+    .onConflictDoNothing()
+    .returning({ key: KVTable.key })
+    .get()
+    .pipe(Effect.orDie)
+  return row !== undefined
 })
 export const recorded = Effect.fn("SessionInput.recorded")(function* (
   db: DB,
@@ -131,6 +234,7 @@ export const projectClosed = Effect.fn("SessionInput.projectClosed")(function* (
 ) {
   const active = yield* current(db, sessionID)
   if (!active || active.rootID !== rootID) return
+  yield* write(db, closedKey(rootID), { sessionID, rootID })
   const pending = yield* db
     .select({ key: KVTable.key, value: KVTable.value })
     .from(KVTable)
@@ -179,6 +283,8 @@ export const projectDelivered = Effect.fn("SessionInput.projectDelivered")(funct
 ) {
   const active = yield* current(db, input.sessionID)
   const record = yield* recorded(db, input.sessionID, input.id)
+  const followup = yield* followed(db, input.sessionID, input.id)
+  if (followup && followup.status !== "pending") return false
   if (record && (record.status !== "pending" || input.delivery !== "steer" || active?.rootID !== record.rootID))
     return false
   const rootID = record?.rootID ?? (input.delivery === "steer" ? active?.rootID : undefined) ?? input.id
@@ -187,6 +293,7 @@ export const projectDelivered = Effect.fn("SessionInput.projectDelivered")(funct
   yield* write(db, currentKey(input.sessionID), owner)
   yield* write(db, ownerKey(input.id), owner)
   if (record) yield* write(db, key(input.sessionID, input.id), { ...record, status: "delivered" })
+  if (followup) yield* write(db, followupKey(input.sessionID, input.id), { ...followup, status: "delivered" })
   return true
 })
 export const projectCancelled = Effect.fn("SessionInput.projectCancelled")(function* (
@@ -196,4 +303,6 @@ export const projectCancelled = Effect.fn("SessionInput.projectCancelled")(funct
 ) {
   const record = yield* recorded(db, sessionID, id)
   if (record?.status === "pending") yield* write(db, key(sessionID, id), { ...record, status: "cancelled" })
+  const followup = yield* followed(db, sessionID, id)
+  if (followup?.status === "pending") yield* write(db, followupKey(sessionID, id), { ...followup, status: "cancelled" })
 })

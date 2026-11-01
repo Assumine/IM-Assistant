@@ -238,7 +238,7 @@
         {
           "path": "packages/core/src/session/session.ts",
           "action": "modified",
-          "sha256": "7aa9f45fcd5eb3569d5ceb822b1e2e474ad6d329564ec45d87259de4a4e7ac46"
+          "sha256": "429e829c663930a589611b4a4df9f0d5ce4cf2db1e971614793cf3458843a789"
         },
         {
           "path": "packages/core/src/session/shell.ts",
@@ -496,12 +496,12 @@
         {
           "path": "packages/client/src/effect/generated/client.ts",
           "action": "modified",
-          "sha256": "5fff2ad3aa16620740f97cf63c60e9acf52430b5b4f8094a2554a4c6a4f22a9a"
+          "sha256": "6392907ee48a2affc620c799f0dd835a2fe2a7bd1f03c8c0b531678fda3fa6b8"
         },
         {
           "path": "packages/client/src/promise/generated/client.ts",
           "action": "modified",
-          "sha256": "67402ac6d86a375f111a9d699d9416c0af9fc011dab989263151991e80c05692"
+          "sha256": "f381763f436138456eeb9aa3b6df1ad62884c0d54c0bba06670fb5a80612d46e"
         },
         {
           "path": "packages/client/test/promise.test.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "f0ed05e5a9dada9a4a14080fd8f4acd66bacd8b940048e604e4b67899cdf3b2f"
+          "sha256": "fef74e8ab40d863dabd2ddcc23d7d23cb40b6fb7d341ba4f7eb46a31689d8e50"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -551,12 +551,12 @@
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "c045a9570bce027ee6991c856992c47b7a25526fbe49102d9bdb97d57f422ac4"
+          "sha256": "6a5f5e490b54d06bee7e70b609dbd2ce92461cc74e6f8e80e5cdd4a943e4a3b8"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "f14baf17aa42a491f124948a0b71292c15d0aac73be8e36e96840222083d50ca"
+          "sha256": "c00bb122c4ab848588ed1fab9cbaf2d1f080b49266d29ac2a22ca717c6ce674d"
         },
         {
           "path": "packages/core/src/bus.ts",
@@ -566,7 +566,7 @@
         {
           "path": "packages/core/src/session.ts",
           "action": "modified",
-          "sha256": "b021912556e564941db8060b4df82590572d4b24a281bc9a75aed0f88d68a728"
+          "sha256": "52cb561dc1c82d046fb2f34d8d84d5155ac186cf694d7fb022f2a47ae7aa0053"
         },
         {
           "path": "packages/core/src/session/compaction.ts",
@@ -606,7 +606,7 @@
         {
           "path": "packages/schema/src/session-event.ts",
           "action": "modified",
-          "sha256": "9dd2926a5fba5b4434370f0c69ab83351fc3dc7341f7d8686d3cd5611d8551bf"
+          "sha256": "909526520c0c4390d654549af7e919d1159c3a61c47d1b152441804ff8968f04"
         },
         {
           "path": "packages/server/src/routes.ts",
@@ -666,7 +666,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "7683f597662037d804fb37a05a31fe76c85b33553dd5a4fcee0fc5e0f54c94e2"
+          "sha256": "a4b0721105952368b38804f0afa42275eb000231a57605f0becb125c95bcca42"
         }
       ]
     },
@@ -1085,7 +1085,7 @@
         {
           "path": "packages/server/script/qq-portal-smoke.ts",
           "action": "added",
-          "sha256": "3ae57b951bcbdfe7bab2c4c17da2da4ca50d376aa8586a379e0e3929f424f3cf"
+          "sha256": "5d4a53bbd11b962dd4df5bafada53637a90d031385284c5b9dc2bdc5b32d7025"
         },
         {
           "path": "packages/server/test/vcs.test.ts",
@@ -1140,7 +1140,7 @@
         {
           "path": "packages/core/src/session/inbox.ts",
           "action": "modified",
-          "sha256": "633a4354cb107ba0ce5cd3846566eef73d31c9a6d4d2649a4de1ebb6102e1764"
+          "sha256": "ae494f081537a2dab20343f48e096b55ef77e7092e0d088f70e326415afcdd99"
         },
         {
           "path": "packages/core/src/session/message-updater.ts",
@@ -1150,7 +1150,7 @@
         {
           "path": "packages/core/src/session/projector.ts",
           "action": "modified",
-          "sha256": "1183d5e22a88cace64fdbf76e10c1169d01b75fcc7a9a8a7a78477e7db14b37c"
+          "sha256": "8e26592e284939cd11fe9edfbb43ece5e551351bd96e7890d36f08ddff219a51"
         },
         {
           "path": "packages/core/test/session-inbox-append.test.ts",
@@ -1160,17 +1160,17 @@
         {
           "path": "packages/protocol/src/groups/session.ts",
           "action": "modified",
-          "sha256": "7c8f847086488f65f428a0208814ff1a31b3d017b05f74b1c91efd64ffd2c7f2"
+          "sha256": "4ad61c1d7428db5a8c89c767d97b6865482ebc4b6ea66a26c9ff8dc4f3252fa5"
         },
         {
           "path": "packages/schema/src/session-inbox.ts",
           "action": "modified",
-          "sha256": "50e58b83ecc421eb642676189917e98da7fa3886d6b2cf49b3b52d3a59021047"
+          "sha256": "c571abb67efdf201a7dabc0c4caad8dcdc4661600275d7cc6c272392451a8002"
         },
         {
           "path": "packages/server/src/handlers/session.ts",
           "action": "modified",
-          "sha256": "d696bc10dc6a3d771b8845b88a9f785d31a7ee526742cdfe1132a2acf9a4beee"
+          "sha256": "20e2a0f80c025d82dac05a44c6d3fb28606245c11dd60f64786d159fa2f25181"
         }
       ]
     },
@@ -1200,7 +1200,7 @@
         {
           "path": "packages/core/src/session/input.ts",
           "action": "added",
-          "sha256": "4837525a03952a5b9a143f582f79b6b20ad7041c5c5d0782832f3f839c8dc3df"
+          "sha256": "84c0c0d76e357f0b7f75e1afb402e78dc2af7bf5a901d1849db9a4a6924ced3b"
         },
         {
           "path": "packages/core/src/session/runner/llm.ts",
@@ -1210,12 +1210,12 @@
         {
           "path": "packages/core/test/session-input.test.ts",
           "action": "added",
-          "sha256": "eba1a34fd2dceaf2b652656820af9ea2d3b4c990230691ea97131d756d523794"
+          "sha256": "02e5139793d48d720bc158e64eebd604e4d86a944dc9f9bd4d4dcc258dac11dd"
         },
         {
           "path": "packages/server/script/qq-continuation-smoke.ts",
           "action": "added",
-          "sha256": "8c0cda0700c112a26a89716e0f2161ac976aa923f6b1de51a3a23010e72f3501"
+          "sha256": "aea560e8069c8fc2a0880223aa30436fc92539a110fb0a17d3bcc21759ea1826"
         },
         {
           "path": "packages/session-ui/src/actions.ts",

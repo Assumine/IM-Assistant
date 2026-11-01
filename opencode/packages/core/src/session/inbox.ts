@@ -404,6 +404,60 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
       ),
   )
 
+  const followup = Effect.fn("SessionInbox.followup")(function* (
+    input: SessionInput.Ref & { readonly requestHash?: string; readonly expectedRootID?: SessionMessage.ID },
+  ) {
+    const record = yield* SessionInput.followed(db, input.sessionID, input.id)
+    if (
+      record &&
+      (record.sessionID !== input.sessionID ||
+        record.inboxID !== input.id ||
+        record.expectedInputID !== input.expectedInputID ||
+        (input.expectedRootID !== undefined && record.rootID !== input.expectedRootID) ||
+        (input.requestHash !== undefined && record.requestHash !== input.requestHash))
+    )
+      return yield* new LifecycleConflict({ id: input.id })
+    return SessionInput.followupReceipt(input, record)
+  })
+  const followupInput = Effect.fn("SessionInbox.followupInput")(
+    (
+      input: SessionInput.Ref & {
+        readonly expectedRootID: SessionMessage.ID
+        readonly requestHash: string
+        readonly item: Extract<Item, { type: "user" }>
+      },
+    ) =>
+      serialized(
+        input.sessionID,
+        Effect.gen(function* () {
+          if (!input.item.payload.text.trim() || input.item.delivery !== "queue")
+            return yield* new LifecycleConflict({ id: input.id })
+          const prior = yield* followup(input)
+          if (prior.status !== "unknown") return prior
+          yield* bus
+            .publish(SessionEvent.InboxEnqueued, {
+              sessionID: input.sessionID,
+              inboxID: input.id,
+              item: input.item,
+              followup: {
+                expectedInputID: input.expectedInputID,
+                expectedRootID: input.expectedRootID,
+                requestHash: input.requestHash,
+              },
+            })
+            .pipe(
+              Effect.catchDefect((defect) => {
+                if (!(defect instanceof LifecycleConflict)) return Effect.die(defect)
+                return followup(input).pipe(
+                  Effect.flatMap((value) => (value.status === "unknown" ? Effect.fail(defect) : Effect.void)),
+                )
+              }),
+            )
+          return yield* followup(input)
+        }),
+      ),
+  )
+
   return {
     list: (sessionID: SessionSchema.ID) => list(db, sessionID),
     reconcile,
@@ -416,6 +470,8 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     amendment,
     continuation,
     continueInput,
+    followup,
+    followupInput,
   }
 })
 
@@ -432,6 +488,11 @@ export const projectAdmitted = Effect.fn("SessionInbox.projectAdmitted")(functio
     readonly item: Item
     readonly timeCreated: number
     readonly continuation?: { readonly expectedInputID: SessionMessage.ID; readonly requestHash: string }
+    readonly followup?: {
+      readonly expectedInputID: SessionMessage.ID
+      readonly expectedRootID: SessionMessage.ID
+      readonly requestHash: string
+    }
   },
 ) {
   const message = yield* db
@@ -443,14 +504,25 @@ export const projectAdmitted = Effect.fn("SessionInbox.projectAdmitted")(functio
   if (message !== undefined) return yield* Effect.die(new LifecycleConflict({ id: request.id }))
   if (request.continuation) {
     if (
+      request.followup ||
+      (yield* SessionInput.followed(db, request.sessionID, request.id)) ||
       request.item.type !== "user" ||
       request.item.delivery !== "steer" ||
       !(yield* SessionInput.projectAdmitted(db, { ...request, ...request.continuation }))
     )
       return yield* Effect.die(new LifecycleConflict({ id: request.id }))
+  } else if (request.followup) {
+    if (
+      request.item.type !== "user" ||
+      request.item.delivery !== "queue" ||
+      (yield* SessionInput.recorded(db, request.sessionID, request.id)) ||
+      !(yield* SessionInput.projectFollowup(db, { ...request, ...request.followup }))
+    )
+      return yield* Effect.die(new LifecycleConflict({ id: request.id }))
   } else if (
     (request.item.type === "user" && request.item.payload.continuationOf) ||
-    (yield* SessionInput.recorded(db, request.sessionID, request.id))
+    (yield* SessionInput.recorded(db, request.sessionID, request.id)) ||
+    (yield* SessionInput.followed(db, request.sessionID, request.id))
   )
     return yield* Effect.die(new LifecycleConflict({ id: request.id }))
   const payload =

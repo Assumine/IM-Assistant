@@ -3,9 +3,10 @@ import type { ConversationBackend } from "../../../opencode/packages/schema/src/
 import { isConflictError } from "../../../opencode/packages/client/src/promise"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
-export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> }
+export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> & Partial<Pick<SessionApi["input"], "position" | "followup" | "followupReceipt">> }
 export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input">>
-export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-accepted" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled"
+export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-accepted" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled" | "followup-pending" | "followup-delivered" | "followup-cancelled"
+export type ParentInput = { inputID: string; rootID: string }
 const id = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value)
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 
@@ -55,9 +56,24 @@ export function targets(session: Native, backend?: Backend) {
     const found = await position(destination, continuationID)
     return found.status === "delivered" && found.turnID === expectedTurnID && found.nativeID === value.receipt.nativeID ? "continuation-delivered" : "uncertain"
   }
+  const followed = (value: Awaited<ReturnType<SessionApi["input"]["followupReceipt"]>>, destination: Extract<Target, { kind: "session" }>, inputID: string, parent: ParentInput): Evidence => {
+    if (value.sessionID !== destination.sessionID || value.inboxID !== inputID || value.expectedInputID !== parent.inputID ||
+      value.status !== "unknown" && value.rootID !== parent.rootID) throw new Error("Wrong native follow-up receipt")
+    return value.status === "unknown" ? "uncertain" : `followup-${value.status}`
+  }
   return {
     canAppend(destination: Target) { return destination.kind === "session" && !!session.inbox.append && !!session.inbox.amendment },
     canContinue(destination: Target) { return destination.kind === "session" ? !!session.input?.continue && !!session.input?.continuation : !!backend?.input },
+    canFollowup(destination: Target) { return destination.kind === "session" && !!session.input?.position && !!session.input?.followup && !!session.input?.followupReceipt },
+    async followup(destination: Target, inputID: string, parent: ParentInput, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"]): Promise<Evidence> {
+      if (destination.kind !== "session" || !session.input?.followup) return "uncertain"
+      try { return followed(await session.input.followup({ sessionID: destination.sessionID, inboxID: inputID, expectedInputID: parent.inputID, expectedRootID: parent.rootID, text, metadata }), destination, inputID, parent) }
+      catch (error) { if (isConflictError(error)) return "conflict"; throw error }
+    },
+    async followupReceipt(destination: Target, inputID: string, parent: ParentInput): Promise<Evidence> {
+      if (destination.kind !== "session" || !session.input?.followupReceipt) return "uncertain"
+      return followed(await session.input.followupReceipt({ sessionID: destination.sessionID, inboxID: inputID, expectedInputID: parent.inputID }), destination, inputID, parent)
+    },
     async continueInput(destination: Target, inputID: string, continuationID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"], expectedTurnID?: string): Promise<Evidence> {
       if (destination.kind === "backend") {
         if (!expectedTurnID) return "uncertain"
@@ -75,7 +91,12 @@ export function targets(session: Native, backend?: Backend) {
       if (destination.kind !== "session" || !session.input) return "uncertain"
       return continued(await session.input.continuation({ sessionID: destination.sessionID, expectedInputID: inputID, inboxID: continuationID }), destination, inputID, continuationID)
     },
-    async quote(destination: Target, inputID: string): Promise<{ status: "pending" | "delivered" | "unknown"; expectedTurnID?: string }> {
+    async quote(destination: Target, inputID: string): Promise<{ status: "pending" | "delivered" | "closed" | "unknown"; expectedTurnID?: string; rootID?: string }> {
+      if (destination.kind === "session" && session.input?.position) {
+        const state = await session.input.position({ sessionID: destination.sessionID, inputID })
+        if (state.sessionID !== destination.sessionID || state.inputID !== inputID || (state.status === "open" || state.status === "closed") && !state.rootID) throw new Error("Wrong native input position")
+        return { status: state.status === "open" ? "delivered" : state.status, ...(state.rootID ? { rootID: state.rootID } : {}) }
+      }
       if (destination.kind === "session") return { status: (await session.inbox.list({ sessionID: destination.sessionID })).some((item) => item.id === inputID && item.type === "user") ? "pending" : "delivered" }
       const found = await position(destination, inputID)
       return found.status === "queued" ? { status: "pending" } : found.status === "delivered" ? { status: "delivered", expectedTurnID: found.turnID } : { status: "unknown" }

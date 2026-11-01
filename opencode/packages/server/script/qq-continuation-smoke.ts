@@ -142,7 +142,8 @@ try {
     session: {
       ...app.session,
       input: {
-        ...app.session.input,
+        // Deliberately exercise the older guarded facade: missing close evidence never implies a new task.
+        continuation: app.session.input.continuation,
         continue: async (input) => {
           posts.push(input)
           const receipt = await app.session.input.continue(input)
@@ -280,7 +281,14 @@ try {
   app = host.app
   await app.permission.list({ sessionID: session.id })
   storage = await bounded(host.storage)
-  portal = createPortal({ policy, storage, session: app.session })
+  portal = createPortal({
+    policy,
+    storage,
+    session: {
+      ...app.session,
+      input: { continue: app.session.input.continue, continuation: app.session.input.continuation },
+    },
+  })
   assert.equal((await read(extra)).status, "delivered")
   assert.deepEqual(await portal.receive(extra), {
     status: "steered",
@@ -312,7 +320,14 @@ try {
   app = host.app
   await app.permission.list({ sessionID: session.id })
   storage = await bounded(host.storage)
-  portal = createPortal({ policy, storage, session: app.session })
+  portal = createPortal({
+    policy,
+    storage,
+    session: {
+      ...app.session,
+      input: { continue: app.session.input.continue, continuation: app.session.input.continuation },
+    },
+  })
   await until(async () => requests.length >= 6 && !(await app.session.active())[session.id])
   assert.equal((await read(resumeExtra, restart)).status, "delivered")
   assert.equal((await portal.receive(resumeExtra)).status, "steered")

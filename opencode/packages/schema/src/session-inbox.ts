@@ -30,6 +30,22 @@ export const Continuation = Schema.Struct({
   status: Schema.Literals(["pending", "delivered", "cancelled", "expired", "unknown"]),
 }).annotate({ identifier: "Session.Inbox.Continuation" })
 
+/** Read-only native input ownership observation, never a claim that model execution succeeded. */
+export const InputPosition = Schema.Struct({
+  sessionID: SessionID,
+  inputID: SessionMessage.ID,
+  rootID: SessionMessage.ID.pipe(optional),
+  status: Schema.Literals(["pending", "open", "closed", "unknown"]),
+}).annotate({ identifier: "Session.InputPosition" })
+export type InputPosition = typeof InputPosition.Type
+
+/** Handoff of a new queued user input associated with a proven closed input boundary. */
+export const Followup = Schema.Struct({
+  ...Continuation.fields,
+  status: Schema.Literals(["pending", "delivered", "cancelled", "unknown"]),
+}).annotate({ identifier: "Session.Inbox.Followup" })
+export type Followup = typeof Followup.Type
+
 export interface UserPayload extends Schema.Schema.Type<typeof UserPayload> {}
 export const UserPayload = Schema.Struct({
   ...Prompt.fields,

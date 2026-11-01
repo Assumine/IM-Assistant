@@ -371,7 +371,7 @@
           "command": "python tools/run_runtime_checks.py --task R3-01",
           "evidence": "upstream/codex-verification.json",
           "scope": "isolated_feasibility",
-          "native_related_tests": 342,
+          "native_related_tests": 348,
           "native_http_checks": 19,
           "publication": "disabled"
         }
@@ -454,7 +454,8 @@
         "opencode/packages/plugin/src/effect/conversation.ts",
         "opencode/packages/server/script/qq-backend-continuation-smoke.ts",
         "modules/qq-portal/src/confirmation.ts",
-        "modules/qq-portal/test/confirmation.test.ts"
+        "modules/qq-portal/test/confirmation.test.ts",
+        "modules/qq-portal/test/followup.test.ts"
       ],
       "verification": [
         {
@@ -462,12 +463,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 495,
+          "tests_run": 506,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 42,
+          "http_checks": 46,
           "publication": "disabled"
         }
       ],

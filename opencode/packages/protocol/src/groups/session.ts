@@ -651,6 +651,59 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
       ),
     )
     .add(
+      HttpApiEndpoint.get("session.input.position", "/api/session/:sessionID/input/:inputID", {
+        params: { sessionID: Session.ID, inputID: SessionMessage.ID },
+        success: SessionInbox.InputPosition,
+        error: SessionNotFoundError,
+      }).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.input.position",
+          summary: "Read native input ownership",
+          description:
+            "Observe pending, open or proven closed ownership without admitting input, resuming execution or inferring task success.",
+        }),
+      ),
+    )
+    .add(
+      HttpApiEndpoint.post(
+        "session.input.followup",
+        "/api/session/:sessionID/input/:expectedInputID/followup/:inboxID",
+        {
+          params: { sessionID: Session.ID, expectedInputID: SessionMessage.ID, inboxID: SessionMessage.ID },
+          payload: Schema.Struct({
+            expectedRootID: SessionMessage.ID,
+            text: Schema.String.check(Schema.isPattern(/\S/)),
+            metadata: Schema.Record(Schema.String, Schema.Unknown).pipe(Schema.optional),
+          }),
+          success: SessionInbox.Followup,
+          error: [ConflictError, SessionNotFoundError, InvalidRequestError, LocationNotFoundError],
+        },
+      ).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.input.followup",
+          summary: "Queue a linked follow-up once",
+          description:
+            "Create a new native queued user input only when the named parent boundary is proven closed in the admission transaction. Existing receipts are historical and never wake execution.",
+        }),
+      ),
+    )
+    .add(
+      HttpApiEndpoint.get(
+        "session.input.followupReceipt",
+        "/api/session/:sessionID/input/:expectedInputID/followup/:inboxID",
+        {
+          params: { sessionID: Session.ID, expectedInputID: SessionMessage.ID, inboxID: SessionMessage.ID },
+          success: SessionInbox.Followup,
+          error: [ConflictError, SessionNotFoundError],
+        },
+      ).annotateMerge(
+        OpenApi.annotations({
+          identifier: "session.input.followupReceipt",
+          summary: "Read a linked follow-up handoff receipt",
+        }),
+      ),
+    )
+    .add(
       HttpApiEndpoint.get(
         "session.instructions.entry.list",
         "/api/experimental/session/:sessionID/instructions/entries",

@@ -1,6 +1,6 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
 import { command, decode, fingerprint, inputID, originKey, scopeKey, type Message, type Policy, type Scope } from "./routing"
-import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence } from "./target"
+import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence, type ParentInput } from "./target"
 import { sources, type Origin, type Source, type SourceResult } from "./sources"
 import { confirmations, type Choice, type Proposal } from "./confirmation"
 
@@ -8,13 +8,14 @@ type Storage = Pick<StorageDomain, "get" | "set" | "insert">
 export type Result =
   | { status: "ignored" | "unsupported" | "unbound" | "recalled" | "uncertain" | "unchanged" | "withdrawn" | "conflict" }
   | { status: "command"; action: string; arguments: string }
-  | { status: "blocked"; reason: "quoted-adjustment-unavailable" | "quoted-task-not-pending" | "quoted-task-not-active" | "quoted-adjustment-expired" | "quoted-adjustment-cancelled" }
+  | { status: "blocked"; reason: "quoted-adjustment-unavailable" | "quoted-task-not-pending" | "quoted-task-not-active" | "quoted-task-not-closed" | "quoted-adjustment-expired" | "quoted-adjustment-cancelled" }
   | { status: "rejected"; reason: "not-accepted" }
   | { status: "accepted"; target: Target; sessionID?: string; inputID: string; duplicate: boolean; reference?: "unresolved" }
   | { status: "amended"; target: Target; inputID: string; amendmentID: string; duplicate: boolean }
   | { status: "steered"; target: Target; inputID: string; continuationID: string; delivery: "accepted" | "pending" | "delivered"; duplicate: boolean }
   | { status: "confirmation-required"; confirmationID: string; target: Target; duplicate: boolean }
   | { status: "confirmation-declined" }
+  | { status: "followup"; target: Target; inputID: string; parentInputID: string; delivery: "pending" | "delivered"; duplicate: boolean }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
 export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy }) {
@@ -34,16 +35,19 @@ export function createPortal(options: { storage: Storage; session: Native; backe
   }
   const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", target: record.target,
     ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
-  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => evidence === "amended" && record.amendmentID
+  const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => (evidence === "followup-pending" || evidence === "followup-delivered") && record.followupOf
+    ? { status: "followup", target: record.target, inputID: record.inputID, parentInputID: record.followupOf.inputID, delivery: evidence === "followup-pending" ? "pending" : "delivered", duplicate }
+    : evidence === "followup-cancelled" ? { status: "blocked", reason: "quoted-adjustment-cancelled" }
+    : evidence === "amended" && record.amendmentID
     ? { status: "amended", target: record.target, inputID: record.inputID, amendmentID: record.amendmentID, duplicate }
     : (evidence === "continuation-accepted" || evidence === "continuation-pending" || evidence === "continuation-delivered") && record.continuationID
       ? { status: "steered", target: record.target, inputID: record.inputID, continuationID: record.continuationID, delivery: evidence === "continuation-accepted" ? "accepted" : evidence === "continuation-pending" ? "pending" : "delivered", duplicate }
     : evidence === "continuation-expired" ? { status: "blocked", reason: "quoted-adjustment-expired" }
     : evidence === "continuation-cancelled" ? { status: "blocked", reason: "quoted-adjustment-cancelled" }
-    : evidence === "conflict" ? { status: "blocked", reason: record.continuationID ? "quoted-task-not-active" : "quoted-task-not-pending" } : evidence === "accepted" ? accepted(record, duplicate)
+    : evidence === "conflict" ? { status: "blocked", reason: record.followupOf ? "quoted-task-not-closed" : record.continuationID ? "quoted-task-not-active" : "quoted-task-not-pending" } : evidence === "accepted" ? accepted(record, duplicate)
     : evidence === "rejected" ? { status: "rejected", reason: "not-accepted" } : { status: "uncertain" }
   const evidence = async (record: Origin): Promise<Evidence> => {
-    try { return record.continuationID ? await native.continuation(record.target, record.inputID, record.continuationID, record.expectedTurnID) : record.amendmentID ? await native.amendment(record.target, record.inputID, record.amendmentID) : await native.reconcile(record.target, record.inputID) }
+    try { return record.followupOf ? await native.followupReceipt(record.target, record.inputID, record.followupOf) : record.continuationID ? await native.continuation(record.target, record.inputID, record.continuationID, record.expectedTurnID) : record.amendmentID ? await native.amendment(record.target, record.inputID, record.amendmentID) : await native.reconcile(record.target, record.inputID) }
     catch { return "uncertain" }
   }
   const withdraw = async (record: Origin): Promise<Result> => {
@@ -84,6 +88,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     if (proposal && (!quoted || !sameTarget(quoted.target, proposal.to) || quoted.inputID !== proposal.parentInputID)) return { status: "conflict" }
     let adjustment: "amendmentID" | "continuationID" | undefined
     let expectedTurnID: string | undefined
+    let followupOf: ParentInput | undefined
     if (quoted) {
       if (!sameTarget(quoted.target, destination)) {
         const { proposal, created } = await consent.propose(input, destination, quoted)
@@ -93,15 +98,18 @@ export function createPortal(options: { storage: Storage; session: Native; backe
       try {
         const found = await native.quote(destination, quoted.inputID)
         if (found.status === "unknown") return { status: "uncertain" }
-        if (found.status === "pending" && native.canAppend(destination)) adjustment = "amendmentID"
+        if (found.status === "closed" && native.canFollowup(destination) && found.rootID) followupOf = { inputID: quoted.inputID, rootID: found.rootID }
+        else if (found.status === "closed") return { status: "blocked", reason: "quoted-adjustment-unavailable" }
+        else if (found.status === "pending" && native.canAppend(destination)) adjustment = "amendmentID"
         else if (found.status === "delivered" && native.canContinue(destination)) { adjustment = "continuationID"; expectedTurnID = found.expectedTurnID }
         else return { status: "blocked", reason: "quoted-task-not-pending" }
       }
       catch { return { status: "uncertain" } }
     }
-    const record: Origin = { target: destination, inputID: quoted?.inputID ?? inputID(input), actorID: input.actorID, fingerprint: fingerprint(input),
+    const record: Origin = { target: destination, inputID: followupOf ? inputID(input) : quoted?.inputID ?? inputID(input), actorID: input.actorID, fingerprint: fingerprint(input),
       source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
       ...(expectedTurnID ? { expectedTurnID } : {}),
+      ...(followupOf ? { followupOf } : {}),
       ...(adjustment ? { [adjustment]: inputID(input) } : {}) }
     if (!(await storage.insert(key(input.scope, input.messageID), record))) {
       const winner = await lookup(input.scope, input.messageID)
@@ -114,10 +122,15 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     if (await recalled(input)) return { status: "recalled" }
     try {
       const metadata = { qq: { botID: input.scope.botID, kind: input.scope.kind, peerID: input.scope.peerID, actorID: input.actorID, messageID: input.messageID, ...(input.quoteID ? { quoteID: input.quoteID } : {}), mentions: input.mentions } }
-      const state = record.continuationID ? await native.continueInput(record.target, record.inputID, record.continuationID, input.text, metadata, record.expectedTurnID)
+      const state = record.followupOf ? await native.followup(record.target, record.inputID, record.followupOf, input.text, metadata) : record.continuationID ? await native.continueInput(record.target, record.inputID, record.continuationID, input.text, metadata, record.expectedTurnID)
         : record.amendmentID ? await native.append(record.target, record.inputID, record.amendmentID, input.text) : await native.send(record.target, record.inputID, input.text, metadata)
+      if (record.followupOf && (state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
       if (state !== "accepted") return result(record, state, false)
-    } catch { return result(record, await evidence(record), true) }
+    } catch {
+      const state = await evidence(record)
+      if (record.followupOf && (state === "followup-pending" || state === "followup-delivered") && await recalled(input)) return withdraw(record)
+      return result(record, state, true)
+    }
     if (await recalled(input)) return withdraw(record)
     return { ...accepted(record, false), ...(input.quoteID ? { reference: "unresolved" as const } : {}) }
   }
@@ -142,7 +155,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     async linkReply(source: Source, outgoingMessageID: string) {
       const record = await metadata.replyOrigin(source, outgoingMessageID)
       const state = await evidence(record)
-      if (state !== "accepted" && state !== "amended" && state !== "continuation-accepted" && state !== "continuation-pending" && state !== "continuation-delivered") throw new Error("QQ source input is not confirmed accepted")
+      if (state !== "accepted" && state !== "amended" && state !== "continuation-accepted" && state !== "continuation-pending" && state !== "continuation-delivered" && state !== "followup-pending" && state !== "followup-delivered") throw new Error("QQ source input is not confirmed accepted")
       await metadata.linkReply(source, outgoingMessageID)
     },
     /** Trusted transport calls this only after explicit user consent, with the original message fetched by ID. */

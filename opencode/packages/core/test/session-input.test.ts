@@ -62,6 +62,188 @@ const setup = Effect.fnUntraced(function* () {
   return { db, bus, inbox, store, admit, promote, request, finish }
 })
 
+const followupRequest = (name: string, parent = id("first"), root = id("first")) => ({
+  sessionID,
+  id: id(name),
+  expectedInputID: parent,
+  expectedRootID: root,
+  requestHash: name,
+  item: { type: "user" as const, delivery: "queue" as const, payload: { text: name } },
+})
+
+it.effect(
+  "input observations require native close evidence and surviving user ownership; shutdown is not a close",
+  () =>
+    Effect.gen(function* () {
+      const f = yield* setup()
+      expect((yield* SessionInput.inspect(f.db, sessionID, id("absent"))).status).toBe("unknown")
+      yield* f.admit("first")
+      expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("pending")
+      yield* f.promote()
+      expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("open")
+      yield* f.bus.publish(SessionEvent.Execution.Interrupted, { sessionID, reason: "shutdown" })
+      expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("open")
+      yield* f.finish()
+      expect(yield* SessionInput.inspect(f.db, sessionID, id("first"))).toEqual({
+        sessionID,
+        inputID: id("first"),
+        rootID: id("first"),
+        status: "closed",
+      })
+      yield* f.db
+        .delete(SessionMessageTable)
+        .where(eq(SessionMessageTable.id, id("first")))
+        .run()
+        .pipe(Effect.orDie)
+      expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("unknown")
+    }),
+)
+
+it.effect("linked follow-ups enqueue once behind existing work and open their own native boundary", () =>
+  Effect.gen(function* () {
+    const f = yield* setup()
+    yield* f.admit("first")
+    yield* f.promote()
+    yield* f.finish()
+    yield* f.admit("second")
+    yield* f.admit("third")
+    yield* f.promote()
+    const request = followupRequest("linked")
+    yield* Effect.all(
+      Array.from({ length: 6 }, () => f.inbox.followupInput(request)),
+      { concurrency: "unbounded" },
+    )
+    expect((yield* f.inbox.list(sessionID)).map((row) => row.id)).toEqual([id("third"), id("linked")])
+    expect((yield* SessionInput.current(f.db, sessionID))?.rootID).toBe(id("second"))
+    yield* f.finish()
+    yield* f.promote()
+    yield* f.finish()
+    yield* f.promote()
+    expect((yield* SessionInput.current(f.db, sessionID))?.rootID).toBe(id("linked"))
+    expect((yield* f.inbox.followup(request)).status).toBe("delivered")
+    expect((yield* f.inbox.followupInput(request)).status).toBe("delivered")
+    expect(yield* f.inbox.list(sessionID)).toHaveLength(0)
+  }),
+)
+
+it.effect("unknown, open, wrong-root and pruned historical inputs cannot create follow-up work", () =>
+  Effect.gen(function* () {
+    const f = yield* setup()
+    yield* f.admit("first")
+    yield* f.promote()
+    expect(Exit.isFailure(yield* f.inbox.followupInput(followupRequest("open")).pipe(Effect.exit))).toBe(true)
+    yield* f.finish()
+    for (const request of [
+      followupRequest("missing", id("absent")),
+      followupRequest("wrong", id("first"), id("wrong")),
+      followupRequest("first"),
+    ])
+      expect(Exit.isFailure(yield* f.inbox.followupInput(request).pipe(Effect.exit))).toBe(true)
+    yield* f.bus.publish(SessionEvent.RevertEvent.Staged, { sessionID, revert: { messageID: id("first") } })
+    expect(Exit.isFailure(yield* f.inbox.followupInput(followupRequest("staged_revert")).pipe(Effect.exit))).toBe(true)
+    yield* f.bus.publish(SessionEvent.RevertEvent.Cleared, { sessionID })
+    expect((yield* f.inbox.followup(followupRequest("unknown"))).status).toBe("unknown")
+    expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("closed")
+    yield* f.db
+      .delete(SessionMessageTable)
+      .where(eq(SessionMessageTable.id, id("first")))
+      .run()
+      .pipe(Effect.orDie)
+    expect(Exit.isFailure(yield* f.inbox.followupInput(followupRequest("after_prune")).pipe(Effect.exit))).toBe(true)
+    expect(yield* f.inbox.list(sessionID)).toHaveLength(0)
+  }),
+)
+
+it.effect(
+  "cancelled follow-up identity cannot be reused by ordinary, continuation or changed follow-up admission",
+  () =>
+    Effect.gen(function* () {
+      const f = yield* setup()
+      yield* f.admit("first")
+      yield* f.promote()
+      yield* f.finish()
+      const request = followupRequest("linked")
+      yield* f.inbox.followupInput(request)
+      yield* f.inbox.cancel({ sessionID, id: request.id })
+      expect((yield* f.inbox.followupInput(request)).status).toBe("cancelled")
+      expect(
+        Exit.isFailure(yield* f.inbox.followupInput({ ...request, requestHash: "changed" }).pipe(Effect.exit)),
+      ).toBe(true)
+      expect(Exit.isFailure(yield* f.admit("linked").pipe(Effect.exit))).toBe(true)
+      yield* f.admit("second")
+      yield* f.promote()
+      expect(Exit.isFailure(yield* f.inbox.continueInput(f.request("linked", id("second"))).pipe(Effect.exit))).toBe(
+        true,
+      )
+      expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("closed")
+    }),
+)
+
+it.effect("follow-up receipt, Inbox row and event log roll back in the same native transaction", () =>
+  Effect.gen(function* () {
+    const f = yield* setup()
+    yield* f.admit("first")
+    yield* f.promote()
+    yield* f.finish()
+    yield* f.bus.project(SessionEvent.InboxEnqueued, (event) =>
+      event.data.followup ? Effect.die(new Error("Synthetic follow-up rollback")) : Effect.void,
+    )
+    const before = yield* f.db
+      .select()
+      .from(EventTable)
+      .where(eq(EventTable.aggregate_id, sessionID))
+      .all()
+      .pipe(Effect.orDie)
+    expect(
+      Exit.isFailure(
+        yield* f.inbox.followupInput(followupRequest("linked")).pipe(Effect.provide(Logger.layer([])), Effect.exit),
+      ),
+    ).toBe(true)
+    expect((yield* f.inbox.followup(followupRequest("linked"))).status).toBe("unknown")
+    expect(yield* f.inbox.list(sessionID)).toHaveLength(0)
+    expect(
+      yield* f.db.select().from(EventTable).where(eq(EventTable.aggregate_id, sessionID)).all().pipe(Effect.orDie),
+    ).toHaveLength(before.length)
+  }),
+)
+
+it.effect("durable replay rebuilds close evidence and linked follow-up receipts without native execution", () =>
+  Effect.gen(function* () {
+    const f = yield* setup()
+    yield* f.admit("first")
+    yield* f.promote()
+    yield* f.finish()
+    yield* f.inbox.followupInput(followupRequest("delivered"))
+    yield* f.promote()
+    yield* f.finish()
+    yield* f.inbox.followupInput(followupRequest("cancelled"))
+    yield* f.inbox.cancel({ sessionID, id: id("cancelled") })
+    const events = yield* f.db
+      .select()
+      .from(EventTable)
+      .where(eq(EventTable.aggregate_id, sessionID))
+      .orderBy(EventTable.seq)
+      .all()
+      .pipe(Effect.orDie)
+    yield* f.db.delete(SessionTable).run().pipe(Effect.orDie)
+    yield* f.db.delete(KVTable).run().pipe(Effect.orDie)
+    yield* f.bus.remove(sessionID)
+    for (const event of events)
+      yield* f.bus.replay({
+        id: event.id,
+        type: event.type,
+        seq: event.seq,
+        aggregateID: sessionID,
+        created: event.created,
+        data: event.data,
+      })
+    expect((yield* SessionInput.inspect(f.db, sessionID, id("first"))).status).toBe("closed")
+    expect((yield* f.inbox.followup(followupRequest("delivered"))).status).toBe("delivered")
+    expect((yield* f.inbox.followup(followupRequest("cancelled"))).status).toBe("cancelled")
+    expect(yield* f.inbox.list(sessionID)).toHaveLength(0)
+  }),
+)
+
 it.effect(
   "input ownership follows queue boundaries and all delivered steers, not the execution busy period or latest user",
   () =>

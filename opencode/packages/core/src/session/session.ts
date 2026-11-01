@@ -24,6 +24,7 @@ import {
 import { SessionEvent } from "./event.js"
 import { SessionExecution } from "./execution.js"
 import { SessionInbox } from "./inbox.js"
+import { SessionInput } from "./input.js"
 import { SessionMessage } from "./message.js"
 import { SessionPrompt } from "./prompt.js"
 import { SessionRevert } from "./revert.js"
@@ -218,6 +219,86 @@ export const make = Effect.fn("Session.make")(function* () {
             )
             const receipt = yield* admission.continueInput({ sessionID, ...input, requestHash, item })
             if (receipt.status === "pending") yield* execution.wake(sessionID, "steer")
+            return receipt
+          }).pipe(
+            Effect.catchTag(
+              "SessionInbox.LifecycleConflict",
+              () => new InboxConflictError({ sessionID, inboxID: input.id }),
+            ),
+          )
+        }),
+      ),
+  )
+  const inputPosition = Effect.fn("Session.inputPosition")(function* (
+    sessionID: SessionSchema.ID,
+    inputID: SessionMessage.ID,
+  ) {
+    yield* get(sessionID)
+    return yield* SessionInput.inspect(database.db, sessionID, inputID)
+  })
+  const inputFollowup = Effect.fn("Session.inputFollowup")(function* (
+    sessionID: SessionSchema.ID,
+    expectedInputID: SessionMessage.ID,
+    id: SessionMessage.ID,
+  ) {
+    yield* get(sessionID)
+    return yield* admission
+      .followup({ sessionID, expectedInputID, id })
+      .pipe(Effect.catchTag("SessionInbox.LifecycleConflict", () => new InboxConflictError({ sessionID, inboxID: id })))
+  })
+  const followupInput = Effect.fn("Session.followupInput")(
+    (
+      sessionID: SessionSchema.ID,
+      input: {
+        id: SessionMessage.ID
+        expectedInputID: SessionMessage.ID
+        expectedRootID: SessionMessage.ID
+        text: string
+        metadata?: Record<string, unknown>
+      },
+    ) =>
+      Effect.uninterruptibleMask((restore) =>
+        Effect.gen(function* () {
+          const session = yield* get(sessionID)
+          const requestHash = Hash.sha256(
+            JSON.stringify([input.expectedInputID, input.expectedRootID, input.text, input.metadata ?? null]),
+          )
+          return yield* Effect.gen(function* () {
+            const prior = yield* admission.followup({ sessionID, ...input, requestHash })
+            if (prior.status !== "unknown") return prior
+            if (!input.text.trim() || session.revert)
+              return yield* new InboxConflictError({ sessionID, inboxID: input.id })
+            const item = yield* restore(
+              SessionPrompt.prepare({
+                session,
+                messageID: input.id,
+                input: {
+                  text: input.text,
+                  delivery: "queue",
+                  metadata: {
+                    ...input.metadata,
+                    inputRelation: { kind: "followup", inputID: input.expectedInputID, rootID: input.expectedRootID },
+                  },
+                },
+              }).pipe(
+                instances.provide(session),
+                Effect.provideService(Database.Service, database),
+                Effect.provideService(FSUtil.Service, fs),
+                Effect.provideService(RuntimePolicy.Service, policy),
+              ),
+            )
+            const linked = {
+              ...item,
+              payload: {
+                ...item.payload,
+                metadata: {
+                  ...item.payload.metadata,
+                  inputRelation: { kind: "followup", inputID: input.expectedInputID, rootID: input.expectedRootID },
+                },
+              },
+            }
+            const receipt = yield* admission.followupInput({ sessionID, ...input, requestHash, item: linked })
+            if (receipt.status === "pending") yield* execution.wake(sessionID)
             return receipt
           }).pipe(
             Effect.catchTag(
@@ -461,6 +542,9 @@ export const make = Effect.fn("Session.make")(function* () {
     inboxAmendment,
     continueInput,
     inputContinuation,
+    inputPosition,
+    inputFollowup,
+    followupInput,
     revert,
   }
 
@@ -491,6 +575,9 @@ export const make = Effect.fn("Session.make")(function* () {
     const inboxAmendment = operations.inboxAmendment.bind(undefined, sessionID)
     const continueInput = operations.continueInput.bind(undefined, sessionID)
     const inputContinuation = operations.inputContinuation.bind(undefined, sessionID)
+    const inputPosition = operations.inputPosition.bind(undefined, sessionID)
+    const inputFollowup = operations.inputFollowup.bind(undefined, sessionID)
+    const followupInput = operations.followupInput.bind(undefined, sessionID)
     const stage = operations.revert.stage.bind(undefined, sessionID)
     const clear = operations.revert.clear.bind(undefined, sessionID)
     const commit = operations.revert.commit.bind(undefined, sessionID)
@@ -524,6 +611,9 @@ export const make = Effect.fn("Session.make")(function* () {
       inboxAmendment,
       continueInput,
       inputContinuation,
+      inputPosition,
+      inputFollowup,
+      followupInput,
       revert,
     }
   }

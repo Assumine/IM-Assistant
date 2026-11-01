@@ -77,6 +77,12 @@ import type {
   SessionInputContinueOutput,
   SessionInputContinuationInput,
   SessionInputContinuationOutput,
+  SessionInputPositionInput,
+  SessionInputPositionOutput,
+  SessionInputFollowupInput,
+  SessionInputFollowupOutput,
+  SessionInputFollowupReceiptInput,
+  SessionInputFollowupReceiptOutput,
   SessionGenerateInput,
   SessionGenerateOutput,
   SessionInterruptInput,
@@ -688,6 +694,29 @@ const EndpointSessionInputContinuation = (raw: RawClient["server.session"]) => (
     }).pipe(Effect.mapError(mapClientError)),
   )
 
+const EndpointSessionInputPosition = (raw: RawClient["server.session"]) => (input: SessionInputPositionInput) =>
+  preserveEffect<SessionInputPositionOutput>()(
+    raw["session.input.position"]({ params: { sessionID: input["sessionID"], inputID: input["inputID"] } }).pipe(
+      Effect.mapError(mapClientError),
+    ),
+  )
+
+const EndpointSessionInputFollowup = (raw: RawClient["server.session"]) => (input: SessionInputFollowupInput) =>
+  preserveEffect<SessionInputFollowupOutput>()(
+    raw["session.input.followup"]({
+      params: { sessionID: input["sessionID"], expectedInputID: input["expectedInputID"], inboxID: input["inboxID"] },
+      payload: { expectedRootID: input["expectedRootID"], text: input["text"], metadata: input["metadata"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSessionInputFollowupReceipt =
+  (raw: RawClient["server.session"]) => (input: SessionInputFollowupReceiptInput) =>
+    preserveEffect<SessionInputFollowupReceiptOutput>()(
+      raw["session.input.followupReceipt"]({
+        params: { sessionID: input["sessionID"], expectedInputID: input["expectedInputID"], inboxID: input["inboxID"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
 const EndpointSessionGenerate = (raw: RawClient["server.session"]) => (input: SessionGenerateInput) =>
   preserveEffect<SessionGenerateOutput>()(
     raw["session.generate"]({ params: { sessionID: input["sessionID"] }, payload: { prompt: input["prompt"] } }).pipe(
@@ -804,7 +833,13 @@ const adaptGroupSession = (raw: RawClient["server.session"]) => ({
     append: EndpointSessionInboxAppend(raw),
     amendment: EndpointSessionInboxAmendment(raw),
   },
-  input: { continue: EndpointSessionInputContinue(raw), continuation: EndpointSessionInputContinuation(raw) },
+  input: {
+    continue: EndpointSessionInputContinue(raw),
+    continuation: EndpointSessionInputContinuation(raw),
+    position: EndpointSessionInputPosition(raw),
+    followup: EndpointSessionInputFollowup(raw),
+    followupReceipt: EndpointSessionInputFollowupReceipt(raw),
+  },
   generate: EndpointSessionGenerate(raw),
   interrupt: EndpointSessionInterrupt(raw),
   background: EndpointSessionBackground(raw),

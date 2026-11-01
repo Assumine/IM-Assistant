@@ -71,6 +71,12 @@ import type {
   SessionInputContinueOutput,
   SessionInputContinuationInput,
   SessionInputContinuationOutput,
+  SessionInputPositionInput,
+  SessionInputPositionOutput,
+  SessionInputFollowupInput,
+  SessionInputFollowupOutput,
+  SessionInputFollowupReceiptInput,
+  SessionInputFollowupReceiptOutput,
   SessionGenerateInput,
   SessionGenerateOutput,
   SessionInterruptInput,
@@ -954,6 +960,40 @@ export function make(options: ClientOptions) {
             {
               method: "GET",
               path: `/api/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.expectedInputID)}/continue/${encodeURIComponent(input.inboxID)}`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        position: (input: SessionInputPositionInput, requestOptions?: RequestOptions) =>
+          request<SessionInputPositionOutput>(
+            {
+              method: "GET",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.inputID)}`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        followup: (input: SessionInputFollowupInput, requestOptions?: RequestOptions) =>
+          request<SessionInputFollowupOutput>(
+            {
+              method: "POST",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.expectedInputID)}/followup/${encodeURIComponent(input.inboxID)}`,
+              body: { expectedRootID: input["expectedRootID"], text: input["text"], metadata: input["metadata"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404, 409],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        followupReceipt: (input: SessionInputFollowupReceiptInput, requestOptions?: RequestOptions) =>
+          request<SessionInputFollowupReceiptOutput>(
+            {
+              method: "GET",
+              path: `/api/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.expectedInputID)}/followup/${encodeURIComponent(input.inboxID)}`,
               successStatus: 200,
               declaredStatuses: [400, 401, 404, 409],
               empty: false,

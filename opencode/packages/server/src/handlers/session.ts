@@ -624,6 +624,49 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
         }),
       )
       .handle(
+        "session.input.position",
+        Effect.fn(function* (ctx) {
+          return yield* session.inputPosition(ctx.params).pipe(Effect.catchTag("Session.NotFoundError", missingSession))
+        }),
+      )
+      .handle(
+        "session.input.followup",
+        Effect.fn(function* (ctx) {
+          return yield* session.followupInput({ ...ctx.params, id: ctx.params.inboxID, ...ctx.payload }).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag(
+              "Session.InboxConflictError",
+              (error) =>
+                new ConflictError({
+                  resource: error.inboxID,
+                  message: "Parent input lacks matching closed ownership, or the follow-up ID conflicts",
+                }),
+            ),
+            Effect.catchTag(
+              "Session.AttachmentError",
+              (error) => new InvalidRequestError({ message: error.message, field: "files" }),
+            ),
+            Effect.catchTag(
+              "Session.SkillNotFoundError",
+              (error) => new InvalidRequestError({ message: `Skill not found: ${error.skill}`, field: "skills" }),
+            ),
+            locationErrors,
+          )
+        }),
+      )
+      .handle(
+        "session.input.followupReceipt",
+        Effect.fn(function* (ctx) {
+          return yield* session.inputFollowup(ctx.params).pipe(
+            Effect.catchTag("Session.NotFoundError", missingSession),
+            Effect.catchTag(
+              "Session.InboxConflictError",
+              (error) => new ConflictError({ resource: error.inboxID, message: "Follow-up belongs to another input" }),
+            ),
+          )
+        }),
+      )
+      .handle(
         "session.instructions.entry.list",
         Effect.fn(function* (ctx) {
           yield* requireSession(ctx.params.sessionID)

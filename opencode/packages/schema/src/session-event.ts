@@ -226,6 +226,11 @@ export const InboxEnqueued = Event.durable({
     ...InboxRef,
     item: SessionInbox.Item,
     continuation: Schema.Struct({ expectedInputID: SessionMessage.ID, requestHash: Schema.String }).pipe(optional),
+    followup: Schema.Struct({
+      expectedInputID: SessionMessage.ID,
+      expectedRootID: SessionMessage.ID,
+      requestHash: Schema.String,
+    }).pipe(optional),
   },
 })
 export type InboxEnqueued = typeof InboxEnqueued.Type

@@ -478,6 +478,21 @@ export type SessionInboxContinuation = {
   status: "pending" | "delivered" | "cancelled" | "expired" | "unknown"
 }
 
+export type SessionInputPosition = {
+  sessionID: SessionID
+  inputID: SessionMessageID
+  rootID?: SessionMessageID
+  status: "pending" | "open" | "closed" | "unknown"
+}
+
+export type SessionInboxFollowup = {
+  sessionID: SessionID
+  inboxID: SessionMessageID
+  expectedInputID: SessionMessageID
+  rootID?: SessionMessageID
+  status: "pending" | "delivered" | "cancelled" | "unknown"
+}
+
 export type UsageLimitsBudgetModel = { providerID: ProviderID; modelID: string; name: string; spent?: MoneyUSD }
 
 export type FileSystemEntry = { path: RelativePath; type: "file" | "directory" }
@@ -2713,6 +2728,7 @@ export type SessionInboxEnqueued = {
     inboxID: SessionMessageID
     item: SessionInboxItem
     continuation?: { expectedInputID: SessionMessageID; requestHash: string }
+    followup?: { expectedInputID: SessionMessageID; expectedRootID: SessionMessageID; requestHash: string }
   }
 }
 
@@ -3526,6 +3542,29 @@ export type SessionInputContinuationInput = {
 }
 
 export type SessionInputContinuationOutput = SessionInboxContinuation
+
+export type SessionInputPositionInput = { readonly sessionID: string; readonly inputID: string }
+
+export type SessionInputPositionOutput = SessionInputPosition
+
+export type SessionInputFollowupInput = {
+  readonly sessionID: string
+  readonly expectedInputID: string
+  readonly inboxID: string
+  readonly expectedRootID: string
+  readonly text: string
+  readonly metadata?: { readonly [x: string]: unknown } | undefined
+}
+
+export type SessionInputFollowupOutput = SessionInboxFollowup
+
+export type SessionInputFollowupReceiptInput = {
+  readonly sessionID: string
+  readonly expectedInputID: string
+  readonly inboxID: string
+}
+
+export type SessionInputFollowupReceiptOutput = SessionInboxFollowup
 
 export type SessionGenerateInput = { readonly sessionID: string; readonly prompt: string }
 

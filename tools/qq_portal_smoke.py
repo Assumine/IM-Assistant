@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 80),
+        (module, "r3-qq-module-tests", [bun, "test"], 85),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 3),
     ]:
         log = reports / (label + ".log")
@@ -53,7 +53,7 @@ def _run():
                              extra_env={"IM_QQ_TEST_ROOT": directory}))
     lines = (reports / "r3-qq-http.log").read_text(encoding="utf-8").splitlines()
     http = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if http["status"] != "passed" or len(http["checks"]) != 17 or http["model_requests"] != 5 or http["actual_qq_connection"] or http["external_messages_sent"]:
+    if http["status"] != "passed" or len(http["checks"]) != 21 or http["model_requests"] != 7 or http["actual_qq_connection"] or http["external_messages_sent"]:
         raise RuntimeError("QQ original SDK/HTTP/SQLite acceptance was incomplete")
     native_parent = ROOT / "runtime/codex-native"
     native_parent.mkdir(parents=True, exist_ok=True)
@@ -80,7 +80,7 @@ def _run():
         raise RuntimeError("Real native guarded guidance acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
-        ("core", ["test/session-input.test.ts", "test/session-inbox-append.test.ts", "test/session-owned.test.ts", "test/session-prompt.test.ts"], "r3-qq-append-session-regression", 87, []),
+        ("core", ["test/session-input.test.ts", "test/session-inbox-append.test.ts", "test/session-owned.test.ts", "test/session-prompt.test.ts"], "r3-qq-append-session-regression", 93, []),
         ("core", ["test/session-execution.test.ts", "test/session-runner.test.ts", "test/session-native.test.ts", "test/session-native-compaction.test.ts"], "r3-qq-continuation-required-runner", 290, []),
         ("client", ["test/solid-inbox-race.test.ts"], "r3-qq-append-client-unit", 10, []),
     ]:
@@ -133,7 +133,7 @@ def _run():
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",
                           "controls are classified only; remote control dispatch and authorization are not implemented",
-                          "ordinary Session pending append, guarded active continuation, whole-backend current-turn guidance and trusted-host cross-conversation confirmation are supported; native pending append and completed quotes remain blocked",
+                          "ordinary Session pending append, guarded active continuation, proven-closed linked followups, whole-backend current-turn guidance and cross-conversation confirmation are supported; whole-backend pending append and completed quotes remain blocked",
                           "outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}

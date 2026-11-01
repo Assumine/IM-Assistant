@@ -771,6 +771,7 @@ const layer = Layer.effectDiscard(
           item: event.data.item,
           timeCreated: event.created,
           continuation: event.data.continuation,
+          followup: event.data.followup,
         })
         yield* db
           .update(SessionTable)

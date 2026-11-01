@@ -196,6 +196,18 @@ export interface Interface {
     expectedInputID: SessionMessage.ID
     inboxID: SessionMessage.ID
   }) => ReturnType<Session.Handle["inputContinuation"]>
+  readonly inputPosition: (input: {
+    sessionID: SessionSchema.ID
+    inputID: SessionMessage.ID
+  }) => ReturnType<Session.Handle["inputPosition"]>
+  readonly inputFollowup: (input: {
+    sessionID: SessionSchema.ID
+    expectedInputID: SessionMessage.ID
+    inboxID: SessionMessage.ID
+  }) => ReturnType<Session.Handle["inputFollowup"]>
+  readonly followupInput: (
+    input: Parameters<Session.Handle["followupInput"]>[0] & { sessionID: SessionSchema.ID },
+  ) => ReturnType<Session.Handle["followupInput"]>
   /**
    * Durable, ordered session log read. Replays durable session bus after
    * the exclusive `after` cursor, emits a `Synced` marker at the captured
@@ -486,6 +498,10 @@ const layer = Layer.effect(
       continueInput: (input) => sessions.forSession(input.sessionID).continueInput(input),
       inputContinuation: (input) =>
         sessions.forSession(input.sessionID).inputContinuation(input.expectedInputID, input.inboxID),
+      inputPosition: (input) => sessions.forSession(input.sessionID).inputPosition(input.inputID),
+      inputFollowup: (input) =>
+        sessions.forSession(input.sessionID).inputFollowup(input.expectedInputID, input.inboxID),
+      followupInput: (input) => sessions.forSession(input.sessionID).followupInput(input),
       log: (input) =>
         Stream.unwrap(
           result

@@ -367,6 +367,35 @@ export type SessionInputContinuationOperation<E = never> = (
   input: SessionInputContinuationInput,
 ) => Effect.Effect<SessionInputContinuationOutput, E>
 
+export type SessionInputPositionInput = { readonly sessionID: Session.ID; readonly inputID: SessionMessage.ID }
+export type SessionInputPositionOutput = SessionInbox.InputPosition
+export type SessionInputPositionOperation<E = never> = (
+  input: SessionInputPositionInput,
+) => Effect.Effect<SessionInputPositionOutput, E>
+
+export type SessionInputFollowupInput = {
+  readonly sessionID: Session.ID
+  readonly expectedInputID: SessionMessage.ID
+  readonly inboxID: SessionMessage.ID
+  readonly expectedRootID: SessionMessage.ID
+  readonly text: string
+  readonly metadata?: { readonly [x: string]: unknown } | undefined
+}
+export type SessionInputFollowupOutput = SessionInbox.Followup
+export type SessionInputFollowupOperation<E = never> = (
+  input: SessionInputFollowupInput,
+) => Effect.Effect<SessionInputFollowupOutput, E>
+
+export type SessionInputFollowupReceiptInput = {
+  readonly sessionID: Session.ID
+  readonly expectedInputID: SessionMessage.ID
+  readonly inboxID: SessionMessage.ID
+}
+export type SessionInputFollowupReceiptOutput = SessionInbox.Followup
+export type SessionInputFollowupReceiptOperation<E = never> = (
+  input: SessionInputFollowupReceiptInput,
+) => Effect.Effect<SessionInputFollowupReceiptOutput, E>
+
 export type SessionGenerateInput = { readonly sessionID: Session.ID; readonly prompt: string }
 export type SessionGenerateOutput = { readonly text: string }
 export type SessionGenerateOperation<E = never> = (
@@ -479,6 +508,9 @@ export interface SessionApi<E = never> {
   readonly input: {
     readonly continue: SessionInputContinueOperation<E>
     readonly continuation: SessionInputContinuationOperation<E>
+    readonly position: SessionInputPositionOperation<E>
+    readonly followup: SessionInputFollowupOperation<E>
+    readonly followupReceipt: SessionInputFollowupReceiptOperation<E>
   }
   readonly generate: SessionGenerateOperation<E>
   readonly interrupt: SessionInterruptOperation<E>
@@ -912,6 +944,13 @@ export type ExperimentalSessionLogOutput =
             readonly item: SessionInbox.Item
             readonly continuation?:
               | { readonly expectedInputID: SessionMessage.ID; readonly requestHash: string }
+              | undefined
+            readonly followup?:
+              | {
+                  readonly expectedInputID: SessionMessage.ID
+                  readonly expectedRootID: SessionMessage.ID
+                  readonly requestHash: string
+                }
               | undefined
           }
         }

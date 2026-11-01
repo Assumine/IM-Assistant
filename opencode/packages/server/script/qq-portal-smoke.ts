@@ -18,6 +18,8 @@ const requests: unknown[] = []
 let ordinaryActivated = false
 const entered = Promise.withResolvers<void>()
 const release = Promise.withResolvers<void>()
+const followupEntered = Promise.withResolvers<void>()
+const followupRelease = Promise.withResolvers<void>()
 const upstream = Bun.serve({
   hostname: "127.0.0.1",
   port: 0,
@@ -28,6 +30,10 @@ const upstream = Bun.serve({
     if (serial === 1) {
       entered.resolve()
       await release.promise
+    }
+    if (serial === 6) {
+      followupEntered.resolve()
+      await followupRelease.promise
     }
     const chunks = [
       {
@@ -443,11 +449,131 @@ try {
   checks.push(
     "SQLite restart restores bindings, origin aliases and unknown handoffs without replay; delivered input recall leaves execution unchanged",
   )
+  const parentPosition = await app.session.input.position({ sessionID: first.id, inputID: pending[0].id })
+  assert(parentPosition.status === "closed" && parentPosition.rootID === pending[0].id)
+  assert.equal(
+    (await app.session.input.position({ sessionID: first.id, inputID: "msg_missing_parent" })).status,
+    "unknown",
+  )
+  await assert.rejects(
+    () =>
+      app.session.input.followup({
+        sessionID: first.id,
+        expectedInputID: pending[0].id,
+        expectedRootID: "msg_wrong_root",
+        inboxID: "msg_no_false_followup",
+        text: "Must not follow missing ownership",
+      }),
+    isConflictError,
+  )
+  assert.equal(requests.length, 5)
+  checks.push(
+    "fresh native close evidence survives SQLite reopen; missing history and wrong-root follow-ups do not admit work",
+  )
+  const linked = message("linked-followup", "Follow the earlier result", "restored-final-reply")
+  const linkedProposal = await portal.receive(linked)
+  assert(linkedProposal.status === "confirmation-required")
+  const linkedApproval = {
+    confirmationID: linkedProposal.confirmationID,
+    scope: peer,
+    actorID: "20001",
+    choice: "approve" as const,
+  }
+  const linkedResult = await portal.confirm(linked, linkedApproval)
+  assert(
+    linkedResult.status === "followup" &&
+      linkedResult.parentInputID === pending[0].id &&
+      linkedResult.inputID !== pending[0].id,
+  )
+  await bounded(followupEntered.promise)
+  assert.deepEqual(await storage.get("binding:" + scopeKey(peer)), { kind: "session", sessionID: second.id })
+  const linkedSource = { scope: peer, messageID: "linked-followup", actorID: "20001" }
+  assert.deepEqual(await portal.sourceFor(taskTarget, linkedResult.inputID), { status: "found", source: linkedSource })
+  assert.deepEqual(await portal.sourceFor(taskTarget, pending[0].id), { status: "found", source: taskSource })
+  checks.push(
+    "a confirmed historical quote creates its own native input and source while preserving parent history and current binding",
+  )
+  const cancelLinked = message("cancel-linked", "Must not execute withdrawn follow-up", "restored-final-reply")
+  const cancelProposal = await portal.receive(cancelLinked)
+  assert(cancelProposal.status === "confirmation-required")
+  const cancelResult = await portal.confirm(cancelLinked, {
+    ...linkedApproval,
+    confirmationID: cancelProposal.confirmationID,
+  })
+  assert(cancelResult.status === "followup")
+  assert.equal((await portal.receive(recall("cancel-linked"))).status, "withdrawn")
+  assert.equal(
+    (
+      await app.session.input.followupReceipt({
+        sessionID: first.id,
+        expectedInputID: pending[0].id,
+        inboxID: cancelResult.inputID,
+      })
+    ).status,
+    "cancelled",
+  )
+  const lostLinked = message("lost-linked", "Linked native acknowledgment recovered", "restored-final-reply")
+  const lostLinkedPortal = createPortal({
+    policy,
+    storage,
+    session: {
+      ...app.session,
+      input: {
+        ...app.session.input,
+        followup: async (input) => {
+          await app.session.input.followup(input)
+          throw new Error("Synthetic follow-up acknowledgment loss")
+        },
+      },
+    },
+  })
+  const lostProposal = await lostLinkedPortal.receive(lostLinked)
+  assert(lostProposal.status === "confirmation-required")
+  const lostResult = await lostLinkedPortal.confirm(lostLinked, {
+    ...linkedApproval,
+    confirmationID: lostProposal.confirmationID,
+  })
+  assert(lostResult.status === "followup" && lostResult.delivery === "pending")
+  assert.equal((await portal.receive(lostLinked)).status, "followup")
+  assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 1)
+  checks.push(
+    "linked queued recall cancels only the new task; lost handoff acknowledgments reconcile without a duplicate input",
+  )
+  followupRelease.resolve()
+  await until(async () => {
+    const active = await app.session.active()
+    return !active[first.id] && !active[second.id]
+  })
+  assert.equal(requests.length, 7)
+  assert(!JSON.stringify(requests).includes("Must not execute withdrawn follow-up"))
+  const linkedMessage = (await app.session.context({ sessionID: first.id })).find(
+    (row) => row.id === linkedResult.inputID,
+  )
+  assert(linkedMessage?.type === "user" && linkedMessage.text === "Follow the earlier result")
+  assert.deepEqual(linkedMessage.metadata?.inputRelation, {
+    kind: "followup",
+    inputID: pending[0].id,
+    rootID: pending[0].id,
+  })
+  await app.close()
+  host = await boot()
+  app = host.app
+  await app.permission.list({ sessionID: first.id })
+  storage = await bounded(host.storage)
+  portal = createPortal({ policy, storage, session: app.session })
+  assert.equal((await portal.confirm(linked, linkedApproval)).status, "followup")
+  assert.equal((await portal.receive(lostLinked)).status, "followup")
+  assert.equal((await portal.receive(recall("linked-followup"))).status, "unchanged")
+  assert.equal(requests.length, 7)
+  assert.deepEqual(await portal.sourceFor(taskTarget, linkedResult.inputID), { status: "found", source: linkedSource })
+  checks.push(
+    "linked follow-up receipts and original sources survive SQLite restart; delivered history is not replayed or appended",
+  )
   await app.close()
   host = await boot(false)
   assert.equal((await host.app.session.get({ sessionID: first.id })).id, first.id)
   assert.equal((await host.app.session.inbox.list({ sessionID: first.id })).length, 0)
-  assert.equal(requests.length, 5)
+  assert.equal(requests.length, 7)
   checks.push("the original core and its stored conversations reopen with no QQ plugin, transport or login")
   console.log(
     JSON.stringify({
@@ -460,6 +586,7 @@ try {
   )
 } finally {
   release.resolve()
+  followupRelease.resolve()
   await host?.app.close()
   upstream.stop(true)
 }
