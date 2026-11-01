@@ -86,7 +86,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     let ingress: "new" | "duplicate" | "conflict"
     try { ingress = await claimIngress(storage, input, !!control) } catch { return { status: "uncertain" } }
     if (ingress === "conflict") return { status: "conflict" }
-    if (control) return dispatchControl ? dispatchControl(input, control, ingress === "duplicate") : { status: "command", ...control }
+    if (control) return dispatchControl ? dispatchControl.receive(input, control, ingress === "duplicate") : { status: "command", ...control }
     let proposal: Proposal | undefined
     try { proposal = await consent.read(input) } catch { return { status: "conflict" } }
     if (proposal) {
@@ -149,6 +149,11 @@ export function createPortal(options: { storage: Storage; session: Native; backe
   return {
     /** Trusted host control API; remote transports must authorize controls before calling it. */
     bind,
+    /** Trusted transport only, after a real outgoing list/queue reply has an acknowledged QQ message ID. */
+    async linkControlView(source: Source, viewID: string, outgoingMessageID: string) {
+      if (!dispatchControl) throw new Error("QQ control views are not enabled")
+      await dispatchControl.publishView(source, viewID, outgoingMessageID)
+    },
     /** Read-only lookup for future outbound transport. Never infer the recipient from the current binding. */
     async sourceFor(value: Target, inputID: string): Promise<SourceResult> {
       try {

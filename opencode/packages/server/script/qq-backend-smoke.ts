@@ -99,6 +99,9 @@ const origin = (raw: unknown) => {
 }
 const lostID = inputID(origin(lost))
 let first: Extract<Target, { kind: "backend" }>, second: Extract<Target, { kind: "backend" }>
+let nativeQueueIndex = 0,
+  nativeCatalogIndex = 0
+const indexedWithdrawal = () => message("controls-remove", "/unqueue " + nativeQueueIndex, "native-queue-output")
 async function bounded<T>(promise: Promise<T>, label: string) {
   let timer: ReturnType<typeof setTimeout>
   try {
@@ -259,6 +262,25 @@ async function round(restored: boolean) {
         checks.push(
           "authorized control browsing lists the original native threads while a native turn runs without creating a shadow Session",
         )
+        nativeCatalogIndex =
+          catalog.result.items.findIndex((row) => JSON.stringify(row.target) === JSON.stringify(first)) + 1
+        assert(nativeCatalogIndex > 0)
+        const nativeCatalogViewID = catalog.result.viewID
+        yield* Effect.promise(() =>
+          controlled().linkControlView(
+            { scope, actorID: "20001", messageID: "controls-list" },
+            nativeCatalogViewID,
+            "native-list-output",
+          ),
+        )
+        const indexedBinding = yield* Effect.promise(() =>
+          controlled().receive(message("view-native-bind", "/bind " + nativeCatalogIndex, "native-list-output")),
+        )
+        assert(indexedBinding.status === "control" && indexedBinding.result.kind === "bound")
+        assert.deepEqual(indexedBinding.result.target, first)
+        checks.push(
+          "published catalog selection keeps the native backend ID and thread ID together without routing through an ordinary Session",
+        )
         const bindCommand = message("controls-bind", "/bind backend codex-native " + first.ref.threadID)
         const bindings = yield* Effect.promise(() =>
           Promise.all(Array.from({ length: 6 }, () => controlled().receive(bindCommand))),
@@ -309,9 +331,17 @@ async function round(restored: boolean) {
         assert(queueControl.status === "control" && queueControl.result.kind === "queue")
         assert.equal(queueControl.result.state, "running")
         assert(queueControl.result.items.some((row) => row.inputID === "controls-pending"))
-        const cancelledControl = yield* Effect.promise(() =>
-          controlled().receive(message("controls-remove", "/unqueue controls-pending")),
+        assert(queueControl.result.viewID)
+        const nativeQueueViewID = queueControl.result.viewID
+        nativeQueueIndex = queueControl.result.items.findIndex((row) => row.inputID === "controls-pending") + 1
+        yield* Effect.promise(() =>
+          controlled().linkControlView(
+            { scope, actorID: "20001", messageID: "controls-queue" },
+            nativeQueueViewID,
+            "native-queue-output",
+          ),
         )
+        const cancelledControl = yield* Effect.promise(() => controlled().receive(indexedWithdrawal()))
         assert(cancelledControl.status === "control" && cancelledControl.result.kind === "withdraw-requested")
         assert(
           !(yield* Effect.promise(() => adapter.queue(first.ref.threadID))).data.some(
@@ -321,6 +351,14 @@ async function round(restored: boolean) {
         assert.equal(requests.length, 1)
         checks.push(
           "native queue controls use the real native submission ID and withdraw only that pending input while its predecessor keeps running",
+        )
+        const staleIndex = yield* Effect.promise(() =>
+          controlled().receive(message("view-native-stale", "/unqueue " + nativeQueueIndex, "native-queue-output")),
+        )
+        assert(staleIndex.status === "control" && staleIndex.result.kind === "unchanged")
+        assert.equal((yield* Effect.promise(() => adapter.queue(first.ref.threadID))).data.length, 2)
+        checks.push(
+          "an old numbered native view retains its withdrawn submission ID and cannot remap to another pending input after advancement",
         )
         yield* Effect.promise(() => portal.receive(message("withdraw", "Must never execute recalled QQ input")))
         assert.deepEqual(
@@ -393,9 +431,7 @@ async function round(restored: boolean) {
         assert(
           restoredBinding.status === "control" && restoredBinding.duplicate && restoredBinding.result.kind === "bound",
         )
-        const restoredCancel = yield* Effect.promise(() =>
-          controlled().receive(message("controls-remove", "/unqueue controls-pending")),
-        )
+        const restoredCancel = yield* Effect.promise(() => controlled().receive(indexedWithdrawal()))
         assert(
           restoredCancel.status === "control" &&
             restoredCancel.duplicate &&
@@ -404,6 +440,24 @@ async function round(restored: boolean) {
         assert.equal(admissions, 6)
         checks.push(
           "SQLite reopen restores native control receipts without reapplying bindings, reissuing withdrawals or admitting model work",
+        )
+        const restoredViewBind = yield* Effect.promise(() =>
+          controlled().receive(
+            message("view-native-restored-bind", "/bind " + nativeCatalogIndex, "native-list-output"),
+          ),
+        )
+        assert(restoredViewBind.status === "control" && restoredViewBind.result.kind === "bound")
+        assert.deepEqual(restoredViewBind.result.target, first)
+        const restoredViewCancel = yield* Effect.promise(() =>
+          controlled().receive(
+            message("view-native-restored-remove", "/unqueue " + nativeQueueIndex, "native-queue-output"),
+          ),
+        )
+        assert(restoredViewCancel.status === "control" && restoredViewCancel.result.kind === "unchanged")
+        yield* Effect.promise(() => portal.bind(scope, second))
+        assert.equal(admissions, 6)
+        checks.push(
+          "SQLite reopen restores native published views for new indexed controls without relisting, resuming, re-admitting or changing other inputs",
         )
         const duplicate = yield* Effect.promise(() => portal.receive(kept))
         assert(duplicate.status === "accepted" && JSON.stringify(duplicate.target) === JSON.stringify(first))

@@ -196,6 +196,31 @@ try {
   checks.push(
     "authorized control list reads the original Session catalog while the real model is busy without admitting AI input",
   )
+  const prematureBind = message("view-premature", "/bind 1", "controls-list")
+  const premature = await controlled().receive(prematureBind)
+  assert(premature.status === "control" && premature.result.kind === "selection-required")
+  await controlled().linkControlView(
+    { scope: peer, actorID: "20001", messageID: "controls-list" },
+    catalog.result.viewID,
+    "controls-list-output",
+  )
+  const refusedReplay = await controlled().receive(prematureBind)
+  assert(refusedReplay.status === "control" && refusedReplay.result.kind === "uncertain")
+  checks.push(
+    "a prepared catalog is not selectable until explicit publication metadata is confirmed and publication does not revive a refused old command",
+  )
+  const selectedIndex =
+    catalog.result.items.findIndex((item) => item.target.kind === "session" && item.target.sessionID === second.id) + 1
+  assert(selectedIndex > 0)
+  const selectedBindCommand = message("view-bind", "/bind " + selectedIndex, "controls-list-output")
+  const selectedBind = await controlled().receive(selectedBindCommand)
+  assert(selectedBind.status === "control" && selectedBind.result.kind === "bound")
+  assert.deepEqual(selectedBind.result.target, { kind: "session", sessionID: second.id })
+  await controlled().receive(message("view-bind-restore", "/bind " + first.id))
+  assert.equal(requests.length, 1)
+  checks.push(
+    "published catalog indices bind the original full Session identity through public APIs without sending model input",
+  )
   const bindCommand = message("controls-bind", "/bind session " + first.id)
   const bindingCopies = await Promise.all(Array.from({ length: 8 }, () => controlled().receive(bindCommand)))
   assert(bindingCopies.some((row) => row.status === "control" && row.result.kind === "bound"))
@@ -213,16 +238,38 @@ try {
     text: "Must not run withdrawn control input",
     delivery: "queue",
   })
+  await app.session.prompt({
+    sessionID: first.id,
+    id: "msg_view_remove",
+    text: "Must not run indexed withdrawn input",
+    delivery: "queue",
+  })
   const queueView = await controlled().receive(message("controls-queue", "/queue"))
   assert(queueView.status === "control" && queueView.result.kind === "queue")
   assert.deepEqual(
     queueView.result.items.map((row) => row.inputID),
-    ["msg_controls_remove"],
+    ["msg_controls_remove", "msg_view_remove"],
   )
   assert.equal(queueView.result.state, undefined)
   const cancelCommand = message("controls-remove", "/UNQUEUE msg_controls_remove")
   const controlCancelResult = await controlled().receive(cancelCommand)
   assert(controlCancelResult.status === "control" && controlCancelResult.result.kind === "withdraw-requested")
+  assert(queueView.result.viewID)
+  await controlled().linkControlView(
+    { scope: peer, actorID: "20001", messageID: "controls-queue" },
+    queueView.result.viewID,
+    "controls-queue-output",
+  )
+  const numericCancelCommand = message("view-remove", "/unqueue 2", "controls-queue-output")
+  const numericCancel = await controlled().receive(numericCancelCommand)
+  assert(
+    numericCancel.status === "control" &&
+      numericCancel.result.kind === "withdraw-requested" &&
+      numericCancel.result.inputID === "msg_view_remove",
+  )
+  checks.push(
+    "numbered withdrawal after queue advancement cancels the original second input rather than selecting the new second position",
+  )
   assert.deepEqual(await app.session.inbox.list({ sessionID: first.id }), [])
   assert.equal((await controlled().receive(cancelCommand)).status, "control")
   assert.equal(requests.length, 1)
@@ -496,6 +543,21 @@ try {
   assert.deepEqual(await storage.get("binding:" + scopeKey(peer)), { kind: "session", sessionID: second.id })
   checks.push(
     "SQLite reopen restores control facts without rewriting a newer binding, retrying an uncertain control or sending withdrawn model input",
+  )
+  const repeatedIndexedCancel = await controlled().receive(numericCancelCommand)
+  assert(
+    repeatedIndexedCancel.status === "control" &&
+      repeatedIndexedCancel.duplicate &&
+      repeatedIndexedCancel.result.kind === "withdraw-requested",
+  )
+  const reopenedSelection = await controlled().receive(
+    message("view-restored-bind", "/bind " + selectedIndex, "controls-list-output"),
+  )
+  assert(reopenedSelection.status === "control" && reopenedSelection.result.kind === "bound")
+  assert.deepEqual(reopenedSelection.result.target, { kind: "session", sessionID: second.id })
+  assert.equal(requests.length, 5)
+  checks.push(
+    "SQLite reopen preserves immutable published view aliases and indexed control receipts without repeating model or withdrawal work",
   )
   const restored = await portal.receive(queued)
   assert(restored.status === "accepted" && restored.sessionID === first.id && restored.duplicate)

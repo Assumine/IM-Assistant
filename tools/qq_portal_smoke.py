@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 109),
+        (module, "r3-qq-module-tests", [bun, "test"], 123),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 5),
     ]:
         log = reports / (label + ".log")
@@ -53,7 +53,7 @@ def _run():
                              extra_env={"IM_QQ_TEST_ROOT": directory}))
     lines = (reports / "r3-qq-http.log").read_text(encoding="utf-8").splitlines()
     http = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if http["status"] != "passed" or len(http["checks"]) != 27 or http["model_requests"] != 7 or http["actual_qq_connection"] or http["external_messages_sent"]:
+    if http["status"] != "passed" or len(http["checks"]) != 31 or http["model_requests"] != 7 or http["actual_qq_connection"] or http["external_messages_sent"]:
         raise RuntimeError("QQ original SDK/HTTP/SQLite acceptance was incomplete")
     native_parent = ROOT / "runtime/codex-native"
     native_parent.mkdir(parents=True, exist_ok=True)
@@ -62,7 +62,7 @@ def _run():
                              extra_env={"IM_CODEX_EXECUTABLE": executable, "IM_QQ_BACKEND_TEST_ROOT": native_directory}))
     lines = (reports / "r3-qq-native-http.log").read_text(encoding="utf-8").splitlines()
     native = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if native["status"] != "passed" or len(native["checks"]) != 15 or native["model_requests"] != 4 or native["native_admissions"] != 6 or native["actual_qq_connection"] or native["external_messages_sent"] or native["production_credentials_used"]:
+    if native["status"] != "passed" or len(native["checks"]) != 18 or native["model_requests"] != 4 or native["native_admissions"] != 6 or native["actual_qq_connection"] or native["external_messages_sent"] or native["production_credentials_used"]:
         raise RuntimeError("QQ real native backend target acceptance was incomplete")
     continuation_directory = tempfile.mkdtemp(prefix="qq-continuation-", dir=parent)
     steps.append(run_command("packages/server", ["run", "script/qq-continuation-smoke.ts"], "r3-qq-continuation-http", timeout=180,
@@ -140,7 +140,7 @@ def _run():
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *module.glob("test/*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["live authenticated OneBot transport and product activation are not connected",
-                          "opt-in control dispatch supports authorized list/bind/unbind/queue/status/unqueue through public APIs; numeric selectors, native stop fences, remote confirmation UI and remaining commands are not connected",
+                          "opt-in controls include numbered selections from explicitly quoted published views; implicit latest-list selection, native stop fences, remote confirmation UI and remaining commands are not connected",
                           "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
                           "outbound first/final replies, result-unknown notification reconciliation and receipt recall remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",

@@ -55,7 +55,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.45,
+      "duration_seconds": 2.44,
       "isolated_home": true,
       "log": ".reports/native/r3-host-server-unit.log",
       "native_tests_passed": 3,
@@ -72,7 +72,7 @@
       "cwd": "opencode/packages/im-assistant",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.08,
+      "duration_seconds": 0.09,
       "isolated_home": true,
       "log": ".reports/native/r3-profile-unit.log",
       "native_tests_passed": 7,
@@ -88,7 +88,7 @@
       "cwd": "opencode/packages/cli",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 1.66,
+      "duration_seconds": 1.62,
       "isolated_home": true,
       "log": ".reports/native/r3-cli-boundaries.log",
       "native_tests_passed": 5,
@@ -104,7 +104,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 2.59,
+      "duration_seconds": 2.67,
       "isolated_home": true,
       "log": ".reports/native/r3-host-http.log",
       "native_tests_passed": null,
@@ -120,7 +120,7 @@
       "cwd": "opencode/packages/server",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 37.4,
+      "duration_seconds": 37.66,
       "isolated_home": true,
       "log": ".reports/native/r3-product-entry.log",
       "native_tests_passed": null,
@@ -145,7 +145,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 0.71,
+      "duration_seconds": 0.67,
       "isolated_home": true,
       "log": ".reports/native/r3-tabs-unit.log",
       "native_tests_passed": 42,
@@ -178,7 +178,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 171.45,
+      "duration_seconds": 170.44,
       "isolated_home": true,
       "log": ".reports/native/r3-backend-browser.log",
       "native_tests_passed": 187,
@@ -203,7 +203,7 @@
       "cwd": "opencode/packages/app",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 31.82,
+      "duration_seconds": 32.27,
       "isolated_home": true,
       "log": ".reports/native/r3-plugin-host.log",
       "native_tests_passed": 31,
@@ -219,7 +219,7 @@
       "cwd": "opencode",
       "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
       "exit_code": 0,
-      "duration_seconds": 13.77,
+      "duration_seconds": 13.85,
       "isolated_home": true,
       "log": ".reports/native/r3-host-check.log",
       "native_tests_passed": null,
@@ -388,7 +388,7 @@
     "opencode/packages/sdk/src/promise.ts": "ad8cd9e00f1dbf76eeac7674a884204ec374e594e36dacd872b1c9a72bb0baf8",
     "opencode/packages/server/script/codex-backend-smoke.ts": "bbe1e7d082962a76fd0e88c6cf6bd0eca915f0801f80211e908667c61a43a859",
     "opencode/packages/server/script/codex-product-smoke.ts": "69e00735879da91beab7cda6b1d7ef116ae9cbf27f6ca514414c7f56e666ae91",
-    "opencode/packages/server/script/qq-portal-smoke.ts": "21815f3b9dc52f8bc62852a3fe80381a8d6a07dd83dc6fa001fda0e8dee4afdb",
+    "opencode/packages/server/script/qq-portal-smoke.ts": "5dcd01e33a4f04a715e05b45c791cd111fcc64f95ad5501c1e033db63bb27c11",
     "opencode/packages/server/src/backend-modules.ts": "6287e0a345a311f1f094df20f14a6cbc22180e3ca6f2de0f10b3f3197703b3fa",
     "opencode/packages/server/src/fetch.ts": "f074f8085089e29373e3d1f1260f9748e499e4271b15e99a04b333106dfb8f8f",
     "opencode/packages/server/src/handlers/session.ts": "20e2a0f80c025d82dac05a44c6d3fb28606245c11dd60f64786d159fa2f25181",
@@ -401,7 +401,7 @@
     "tests/rebase/test_r3_01.py": "4942babb64a810c842f8a9f5c8caa1e906bd0f616f9a0128b9abdf937d6f82a6",
     "tools/codex_native_smoke.py": "28546bf9a651b0e70e98dd054eba47efbbed3e946aff92ae44e622c6a7eac54f"
   },
-  "duration_seconds": 306.73,
+  "duration_seconds": 307.09,
   "remaining": [
     "explicit next-boot activation is connected to the actual product CLI; isolated product startup/restart/disable verified; production credentials and real-account login remain unverified and no production activation was performed",
     "shared transport is experimental and not published; production activation and OS matrix remain unverified",
@@ -422,35 +422,63 @@
         "cwd": "opencode",
         "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
         "exit_code": 0,
-        "duration_seconds": 1.63,
+        "duration_seconds": 1.51,
         "isolated_home": true,
-        "log": ".reports/native/r3-qq-controls-lint.log",
+        "log": ".reports/native/r3-qq-views-lint.log",
         "native_tests_passed": null,
         "native_tests_failed": null,
         "native_tests_skipped": 0
       },
       {
         "exit_code": 0,
-        "files": 4,
-        "log": ".reports/native/r3-qq-controls-module-lint.log",
+        "files": 5,
+        "log": ".reports/native/r3-qq-views-module-lint.log",
         "cwd": ".",
         "args": [
           "opencode/node_modules/.bin/oxlint.exe",
           "modules/qq-portal/src/index.ts",
-          "modules/qq-portal/src/target.ts",
           "modules/qq-portal/src/controls.ts",
-          "modules/qq-portal/test/controls.test.ts"
+          "modules/qq-portal/src/views.ts",
+          "modules/qq-portal/test/controls.test.ts",
+          "modules/qq-portal/test/views.test.ts"
         ]
       }
     ],
     "shared_test_cleanup": {
-      "checked": 305,
+      "checked": 340,
       "stopped": 0,
       "unverified": 0
     },
+    "canonical_type_fix": {
+      "initial_formal_status": "failed",
+      "initial_script_diagnostics": [
+        "script/qq-backend-smoke.ts(271,28): error TS2339: Property 'viewID' does not exist on type 'ControlResult'.",
+        "script/qq-backend-smoke.ts(338,33): error TS2339: Property 'viewID' does not exist on type 'ControlResult'."
+      ],
+      "initial_diagnostic_count": 2,
+      "cause": "Union property narrowing did not survive the acceptance fixture callbacks.",
+      "fix": "Capture validated primitive view IDs before callbacks; no casts or check suppression.",
+      "targeted_server_typecheck": {
+        "args": [
+          "bun",
+          "run",
+          "typecheck"
+        ],
+        "cwd": "opencode/packages/server",
+        "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+        "exit_code": 0,
+        "duration_seconds": 2.92,
+        "isolated_home": true,
+        "log": ".reports/native/r3-qq-views-server-types-fix.log",
+        "native_tests_passed": null,
+        "native_tests_failed": null,
+        "native_tests_skipped": 0
+      },
+      "formal_recheck_status": "passed"
+    },
     "usage_limit_browser_recheck": {
       "unresolved": true,
-      "previous_evidence_commit": "c5b7b287cf3c788525839fface6eeead8bd9e075",
+      "previous_evidence_commit": "5afcdd15a8a07573f614fbe7b9ffc001b63feaab",
       "previous_checkpoint": "upstream/codex-checkpoint.json",
       "note": "Known attachment-only draft restoration intermittent issue remains an R5 gate; no related implementation changed."
     }

@@ -117,7 +117,7 @@ test("unqueue freezes a concrete input and never cancels a different queue after
   f.pending.set("msg_successor", "Successor"); f.values.set("binding:" + scopeKey(scope), second)
   expect(await f.portal().receive(request)).toMatchObject({ duplicate: true, result: { kind: "withdraw-requested", target: first } })
   expect(f.cancelled).toEqual(["msg_first"]); expect(f.pending.has("msg_successor")).toBe(true)
-  expect(await f.portal().receive(raw("index", "/unqueue 1"))).toMatchObject({ result: { kind: "invalid" } })
+  expect(await f.portal().receive(raw("index", "/unqueue 1"))).toMatchObject({ result: { kind: "selection-required" } })
 })
 
 test("unknown withdrawal acknowledgments are not replayed even if another pending item appears", async () => {
@@ -158,7 +158,7 @@ test("conflicting envelopes cannot switch between control and model input, inclu
 test("recognized unsupported and malformed commands never fall through to AI", async () => {
   const f = fixture()
   for (const [index, text] of ["/stop", "/model x", "/queue task body", "/bind 1", "/unbind extra"].entries()) {
-    expect(await f.portal().receive(raw("unsupported_" + index, text))).toMatchObject({ status: "control", result: { kind: text.startsWith("/bind") || text.startsWith("/unbind") ? "invalid" : "unsupported" } })
+    expect(await f.portal().receive(raw("unsupported_" + index, text))).toMatchObject({ status: "control", result: { kind: text.startsWith("/bind") ? "selection-required" : text.startsWith("/unbind") ? "invalid" : "unsupported" } })
   }
   expect(f.sent).toEqual([]); expect(f.cancelled).toEqual([]); expect(f.writes).toEqual([])
 })
