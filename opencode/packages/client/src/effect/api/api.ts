@@ -18,8 +18,8 @@ import type { Form } from "@opencode/schema/form"
 import type { DateTime } from "effect"
 import type { Money } from "@opencode/schema/money"
 import type { Skill } from "@opencode/schema/skill"
-import type { InstructionEntry } from "@opencode/schema/instruction-entry"
 import type { Schema } from "effect"
+import type { InstructionEntry } from "@opencode/schema/instruction-entry"
 import type { Event } from "@opencode/schema/event"
 import type { EventLog } from "@opencode/schema/event-log"
 import type { Workspace } from "@opencode/schema/workspace"
@@ -541,6 +541,12 @@ export interface SessionApi<E = never> {
   /** @deprecated Use `client.experimental.session.skill`. Removed in the next minor. */
   readonly skill: ExperimentalSessionSkillOperation<E>
 
+  /** @deprecated Use `client.experimental.session.observation`. Removed in the next minor. */
+  readonly observation: {
+    /** @deprecated Use `client.experimental.session.observation.append`. Removed in the next minor. */
+    readonly append: ExperimentalSessionObservationAppendOperation<E>
+  }
+
   /** @deprecated Use `client.experimental.session.wait`. Removed in the next minor. */
   readonly wait: ExperimentalSessionWaitOperation<E>
 
@@ -718,6 +724,17 @@ export type ExperimentalSessionSkillOutput = void
 export type ExperimentalSessionSkillOperation<E = never> = (
   input: ExperimentalSessionSkillInput,
 ) => Effect.Effect<ExperimentalSessionSkillOutput, E>
+
+export type ExperimentalSessionObservationAppendInput = {
+  readonly sessionID: Session.ID
+  readonly id?: SessionMessage.ID | undefined
+  readonly text: string
+  readonly metadata?: { readonly [x: string]: Schema.Json } | undefined
+}
+export type ExperimentalSessionObservationAppendOutput = SessionMessage.Synthetic
+export type ExperimentalSessionObservationAppendOperation<E = never> = (
+  input: ExperimentalSessionObservationAppendInput,
+) => Effect.Effect<ExperimentalSessionObservationAppendOutput, E>
 
 export type ExperimentalSessionWaitInput = { readonly sessionID: Session.ID }
 export type ExperimentalSessionWaitOutput = void
@@ -1680,6 +1697,7 @@ export interface ExperimentalSessionApi<E = never> {
   readonly import: ExperimentalSessionImportOperation<E>
   readonly export: ExperimentalSessionExportOperation<E>
   readonly skill: ExperimentalSessionSkillOperation<E>
+  readonly observation: { readonly append: ExperimentalSessionObservationAppendOperation<E> }
   readonly wait: ExperimentalSessionWaitOperation<E>
   readonly instructions: {
     readonly entry: {
@@ -3010,6 +3028,15 @@ export type SessionSkillOutput = ExperimentalSessionSkillOutput
 
 /** @deprecated Use `ExperimentalSessionSkillOperation`. Removed in the next minor. */
 export type SessionSkillOperation<E = never> = ExperimentalSessionSkillOperation<E>
+
+/** @deprecated Use `ExperimentalSessionObservationAppendInput`. Removed in the next minor. */
+export type SessionObservationAppendInput = ExperimentalSessionObservationAppendInput
+
+/** @deprecated Use `ExperimentalSessionObservationAppendOutput`. Removed in the next minor. */
+export type SessionObservationAppendOutput = ExperimentalSessionObservationAppendOutput
+
+/** @deprecated Use `ExperimentalSessionObservationAppendOperation`. Removed in the next minor. */
+export type SessionObservationAppendOperation<E = never> = ExperimentalSessionObservationAppendOperation<E>
 
 /** @deprecated Use `ExperimentalSessionWaitInput`. Removed in the next minor. */
 export type SessionWaitInput = ExperimentalSessionWaitInput

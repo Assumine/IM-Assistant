@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto"
 import type { Scope, Source } from "./types"
-import { imageFile, imageFrameBytes, maximumImageBytes } from "./images"
+import { imageFile, imageFrameBytes, maximumImageBytes, inlineImage } from "./images"
 
 export type WireState = { phase: "connecting" | "verifying" | "online" | "unavailable" | "closed"; reason?: "configuration" | "transport" | "deadline" | "identity" | "not-online" | "protocol" | "account-in-use" }
 export type SendResult = { status: "sent"; messageID: string } | { status: "unavailable" | "uncertain" | "rejected" }
 export type RecallResult = { status: "recalled" | "unavailable" | "uncertain" | "rejected" }
+export type OutgoingPart = { type: "text"; text: string } | { type: "mention"; memberID: string } | { type: "image"; uri: string }
 export type OneBotOptions = {
   url: string; token: string; botID: string; connectTimeoutMs?: number; requestTimeoutMs?: number; maxFrameBytes?: number; maxRequests?: number
 }
@@ -87,6 +88,37 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
     pending.delete(value.echo); clearTimeout(waiting.timer)
     waiting.finish({ kind: "reply", reply: { status: value.status as Reply["status"], retcode: value.retcode as number, data: value.data } })
   }
+  const transmit = async (scope: Scope, parts: readonly OutgoingPart[], quoteID?: string): Promise<SendResult> => {
+    const peer = accountID(scope.peerID)
+    if (current.phase !== "online" || scope.botID !== options.botID || !["private", "group"].includes(scope.kind) || !peer ||
+      !Number.isSafeInteger(Number(peer)) || !Array.isArray(parts) || !parts.length || parts.length > 12 || quoteID !== undefined && !numericID(quoteID)) return { status: "unavailable" }
+    const message: { type: string; data: Record<string, string> }[] = quoteID === undefined ? [] : [{ type: "reply", data: { id: quoteID } }]
+    let length = 0, bytes = 0
+    for (const part of parts) {
+      if (!part || typeof part !== "object") return { status: "unavailable" }
+      if (part.type === "text" && typeof part.text === "string" && part.text.trim()) {
+        length += part.text.length
+        message.push({ type: "text", data: { text: part.text } })
+      } else if (part.type === "mention" && scope.kind === "group" && accountID(part.memberID) && Number.isSafeInteger(Number(part.memberID))) {
+        message.push({ type: "at", data: { qq: part.memberID } })
+      } else if (part.type === "image") {
+        const image = inlineImage(part.uri)
+        if (!image) return { status: "unavailable" }
+        bytes += image.byteLength
+        message.push({ type: "image", data: { file: image.file } })
+      } else return { status: "unavailable" }
+    }
+    if (length > 16000 || bytes > maximumImageBytes) return { status: "unavailable" }
+    const response = await request(scope.kind === "private" ? "send_private_msg" : "send_group_msg", {
+      [scope.kind === "private" ? "user_id" : "group_id"]: Number(peer), message,
+    })
+    if (response.kind === "not-sent") return { status: "unavailable" }
+    if (response.kind !== "reply") return { status: "uncertain" }
+    if (response.reply.status === "failed") return { status: "rejected" }
+    if (response.reply.status !== "ok" || !record(response.reply.data)) return { status: "uncertain" }
+    const messageID = numericID(response.reply.data.message_id)
+    return messageID ? { status: "sent", messageID } : { status: "uncertain" }
+  }
   queueMicrotask(() => {
     try {
       const url = new URL(options.url), connectTimeout = bounded(options.connectTimeoutMs, 5000, 60000)
@@ -161,20 +193,8 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
       return { post_type: "message", self_id: options.botID, message_type: source.scope.kind, user_id: source.actorID,
         message_id: id, ...(source.scope.kind === "group" ? { group_id: source.scope.peerID } : {}), message: data.message }
     },
-    async send(scope: Scope, text: string, quoteID: string): Promise<SendResult> {
-      const peer = accountID(scope.peerID)
-      if (current.phase !== "online" || scope.botID !== options.botID || !["private", "group"].includes(scope.kind) || !peer ||
-        !Number.isSafeInteger(Number(peer)) || typeof text !== "string" || !text.trim() || text.length > 16000 || !numericID(quoteID)) return { status: "unavailable" }
-      const response = await request(scope.kind === "private" ? "send_private_msg" : "send_group_msg", {
-        [scope.kind === "private" ? "user_id" : "group_id"]: Number(peer),
-        message: [{ type: "reply", data: { id: quoteID } }, { type: "text", data: { text } }],
-      })
-      if (response.kind === "not-sent") return { status: "unavailable" }
-      if (response.kind !== "reply") return { status: "uncertain" }
-      if (response.reply.status === "failed") return { status: "rejected" }
-      if (response.reply.status !== "ok" || !record(response.reply.data)) return { status: "uncertain" }
-      const messageID = numericID(response.reply.data.message_id)
-      return messageID ? { status: "sent", messageID } : { status: "uncertain" }
-    },
+    send: (scope: Scope, text: string, quoteID: string): Promise<SendResult> => numericID(quoteID)
+      ? transmit(scope, [{ type: "text", text }], quoteID) : Promise.resolve({ status: "unavailable" }),
+    sendMessage: transmit,
   }
 }

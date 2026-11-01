@@ -396,6 +396,22 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
         ),
     )
     .add(
+      HttpApiEndpoint.post("session.observation.append", "/api/experimental/session/:sessionID/observation/append", {
+        params: { sessionID: Session.ID },
+        payload: Schema.Struct({
+          id: SessionMessage.ID.pipe(Schema.optional),
+          text: Schema.String.check(Schema.isMaxLength(64000)),
+          metadata: Schema.Record(Schema.String, Schema.Json).pipe(Schema.optional),
+        }),
+        success: Schema.Struct({ data: SessionMessage.Synthetic }),
+        error: [SessionNotFoundError, ConflictError],
+      }).annotateMerge(OpenApi.annotations({
+        identifier: "experimental.session.observation.append",
+        summary: "Append observed context",
+        description: "Experimental: may change without compatibility guarantees. Persist observed text in native history without queueing executable work or waking generation.",
+      })),
+    )
+    .add(
       HttpApiEndpoint.post("session.synthetic", "/api/session/:sessionID/synthetic", {
         params: { sessionID: Session.ID },
         payload: Schema.Struct({

@@ -7,10 +7,17 @@ import type { Account, ChatInput, Configuration, Receipt } from "./types"
 export function createChatbotModule(options: Configuration) {
   const config = configuration(options), ready = Promise.withResolvers<"ready" | "degraded" | "unavailable" | "closed">()
   const unavailable = new Set<string>()
+  const vision = new Set<string>()
   let active: ReturnType<typeof createChatSessions> | undefined, opened = false, stopped = false
-  const module: ApplicationModule & { ready: Promise<"ready" | "degraded" | "unavailable" | "closed">; receive: (input: ChatInput) => Promise<Receipt> } = {
+  const module: ApplicationModule & { ready: Promise<"ready" | "degraded" | "unavailable" | "closed">; receive: (input: ChatInput) => Promise<Receipt>;
+    observe: (input: ChatInput) => Promise<Receipt>; supportsImages: (botID: string) => boolean; isAvailable: (botID: string) => boolean } = {
     id: "qq-chatbot", title: "QQ chat companion", ready: ready.promise,
-    receive: (input) => active && !unavailable.has(input?.scope?.botID) ? active.receive(input) : Promise.resolve({ status: "unavailable" }),
+    receive: (input) => active && !unavailable.has(input?.scope?.botID)
+      ? input.images?.length && !vision.has(input.scope.botID) ? Promise.resolve({ status: "blocked", reason: "image-model-unsupported" }) : active.receive(input)
+      : Promise.resolve({ status: "unavailable" }),
+    observe: (input) => active && !unavailable.has(input?.scope?.botID) ? active.observe(input) : Promise.resolve({ status: "unavailable" }),
+    supportsImages: (botID) => !!active && vision.has(botID),
+    isAvailable: (botID) => !!active && config.accounts.some((account) => account.botID === botID) && !unavailable.has(botID),
     open(context) {
       if (opened) throw new Error("QQ chatbot resource already opened")
       opened = true
@@ -30,6 +37,7 @@ export function createChatbotModule(options: Configuration) {
             try {
               const agent = await context.client.agent.get({ location: config.location, agentID: account.agentID! }, { signal: abort.signal })
               if (agent.data.mode === "subagent") { unavailable.add(account.botID); continue }
+              if (models.data.some((model) => model.providerID === account.model.providerID && model.id === account.model.id && model.capabilities.input.includes("image"))) vision.add(account.botID)
               accounts.push(account)
             } catch { unavailable.add(account.botID) }
           }

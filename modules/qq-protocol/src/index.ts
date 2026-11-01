@@ -1,4 +1,5 @@
 export { openOneBot } from "./onebot"
 export type { OneBotOptions, WireState, SendResult, RecallResult } from "./onebot"
 export type { Scope, Source } from "./types"
-export { imageFile, imageFrameBytes, maximumImageBytes } from "./images"
+export { imageFile, imageFrameBytes, maximumImageBytes, decodeImage, inlineImage } from "./images"
+export type { OutgoingPart } from "./onebot"

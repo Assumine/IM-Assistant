@@ -113,6 +113,8 @@ import type {
   ExperimentalSessionExportOutput,
   ExperimentalSessionSkillInput,
   ExperimentalSessionSkillOutput,
+  ExperimentalSessionObservationAppendInput,
+  ExperimentalSessionObservationAppendOutput,
   ExperimentalSessionWaitInput,
   ExperimentalSessionWaitOutput,
   ExperimentalSessionInstructionsEntryListInput,
@@ -902,6 +904,18 @@ const EndpointExperimentalSessionSkill = (raw: RawClient["server.session"]) => (
     }).pipe(Effect.mapError(mapClientError)),
   )
 
+const EndpointExperimentalSessionObservationAppend =
+  (raw: RawClient["server.session"]) => (input: ExperimentalSessionObservationAppendInput) =>
+    preserveEffect<ExperimentalSessionObservationAppendOutput>()(
+      raw["session.observation.append"]({
+        params: { sessionID: input["sessionID"] },
+        payload: { id: input["id"], text: input["text"], metadata: input["metadata"] },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const EndpointExperimentalSessionWait = (raw: RawClient["server.session"]) => (input: ExperimentalSessionWaitInput) =>
   preserveEffect<ExperimentalSessionWaitOutput>()(
     raw["session.wait"]({ params: { sessionID: input["sessionID"] } }).pipe(Effect.mapError(mapClientError)),
@@ -959,6 +973,7 @@ const adaptGroupExperimentalSession = (raw: RawClient["server.session"]) => ({
   import: EndpointExperimentalSessionImport(raw),
   export: EndpointExperimentalSessionExport(raw),
   skill: EndpointExperimentalSessionSkill(raw),
+  observation: { append: EndpointExperimentalSessionObservationAppend(raw) },
   wait: EndpointExperimentalSessionWait(raw),
   instructions: {
     entry: {
@@ -2018,6 +2033,11 @@ const adaptClient = (raw: RawClient) => {
       export: client.experimental.session.export,
       /** @deprecated Use `client.experimental.session.skill`. Removed in the next minor. */
       skill: client.experimental.session.skill,
+      /** @deprecated Use `client.experimental.session.observation`. Removed in the next minor. */
+      observation: {
+        /** @deprecated Use `client.experimental.session.observation.append`. Removed in the next minor. */
+        append: client.experimental.session.observation.append,
+      },
       /** @deprecated Use `client.experimental.session.wait`. Removed in the next minor. */
       wait: client.experimental.session.wait,
       /** @deprecated Use `client.experimental.session.instructions`. Removed in the next minor. */

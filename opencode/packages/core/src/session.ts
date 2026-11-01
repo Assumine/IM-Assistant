@@ -271,6 +271,9 @@ export interface Interface {
   readonly synthetic: (
     input: Parameters<Session.Handle["synthetic"]>[0] & { sessionID: SessionSchema.ID },
   ) => ReturnType<Session.Handle["synthetic"]>
+  readonly appendContext: (
+    input: Parameters<Session.Handle["appendContext"]>[0] & { sessionID: SessionSchema.ID },
+  ) => ReturnType<Session.Handle["appendContext"]>
   readonly revert: {
     readonly stage: (input: {
       sessionID: SessionSchema.ID
@@ -562,6 +565,7 @@ const layer = Layer.effect(
       }),
       resume: (sessionID) => sessions.forSession(sessionID).resume(),
       synthetic: (input) => sessions.forSession(input.sessionID).synthetic(input),
+      appendContext: (input) => sessions.forSession(input.sessionID).appendContext(input),
       interrupt: (sessionID, options) => sessions.forSession(sessionID).interrupt(options),
       revert: {
         stage: (input) => sessions.forSession(input.sessionID).revert.stage(input),

@@ -10,7 +10,7 @@ import type { NotificationReceipt } from "./notifications"
 
 export type ImageConfig = { provider: "napcat"; maxBytes: number }
 export { maximumImageBytes, imageFrameBytes } from "../../qq-protocol/src/index"
-import { maximumImageBytes } from "../../qq-protocol/src/index"
+import { decodeImage, maximumImageBytes } from "../../qq-protocol/src/index"
 
 export function imageConfiguration(value: unknown): ImageConfig | undefined {
   if (value === undefined) return undefined
@@ -35,22 +35,10 @@ export function createImages(options: { config: ImageConfig; read: (source: Mess
       const files: PromptInput.FileAttachment[] = []
       let total = 0
       for (const file of source.images) {
-        const value = await options.read(source, file)
-        if (!value || typeof value !== "object" || Array.isArray(value) || !("base64" in value) || typeof value.base64 !== "string") return undefined
-        const data = value.base64
-        if (!data.length || data.length > 4 * Math.ceil((options.config.maxBytes - total) / 3) ||
-          data.length % 4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) return undefined
-        const bytes = Buffer.from(data, "base64")
-        total += bytes.length
-        if (total > options.config.maxBytes || bytes.toString("base64") !== data ||
-          createHash("md5").update(bytes).digest("hex") !== file.slice(0, 32).toLowerCase()) return undefined
-        const mime = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ? "image/png"
-          : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 ? "image/jpeg"
-          : ["GIF87a", "GIF89a"].includes(bytes.toString("ascii", 0, 6)) ? "image/gif"
-          : bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP" ? "image/webp"
-          : bytes.toString("ascii", 0, 2) === "BM" ? "image/bmp" : undefined
-        if (!mime) return undefined
-        files.push({ uri: `data:${mime};base64,${data}`, source: { type: "inline" }, name: file })
+        const image = decodeImage(file, await options.read(source, file), options.config.maxBytes - total)
+        if (!image) return undefined
+        total += image.byteLength
+        files.push({ uri: image.uri, source: { type: "inline" }, name: image.name })
       }
       return files
     } catch { return undefined }

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import path from "node:path"
 import { isDeepStrictEqual } from "node:util"
-import type { Scope } from "../../qq-protocol/src/index"
+import type { Scope, Source } from "../../qq-protocol/src/index"
 import { validInput } from "./configuration"
 import type { Account, ChatInput, Configuration, Context, Receipt } from "./types"
 
@@ -11,6 +11,9 @@ const permissions = [{ action: "*", resource: "*", effect: "deny" as const }]
 const instructionKey = "qq-chatbot.persona"
 export const scopeIdentity = (scope: Scope) => hash(["qq-chatbot", scope.botID, scope.kind, scope.peerID])
 export const nativeSessionID = (scope: Scope) => "ses_qqchat_" + scopeIdentity(scope)
+export const nativeInputID = (source: Source) => "msg_qqchat_" + hash([scopeIdentity(source.scope), source.messageID])
+const contentHash = (input: ChatInput) => input.images?.length || input.mentions?.length || input.quoteID !== undefined
+  ? hash([input.actorID, input.text, input.images ?? [], input.mentions ?? [], input.quoteID ?? null]) : hash([input.actorID, input.text])
 
 function sameMessage(text: string, input: ChatInput) {
   try {
@@ -18,7 +21,9 @@ function sameMessage(text: string, input: ChatInput) {
     if (!value || typeof value !== "object" || !("kind" in value) || value.kind !== "qq-message" ||
       !("sender" in value) || !value.sender || typeof value.sender !== "object" || !("id" in value.sender) ||
       !("text" in value)) return false
-    return value.sender.id === input.actorID && value.text === input.text
+    return value.sender.id === input.actorID && value.text === input.text &&
+      same("images" in value ? value.images : [], input.images ?? []) && same("mentions" in value ? value.mentions : [], input.mentions ?? []) &&
+      same("quoteID" in value ? value.quoteID : undefined, input.quoteID)
   } catch { return false }
 }
 
@@ -71,7 +76,7 @@ export function createChatSessions(options: { context: Context; config: Configur
     if (entry === undefined) await client.experimental.session.instructions.entry.put({ sessionID, key: instructionKey, value }, request)
     return { sessionID }
   }
-  const receive = async (input: ChatInput, account: Account): Promise<Receipt> => {
+  const receive = async (input: ChatInput, account: Account, observe: boolean): Promise<Receipt> => {
     if (stopped) return { status: "unavailable" }
     try {
       const conversation = await ensure(input.scope, account)
@@ -79,50 +84,65 @@ export function createChatSessions(options: { context: Context; config: Configur
       if (stopped) return { status: "unavailable" }
       const id = hash([scopeIdentity(input.scope), input.messageID]), inputID = "msg_qqchat_" + id
       const sender = { id: input.actorID, ...(input.displayName !== undefined ? { name: input.displayName } : {}) }
-      const text = JSON.stringify({ kind: "qq-message", sender, text: input.text })
+      const text = JSON.stringify({ kind: "qq-message", sender, text: input.text,
+        ...(input.images?.length ? { images: input.images, ...(observe ? { imageContent: "not-interpreted" } : {}) } : {}),
+        ...(input.mentions?.length ? { mentions: input.mentions } : {}), ...(input.quoteID !== undefined ? { quoteID: input.quoteID } : {}) })
       const retained = { version: 1, scope: input.scope, messageID: input.messageID, actorID: input.actorID,
-        sessionID: conversation.sessionID, inputID, fingerprint: hash([input.actorID, input.text]), profile: profile(account) }
+        sessionID: conversation.sessionID, inputID, fingerprint: contentHash(input), profile: profile(account) }
       const key = "message:" + id
-      const duplicate = !await storage.insert(key, retained)
-      if (duplicate && !same(await storage.get(key), retained)) return { status: "blocked", reason: "input-conflict" }
+      const desired = observe ? { ...retained, observation: true } : retained
+      const duplicate = !await storage.insert(key, desired)
+      const previous = duplicate ? await storage.get(key) : desired
+      const wasObserved = !!previous && typeof previous === "object" && !Array.isArray(previous) && "observation" in previous && previous.observation === true
+      const expected = wasObserved ? { ...retained, observation: true } : retained
+      if (!same(previous, expected)) return { status: "blocked", reason: "input-conflict" }
       if (stopped) return { status: "unavailable" }
-      const metadata = { qqChatbot: retained }
+      const metadata = { qqChatbot: expected }
       if (duplicate) {
         // Retained intent is not proof of execution. Reconcile against native pending/history only;
         // posting the same ID again can re-enqueue an input the user already withdrew.
         const pending = (await client.session.inbox.list({ sessionID: conversation.sessionID }, request)).find((entry) => entry.id === inputID)
-        const native = pending?.type === "user" ? pending.payload
+        const native = !wasObserved && pending?.type === "user" ? pending.payload
           : await client.session.message.get({ sessionID: conversation.sessionID, messageID: inputID }, request)
-            .then((message) => message.type === "user" ? message : undefined)
-        if (!native || !sameMessage(native.text, input) || !same(native.metadata?.qqChatbot, retained)) return { status: "blocked", reason: "input-conflict" }
-        return { status: "accepted", sessionID: conversation.sessionID, inputID, duplicate: true }
+            .then((message) => message.type === (wasObserved ? "synthetic" : "user") && "text" in message ? message : undefined)
+        if (!native || !sameMessage(native.text, input) || !same(native.metadata?.qqChatbot, expected)) return { status: "blocked", reason: "input-conflict" }
+        return { status: wasObserved ? "observed" : "accepted", sessionID: conversation.sessionID, inputID, duplicate: true }
       }
-      const receipt = await client.session.prompt({ sessionID: conversation.sessionID, id: inputID, text, metadata, delivery: "queue" }, request)
+      if (observe) {
+        const receipt = await client.experimental.session.observation.append({ sessionID: conversation.sessionID, id: inputID, text, metadata }, request)
+        return receipt.id === inputID && receipt.text === text && same(receipt.metadata?.qqChatbot, expected)
+          ? { status: "observed", sessionID: conversation.sessionID, inputID, duplicate: false } : { status: "uncertain" }
+      }
+      const receipt = await client.session.prompt({ sessionID: conversation.sessionID, id: inputID, text, metadata, delivery: "queue", ...(input.files?.length ? { files: input.files } : {}) }, request)
       if (receipt.sessionID !== conversation.sessionID || receipt.id !== inputID || receipt.payload.text !== text ||
-        !same(receipt.payload.metadata?.qqChatbot, retained)) return { status: "blocked", reason: "input-conflict" }
+        !same(receipt.payload.metadata?.qqChatbot, expected)) return { status: "blocked", reason: "input-conflict" }
       return { status: "accepted", sessionID: conversation.sessionID, inputID, duplicate }
     } catch { return { status: "uncertain" } }
   }
-  return {
-    receive(input: ChatInput) {
+  const submit = (input: ChatInput, observe: boolean) => {
       if (stopped) return Promise.resolve<Receipt>({ status: "unavailable" })
       // Snapshot before the first await; a caller cannot change the admitted member or text mid-handoff.
       const value = structuredClone(input)
       if (!validInput(value)) return Promise.resolve<Receipt>({ status: "blocked", reason: "invalid-input" })
+      if (!observe && value.images?.length && value.files?.length !== value.images.length)
+        return Promise.resolve<Receipt>({ status: "blocked", reason: "invalid-input" })
       const account = accounts.get(value.scope.botID)
       if (!account) return Promise.resolve<Receipt>({ status: "blocked", reason: "unknown-account" })
-      const id = hash([scopeIdentity(value.scope), value.messageID]), fingerprint = hash([value.actorID, value.text])
+      const id = hash([scopeIdentity(value.scope), value.messageID]), fingerprint = contentHash(value)
       const existing = inFlight.get(id)
       if (existing) return existing.fingerprint !== fingerprint
         ? Promise.resolve<Receipt>({ status: "blocked", reason: "input-conflict" })
-        : existing.job.then((receipt): Receipt => receipt.status === "accepted" ? { ...receipt, duplicate: true } : receipt)
+        : existing.job.then((receipt): Receipt => receipt.status === "accepted" || receipt.status === "observed" ? { ...receipt, duplicate: true } : receipt)
       // Coalesce only an in-flight admission; native execution is never awaited or scheduled here.
-      const job = receive(value, account)
+      const job = receive(value, account, observe)
       inFlight.set(id, { fingerprint, job })
       jobs.add(job)
       void job.finally(() => { jobs.delete(job); inFlight.delete(id) })
       return job
-    },
+  }
+  return {
+    receive: (input: ChatInput) => submit(input, false),
+    observe: (input: ChatInput) => submit(input, true),
     async close() {
       stopped = true
       controller.abort()

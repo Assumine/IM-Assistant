@@ -381,6 +381,12 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
           return HttpApiSchema.NoContent.make()
         }),
       )
+      .handle("session.observation.append", Effect.fn(function* (ctx) {
+        return { data: yield* session.appendContext({ sessionID: ctx.params.sessionID, ...ctx.payload }).pipe(
+          Effect.catchTag("Session.NotFoundError", missingSession),
+          Effect.catchTag("Session.SyntheticConflictError", (error) => new ConflictError({ resource: error.inputID, message: "Context identity conflicts with an existing native record" })),
+        ) }
+      }))
       .handle(
         "session.synthetic",
         Effect.fn(function* (ctx) {

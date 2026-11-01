@@ -3930,6 +3930,15 @@ export type ExperimentalSessionSkillInput = {
 
 export type ExperimentalSessionSkillOutput = void
 
+export type ExperimentalSessionObservationAppendInput = {
+  readonly sessionID: string
+  readonly id?: string | undefined
+  readonly text: string
+  readonly metadata?: { readonly [x: string]: JsonValue } | undefined
+}
+
+export type ExperimentalSessionObservationAppendOutput = { data: SessionMessageSynthetic }["data"]
+
 export type ExperimentalSessionWaitInput = { readonly sessionID: string }
 
 export type ExperimentalSessionWaitOutput = void
@@ -4887,6 +4896,12 @@ export type SessionSkillInput = ExperimentalSessionSkillInput
 
 /** @deprecated Use `ExperimentalSessionSkillOutput`. Removed in the next minor. */
 export type SessionSkillOutput = ExperimentalSessionSkillOutput
+
+/** @deprecated Use `ExperimentalSessionObservationAppendInput`. Removed in the next minor. */
+export type SessionObservationAppendInput = ExperimentalSessionObservationAppendInput
+
+/** @deprecated Use `ExperimentalSessionObservationAppendOutput`. Removed in the next minor. */
+export type SessionObservationAppendOutput = ExperimentalSessionObservationAppendOutput
 
 /** @deprecated Use `ExperimentalSessionWaitInput`. Removed in the next minor. */
 export type SessionWaitInput = ExperimentalSessionWaitInput

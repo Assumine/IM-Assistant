@@ -6,6 +6,9 @@
     "rootDir": "../..",
     "typeRoots": ["../../opencode/node_modules/@types"]
   },
-  "include": ["../../opencode/packages/server/script/qq-chatbot-smoke.ts"],
+  "include": [
+    "../../opencode/packages/server/script/qq-chatbot-smoke.ts",
+    "../../opencode/packages/server/script/qq-chatbot-channel-smoke.ts"
+  ],
   "exclude": []
 }

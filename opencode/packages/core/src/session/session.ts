@@ -7,6 +7,7 @@ import type { Permission } from "@opencode/schema/permission"
 import { Event } from "@opencode/schema/event"
 import { FSUtil } from "@opencode/util/fs-util"
 import { Hash } from "@opencode/util/hash"
+import { isDeepStrictEqual } from "node:util"
 import { RuntimePolicy } from "../runtime-policy.js"
 import { Bus } from "../bus.js"
 import { Database } from "../database/database.js"
@@ -484,6 +485,30 @@ export const make = Effect.fn("Session.make")(function* () {
         }),
       ),
   )
+  /** Append observed context without admitting executable work or waking the runner. */
+  const appendContext = Effect.fn("Session.appendContext")((sessionID: SessionSchema.ID, input: {
+    id?: SessionMessage.ID; text: string; metadata?: Record<string, unknown>
+  }) => SessionInbox.serialized(sessionID, Effect.uninterruptible(database.db.transaction(() => Effect.gen(function* () {
+    yield* get(sessionID)
+    const id = input.id ?? SessionMessage.ID.create()
+    const existing = yield* store.message(id)
+    if (existing) {
+      if (existing.sessionID === sessionID && existing.message.type === "synthetic" && existing.message.text === input.text &&
+        isDeepStrictEqual(existing.message.metadata ?? {}, input.metadata ?? {})) return existing.message
+      return yield* new SyntheticConflictError({ sessionID, inputID: id })
+    }
+    const pending = yield* admission.reconcile({ id, sessionID, type: "synthetic", delivery: "steer" }).pipe(
+      Effect.catchTag("SessionInbox.LifecycleConflict", () => new SyntheticConflictError({ sessionID, inputID: id })),
+    )
+    if (pending)
+      return yield* new SyntheticConflictError({ sessionID, inputID: id })
+    yield* bus.publish(SessionEvent.Synthetic, { sessionID, text: input.text, metadata: input.metadata },
+      { id: Event.ID.make(id.replace(/^msg_/, "evt_")) })
+    const saved = yield* store.message(id)
+    if (!saved || saved.sessionID !== sessionID || saved.message.type !== "synthetic")
+      return yield* new SyntheticConflictError({ sessionID, inputID: id })
+    return saved.message
+  })).pipe(Effect.catchTag("SqlError", Effect.die)))))
   const interrupt = Effect.fn("Session.interrupt")(
     (sessionID: SessionSchema.ID, options?: { readonly resume?: boolean }) =>
       Effect.uninterruptible(execution.interrupt(sessionID, options)),
@@ -529,6 +554,7 @@ export const make = Effect.fn("Session.make")(function* () {
     inbox,
     prompt,
     synthetic,
+    appendContext,
     shell,
     skill,
     compact,
@@ -562,6 +588,7 @@ export const make = Effect.fn("Session.make")(function* () {
     const inbox = operations.inbox.bind(undefined, sessionID)
     const prompt = operations.prompt.bind(undefined, sessionID)
     const synthetic = operations.synthetic.bind(undefined, sessionID)
+    const appendContext = operations.appendContext.bind(undefined, sessionID)
     const shell = operations.shell.bind(undefined, sessionID)
     const skill = operations.skill.bind(undefined, sessionID)
     const compact = operations.compact.bind(undefined, sessionID)
@@ -598,6 +625,7 @@ export const make = Effect.fn("Session.make")(function* () {
       inbox,
       prompt,
       synthetic,
+      appendContext,
       shell,
       skill,
       compact,

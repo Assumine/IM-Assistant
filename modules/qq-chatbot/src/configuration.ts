@@ -1,5 +1,6 @@
 import path from "node:path"
 import type { Account, ChatInput, Configuration } from "./types"
+import { imageFile } from "../../qq-protocol/src/index"
 
 const accountID = (value: unknown): value is string => typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value)
 const text = (value: unknown, maximum: number): value is string => typeof value === "string" && !!value.trim() && value.length <= maximum && !value.includes("\0")
@@ -27,5 +28,10 @@ export function validInput(value: ChatInput): boolean {
     ["private", "group"].includes(value.scope.kind) && accountID(value.actorID) && value.actorID !== value.scope.botID &&
     (value.scope.kind !== "private" || value.actorID === value.scope.peerID) &&
     text(value.messageID, 64) && /^-?(?:0|[1-9][0-9]{0,19})$/.test(value.messageID) && text(value.text, 16000) &&
-    (value.displayName === undefined || text(value.displayName, 80))
+    (value.displayName === undefined || text(value.displayName, 80)) &&
+    (value.images === undefined || Array.isArray(value.images) && value.images.length <= 4 && value.images.every(imageFile)) &&
+    (value.mentions === undefined || Array.isArray(value.mentions) && value.mentions.length <= 20 && value.mentions.every(accountID)) &&
+    (value.quoteID === undefined || /^-?(?:0|[1-9][0-9]{0,19})$/.test(value.quoteID)) &&
+    (value.files === undefined || Array.isArray(value.files) && value.files.length === value.images?.length && value.files.every((file, i) =>
+      file.name === value.images![i] && file.source?.type === "inline" && typeof file.uri === "string" && /^data:image\/(?:png|jpeg|gif|webp|bmp);base64,/.test(file.uri)))
 }

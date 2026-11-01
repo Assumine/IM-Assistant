@@ -39,6 +39,7 @@ export function allows(method: string, pathname: string) {
     return method === "GET" || method === "POST"
   if (/^\/api\/session\/[^/]+\/input\/[^/]+$/.test(pathname)) return method === "GET"
   if (/^\/api\/experimental\/session\/[^/]+\/input\/[^/]+\/output$/.test(pathname)) return method === "GET"
+  if (/^\/api\/experimental\/session\/[^/]+\/observation\/append$/.test(pathname)) return method === "POST"
   if (/^\/api\/session\/[^/]+\/form(?:\/[^/]+(?:\/reply)?)?$/.test(pathname))
     return ["GET", "POST", "DELETE"].includes(method)
   if (/^\/api\/session\/[^/]+\/revert(?:\/(stage|commit))?$/.test(pathname))

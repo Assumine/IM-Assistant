@@ -743,7 +743,10 @@
       "B03",
       "B04",
       "B05",
-      "B06"
+      "B06",
+      "B07",
+      "B08",
+      "B09"
     ],
     "tasks": {
       "Q1-01": {
@@ -856,9 +859,73 @@
         "blocked_reason": null
       },
       "Q1-03": {
-        "status": "pending",
-        "artifacts": [],
-        "verification": [],
+        "status": "done",
+        "artifacts": [
+          "modules/qq-chatbot/package.json",
+          "modules/qq-chatbot/src/channel.ts",
+          "modules/qq-chatbot/src/configuration.ts",
+          "modules/qq-chatbot/src/index.ts",
+          "modules/qq-chatbot/src/module.ts",
+          "modules/qq-chatbot/src/policy.ts",
+          "modules/qq-chatbot/src/replies.ts",
+          "modules/qq-chatbot/src/sessions.ts",
+          "modules/qq-chatbot/src/types.ts",
+          "modules/qq-chatbot/test/configuration.test.ts",
+          "modules/qq-chatbot/test/policy.test.ts",
+          "modules/qq-chatbot/test/replies.test.ts",
+          "modules/qq-chatbot/tsconfig.json",
+          "modules/qq-chatbot/tsconfig.native.json",
+          "modules/qq-portal/src/images.ts",
+          "modules/qq-protocol/package.json",
+          "modules/qq-protocol/src/images.ts",
+          "modules/qq-protocol/src/index.ts",
+          "modules/qq-protocol/src/onebot.ts",
+          "modules/qq-protocol/src/types.ts",
+          "modules/qq-protocol/test/fixture/onebot.ts",
+          "modules/qq-protocol/test/isolation.test.ts",
+          "modules/qq-protocol/test/media.test.ts",
+          "modules/qq-protocol/tsconfig.json",
+          "opencode/packages/core/src/session.ts",
+          "opencode/packages/core/src/session/session.ts",
+          "opencode/packages/protocol/src/groups/session.ts",
+          "opencode/packages/server/script/qq-chatbot-channel-smoke.ts",
+          "opencode/packages/server/src/handlers/session.ts",
+          "opencode/packages/server/src/middleware/runtime-policy.ts",
+          "tests/modules/qq-chatbot-channel-evidence.json",
+          "tests/modules/test_q1_03.py",
+          "tools/qq_chatbot_channel_smoke.py",
+          "upstream/patches.json"
+        ],
+        "verification": [
+          {
+            "task": "Q1-03",
+            "plan_id": "qq-plugin-migration-v1",
+            "archived_reference": false,
+            "status": "passed",
+            "tests_run": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "acceptance_ids": [
+              "B07",
+              "B08",
+              "B09"
+            ],
+            "progress_updated": false,
+            "kind": "runtime",
+            "exit_code": 0,
+            "command": "python tools/run_runtime_checks.py --task Q1-03",
+            "evidence": "tests/modules/qq-chatbot-channel-evidence.json",
+            "native_test_executions": 796,
+            "native_channel_checks": 12,
+            "native_channel_stability_runs": 10,
+            "native_session_checks": 17,
+            "original_qq_chain_checks": 147,
+            "file_policy_denials": 15,
+            "workspace_checks": 36,
+            "publication": "disabled"
+          }
+        ],
         "blocked_reason": null
       },
       "Q1-04": {

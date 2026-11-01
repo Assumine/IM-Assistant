@@ -107,6 +107,8 @@ import type {
   ExperimentalSessionExportOutput,
   ExperimentalSessionSkillInput,
   ExperimentalSessionSkillOutput,
+  ExperimentalSessionObservationAppendInput,
+  ExperimentalSessionObservationAppendOutput,
   ExperimentalSessionWaitInput,
   ExperimentalSessionWaitOutput,
   ExperimentalSessionInstructionsEntryListInput,
@@ -1192,6 +1194,20 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
+        observation: {
+          append: (input: ExperimentalSessionObservationAppendInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSessionObservationAppendOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/session/${encodeURIComponent(input.sessionID)}/observation/append`,
+                body: { id: input["id"], text: input["text"], metadata: input["metadata"] },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 404, 409],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+        },
         wait: (input: ExperimentalSessionWaitInput, requestOptions?: RequestOptions) =>
           request<ExperimentalSessionWaitOutput>(
             {
@@ -2693,6 +2709,11 @@ export function make(options: ClientOptions) {
       export: client.experimental.session.export,
       /** @deprecated Use `client.experimental.session.skill`. Removed in the next minor. */
       skill: client.experimental.session.skill,
+      /** @deprecated Use `client.experimental.session.observation`. Removed in the next minor. */
+      observation: {
+        /** @deprecated Use `client.experimental.session.observation.append`. Removed in the next minor. */
+        append: client.experimental.session.observation.append,
+      },
       /** @deprecated Use `client.experimental.session.wait`. Removed in the next minor. */
       wait: client.experimental.session.wait,
       /** @deprecated Use `client.experimental.session.instructions`. Removed in the next minor. */

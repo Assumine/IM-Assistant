@@ -92,7 +92,8 @@
       "verification_commands": [
         "python tools/run_runtime_checks.py --task R1-02",
         "python tools/run_runtime_checks.py --task R0-01",
-        "python -m tools.codex_native_smoke"
+        "python -m tools.codex_native_smoke",
+        "python tools/run_runtime_checks.py --task Q1-03"
       ],
       "files": [
         {
@@ -238,7 +239,7 @@
         {
           "path": "packages/core/src/session/session.ts",
           "action": "modified",
-          "sha256": "429e829c663930a589611b4a4df9f0d5ce4cf2db1e971614793cf3458843a789"
+          "sha256": "8ebc2c068964985359108208b8bcad6de8a31c7bf8350194d0c3463a0ed349bc"
         },
         {
           "path": "packages/core/src/session/shell.ts",
@@ -466,7 +467,8 @@
         "python tools/native_baseline.py --cwd packages/client --label r2-02-config-client-contracts -- run test test/promise.test.ts test/effect.test.ts test/deprecated-aliases.test.ts test/contract-identity.test.ts test/import-boundaries.test.ts",
         "python tools/native_baseline.py --cwd . --label r2-02-config-close-check -- run check",
         "python -m tools.codex_native_smoke",
-        "python tools/run_runtime_checks.py --task Q1-02"
+        "python tools/run_runtime_checks.py --task Q1-02",
+        "python tools/run_runtime_checks.py --task Q1-03"
       ],
       "files": [
         {
@@ -497,12 +499,12 @@
         {
           "path": "packages/client/src/effect/generated/client.ts",
           "action": "modified",
-          "sha256": "362505e825917a9e17cf25a0bfa1dfdea30e1c2af58efe25ccb00ca5e2d91ea9"
+          "sha256": "71e3f2d63d6245e403e8288e236a43a6522908e655bb0f2133e1825d8e834d34"
         },
         {
           "path": "packages/client/src/promise/generated/client.ts",
           "action": "modified",
-          "sha256": "f16725ddb02cb48581609f31a7abc0b6f6f45c0093348dc7e37203af3da5b7c5"
+          "sha256": "79646a1309aba53ebd60097bc471238fc8c5a8e2b04cd144ec7449a90fc78f9d"
         },
         {
           "path": "packages/client/test/promise.test.ts",
@@ -532,7 +534,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "329a9a3a39c06bdf9fc17615cd2eaf75ec4f945c520f2d3c537cd9f2b8407dc4"
+          "sha256": "171b67aa073b2a9a00c6071eacb8aaf90393f30ef5aa9671597e5f011146d5b0"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -546,18 +548,19 @@
       "reason": "保留原生辅助用量事实并按实际时间和模型统计；临时生成仅更新计量，不改变消息、输入和上下文。",
       "verification_commands": [
         "python tools/run_runtime_checks.py --task R2-02",
-        "python -m tools.codex_native_smoke"
+        "python -m tools.codex_native_smoke",
+        "python tools/run_runtime_checks.py --task Q1-03"
       ],
       "files": [
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "526fe992f46db4b7598ed986978182cf834983aa46c06d58a28e8ce9ea66a198"
+          "sha256": "087d7de18db4713293f85bbe509a53cf7d5dcb5e2872bff79b23422c1ff95190"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "4574d876ab866a6e83db37f5e9e26ac8a1e9da622128145832cab9b430d11f3c"
+          "sha256": "cc0fa563487edc4680e66f465977479e1f70aa5eb6e83749099459efba1e3047"
         },
         {
           "path": "packages/core/src/bus.ts",
@@ -567,7 +570,7 @@
         {
           "path": "packages/core/src/session.ts",
           "action": "modified",
-          "sha256": "52cb561dc1c82d046fb2f34d8d84d5155ac186cf694d7fb022f2a47ae7aa0053"
+          "sha256": "8a23d5f635c7d7aa3a84525a7e79ef4d9de91fbea72700f59e94ac0723fbdf15"
         },
         {
           "path": "packages/core/src/session/compaction.ts",
@@ -1121,7 +1124,8 @@
       "reason": "原生Inbox正文追加与持久去重回执在同一事件事务提交；QQ引用待办只调用公共接口，保留原ID/序位/附件/投递方式；生成客户端及原生缓存刷新同步接入。",
       "verification_commands": [
         "python -m tools.qq_portal_smoke",
-        "python tools/run_runtime_checks.py --task R3-01"
+        "python tools/run_runtime_checks.py --task R3-01",
+        "python tools/run_runtime_checks.py --task Q1-03"
       ],
       "files": [
         {
@@ -1162,7 +1166,7 @@
         {
           "path": "packages/protocol/src/groups/session.ts",
           "action": "modified",
-          "sha256": "7803d46daa33af7dde9446f727fe6f78633e63d2db0afebd5bd1b6afadf65b86"
+          "sha256": "19cd1faae4f5a618d0cc5d1990ac3968c74f785102dc41ab1cef79a3ac75278f"
         },
         {
           "path": "packages/schema/src/session-inbox.ts",
@@ -1172,7 +1176,7 @@
         {
           "path": "packages/server/src/handlers/session.ts",
           "action": "modified",
-          "sha256": "d3d0c9be933344e9a2babe3d4868861ff959b500c056e60213dcea3062fcb01d"
+          "sha256": "9bde7fbc1d4399c8e991ddcf519c5d3fd5ce3e6c6b52c697594f5bd7d68f282e"
         }
       ]
     },
@@ -1727,6 +1731,20 @@
           "path": "packages/server/script/qq-chatbot-smoke.ts",
           "action": "added",
           "sha256": "fe6124fc87584563c27c155643b2f65e3a9ba6c9a092b03b1a452047a8eee11b"
+        }
+      ]
+    },
+    {
+      "id": "Q1-03-native-observation-channel",
+      "reason": "通用原生观察上下文追加接口与公开客户端生成；只写原生Synthetic历史，不唤醒推理或创建Inbox。独立QQ聊天经认证回环验证回复开关、成员归属、受控图片与停用。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task Q1-03"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-chatbot-channel-smoke.ts",
+          "action": "added",
+          "sha256": "0cefb7dd88350245e2923890c4ad4d32849411cc26983138b23f0ad39df443cd"
         }
       ]
     }

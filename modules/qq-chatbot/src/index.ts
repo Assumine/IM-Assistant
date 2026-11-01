@@ -1,3 +1,5 @@
 export { createChatbotModule } from "./module"
-export { createChatSessions, nativeSessionID } from "./sessions"
+export { createChatSessions, nativeSessionID, nativeInputID } from "./sessions"
 export type { Account, Configuration, ChatInput, Receipt } from "./types"
+export { createQQChatbot } from "./channel"
+export type { ChannelAccount, ChatIssue } from "./channel"
