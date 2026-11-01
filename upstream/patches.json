@@ -626,7 +626,7 @@
         {
           "path": "packages/core/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "46756d0b8a7ee5171ee17fa4093a5c922b66dbc4af3a51341918a3b6741e59ae"
+          "sha256": "e82618717550a8b0ebc09dcab9295ffd86723c9b55663f5525f46b132d6a3848"
         },
         {
           "path": "packages/core/src/kv.ts",
@@ -656,7 +656,7 @@
         {
           "path": "packages/schema/src/conversation-backend.ts",
           "action": "added",
-          "sha256": "e5a5a0de12314ec2d2322f2d01df79a67d83f23a65bd7bf7c3a0a1bd3a05a4ed"
+          "sha256": "49aa76545d468933edeabfdef08cd95e8f886a1ee7a327bbdf93161dd3de2d11"
         },
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
@@ -1400,6 +1400,20 @@
       "reason": "Actual application and native Inbox verification for bounded login-triggered QQ history recovery with original ownership and no executable spool.",
       "verification_commands": [
         "python -m tools.qq_portal_smoke"
+      ]
+    },
+    {
+      "id": "R3-02-qq-images",
+      "reason": "Actual original Session/SQLite and native Codex verification of controlled QQ image admission; no URL fetching, local paths, or separate execution queue.",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-images-smoke.ts",
+          "action": "added",
+          "sha256": "2aec52e209b9e0f6b73a817054b9b4e51bdfd55cb9f2543c2804328315f86086"
+        }
       ]
     }
   ]

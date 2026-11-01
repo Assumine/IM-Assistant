@@ -296,6 +296,7 @@ const layer = Layer.effect(
                 input.text,
                 input.delivery === "steer" ? input.expectedTurnID : null,
                 ...(parent ? [[parent.inputID, parent.turnID, parent.nativeID]] : []),
+                ...(input.files?.length ? [input.files] : []),
               ]),
             )
             const stored = { ...identity, fingerprint }
@@ -322,9 +323,11 @@ const layer = Layer.effect(
             const result = yield* Effect.tryPromise({
               try: () =>
                 first
-                  ? parent
-                    ? backend.followup!({ ...input, delivery: "queue", followupOf: parent })
-                    : backend.enqueue(input)
+                  ? input.files?.length && !backend.descriptor.images
+                    ? Promise.resolve({ status: "rejected" as const, reason: "not-accepted" as const })
+                    : parent
+                      ? backend.followup!({ ...input, delivery: "queue", followupOf: parent })
+                      : backend.enqueue(input)
                   : backend.reconcile(input.ref, input.inputID),
               catch: () => undefined,
             }).pipe(Effect.catch(() => Effect.succeed(undefined)))

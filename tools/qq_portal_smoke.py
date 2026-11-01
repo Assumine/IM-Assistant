@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 213),
+        (module, "r3-qq-module-tests", [bun, "test"], 226),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 7),
     ]:
         log = reports / (label + ".log")
@@ -105,6 +105,14 @@ def _run():
         raise RuntimeError("Native history recovery and original queue acceptance was incomplete")
     backend_output_parent = ROOT / "runtime/codex-native"
     backend_output_parent.mkdir(parents=True, exist_ok=True)
+    images_directory = tempfile.mkdtemp(prefix="qq-images-", dir=backend_output_parent)
+    steps.append(run_command("packages/server", ["run", "script/qq-images-smoke.ts"], "r3-qq-images-http", timeout=180,
+                             extra_env={"IM_QQ_IMAGES_ROOT": images_directory, "IM_CODEX_EXECUTABLE": executable}))
+    lines = (reports / "r3-qq-images-http.log").read_text(encoding="utf-8").splitlines()
+    images = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
+    if (images["status"] != "passed" or len(images["checks"]) != 8 or images["model_requests"] != 6 or images["image_reads"] != 6 or
+            images["loopback_connections"] != 2 or images["actual_qq_connection"] or images["external_messages_sent"] or images["production_credentials_used"]):
+        raise RuntimeError("Controlled image/native attachment acceptance was incomplete")
     backend_output_directory = tempfile.mkdtemp(prefix="qq-backend-output-", dir=backend_output_parent)
     steps.append(run_command("packages/server", ["run", "script/qq-backend-output-smoke.ts"], "r3-qq-backend-output-http", timeout=120,
                              extra_env={"IM_QQ_BACKEND_OUTPUT_ROOT": backend_output_directory, "IM_CODEX_EXECUTABLE": executable}))
@@ -194,6 +202,7 @@ def _run():
         "modules/codex-native/src/backend.ts", "modules/codex-native/src/session-adapter.ts", "modules/codex-native/test/input.test.ts",
         "opencode/packages/server/script/qq-native-followup-smoke.ts",
         "opencode/packages/server/script/qq-wire-smoke.ts",
+        "opencode/packages/server/script/qq-images-smoke.ts",
         "opencode/packages/plugin/src/promise/application.ts", "opencode/packages/plugin/src/promise/index.ts",
         "opencode/packages/server/src/application-modules.ts", "opencode/packages/server/src/fetch.ts", "opencode/packages/server/src/process.ts", "opencode/packages/server/src/routes.ts",
         "opencode/packages/server/test/application-modules.test.ts", "opencode/packages/server/test/process.test.ts", "opencode/packages/server/test/fetch.test.ts",
@@ -209,7 +218,7 @@ def _run():
         "opencode/packages/server/script/qq-history-smoke.ts",
     ]
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
-            "steps": steps, "http_acceptance": http, "transport_acceptance": wire, "product_acceptance": product, "notification_acceptance": owner, "output_acceptance": output, "backend_output_acceptance": backend_output, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked, "history_acceptance": history,
+            "steps": steps, "http_acceptance": http, "transport_acceptance": wire, "product_acceptance": product, "notification_acceptance": owner, "output_acceptance": output, "backend_output_acceptance": backend_output, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked, "history_acceptance": history, "image_acceptance": images,
             "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
             "source_routing": {"owner": "original-plugin-kv", "frozen_envelope": True,
                                "reverse_lookup_requires_native_admission": True, "legacy_missing_source_is_not_inferred": True,
@@ -222,7 +231,7 @@ def _run():
                           "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
                           "first/final public output requires proven native input/root/turn identity; unsupported whole backends remain unavailable; receipt recall, ordinary Session failure-only notifications and remote unknown-send recovery remain unimplemented",
                           "history recovery requires an observed cursor, exact boundary proof and real_seq; gaps or provider limits are reported without partial admission or guessed initial imports; no executable offline spool is stored",
-                          "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
+                          "explicit NapCat inline images are verified on native Session and Codex only; Session quoted attachment amendments, general files/audio/video, backend image history UI and companion routing remain unavailable; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}
 
 

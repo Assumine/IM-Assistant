@@ -205,3 +205,9 @@ R3-01已通过tests/rebase/test_r3_01.py的隔离可行性验收；完整checkpo
 前端可以复用原生展示与交互组件，但不能为复用而向 OpenCode Inbox 再插入 Codex 待执行消息。恢复/重复投递的接纳策略、同 profile 生命周期和 native UI 契约须真实验证，正式R3-01入口已覆盖当前本地闭环，生产开放前仍要完成剩余发布门槛。QQ 仍是可选转发层，不能解决这些公共框架缺口或成为执行入口所有者。
 
 主标签及队列公共展示契约已补齐，原生编辑器已通过公共BackendComposer适配；不使用要求Session.prompt/ServerSDK的旧adapter。队列编辑/恢复已共用原生草稿暂存与恢复，新建页和Home入口已接，接下来接回QQ薄转发；生产激活仍需独立验证，不能复制控制器、伪造Session或从插件导入app私有模块。原生线程输入经send，队列经control，运行/历史从execution/history读取；不因打开、切换、收到完成通知而自行调度下一条。原生编辑器已经接入，不能另加临时表单或本地可执行队列。
+
+## QQ受控图片增量
+
+本轮在1b6566f后加入通用可选images描述及inline图片输入字段，原请求无附件时的摘要与native参数保持兼容。Codex仍自己持有image输入、队列、线程、上下文与压缩；不写OpenCode影子Session，不允许localImage、任意file路径或URL代读。QQ图文及纯图通过原生queue/add，当前补充使用expectedTurnId护栏，已结束引用使用原生后续接纳；按原起始QQ消息发送结果。原生读取未给出完整公开证据时继续等事件，不把暂未证实的中间输出当完成。
+
+队列原生update会覆盖整份payload，没有CAS；公共文字编辑先检查原队列并拒绝含非文本部分的输入，避免覆盖图片。未提供原子附件合并，不能据此开放Codex待办追加。已验证真实回环链路和模块30项；当前前端输入框与历史缩略图未扩展，旧完整355项/browser证据仍绑定原source_revision，最新增量以qq-checkpoint为准。

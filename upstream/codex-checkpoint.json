@@ -868,7 +868,10 @@
   },
   "latest_qq_evidence": {
     "checkpoint": "upstream/qq-checkpoint.json",
-    "scope": "QQ-login-triggered-history-recovery",
-    "native_implementation_changed": false
+    "scope": "QQ-controlled-inline-images",
+    "native_implementation_changed": true,
+    "full_R3_01_rerun": false,
+    "browser_component_rerun": false,
+    "native_module_tests": 30
   }
 }

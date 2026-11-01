@@ -1,10 +1,11 @@
 import type { SessionApi, RpcClient } from "../../../opencode/packages/client/src/promise/api"
 import type { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
 import { isConflictError } from "../../../opencode/packages/client/src/promise"
+import type { PromptInput } from "../../../opencode/packages/schema/src/prompt-input"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
 export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & Partial<Pick<SessionApi, "list">> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> & Partial<Pick<SessionApi["input"], "position" | "followup" | "followupReceipt">> }
-export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input" | "threads">>
+export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input" | "threads" | "list">>
 export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-accepted" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled" | "followup-accepted" | "followup-pending" | "followup-delivered" | "followup-cancelled"
 type SessionParentInput = { inputID: string; rootID: string }
 export type ParentInput = SessionParentInput | ConversationBackend.ParentInput
@@ -69,11 +70,13 @@ export function targets(session: Native, backend?: Backend) {
     return value.receipt.kind === "queued" ? "followup-accepted" : value.receipt.kind === "message" ? "followup-delivered" : "uncertain"
   }
   return {
+    async canFiles(destination: Target) { return destination.kind === "session" || !!(await backend?.list?.({}))?.find((item) => item.id === destination.ref.backendID)?.images },
     canAppend(destination: Target) { return destination.kind === "session" && !!session.inbox.append && !!session.inbox.amendment },
     canContinue(destination: Target) { return destination.kind === "session" ? !!session.input?.continue && !!session.input?.continuation : !!backend?.input },
     canFollowup(destination: Target) { return destination.kind === "session" ? !!session.input?.position && !!session.input?.followup && !!session.input?.followupReceipt : !!backend?.input },
-    async followup(destination: Target, inputID: string, parent: ParentInput, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"]): Promise<Evidence> {
-      if (destination.kind === "backend") return "turnID" in parent ? backendFollowed(await required().send({ ref: destination.ref, inputID, text, delivery: "queue", followupOf: parent }), destination, inputID, parent) : "uncertain"
+    async followup(destination: Target, inputID: string, parent: ParentInput, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"], files?: readonly PromptInput.FileAttachment[]): Promise<Evidence> {
+      if (destination.kind === "backend") return "turnID" in parent ? backendFollowed(await required().send({ ref: destination.ref, inputID, text, delivery: "queue", followupOf: parent, ...(files?.length ? { files } : {}) }), destination, inputID, parent) : "uncertain"
+      if (files?.length) return "conflict"
       if (!("rootID" in parent) || !session.input?.followup) return "uncertain"
       try { return followed(await session.input.followup({ sessionID: destination.sessionID, inboxID: inputID, expectedInputID: parent.inputID, expectedRootID: parent.rootID, text, metadata }), destination, inputID, parent) }
       catch (error) { if (isConflictError(error)) return "conflict"; throw error }
@@ -83,11 +86,12 @@ export function targets(session: Native, backend?: Backend) {
       if (!("rootID" in parent) || !session.input?.followupReceipt) return "uncertain"
       return followed(await session.input.followupReceipt({ sessionID: destination.sessionID, inboxID: inputID, expectedInputID: parent.inputID }), destination, inputID, parent)
     },
-    async continueInput(destination: Target, inputID: string, continuationID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"], expectedTurnID?: string): Promise<Evidence> {
+    async continueInput(destination: Target, inputID: string, continuationID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"], expectedTurnID?: string, files?: readonly PromptInput.FileAttachment[]): Promise<Evidence> {
       if (destination.kind === "backend") {
         if (!expectedTurnID) return "uncertain"
-        return guided(await required().send({ ref: destination.ref, inputID: continuationID, text, delivery: "steer", expectedTurnID }), destination, continuationID, expectedTurnID)
+        return guided(await required().send({ ref: destination.ref, inputID: continuationID, text, delivery: "steer", expectedTurnID, ...(files?.length ? { files } : {}) }), destination, continuationID, expectedTurnID)
       }
+      if (files?.length) return "conflict"
       if (destination.kind !== "session" || !session.input) return "uncertain"
       try { return continued(await session.input.continue({ sessionID: destination.sessionID, expectedInputID: inputID, inboxID: continuationID, text, metadata }), destination, inputID, continuationID) }
       catch (error) { if (isConflictError(error)) return "conflict"; throw error }
@@ -142,9 +146,9 @@ export function targets(session: Native, backend?: Backend) {
       return session.message.get({ sessionID: destination.sessionID, messageID: inputID })
         .then((entry) => entry.type === "user" ? "accepted" as const : "uncertain" as const, () => "uncertain" as const)
     },
-    async send(destination: Target, inputID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"]): Promise<Evidence> {
-      if (destination.kind === "backend") return receipt(await required().send({ ref: destination.ref, inputID, text, delivery: "queue" }), destination, inputID)
-      const accepted = await session.prompt({ sessionID: destination.sessionID, id: inputID, text, delivery: "queue", metadata })
+    async send(destination: Target, inputID: string, text: string, metadata: Parameters<Native["prompt"]>[0]["metadata"], files?: readonly PromptInput.FileAttachment[]): Promise<Evidence> {
+      if (destination.kind === "backend") return receipt(await required().send({ ref: destination.ref, inputID, text, delivery: "queue", ...(files?.length ? { files } : {}) }), destination, inputID)
+      const accepted = await session.prompt({ sessionID: destination.sessionID, id: inputID, text, delivery: "queue", metadata, ...(files?.length ? { files } : {}) })
       if (accepted.id !== inputID || accepted.sessionID !== destination.sessionID || accepted.type !== "user") throw new Error("Native QQ admission identity mismatch")
       return "accepted"
     },

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
-import type { Scope } from "./routing"
+import { imageFile, type Scope } from "./routing"
+import { imageFrameBytes, maximumImageBytes } from "./images"
 import type { Source } from "./sources"
 
 export type WireState = { phase: "connecting" | "verifying" | "online" | "unavailable" | "closed"; reason?: "configuration" | "transport" | "deadline" | "identity" | "not-online" | "protocol" }
@@ -33,12 +34,12 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
     update({ phase, ...(reason ? { reason } : {}) }); ready.resolve({ ...current })
     try { socket?.close() } catch { /* No credential-bearing exception leaves this boundary. */ }
   }
-  const request = (action: string, params: Record<string, unknown>): Promise<Answer> => {
+  const request = (action: string, params: Record<string, unknown>, timeout = requestTimeout): Promise<Answer> => {
     if (stopped || socket?.readyState !== WebSocket.OPEN || pending.size >= maxRequests) return Promise.resolve({ kind: "not-sent" })
     const echo = randomUUID(), text = JSON.stringify({ action, params, echo })
     if (Buffer.byteLength(text) > maxFrame) return Promise.resolve({ kind: "not-sent" })
     return new Promise((resolve) => {
-      const timer = setTimeout(() => { pending.delete(echo); resolve({ kind: "unknown" }) }, requestTimeout)
+      const timer = setTimeout(() => { pending.delete(echo); resolve({ kind: "unknown" }) }, timeout)
       pending.set(echo, { finish: resolve, timer })
       try { socket!.send(text) } catch { stop("unavailable", "transport") }
     })
@@ -84,7 +85,7 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
   queueMicrotask(() => {
     try {
       const url = new URL(options.url), connectTimeout = bounded(options.connectTimeoutMs, 5000, 60000)
-      const timeout = bounded(options.requestTimeoutMs, 5000, 60000), frame = bounded(options.maxFrameBytes, 262144, 1048576), requests = bounded(options.maxRequests, 32, 128)
+      const timeout = bounded(options.requestTimeoutMs, 5000, 60000), frame = bounded(options.maxFrameBytes, 262144, imageFrameBytes(maximumImageBytes)), requests = bounded(options.maxRequests, 32, 128)
       if (typeof Bun === "undefined" || !accountID(options.botID) || typeof options.token !== "string" || !options.token.length || options.token.length > 4096 ||
         /[\r\n]/.test(options.token) || url.username || url.password || url.search || url.hash || url.pathname !== "/" ||
         !["ws:", "wss:"].includes(url.protocol) || url.protocol === "ws:" && !["127.0.0.1", "[::1]", "localhost"].includes(url.hostname) ||
@@ -105,6 +106,14 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
     ready: ready.promise,
     state: (): WireState => ({ ...current }),
     close() { stop("closed") },
+    /** Received content identifier only. Returned path/URL fields are never opened. */
+    async image(source: Source, file: string): Promise<unknown> {
+      if (current.phase !== "online" || source.scope.botID !== options.botID || !accountID(source.actorID) ||
+        !accountID(source.scope.peerID) || !["private", "group"].includes(source.scope.kind) ||
+        source.scope.kind === "private" && source.scope.peerID !== source.actorID || !imageFile(file)) return undefined
+      const response = await request("get_image", { file }, 30000)
+      return response.kind === "reply" && response.reply.status === "ok" ? response.reply.data : undefined
+    },
     /** Explicit NapCat history capability. Its message_seq is an opaque short-ID anchor, not an ordering key. */
     async history(scope: Scope, before: string | undefined, count: number): Promise<unknown[] | undefined> {
       if (current.phase !== "online" || scope.botID !== options.botID || !accountID(scope.peerID) ||

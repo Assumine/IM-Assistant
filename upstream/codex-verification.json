@@ -26,7 +26,7 @@
     "progress_updated": false
   },
   "checkpoint": "upstream/codex-checkpoint.json",
-  "checkpoint_sha256": "a76e5b65eba54afdc4aa4a158c8d347a56f6f403a544af007e1a2c2568140fba",
+  "checkpoint_sha256": "f1368765d50be5271e84b0ab330cb37a5bf7d10aaf4c44ad58189faf88338123",
   "native_cli_version": "codex-cli 0.166.0-alpha.5.1",
   "test_counts": {
     "task": "R3-01",
@@ -53,5 +53,5 @@
   ],
   "source_revision": "825f05ff9e85626d4a324679c1019e3c3d4b57a1",
   "current_delta": "upstream/codex-checkpoint.json#current_delta",
-  "verification_scope_note": "Full R3-01 steps/sources belong to source_revision; current_delta belongs to its own source_revision. Latest QQ-only changes are verified separately in upstream/qq-checkpoint.json. Neither historical full run was repeated for this slice."
+  "verification_scope_note": "Full R3-01 steps/sources belong to source_revision; current_delta belongs to its own source_revision. Later QQ/native inline-image changes have separate current sources and checks in upstream/qq-checkpoint.json. Neither historical full run was repeated for this slice."
 }

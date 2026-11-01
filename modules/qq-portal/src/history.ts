@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
-import { originKey, type Policy, type Scope } from "./routing"
+import { decode, fingerprint, originKey, type Policy, type Scope } from "./routing"
 
 export type HistoryConfig = { provider: "napcat"; pageSize: number; maxPages: number }
 export type HistoricalInput = { sentAt: number; recoveredAt: number }
@@ -72,7 +72,7 @@ export function createHistory(options: {
         for (const row of page.entries) {
           const match = /^(private|group):([1-9][0-9]{0,19})$/.exec(row.key.slice(prefix.length))
           if (!row.key.startsWith(prefix) || !match) throw new Error("Invalid QQ history scope")
-          const scope: Scope = { botID: policy.botID, kind: match[1] as Scope["kind"], peerID: match[2] }
+          const scope: Scope = { botID: policy.botID, kind: match[1] as Scope["kind"], peerID: match[2]! }
           if (allowed(scope)) scopes.push(scope)
         }
         after = page.next
@@ -119,7 +119,9 @@ export function createHistory(options: {
           if (ceiling !== undefined && BigInt(row.sequence) > BigInt(ceiling)) throw new Error("QQ history page advanced past its anchor")
           if (identities.has(row.messageID) && identities.get(row.messageID) !== row.sequence) throw new Error("Reused QQ history message ID")
           identities.set(row.messageID, row.sequence)
-          const proof = digest([row.messageID, row.sentAt, row.raw.user_id, row.raw.message, row.raw.post_type])
+          const decoded = decode(row.raw, policy)
+          const proof = digest([row.messageID, row.sentAt, account(row.raw.user_id),
+            decoded.kind === "message" ? fingerprint(decoded.message) : row.raw.message, row.raw.post_type])
           if (proofs.has(row.sequence) && proofs.get(row.sequence) !== proof) throw new Error("Conflicting QQ history sequence")
           proofs.set(row.sequence, proof)
           if (BigInt(row.sequence) > BigInt(boundary.sequence)) rows.set(row.sequence, row)

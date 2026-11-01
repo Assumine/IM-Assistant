@@ -10,7 +10,7 @@ const json = async (response: Promise<unknown>) => await response as Awaited<Ret
 
 export function nativeBackend(adapter: CodexSessionAdapter): Definition {
   if (adapter.runtimeInfo().mode !== "shared") throw new Error("Managed backend requires the shared native service")
-  const descriptor = { id: "codex-native", label: "Codex", browse: true, execution: true, create: true }
+  const descriptor = { id: "codex-native", label: "Codex", browse: true, execution: true, create: true, images: true }
   const content = nativeContent(adapter, descriptor.id)
   const questions = nativeQuestions(adapter, descriptor.id)
   const owned = async (ref: ConversationBackend.Ref) => {
@@ -102,7 +102,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       }
       // Native queue/add cannot atomically fence the historical parent. This validates an observed terminal fact,
       // then adds a new independent input; it does not edit the parent, interrupt a successor or claim atomicity.
-      const result = await adapter.enqueue(request.ref.threadID, request.inputID, request.text)
+      const result = await adapter.enqueue(request.ref.threadID, request.inputID, request.text, ...(request.files?.length ? [request.files] as const : [] as const))
       return { kind: "queued", nativeID: result.queuedSubmission.id }
     },
     content: { subscribe: content.subscribe },
@@ -205,7 +205,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       if (input.delivery !== "steer" && input.followupOf) throw new Error("Linked input requires native follow-up admission")
       const thread = await owned(input.ref)
       if (input.delivery === "steer") {
-        const result = await adapter.steer(input.ref.threadID, input.expectedTurnID, input.inputID, input.text).catch((error) => {
+        const result = await adapter.steer(input.ref.threadID, input.expectedTurnID, input.inputID, input.text, ...(input.files?.length ? [input.files] as const : [] as const)).catch((error) => {
           // The pinned native protocol rejects invalid requests/parameters before accepting guidance.
           // Internal errors and transport loss remain unknown; never infer rejection from error prose.
           if (error instanceof NativeError && (error.code === -32600 || error.code === -32602)) return undefined
@@ -217,7 +217,7 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
       // A persisted, unloaded thread accepts queue/add but cannot drain until an explicit resume.
       // Only a newly admitted user send reaches here; browsing and reconciliation remain read-only.
       if (thread.status.type === "notLoaded") await adapter.resume(input.ref.threadID)
-      const result = await adapter.enqueue(input.ref.threadID, input.inputID, input.text)
+      const result = await adapter.enqueue(input.ref.threadID, input.inputID, input.text, ...(input.files?.length ? [input.files] as const : [] as const))
       return { nativeID: result.queuedSubmission.id, kind: "queued" }
     },
     reconcile: async (ref, inputID) => {

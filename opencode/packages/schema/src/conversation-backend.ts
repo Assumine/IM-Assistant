@@ -2,19 +2,37 @@ export * as ConversationBackend from "./conversation-backend.js"
 
 import { Schema } from "effect"
 import { Rpc } from "./rpc.js"
-import { optional } from "./schema.js"
+import { optional, statics } from "./schema.js"
 
 const ID = Schema.String.check(Schema.isPattern(/^[A-Za-z0-9_-]{1,128}$/))
 export const Ref = Schema.Struct({ backendID: ID, threadID: ID })
 export type Ref = typeof Ref.Type
-const fields = { ref: Ref, inputID: ID, text: Schema.String.check(Schema.isPattern(/\S/)) }
+// Inline images only. Native backends never receive a caller-selected local path or remote URL.
+export interface ImageAttachment extends Schema.Schema.Type<typeof ImageAttachment> {}
+export const ImageAttachment = Schema.Struct({
+  uri: Schema.String.check(
+    Schema.makeFilter((value) => {
+      const match = /^data:image\/(?:png|jpeg|gif|webp|bmp);base64,/.exec(value)
+      if (!match || value.length > 4 * Math.ceil((20 * 1024 * 1024) / 3) + match[0].length) return false
+      const data = value.slice(match[0].length)
+      return !!data.length && data.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(data)
+    }),
+  ),
+  name: optional(Schema.String),
+}).pipe(statics((schema) => ({ is: Schema.is(schema) })))
+const fields = {
+  ref: Ref,
+  inputID: ID,
+  text: Schema.String,
+  files: optional(Schema.Array(ImageAttachment).check(Schema.isMaxLength(4))),
+}
 // Native user input and its exact, observed terminal turn. This is a relationship, not another execution state.
 export const ParentInput = Schema.Struct({ inputID: ID, turnID: ID, nativeID: ID })
 export type ParentInput = typeof ParentInput.Type
 export const Input = Schema.Union([
   Schema.Struct({ ...fields, delivery: Schema.optional(Schema.Literal("queue")), followupOf: optional(ParentInput) }),
   Schema.Struct({ ...fields, delivery: Schema.Literal("steer"), expectedTurnID: ID }),
-])
+]).check(Schema.makeFilter((input) => !!input.text.trim() || !!input.files?.length))
 export type Input = typeof Input.Type
 export type FollowupInput = Extract<Input, { delivery?: "queue" }> & { followupOf: ParentInput }
 export const Receipt = Schema.Struct({ nativeID: ID, kind: Schema.Literals(["queued", "steered", "message"]) })
@@ -106,6 +124,7 @@ export const Descriptor = Schema.Struct({
   browse: optional(Schema.Boolean),
   execution: optional(Schema.Boolean),
   create: optional(Schema.Boolean),
+  images: optional(Schema.Boolean),
 })
 export type Descriptor = typeof Descriptor.Type
 

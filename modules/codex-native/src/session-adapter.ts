@@ -2,6 +2,7 @@ import { Transport, type Launch, type Notification } from "./transport"
 import type { Connection } from "./connection"
 import type { UserInputRequest } from "./connection"
 import path from "node:path"
+import { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
 
 export interface Thread {
   id: string
@@ -43,9 +44,10 @@ function id(value: string) {
   if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value)) throw new Error("Invalid native identifier")
   return value
 }
-function input(text: string) {
-  if (typeof text !== "string" || !text.trim()) throw new Error("Text input required")
-  return [{ type: "text", text }]
+function input(text: string, files?: readonly ConversationBackend.ImageAttachment[]) {
+  if (typeof text !== "string" || !text.trim() && !files?.length) throw new Error("Text input or inline image required")
+  if (files && (files.length > 4 || !files.every(ConversationBackend.ImageAttachment.is))) throw new Error("Invalid inline image")
+  return [...(text.trim() ? [{ type: "text", text }] : []), ...(files?.map((file) => ({ type: "image", url: file.uri })) ?? [])]
 }
 function page(value: Pagination) {
   if (value.limit !== undefined && (!Number.isInteger(value.limit) || value.limit < 1 || value.limit > 100)) throw new Error("Invalid page size")
@@ -125,15 +127,27 @@ export class CodexSessionAdapter {
     ])
     return { thread, turn: turns.data[0], queue }
   }
-  enqueue(threadId: string, clientUserMessageId: string, text: string) {
+  enqueue(threadId: string, clientUserMessageId: string, text: string, files?: readonly ConversationBackend.ImageAttachment[]) {
     return this.native.request<{ queuedSubmission: Submission }>("thread/queue/add", {
-      threadId: id(threadId), clientUserMessageId: id(clientUserMessageId), input: input(text),
+      threadId: id(threadId), clientUserMessageId: id(clientUserMessageId), input: input(text, files),
     })
   }
   queue(threadId: string, pagination: Pagination = {}) {
     return this.native.request<Page<Submission>>("thread/queue/list", { threadId: id(threadId), ...page(pagination) })
   }
-  update(threadId: string, submissionId: string, text: string) {
+  async update(threadId: string, submissionId: string, text: string) {
+    // Native update replaces the entire payload and has no compare-and-swap. Text-only editing must not erase images.
+    let cursor: string | undefined
+    const seen = new Set<string>()
+    do {
+      const page = await this.queue(threadId, { cursor, limit: 100 })
+      const current = page.data.find((item) => item.id === submissionId)
+      if (current?.input.some((part) => part.type !== "text")) throw new Error("Text-only editing of attachments is unavailable")
+      if (current) break
+      cursor = page.nextCursor ?? undefined
+      if (cursor && seen.has(cursor)) throw new Error("Repeated native queue cursor")
+      if (cursor) seen.add(cursor)
+    } while (cursor)
     return this.native.request<{ queuedSubmission: Submission }>("thread/queue/update", {
       threadId: id(threadId), queuedSubmissionId: id(submissionId), input: input(text),
     })
@@ -151,9 +165,9 @@ export class CodexSessionAdapter {
   guide(threadId: string, submissionId: string) {
     return this.native.request<{ turn: Record<string, unknown> }>("thread/queue/start", { threadId: id(threadId), queuedSubmissionId: id(submissionId) })
   }
-  steer(threadId: string, expectedTurnId: string, clientUserMessageId: string, text: string) {
+  steer(threadId: string, expectedTurnId: string, clientUserMessageId: string, text: string, files?: readonly ConversationBackend.ImageAttachment[]) {
     return this.native.request<{ turnId: string }>("turn/steer", {
-      threadId: id(threadId), expectedTurnId: id(expectedTurnId), clientUserMessageId: id(clientUserMessageId), input: input(text),
+      threadId: id(threadId), expectedTurnId: id(expectedTurnId), clientUserMessageId: id(clientUserMessageId), input: input(text, files),
     })
   }
   interrupt(threadId: string, turnId: string) {

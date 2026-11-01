@@ -531,7 +531,11 @@
         "modules/qq-portal/test/history-channel.test.ts",
         "modules/qq-portal/test/fixture/history.ts",
         "modules/qq-portal/test/task-watch.test.ts",
-        "opencode/packages/server/script/qq-history-smoke.ts"
+        "opencode/packages/server/script/qq-history-smoke.ts",
+        "modules/qq-portal/src/images.ts",
+        "modules/qq-portal/test/images.test.ts",
+        "modules/qq-portal/test/fixture/images.ts",
+        "opencode/packages/server/script/qq-images-smoke.ts"
       ],
       "verification": [
         {
@@ -539,12 +543,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 664,
+          "tests_run": 677,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 127,
+          "http_checks": 135,
           "publication": "disabled"
         }
       ],

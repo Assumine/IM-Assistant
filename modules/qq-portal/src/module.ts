@@ -5,6 +5,7 @@ import { readConfiguration } from "./configuration"
 import { createControlReplies } from "./notifications"
 import { openTaskReplies } from "./task-replies"
 import { createConfirmationChannel } from "./confirmation-channel"
+import { createImages, createImageReplies, imageFrameBytes } from "./images"
 
 /** A complete application capability. Per-Location plugin setup never owns a bot connection. */
 export async function configuredModule(home: string, environment: NodeJS.ProcessEnv = process.env, observe: {
@@ -25,8 +26,11 @@ export async function configuredModule(home: string, environment: NodeJS.Process
     open({ client, storage }) {
       const channels = accounts.map((account) => {
         const backend = client.rpc(ConversationBackend.Api)
-        const portal = createPortal({ storage, session: client.session, backend, policy: account.policy, controls: account.controls })
         let channel: ReturnType<typeof openQQChannel> | undefined
+        const images = account.images ? createImages({ config: account.images, read: (source, file) => channel ? channel.image(source, file) : Promise.resolve(undefined) }) : undefined
+        const portal = createPortal({ storage, session: client.session, backend, policy: account.policy, controls: account.controls, images })
+        const imageReplies = createImageReplies({ storage, policy: account.policy,
+          send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }) })
         const ready = Promise.withResolvers<boolean>()
         const replies = account.controls ? createControlReplies({ storage, policy: account.policy, permissions: account.controls,
           send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
@@ -59,12 +63,16 @@ export async function configuredModule(home: string, environment: NodeJS.Process
           },
         })
         channel = openQQChannel({
-        policy: account.policy, connection: { url: account.url, token: account.token },
+        policy: account.policy, connection: { url: account.url, token: account.token, ...(account.images ? { maxFrameBytes: imageFrameBytes(account.images.maxBytes) } : {}) },
         portal: confirmations,
         ...(account.history ? { history: { config: account.history, storage } } : {}),
         onRecovery: (value) => observe.onRecovery?.(account.policy.botID, value),
         onResult: async (value) => {
           const result = value.result.status === "confirmation-control" ? value.result.result : value.result
+          if (value.message && result.status === "blocked") {
+            const receipt = await imageReplies(value.message, result)
+            if (receipt.status !== "sent" && receipt.status !== "ignored") observe.onIssue?.({ kind: "notification-uncertain", source: value.source })
+          }
           if (result.status === "accepted" || result.status === "followup" || result.status === "steered" || result.status === "amended")
             if (!await tasks.admitted(result.target, result.inputID)) throw new Error("QQ result subscription was not retained")
           if (replies && value.message && value.result.status === "control") {
