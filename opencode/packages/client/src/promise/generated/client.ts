@@ -117,6 +117,8 @@ import type {
   ExperimentalSessionInstructionsEntryRemoveOutput,
   ExperimentalSessionLogInput,
   ExperimentalSessionLogOutput,
+  ExperimentalSessionInputOutputInput,
+  ExperimentalSessionInputOutputOutput,
   MessageListInput,
   MessageListOutput,
   ModelListInput,
@@ -1254,6 +1256,19 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
+        input: {
+          output: (input: ExperimentalSessionInputOutputInput, requestOptions?: RequestOptions) =>
+            request<ExperimentalSessionInputOutputOutput>(
+              {
+                method: "GET",
+                path: `/api/experimental/session/${encodeURIComponent(input.sessionID)}/input/${encodeURIComponent(input.inputID)}/output`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 404],
+                empty: false,
+              },
+              requestOptions,
+            ),
+        },
       },
       generate: {
         text: (input: ExperimentalGenerateTextInput, requestOptions?: RequestOptions) =>
@@ -2694,6 +2709,11 @@ export function make(options: ClientOptions) {
       },
       /** @deprecated Use `client.experimental.session.log`. Removed in the next minor. */
       log: client.experimental.session.log,
+      input: {
+        ...client.session.input,
+        /** @deprecated Use `client.experimental.session.input.output`. Removed in the next minor. */
+        output: client.experimental.session.input.output,
+      },
     },
     /** @deprecated Use `client.experimental.generate`. Removed in the next minor. */
     generate: {

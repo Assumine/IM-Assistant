@@ -3,6 +3,7 @@ import { ConversationBackend } from "../../../opencode/packages/schema/src/conve
 import { createPortal, openQQChannel, type ChannelOptions } from "./index"
 import { readConfiguration } from "./configuration"
 import { createControlReplies } from "./notifications"
+import { openTaskReplies } from "./task-replies"
 
 /** A complete application capability. Per-Location plugin setup never owns a bot connection. */
 export async function configuredModule(home: string, environment: NodeJS.ProcessEnv = process.env, observe: {
@@ -23,14 +24,26 @@ export async function configuredModule(home: string, environment: NodeJS.Process
       const channels = accounts.map((account) => {
         const portal = createPortal({ storage, session: client.session, backend: client.rpc(ConversationBackend.Api), policy: account.policy, controls: account.controls })
         let channel: ReturnType<typeof openQQChannel> | undefined
+        const ready = Promise.withResolvers<boolean>()
         const replies = account.controls ? createControlReplies({ storage, policy: account.policy, permissions: account.controls,
           send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
           publish: portal.linkControlView,
         }) : undefined
+        const tasks = openTaskReplies({ client, storage, policy: account.policy, sourceFor: portal.sourceFor, linkReply: portal.linkReply, ready: ready.promise,
+          send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
+          onReceipt: (receipt) => {
+            if (receipt.status === "uncertain" || receipt.status === "conflict") observe.onIssue?.({ kind: "notification-uncertain" })
+            if (receipt.status === "sent" && receipt.linkage === "unlinked") observe.onIssue?.({ kind: "notification-unlinked" })
+            if (receipt.status === "forbidden" || receipt.status === "unavailable") observe.onIssue?.({ kind: "notification-unavailable" })
+            if (receipt.status === "rejected") observe.onIssue?.({ kind: "notification-rejected" })
+          }, onUnavailable: () => observe.onIssue?.({ kind: "notification-unavailable" }),
+        })
         channel = openQQChannel({
         policy: account.policy, connection: { url: account.url, token: account.token },
         portal,
         onResult: async (value) => {
+          if ((value.result.status === "accepted" || value.result.status === "followup" || value.result.status === "steered" || value.result.status === "amended") && value.result.target.kind === "session")
+            void tasks.admitted(value.result.target.sessionID, value.result.inputID)
           if (replies && value.message && value.result.status === "control") {
             const receipt = await replies.deliver(value.message, value.result)
             try {
@@ -42,7 +55,8 @@ export async function configuredModule(home: string, environment: NodeJS.Process
         }, onIssue: observe.onIssue,
         onState: (state) => observe.onState?.(account.policy.botID, state),
         })
-        return channel
+        void channel.ready.then((state) => ready.resolve(state.phase === "online"))
+        return { close: async () => { await channel!.close(); await tasks.close() } }
       })
       return { close: async () => { await Promise.allSettled(channels.map((channel) => channel.close())) } }
     },

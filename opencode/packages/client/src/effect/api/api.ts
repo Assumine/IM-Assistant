@@ -511,6 +511,9 @@ export interface SessionApi<E = never> {
     readonly position: SessionInputPositionOperation<E>
     readonly followup: SessionInputFollowupOperation<E>
     readonly followupReceipt: SessionInputFollowupReceiptOperation<E>
+
+    /** @deprecated Use `client.experimental.session.input.output`. Removed in the next minor. */
+    readonly output: ExperimentalSessionInputOutputOperation<E>
   }
   readonly generate: SessionGenerateOperation<E>
   readonly interrupt: SessionInterruptOperation<E>
@@ -1652,6 +1655,26 @@ export type ExperimentalSessionLogOperation<E = never> = (
   input: ExperimentalSessionLogInput,
 ) => Stream.Stream<ExperimentalSessionLogOutput, E>
 
+export type ExperimentalSessionInputOutputInput = {
+  readonly sessionID: Session.ID
+  readonly inputID: SessionMessage.ID
+}
+export type ExperimentalSessionInputOutputOutput = {
+  readonly sessionID: Session.ID
+  readonly inputID: SessionMessage.ID
+  readonly rootID?: SessionMessage.ID | undefined
+  readonly status: "pending" | "open" | "closed" | "unknown"
+  readonly first?:
+    | { readonly messageID: SessionMessage.ID; readonly text: string; readonly settled: boolean }
+    | undefined
+  readonly last?:
+    | { readonly messageID: SessionMessage.ID; readonly text: string; readonly settled: boolean }
+    | undefined
+}
+export type ExperimentalSessionInputOutputOperation<E = never> = (
+  input: ExperimentalSessionInputOutputInput,
+) => Effect.Effect<ExperimentalSessionInputOutputOutput, E>
+
 export interface ExperimentalSessionApi<E = never> {
   readonly stats: ExperimentalSessionStatsOperation<E>
   readonly import: ExperimentalSessionImportOperation<E>
@@ -1666,6 +1689,7 @@ export interface ExperimentalSessionApi<E = never> {
     }
   }
   readonly log: ExperimentalSessionLogOperation<E>
+  readonly input: { readonly output: ExperimentalSessionInputOutputOperation<E> }
 }
 
 export type MessageListInput = {
@@ -3031,6 +3055,15 @@ export type SessionLogOutput = ExperimentalSessionLogOutput
 
 /** @deprecated Use `ExperimentalSessionLogOperation`. Removed in the next minor. */
 export type SessionLogOperation<E = never> = ExperimentalSessionLogOperation<E>
+
+/** @deprecated Use `ExperimentalSessionInputOutputInput`. Removed in the next minor. */
+export type SessionInputOutputInput = ExperimentalSessionInputOutputInput
+
+/** @deprecated Use `ExperimentalSessionInputOutputOutput`. Removed in the next minor. */
+export type SessionInputOutputOutput = ExperimentalSessionInputOutputOutput
+
+/** @deprecated Use `ExperimentalSessionInputOutputOperation`. Removed in the next minor. */
+export type SessionInputOutputOperation<E = never> = ExperimentalSessionInputOutputOperation<E>
 
 /** @deprecated Use `ExperimentalGenerateTextInput`. Removed in the next minor. */
 export type GenerateTextInput = ExperimentalGenerateTextInput

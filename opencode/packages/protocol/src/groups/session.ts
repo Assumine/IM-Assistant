@@ -37,6 +37,7 @@ import { EventLog } from "@opencode/schema/event-log"
 import { FileDiff } from "@opencode/schema/file-diff"
 import { Form } from "@opencode/schema/form"
 import { PublicSessionMessage } from "./message.js"
+import { SessionOutputEndpoint } from "./session-output.js"
 
 const SessionActive = Schema.Struct({
   type: Schema.Literal("running"),
@@ -946,6 +947,7 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
         }),
       ),
     )
+    .add(SessionOutputEndpoint)
     .annotateMerge(
       OpenApi.annotations({
         title: "session",

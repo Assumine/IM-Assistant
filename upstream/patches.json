@@ -377,7 +377,7 @@
         {
           "path": "packages/im-assistant/src/cli.ts",
           "action": "added",
-          "sha256": "dd51088d7e7d7439a282e66c83e7ab017b174bfeda4cb87883e96d093d146c17"
+          "sha256": "bfb757532f70ad2f99cd0f4d9b26dd5adb52db504b30645562e8bcc55cb027c5"
         },
         {
           "path": "packages/im-assistant/src/providers.ts",
@@ -496,12 +496,12 @@
         {
           "path": "packages/client/src/effect/generated/client.ts",
           "action": "modified",
-          "sha256": "6392907ee48a2affc620c799f0dd835a2fe2a7bd1f03c8c0b531678fda3fa6b8"
+          "sha256": "362505e825917a9e17cf25a0bfa1dfdea30e1c2af58efe25ccb00ca5e2d91ea9"
         },
         {
           "path": "packages/client/src/promise/generated/client.ts",
           "action": "modified",
-          "sha256": "f381763f436138456eeb9aa3b6df1ad62884c0d54c0bba06670fb5a80612d46e"
+          "sha256": "f16725ddb02cb48581609f31a7abc0b6f6f45c0093348dc7e37203af3da5b7c5"
         },
         {
           "path": "packages/client/test/promise.test.ts",
@@ -531,7 +531,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "fef74e8ab40d863dabd2ddcc23d7d23cb40b6fb7d341ba4f7eb46a31689d8e50"
+          "sha256": "40c0df0099c0cbde1606839038cd8b0b6f26ece65b8afad5e6ddb8cc9f1ad551"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -551,12 +551,12 @@
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "6a5f5e490b54d06bee7e70b609dbd2ce92461cc74e6f8e80e5cdd4a943e4a3b8"
+          "sha256": "526fe992f46db4b7598ed986978182cf834983aa46c06d58a28e8ce9ea66a198"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "c00bb122c4ab848588ed1fab9cbaf2d1f080b49266d29ac2a22ca717c6ce674d"
+          "sha256": "4574d876ab866a6e83db37f5e9e26ac8a1e9da622128145832cab9b430d11f3c"
         },
         {
           "path": "packages/core/src/bus.ts",
@@ -666,7 +666,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "a4b0721105952368b38804f0afa42275eb000231a57605f0becb125c95bcca42"
+          "sha256": "7a01df48cf72b9ef6965d3263504d4fc9f503e188dce7f887e49ce925da2ac87"
         }
       ]
     },
@@ -1150,7 +1150,7 @@
         {
           "path": "packages/core/src/session/projector.ts",
           "action": "modified",
-          "sha256": "8e26592e284939cd11fe9edfbb43ece5e551351bd96e7890d36f08ddff219a51"
+          "sha256": "29b046c6696a92185f46a1778bfeb9670914ca817433563143b2e1cf11efb534"
         },
         {
           "path": "packages/core/test/session-inbox-append.test.ts",
@@ -1160,7 +1160,7 @@
         {
           "path": "packages/protocol/src/groups/session.ts",
           "action": "modified",
-          "sha256": "4ad61c1d7428db5a8c89c767d97b6865482ebc4b6ea66a26c9ff8dc4f3252fa5"
+          "sha256": "7803d46daa33af7dde9446f727fe6f78633e63d2db0afebd5bd1b6afadf65b86"
         },
         {
           "path": "packages/schema/src/session-inbox.ts",
@@ -1170,7 +1170,7 @@
         {
           "path": "packages/server/src/handlers/session.ts",
           "action": "modified",
-          "sha256": "20e2a0f80c025d82dac05a44c6d3fb28606245c11dd60f64786d159fa2f25181"
+          "sha256": "d3d0c9be933344e9a2babe3d4868861ff959b500c056e60213dcea3062fcb01d"
         }
       ]
     },
@@ -1210,7 +1210,7 @@
         {
           "path": "packages/core/test/session-input.test.ts",
           "action": "added",
-          "sha256": "02e5139793d48d720bc158e64eebd604e4d86a944dc9f9bd4d4dcc258dac11dd"
+          "sha256": "a7aff4b40af1b8728f812f6b2724c246d916eafeef528bbbb91591a0eff712bb"
         },
         {
           "path": "packages/server/script/qq-continuation-smoke.ts",
@@ -1285,7 +1285,7 @@
         {
           "path": "packages/im-assistant/src/portals.ts",
           "action": "added",
-          "sha256": "83a256585df138b1641ff761fef957660a10f8d655d617df29cc79f0e016cacd"
+          "sha256": "c68f78ae327a2c95a0750b032ebfc32d422ef6a721b3046f46cf471c6bcf55ae"
         },
         {
           "path": "packages/plugin/src/promise/application.ts",
@@ -1305,7 +1305,7 @@
         {
           "path": "packages/server/script/qq-product-smoke.ts",
           "action": "added",
-          "sha256": "c29fb321957f20a17f10e7d2dd66f1f704a445243a0ce064ae61d01e2dbbf03e"
+          "sha256": "a877f2d27c0847bdeba06185466441e8eaf4c1fe17e9d5839e89bbe0e68b4b1f"
         },
         {
           "path": "packages/server/src/application-modules.ts",
@@ -1331,6 +1331,46 @@
           "path": "packages/server/script/qq-notification-owner-smoke.ts",
           "action": "added",
           "sha256": "6ee2ffe91dfd87909db98e4c9369ed4221d0335c95c10338fe6b3426e32460de"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-native-session-output",
+      "reason": "原生助手消息投影记录不可变输入root归属；经实验性只读接口公开首条/末条已结束的公开文字。QQ复用通知回执边界，不推断最新消息或绑定，不拥有任务执行和历史。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/core/src/session/output.ts",
+          "action": "added",
+          "sha256": "60bfb78691abbc8655cdc825954e714c3519ff583d1df000a396947bd09c6357"
+        },
+        {
+          "path": "packages/protocol/src/groups/session-output.ts",
+          "action": "added",
+          "sha256": "42e12005b718c93e2e6c6ba02a92202cd9244c9f345608ec1dc13a022b8d1c86"
+        },
+        {
+          "path": "packages/schema/src/session-input-output.ts",
+          "action": "added",
+          "sha256": "7c119a89f06ad5596edf2f81555cffa814a13b176e246e557b620a218f71f173"
+        },
+        {
+          "path": "packages/schema/src/session-message.ts",
+          "action": "modified",
+          "sha256": "578f10a908e6a6e7468b9f0afe584b869f3c92a54b744640925587b092ccf569"
+        },
+        {
+          "path": "packages/server/script/qq-output-smoke.ts",
+          "action": "added",
+          "sha256": "f15dffb1861b5c79ff75f27e1ed047ad638f1a77f7d4fa14fcdb860607fad1f8"
+        },
+        {
+          "path": "packages/server/src/handlers/session-output.ts",
+          "action": "added",
+          "sha256": "dd2a98b2eef6f65e7704b33d576805dafecd14c0a9cf853794d0cd548247a9c9"
         }
       ]
     }

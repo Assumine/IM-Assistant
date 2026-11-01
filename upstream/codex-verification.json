@@ -26,7 +26,7 @@
     "progress_updated": false
   },
   "checkpoint": "upstream/codex-checkpoint.json",
-  "checkpoint_sha256": "941cf3692e5e72996c44e0e288e6ec89c4279481d271c5107c5692c4f9bc6344",
+  "checkpoint_sha256": "bbd36596d54875da571d9dcc5b0239834b7695edfc6d4fb3fd4f45045293ff0b",
   "native_cli_version": "codex-cli 0.166.0-alpha.5.1",
   "test_counts": {
     "task": "R3-01",
@@ -34,7 +34,7 @@
     "status": "passed",
     "command": "python tools/run_runtime_checks.py --task R3-01",
     "orchestration_cases": 2,
-    "native_unit_cases": 134,
+    "native_unit_cases": 137,
     "browser_component_cases": 218,
     "http_checks": 19,
     "http_fixture_model_requests": 5,

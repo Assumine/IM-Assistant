@@ -243,7 +243,7 @@ try {
       enabled.appliesTo === "next-service-start" &&
       !enabled.connectionVerified &&
       enabled.controlRepliesSupported &&
-      !enabled.automaticTaskReplies,
+      enabled.automaticTaskReplies,
   )
   assert.equal(first.upgrades.length + second.upgrades.length, 0)
   checks.push(
@@ -370,10 +370,16 @@ try {
     history.filter((row) => row.type === "user").map((row) => row.text),
     ["Desktop holds the native runner", "One QQ input through the real product"],
   )
-  assert.equal(first.calls.filter((row) => row.action.startsWith("send_")).length, 8)
+  await observe(() => sendsFor(801).length === 1)
+  assert.equal(sentText(801), "Product reply 2")
+  assert.equal(first.calls.filter((row) => row.action.startsWith("send_")).length, 9)
+  const output = await host.client.experimental.session.input.output({ sessionID: session.id, inputID: pending.id })
+  assert.equal(output.rootID, pending.id)
+  assert.equal(output.status, "closed")
+  assert.equal(output.last?.text, "Product reply 2")
   for (const id of [831, 832, 833]) assert.equal(sendsFor(id).length, 0)
   checks.push(
-    "disable does not interrupt current native execution, the runner drains the sole QQ input once and no automatic model-output forwarding is claimed",
+    "disable does not interrupt native execution and the original QQ input receives its proven public reply exactly once while desktop output is not forwarded",
   )
   await host.stop()
   await observe(() => first.sockets.size === 0)
@@ -410,7 +416,14 @@ try {
   checks.push(
     "SQLite restart reconciles successful and unknown notification receipts without another wire send or model request",
   )
-  assert.equal(first.calls.filter((call) => call.action.startsWith("send_")).length, 9)
+  assert.equal(first.calls.filter((call) => call.action.startsWith("send_")).length, 10)
+  first.event(task)
+  await observe(() => first.calls.filter((call) => call.action === "get_status").length === 2)
+  assert.equal(sendsFor(801).length, 1)
+  assert.equal(requests.length, 2)
+  checks.push(
+    "native Session reply aliases and immutable send receipts survive restart and duplicate ingress without another model run or task result send",
+  )
   assert.equal(sendsFor(803).length, 1)
   checks.push(
     "the original acknowledged catalog alias remains selectable after a real product restart without publishing a replacement reply",
@@ -433,10 +446,17 @@ try {
       production_credentials_used: false,
       product_entry: "packages/im-assistant/src/cli.ts",
       loopback_connection_attempts: first.upgrades.length + second.upgrades.length,
-      automatic_task_replies: false,
-      loopback_control_send_attempts: first.calls.filter((call) => call.action.startsWith("send_")).length,
+      automatic_task_replies: "native-session-only",
+      loopback_task_send_attempts: sendsFor(801).length,
+      loopback_control_send_attempts: first.calls.filter(
+        (call) => call.action.startsWith("send_") && quoteOf(call) !== "801",
+      ).length,
       loopback_confirmed_control_replies: first.answers.filter(
-        (answer) => answer.status === "ok" && record(answer.data) && "message_id" in answer.data,
+        (answer) =>
+          answer.status === "ok" &&
+          record(answer.data) &&
+          "message_id" in answer.data &&
+          !sendsFor(801).some((call) => call.echo === answer.echo),
       ).length,
     }),
   )

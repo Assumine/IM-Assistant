@@ -29,6 +29,7 @@ import {
 import { AbsolutePath } from "@opencode/core/schema"
 import { locationErrors } from "../location"
 import { failedMessageDecode, failedSnapshot, missingMessage, missingSession } from "./session-error"
+import { makeSessionOutput } from "./session-output"
 
 function missingForm(id: Form.ID) {
   return new FormNotFoundError({ id, message: `Form not found: ${id}` })
@@ -37,6 +38,7 @@ function missingForm(id: Form.ID) {
 export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handlers) =>
   Effect.gen(function* () {
     const session = yield* Session.Service
+    const sessionOutput = yield* makeSessionOutput
     const transfer = yield* SessionTransfer.Service
     const instructions = yield* InstructionEntry.Service
     const instances = yield* Instance.Service
@@ -64,6 +66,7 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
       )
 
     return handlers
+      .handle("session.input.output", (ctx) => sessionOutput(ctx.params))
       .handle(
         "session.list",
         Effect.fn(function* (ctx) {

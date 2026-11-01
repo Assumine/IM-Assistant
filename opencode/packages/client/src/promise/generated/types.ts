@@ -493,6 +493,15 @@ export type SessionInboxFollowup = {
   status: "pending" | "delivered" | "cancelled" | "unknown"
 }
 
+export type SessionInputOutput = {
+  sessionID: SessionID
+  inputID: SessionMessageID
+  rootID?: SessionMessageID
+  status: "pending" | "open" | "closed" | "unknown"
+  first?: { messageID: SessionMessageID; text: string; settled: boolean }
+  last?: { messageID: SessionMessageID; text: string; settled: boolean }
+}
+
 export type UsageLimitsBudgetModel = { providerID: ProviderID; modelID: string; name: string; spent?: MoneyUSD }
 
 export type FileSystemEntry = { path: RelativePath; type: "file" | "directory" }
@@ -2686,6 +2695,7 @@ export type SessionMessageAssistant = {
   metadata?: { [x: string]: JsonValue }
   time: { created: number; streamed?: number; completed?: number }
   type: "assistant"
+  inputRootID?: SessionMessageID
   agent: AgentID
   model: ModelRef
   content: Array<SessionMessageAssistantText | SessionMessageAssistantReasoning | SessionMessageAssistantTool>
@@ -3948,6 +3958,10 @@ export type ExperimentalSessionLogInput = {
 
 export type ExperimentalSessionLogOutput = SessionLogItem
 
+export type ExperimentalSessionInputOutputInput = { readonly sessionID: string; readonly inputID: string }
+
+export type ExperimentalSessionInputOutputOutput = SessionInputOutput
+
 export type MessageListInput = {
   readonly sessionID: string
   readonly limit?: number | undefined
@@ -4903,6 +4917,12 @@ export type SessionLogInput = ExperimentalSessionLogInput
 
 /** @deprecated Use `ExperimentalSessionLogOutput`. Removed in the next minor. */
 export type SessionLogOutput = ExperimentalSessionLogOutput
+
+/** @deprecated Use `ExperimentalSessionInputOutputInput`. Removed in the next minor. */
+export type SessionInputOutputInput = ExperimentalSessionInputOutputInput
+
+/** @deprecated Use `ExperimentalSessionInputOutputOutput`. Removed in the next minor. */
+export type SessionInputOutputOutput = ExperimentalSessionInputOutputOutput
 
 /** @deprecated Use `ExperimentalGenerateTextInput`. Removed in the next minor. */
 export type GenerateTextInput = ExperimentalGenerateTextInput

@@ -123,6 +123,8 @@ import type {
   ExperimentalSessionInstructionsEntryRemoveOutput,
   ExperimentalSessionLogInput,
   ExperimentalSessionLogOutput,
+  ExperimentalSessionInputOutputInput,
+  ExperimentalSessionInputOutputOutput,
   MessageListInput,
   MessageListOutput,
   ModelListInput,
@@ -944,6 +946,14 @@ const EndpointExperimentalSessionLog = (raw: RawClient["server.session"]) => (in
     ),
   )
 
+const EndpointExperimentalSessionInputOutput =
+  (raw: RawClient["server.session"]) => (input: ExperimentalSessionInputOutputInput) =>
+    preserveEffect<ExperimentalSessionInputOutputOutput>()(
+      raw["session.input.output"]({ params: { sessionID: input["sessionID"], inputID: input["inputID"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
 const adaptGroupExperimentalSession = (raw: RawClient["server.session"]) => ({
   stats: EndpointExperimentalSessionStats(raw),
   import: EndpointExperimentalSessionImport(raw),
@@ -958,6 +968,7 @@ const adaptGroupExperimentalSession = (raw: RawClient["server.session"]) => ({
     },
   },
   log: EndpointExperimentalSessionLog(raw),
+  input: { output: EndpointExperimentalSessionInputOutput(raw) },
 })
 
 const EndpointMessageList = (raw: RawClient["server.message"]) => (input: MessageListInput) =>
@@ -2023,6 +2034,11 @@ const adaptClient = (raw: RawClient) => {
       },
       /** @deprecated Use `client.experimental.session.log`. Removed in the next minor. */
       log: client.experimental.session.log,
+      input: {
+        ...client.session.input,
+        /** @deprecated Use `client.experimental.session.input.output`. Removed in the next minor. */
+        output: client.experimental.session.input.output,
+      },
     },
     /** @deprecated Use `client.experimental.generate`. Removed in the next minor. */
     generate: {

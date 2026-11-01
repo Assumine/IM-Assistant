@@ -64,7 +64,7 @@ def _run(checkpoint):
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts", "test/session-inbox-append.test.ts", "test/session-input.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 49),
+        ("packages/core", core_files, "r3-host-unit", 52),
         ("packages/server", server_files, "r3-host-server-unit", 3),
         ("packages/im-assistant", ["src/storage.test.ts", "src/providers.test.ts"], "r3-profile-unit", 7),
         ("packages/cli", ["test/import-boundaries.test.ts"], "r3-cli-boundaries", 5),
@@ -116,6 +116,9 @@ def _run(checkpoint):
         "packages/server/src/application-modules.ts", "packages/server/test/application-modules.test.ts",
         "packages/im-assistant/src/portals.ts", "packages/server/package.json", "bun.lock",
         "packages/server/script/qq-product-smoke.ts", "packages/server/script/qq-notification-owner-smoke.ts",
+        "packages/server/script/qq-output-smoke.ts", "packages/core/src/session/output.ts",
+        "packages/schema/src/session-input-output.ts", "packages/schema/src/session-message.ts",
+        "packages/protocol/src/groups/session-output.ts", "packages/server/src/handlers/session-output.ts",
         "packages/schema/src/conversation-backend.ts", "packages/plugin/src/effect/conversation.ts",
         "packages/plugin/src/effect/plugin.ts", "packages/core/src/conversation-backend.ts",
         "packages/core/src/kv.ts", "packages/core/src/plugin/host.ts",

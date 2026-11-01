@@ -21,7 +21,7 @@ if (process.argv[2] === "backend") {
     console.log(JSON.stringify(await Portals.command(process.argv.slice(3))))
   } catch {
     console.error(
-      "QQ configuration failed; use portal qq init|enable|disable|status. Control replies are supported; automatic task replies are not connected yet.",
+      "QQ configuration failed; use portal qq init|enable|disable|status. Control and native Session replies are supported; whole-backend task replies are not connected yet.",
     )
     process.exitCode = 1
   }

@@ -7,17 +7,16 @@ import { target, type Target } from "./target"
 import { isViewID } from "./views"
 import type { SendResult } from "./onebot"
 import { controlReply } from "./control-reply"
+import { delivery } from "./delivery"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
 type Intent = { version: 1; source: Source; fingerprint: string; action: string; bodyHash: string; viewID?: string; hash: string }
-type Outcome = { version: 1; hash: string } & (SendResult | { status: "forbidden" })
 export type NotificationReceipt =
   | { status: "sent"; messageID: string; linkage: "linked" | "unlinked" | "not-required" | "not-checked"; duplicate: boolean }
   | { status: "missing" | "ignored" | "forbidden" | "unavailable" | "rejected" | "uncertain" | "conflict"; duplicate?: boolean }
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value)
 const digest = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{64}$/.test(value)
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex")
-const numericID = (value: unknown): value is string => typeof value === "string" && /^-?(?:0|[1-9][0-9]{0,19})$/.test(value) && Number.isSafeInteger(Number(value))
 const identity = (value: Source) => [value.scope.botID, value.scope.kind, value.scope.peerID, value.actorID, value.messageID]
 const same = (a: Source, b: Source) => JSON.stringify(identity(a)) === JSON.stringify(identity(b))
 const intentHash = (value: Omit<Intent, "hash">) => hash([1, identity(value.source), value.fingerprint, value.action, value.bodyHash, value.viewID ?? null])
@@ -46,24 +45,14 @@ export function createControlReplies(options: {
   publish: (source: Source, viewID: string, outgoingID: string) => Promise<void>
 }) {
   const { storage, policy, permissions } = options
+  const receipts = delivery(options)
   const permitted = (value: Source) => value.scope.botID === policy.botID && policy.allowedUsers.includes(value.actorID) &&
     (value.scope.kind === "private" || policy.allowedGroups.includes(value.scope.peerID))
   const key = (value: Source) => "notification:control:" + originKey(value.scope, value.messageID)
   const receiptKey = (value: Source) => "notification-receipt:control:" + originKey(value.scope, value.messageID)
   const allowedTarget = (value: Target) => value.kind === "session" || !!permissions.backendIDs?.includes(value.ref.backendID)
-  const read = async (value: Intent): Promise<NotificationReceipt> => {
-    const receipt = await storage.get(receiptKey(value.source))
-    if (!record(receipt) || receipt.version !== 1 || receipt.hash !== value.hash) return { status: "uncertain" }
-    if (receipt.status === "sent") return numericID(receipt.messageID) ? { status: "sent", messageID: receipt.messageID, linkage: "not-checked", duplicate: true } : { status: "uncertain" }
-    return receipt.status === "unavailable" || receipt.status === "rejected" || receipt.status === "uncertain" || receipt.status === "forbidden" ? { status: receipt.status, duplicate: true } : { status: "uncertain" }
-  }
-  const finish = async (value: Intent, duplicate: boolean): Promise<NotificationReceipt> => {
-    const receipt = await read(value)
-    if (receipt.status !== "sent") return { ...receipt, duplicate }
-    if (!value.viewID) return { ...receipt, duplicate, linkage: "not-required" }
-    try { await options.publish(value.source, value.viewID, receipt.messageID); return { ...receipt, duplicate, linkage: "linked" } }
-    catch { return { ...receipt, duplicate, linkage: "unlinked" } }
-  }
+  const finish = (value: Intent, duplicate: boolean) => receipts.finish(receiptKey(value.source), value.hash, duplicate,
+    value.viewID ? (messageID) => options.publish(value.source, value.viewID!, messageID) : undefined)
   return {
     /** Read existing notification facts only. Missing or uncertain facts never authorize another send or task execution. */
     async inspect(entry: Source): Promise<NotificationReceipt> {
@@ -74,7 +63,7 @@ export function createControlReplies(options: {
         if (cached === undefined) return { status: (await storage.get(receiptKey(value))) === undefined ? "missing" : "uncertain" }
         const intent = parse(cached)
         if (!same(intent.source, value)) return { status: "conflict" }
-        return await read(intent)
+        return await receipts.read(receiptKey(intent.source), intent.hash)
       } catch { return { status: "uncertain" } }
     },
     /** Trusted admission callback only. A first durable intent permits one wire attempt; duplicates reconcile/repair metadata only. */
@@ -107,11 +96,8 @@ export function createControlReplies(options: {
           if (!same(winner.source, entry) || winner.fingerprint !== value.fingerprint || winner.action !== value.action) return { status: "conflict" }
           return await finish(winner, true)
         }
-        let sent: SendResult | { status: "forbidden" }
-        try { sent = await options.send(entry, rendered.text) } catch { sent = { status: "uncertain" } }
-        const outcome: Outcome = { version: 1, hash: value.hash, ...sent }
-        try { await storage.insert(receiptKey(entry), outcome) } catch { /* Read-only reconciliation below; never repeat the wire operation. */ }
-        return await finish(value, false)
+        return await receipts.attempt(receiptKey(entry), value.hash, entry, rendered.text,
+          value.viewID ? (messageID) => options.publish(entry, value.viewID!, messageID) : undefined)
       } catch { return { status: "uncertain" } }
     },
   }

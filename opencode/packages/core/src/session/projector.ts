@@ -340,7 +340,14 @@ function run(db: DatabaseService, event: MessageEvent) {
       if (event.type === SessionEvent.MessageContentUpdated.type) yield* SessionBlob.syncRefs(db, owner, data)
       else if (stored !== message) yield* SessionBlob.recordRefs(db, owner, data)
     })
-    const appendMessage = (message: SessionMessage.Info) => insertMessage(db, event, message)
+    const appendMessage = Effect.fnUntraced(function* (message: SessionMessage.Info) {
+      if (message.type !== "assistant") return yield* insertMessage(db, event, message)
+      const owner = yield* SessionInput.current(db, event.data.sessionID)
+      return yield* insertMessage(db, event, {
+        ...message,
+        ...(owner?.sessionID === event.data.sessionID ? { inputRootID: owner.rootID } : {}),
+      })
+    })
     const adapter: SessionMessageUpdater.Adapter = {
       getAgent() {
         return db

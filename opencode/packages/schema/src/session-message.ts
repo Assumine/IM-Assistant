@@ -221,6 +221,8 @@ export interface Assistant extends Schema.Schema.Type<typeof Assistant> {}
 export const Assistant = Schema.Struct({
   ...Base,
   type: Schema.tag("assistant"),
+  /** Native projection of the delivered input boundary at step start; absent when ownership is unproven. */
+  inputRootID: ID.pipe(optional),
   agent: Agent.ID,
   model: Model.Ref,
   content: AssistantContent.pipe(Schema.Array),

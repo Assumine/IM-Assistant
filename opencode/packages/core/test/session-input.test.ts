@@ -13,6 +13,11 @@ import { AbsolutePath } from "../src/schema"
 import { SessionEvent } from "../src/session/event"
 import { SessionInbox } from "../src/session/inbox"
 import { SessionInput } from "../src/session/input"
+import { SessionOutput } from "../src/session/output"
+import { Agent } from "@opencode/schema/agent"
+import { Model } from "@opencode/schema/model"
+import { Provider } from "@opencode/schema/provider"
+import { Money } from "@opencode/schema/money"
 import { SessionMessage } from "../src/session/message"
 import { SessionProjector } from "../src/session/projector"
 import { SessionSchema } from "../src/session/schema"
@@ -70,6 +75,132 @@ const followupRequest = (name: string, parent = id("first"), root = id("first"))
   requestHash: name,
   item: { type: "user" as const, delivery: "queue" as const, payload: { text: name } },
 })
+
+const outputStep = Effect.fnUntraced(function* (bus: Bus.Interface, name: string, text: string) {
+  const assistantMessageID = id(name)
+  yield* bus.publish(SessionEvent.Step.Started, {
+    sessionID,
+    assistantMessageID,
+    agent: Agent.ID.make("build"),
+    model: { id: Model.ID.make("test"), providerID: Provider.ID.make("test") },
+    started: 0,
+  })
+  yield* bus.publish(SessionEvent.Reasoning.Started, { sessionID, assistantMessageID, ordinal: 0 })
+  yield* bus.publish(SessionEvent.Reasoning.Ended, {
+    sessionID,
+    assistantMessageID,
+    ordinal: 0,
+    text: "PRIVATE_REASONING",
+  })
+  yield* bus.publish(SessionEvent.Text.Started, { sessionID, assistantMessageID, ordinal: 1 })
+  yield* bus.publish(SessionEvent.Text.Ended, { sessionID, assistantMessageID, ordinal: 1, text })
+  yield* bus.publish(SessionEvent.Step.Streamed, { sessionID, assistantMessageID })
+})
+
+it.effect(
+  "public input output follows native roots across steers and queued successors and omits private reasoning",
+  () =>
+    Effect.gen(function* () {
+      const f = yield* setup()
+      yield* f.admit("first")
+      yield* f.admit("second")
+      expect((yield* SessionOutput.read(f.db, sessionID, id("second"))).status).toBe("pending")
+      yield* f.promote()
+      yield* outputStep(f.bus, "reply_first", "First public reply")
+      yield* f.inbox.continueInput(f.request("adjust"))
+      yield* f.promote("steer")
+      yield* outputStep(f.bus, "reply_final", "Final public reply")
+      const open = yield* SessionOutput.read(f.db, sessionID, id("adjust"))
+      expect(open.rootID).toBe(id("first"))
+      expect(open.first?.text).toBe("First public reply")
+      expect(open.last?.text).toBe("Final public reply")
+      expect(JSON.stringify(open)).not.toContain("PRIVATE_REASONING")
+      yield* f.finish()
+      yield* f.promote()
+      yield* outputStep(f.bus, "reply_second", "Second task reply")
+      const closed = yield* SessionOutput.read(f.db, sessionID, id("first"))
+      expect(closed.status).toBe("closed")
+      expect(closed.last?.messageID).toBe(id("reply_final"))
+      expect((yield* SessionOutput.read(f.db, sessionID, id("second"))).first?.text).toBe("Second task reply")
+      yield* f.db
+        .delete(SessionMessageTable)
+        .where(eq(SessionMessageTable.id, id("first")))
+        .run()
+        .pipe(Effect.orDie)
+      expect(yield* SessionOutput.read(f.db, sessionID, id("adjust"))).toEqual({
+        sessionID,
+        inputID: id("adjust"),
+        status: "unknown",
+      })
+    }),
+)
+
+it.effect(
+  "output ownership is replayed from native events and old unowned steps are never assigned by chronology",
+  () =>
+    Effect.gen(function* () {
+      const f = yield* setup()
+      yield* outputStep(f.bus, "legacy", "Unowned legacy response")
+      yield* f.admit("first")
+      yield* f.promote()
+      expect((yield* SessionOutput.read(f.db, sessionID, id("first"))).first).toBeUndefined()
+      yield* outputStep(f.bus, "owned", "Owned response")
+      yield* f.finish()
+      const events = yield* f.db
+        .select()
+        .from(EventTable)
+        .where(eq(EventTable.aggregate_id, sessionID))
+        .orderBy(EventTable.seq)
+        .all()
+        .pipe(Effect.orDie)
+      yield* f.db.delete(SessionTable).run().pipe(Effect.orDie)
+      yield* f.db.delete(KVTable).run().pipe(Effect.orDie)
+      yield* f.bus.remove(sessionID)
+      for (const event of events)
+        yield* f.bus.replay({
+          id: event.id,
+          type: event.type,
+          seq: event.seq,
+          aggregateID: sessionID,
+          created: event.created,
+          data: event.data,
+        })
+      const output = yield* SessionOutput.read(f.db, sessionID, id("first"))
+      expect(output.status).toBe("closed")
+      expect(output.first?.messageID).toBe(id("owned"))
+      expect(output.last?.text).toBe("Owned response")
+      expect(JSON.stringify(output)).not.toContain("Unowned")
+    }),
+)
+
+it.effect("unsettled assistant text and tool-only content are not public reply bodies", () =>
+  Effect.gen(function* () {
+    const f = yield* setup()
+    yield* f.admit("first")
+    yield* f.promote()
+    const assistantMessageID = id("partial")
+    yield* f.bus.publish(SessionEvent.Step.Started, {
+      sessionID,
+      assistantMessageID,
+      agent: Agent.ID.make("build"),
+      model: { id: Model.ID.make("test"), providerID: Provider.ID.make("test") },
+      started: 0,
+    })
+    yield* f.bus.publish(SessionEvent.Text.Started, { sessionID, assistantMessageID, ordinal: 0 })
+    yield* f.bus.publish(SessionEvent.Text.Ended, { sessionID, assistantMessageID, ordinal: 0, text: "Not settled" })
+    const partial = yield* SessionOutput.read(f.db, sessionID, id("first"))
+    expect(partial.first).toBeUndefined()
+    expect(partial.last).toEqual({ messageID: assistantMessageID, text: "", settled: false })
+    yield* f.bus.publish(SessionEvent.Step.Ended, {
+      sessionID,
+      assistantMessageID,
+      finish: "stop",
+      cost: Money.USD.zero,
+      tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+    })
+    expect((yield* SessionOutput.read(f.db, sessionID, id("first"))).first?.text).toBe("Not settled")
+  }),
+)
 
 it.effect(
   "input observations require native close evidence and surviving user ownership; shutdown is not a close",

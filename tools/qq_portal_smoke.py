@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 168),
+        (module, "r3-qq-module-tests", [bun, "test"], 175),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 5),
     ]:
         log = reports / (label + ".log")
@@ -70,9 +70,9 @@ def _run():
                              extra_env={"IM_QQ_PRODUCT_TEST_ROOT": product_directory}))
     lines = (reports / "r3-qq-product-http.log").read_text(encoding="utf-8").splitlines()
     product = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if (product["status"] != "passed" or len(product["checks"]) != 16 or product["model_requests"] != 2 or
+    if (product["status"] != "passed" or len(product["checks"]) != 17 or product["model_requests"] != 2 or
             product["actual_qq_connection"] or product["external_messages_sent"] or product["production_credentials_used"] or
-            product["loopback_connection_attempts"] != 4 or product["automatic_task_replies"] or
+            product["loopback_connection_attempts"] != 4 or product["automatic_task_replies"] != "native-session-only" or product["loopback_task_send_attempts"] != 1 or
             product["loopback_control_send_attempts"] != 9 or product["loopback_confirmed_control_replies"] != 8 or
             product["product_entry"] != "packages/im-assistant/src/cli.ts"):
         raise RuntimeError("QQ actual product entry acceptance was incomplete")
@@ -85,6 +85,15 @@ def _run():
             owner["external_messages_sent"] or owner["production_credentials_used"] or owner["native_task_inputs"] or
             owner["loopback_send_attempts"] != 3 or owner["loopback_connections"] != 2):
         raise RuntimeError("Durable notification and application owner acceptance was incomplete")
+    output_directory = tempfile.mkdtemp(prefix="qq-output-", dir=parent)
+    steps.append(run_command("packages/server", ["run", "script/qq-output-smoke.ts"], "r3-qq-output-http", timeout=120,
+                             extra_env={"IM_QQ_OUTPUT_ROOT": output_directory}))
+    lines = (reports / "r3-qq-output-http.log").read_text(encoding="utf-8").splitlines()
+    output = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
+    if (output["status"] != "passed" or len(output["checks"]) != 5 or output["model_requests"] != 3 or
+            output["actual_qq_connection"] or output["external_messages_sent"] or output["production_credentials_used"] or
+            output["loopback_task_send_attempts"] != 3 or output["loopback_connections"] != 2):
+        raise RuntimeError("Native input output and first/final forwarding acceptance was incomplete")
     steps.append(run_command("packages/server", ["test", "--timeout", "30000", "test/application-modules.test.ts",
                              "test/process.test.ts", "test/fetch.test.ts"], "r3-qq-product-host-regression", timeout=180))
     if steps[-1]["native_tests_passed"] != 20 or steps[-1]["native_tests_failed"] or steps[-1]["native_tests_skipped"]:
@@ -121,7 +130,7 @@ def _run():
         raise RuntimeError("Real native linked follow-up acceptance was incomplete")
     for package, files, label, count, filters in [
         ("sdk", ["test/instances.test.ts", "test/instances-effect.test.ts"], "r3-qq-sdk-regression", 8, []),
-        ("core", ["test/session-input.test.ts", "test/session-inbox-append.test.ts", "test/session-owned.test.ts", "test/session-prompt.test.ts"], "r3-qq-append-session-regression", 93, []),
+        ("core", ["test/session-input.test.ts", "test/session-inbox-append.test.ts", "test/session-owned.test.ts", "test/session-prompt.test.ts"], "r3-qq-append-session-regression", 96, []),
         ("core", ["test/session-execution.test.ts", "test/session-runner.test.ts", "test/session-native.test.ts", "test/session-native-compaction.test.ts"], "r3-qq-continuation-required-runner", 290, []),
         ("client", ["test/solid-inbox-race.test.ts"], "r3-qq-append-client-unit", 10, []),
     ]:
@@ -172,20 +181,24 @@ def _run():
         "opencode/packages/cli/src/server-process.ts", "opencode/packages/server/package.json", "opencode/bun.lock",
         "opencode/packages/server/script/qq-product-smoke.ts",
         "opencode/packages/server/script/qq-notification-owner-smoke.ts",
+        "opencode/packages/server/script/qq-output-smoke.ts",
+        "opencode/packages/schema/src/session-message.ts", "opencode/packages/schema/src/session-input-output.ts",
+        "opencode/packages/core/src/session/output.ts", "opencode/packages/protocol/src/groups/session-output.ts",
+        "opencode/packages/server/src/handlers/session-output.ts",
     ]
     return {"schema_version": 1, "task": "R3-02", "status": "partial_verified", "publication": "disabled",
-            "steps": steps, "http_acceptance": http, "transport_acceptance": wire, "product_acceptance": product, "notification_acceptance": owner, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked,
+            "steps": steps, "http_acceptance": http, "transport_acceptance": wire, "product_acceptance": product, "notification_acceptance": owner, "output_acceptance": output, "backend_acceptance": native, "continuation_acceptance": continuation, "guidance_acceptance": guidance, "native_followup_acceptance": linked,
             "execution_owner": {"session": "original-opencode-session-inbox", "backend": "whole-native-conversation-backend"}, "production_credentials_used": False,
             "source_routing": {"owner": "original-plugin-kv", "frozen_envelope": True,
                                "reverse_lookup_requires_native_admission": True, "legacy_missing_source_is_not_inferred": True,
                                "outbound_transport_connected": True, "outbound_control_transport_connected": True,
-                               "outbound_task_transport_connected": False},
+                               "outbound_task_transport_connected": True, "task_reply_targets": ["session"], "backend_task_replies_connected": False},
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *(module / "test").rglob("*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["authenticated transport, product startup and durable control reply receipts verified only against loopback OneBot fixtures; live QQ, runtime module UI/status and durable offline input recovery are not connected",
                           "opt-in controls include numbered selections from explicitly quoted published views; implicit latest-list selection, native stop fences, remote confirmation UI and remaining commands are not connected",
                           "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
-                          "native first/final replies and receipt recall remain unimplemented; control notifications only reconcile existing immutable receipts and repair acknowledged view metadata, without remote recovery for unknown sends or any automatic replay",
+                          "ordinary Session first/final public replies use original native input roots and durable notification receipts; whole-backend first/final replies, failure-only notifications, receipt recall and remote unknown-send recovery remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",
                           "formal R3-02 acceptance is not implemented and A23-A26 are not completed"]}
 

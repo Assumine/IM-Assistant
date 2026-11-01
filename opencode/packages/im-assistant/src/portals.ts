@@ -30,6 +30,7 @@ export async function command(args: readonly string[]) {
     appliesTo: "next-service-start",
     connectionVerified: false,
     controlRepliesSupported: true,
-    automaticTaskReplies: false,
+    automaticTaskReplies: true,
+    taskReplyTargets: ["session"],
   }
 }
