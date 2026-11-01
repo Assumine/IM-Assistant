@@ -1,5 +1,7 @@
 # QQ 可选转发入口：隔离接回中
 
+本包只负责QQ与助手会话之间的转发和控制。小羊等人格聊天机器人规划为独立可选的QQ附属插件，账号、配置、上下文、工具权限和启停分别隔离；不会加入本包的任务路由。见[架构边界](../../docs/architecture/QQ接入与附属机器人边界.md)。
+
 `createPortal({ storage, session, backend?, policy })`处理结构化事件；新增`openQQChannel`通过认证OneBot通道转交它。普通会话调用原生Promise客户端的Session/Inbox接口，Codex整套后端调用同一应用的ConversationBackend公共RPC；不直接导入Codex模块。它不登录QQ、不监听网络端口、不轮询、不创建会话/任务库，不负责挑选或执行下一条任务。产品启动已装配这个可选入口，默认关闭；当前已支持控制回执自动发送，普通Session和提供原生输出归属的Codex首轮/最终公开回复也已接入，也没有使用旧账号、绑定或历史。
 
 当前支持：
@@ -81,7 +83,7 @@ list/queue返回viewID与从1开始的index。快照仅在原插件KV保存来�
 
 入口仅有默认128、最大512条的有界内存等待，不保存正文或离线任务队列，也不把它当作已接收成功。过载关闭通道并报告；关闭时未开始的输入丢弃并报告，已开始的接纳等待结算，不interrupt/cancel/resume原生任务。自动重连、定时状态轮询、登录和未知操作自动重投仍未启用；登录历史补收仅在显式history配置与已记录断点下运行。ready只确认首次验证结果；后续状态由state/onState读取。
 
-channel.send(source, text)仅是可信宿主原语：重新检查机器人/成员/范围白名单，以reply＋text分段发出，不解释字面CQ码。并发API用echo关联，只有确认ok且返回有效message_id才是sent；失败为rejected，超时/断线/异步或缺ID为uncertain，未提交为unavailable。未知发送不自动重试；拿到确认ID后才可调用linkReply/linkControlView。控制回执已在其上记录持久通知身份并只读核对已有回执；平台侧未知结果恢复与提示撤回仍未实现，没有后台通知执行循环。
+channel.send(source, text)仅是可信宿主原语：重新检查机器人/成员/范围白名单，以reply＋text分段发出，不解释字面CQ码。并发API用echo关联，只有确认ok且返回有效message_id才是sent；失败为rejected，超时/断线/异步或缺ID为uncertain，未提交为unavailable。未知发送不自动重试；拿到确认ID后才可调用linkReply/linkControlView。控制回执已在其上记录持久通知身份并只读核对已有回执；平台侧未知结果恢复仍未实现；可选排队提示撤回见后文，没有后台通知执行循环。
 
 ## 登录历史补收
 
