@@ -26,7 +26,7 @@
     "progress_updated": false
   },
   "checkpoint": "upstream/codex-checkpoint.json",
-  "checkpoint_sha256": "61f0b3684bd8178479bc3f5e443f370e690712aca59580662bc945edf3913220",
+  "checkpoint_sha256": "30f25996e22adcd83c8eea4c9dc3ad73b6b5f3b9f966c1875493bea23d7cb752",
   "native_cli_version": "codex-cli 0.166.0-alpha.5.1",
   "test_counts": {
     "task": "R3-01",
@@ -53,5 +53,5 @@
   ],
   "source_revision": "825f05ff9e85626d4a324679c1019e3c3d4b57a1",
   "current_delta": "upstream/codex-checkpoint.json#current_delta",
-  "verification_scope_note": "Full R3-01 steps and sources belong to source_revision. They were not rerun for this backend-only R3-02 slice. Current delta evidence is separate below."
+  "verification_scope_note": "Full R3-01 steps/sources belong to source_revision; current_delta belongs to its own source_revision. Latest QQ-only changes are verified separately in upstream/qq-checkpoint.json. Neither historical full run was repeated for this slice."
 }

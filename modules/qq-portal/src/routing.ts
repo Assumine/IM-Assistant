@@ -49,7 +49,7 @@ export function decode(value: unknown, policy: Policy): { kind: "message"; messa
   return { kind: "message", message: { scope, actorID, messageID, text, quoteID: quotes[0], mentions } }
 }
 
-const commands = new Set(["list", "bind", "unbind", "queue", "unqueue", "stop", "status", "model", "account", "watch", "unwatch", "progress", "permissions", "permission", "history", "research", "search", "mijia", "reply", "zcode"])
+const commands = new Set(["list", "bind", "unbind", "queue", "unqueue", "stop", "status", "model", "account", "watch", "unwatch", "progress", "permissions", "permission", "history", "research", "search", "mijia", "reply", "zcode", "confirm", "cancel"])
 export function command(text: string) {
   const input = text.trim()
   const match = /^(?:\/(?:codex\s+)?|codex\s+)([a-z][\w-]*)(?:\s+([\s\S]*))?$/i.exec(input)

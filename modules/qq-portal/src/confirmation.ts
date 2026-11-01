@@ -1,6 +1,6 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
-import { fingerprint, inputID, originKey, type Message } from "./routing"
-import { origin, type Origin, type Source } from "./sources"
+import { fingerprint, inputID, originKey, type Message, type Scope } from "./routing"
+import { origin, source, type Origin, type Source } from "./sources"
 import { target, type Target } from "./target"
 
 type Storage = Pick<StorageDomain, "get" | "insert">
@@ -20,13 +20,18 @@ const parse = (value: unknown): Proposal => {
 
 /** Consent and immutable routing metadata only. No body, execution status, retries or pending-work queue. */
 export function confirmations(storage: Storage) {
-  const read = async (input: Message) => {
+  const get = async (input: Source) => {
     const value = await storage.get(key(input))
     if (value === undefined) return undefined
     const proposal = parse(value)
-    if (proposal.id !== inputID(input) || proposal.fingerprint !== fingerprint(input) || proposal.source.actorID !== input.actorID ||
+    if (proposal.id !== inputID(input) || proposal.source.actorID !== input.actorID ||
       originKey(proposal.source.scope, proposal.source.messageID) !== originKey(input.scope, input.messageID))
       throw new Error("QQ confirmation source conflict")
+    return proposal
+  }
+  const read = async (input: Message) => {
+    const proposal = await get(input)
+    if (proposal && proposal.fingerprint !== fingerprint(input)) throw new Error("QQ confirmation content conflict")
     return proposal
   }
   const choice = async (proposal: Proposal): Promise<Choice | undefined> => {
@@ -36,6 +41,25 @@ export function confirmations(storage: Storage) {
   }
   return {
     read, choice,
+    async publish(input: Message, outgoingID: string) {
+      if (!/^-?(?:0|[1-9][0-9]{0,19})$/.test(outgoingID) || !Number.isSafeInteger(Number(outgoingID))) throw new Error("Invalid confirmation prompt ID")
+      const proposal = await read(input)
+      if (!proposal) throw new Error("QQ confirmation is missing")
+      const alias = "confirmation-prompt:" + originKey(input.scope, outgoingID)
+      const value = { source: proposal.source, id: proposal.id, fingerprint: proposal.fingerprint }
+      if (!await storage.insert(alias, value) && JSON.stringify(await storage.get(alias)) !== JSON.stringify(value)) throw new Error("Conflicting QQ confirmation prompt")
+    },
+    async prompt(scope: Scope, outgoingID: string, actorID: string) {
+      const value = await storage.get("confirmation-prompt:" + originKey(scope, outgoingID))
+      if (value === undefined) return undefined
+      if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid confirmation prompt")
+      const row = value as Record<string, unknown>
+      const identity = source(row.source)
+      if (identity.actorID !== actorID || originKey(identity.scope, outgoingID) !== originKey(scope, outgoingID)) return undefined
+      const proposal = await get(identity)
+      if (!proposal || proposal.id !== row.id || proposal.fingerprint !== row.fingerprint) throw new Error("Unproven confirmation prompt")
+      return proposal
+    },
     async propose(input: Message, from: Target, quoted: Origin) {
       const value = { id: inputID(input), source: { scope: input.scope, messageID: input.messageID, actorID: input.actorID },
         actorID: input.actorID, fingerprint: fingerprint(input), from, to: quoted.target, parentInputID: quoted.inputID }

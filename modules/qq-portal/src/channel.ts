@@ -19,6 +19,8 @@ export function openQQChannel(options: ChannelOptions) {
   const blocked = new Set<string>(), lanes = new Map<string, Promise<void>>(), jobs = new Set<Promise<void>>()
   const limit = Number.isSafeInteger(options.maxPendingEvents) && options.maxPendingEvents! > 0 && options.maxPendingEvents! <= 512 ? options.maxPendingEvents! : 128
   const issue = (value: ChannelIssue) => { try { options.onIssue?.(value) } catch { /* Reporting must not replay ingress or break another scope. */ } }
+  const permitted = (source: Source) => source.scope.botID === options.policy.botID && options.policy.allowedUsers.includes(source.actorID) &&
+    (source.scope.kind === "private" ? source.scope.peerID === source.actorID : options.policy.allowedGroups.includes(source.scope.peerID))
   const wire = openOneBot({ ...options.connection, botID: options.policy.botID }, {
     state: options.onState,
     event: (raw) => {
@@ -38,7 +40,8 @@ export function openQQChannel(options: ChannelOptions) {
         active++
         try {
           const result = await options.portal.receive(raw)
-          if (result.status === "uncertain" || result.status === "control" && result.result.kind === "uncertain") {
+          if (result.status === "uncertain" || result.status === "control" && result.result.kind === "uncertain" ||
+            result.status === "confirmation-control" && result.result.status === "uncertain") {
             blocked.add(key); issue({ kind: "uncertain", source })
           }
           if (!closing) {
@@ -53,11 +56,12 @@ export function openQQChannel(options: ChannelOptions) {
   return {
     ready: wire.ready,
     state: () => ({ ...wire.state(), pendingEvents: count, activeAdmissions: active, blockedScopes: blocked.size }),
+    /** Trusted confirmation adapter only. Authorization precedes the exact OneBot message read. */
+    read(source: Source) { return closing || !permitted(source) ? Promise.resolve(undefined) : wire.read(source) },
     /** Host-only primitive. Durable output identity, native completion and notification retry policy belong to the sender, not this wire. */
     async send(source: Source, text: string): Promise<SendResult | { status: "forbidden" }> {
       if (closing) return { status: "unavailable" }
-      if (source.scope.botID !== options.policy.botID || !options.policy.allowedUsers.includes(source.actorID) ||
-        (source.scope.kind === "private" ? source.scope.peerID !== source.actorID : !options.policy.allowedGroups.includes(source.scope.peerID))) return { status: "forbidden" }
+      if (!permitted(source)) return { status: "forbidden" }
       return wire.send(source.scope, text, source.messageID)
     },
     /** Stop ingress before the application scope releases its public clients/storage. Begun admissions settle; native execution is never interrupted. */

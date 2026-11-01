@@ -4,6 +4,7 @@ import { createPortal, openQQChannel, type ChannelOptions } from "./index"
 import { readConfiguration } from "./configuration"
 import { createControlReplies } from "./notifications"
 import { openTaskReplies } from "./task-replies"
+import { createConfirmationChannel } from "./confirmation-channel"
 
 /** A complete application capability. Per-Location plugin setup never owns a bot connection. */
 export async function configuredModule(home: string, environment: NodeJS.ProcessEnv = process.env, observe: {
@@ -39,12 +40,30 @@ export async function configuredModule(home: string, environment: NodeJS.Process
             if (receipt.status === "rejected") observe.onIssue?.({ kind: "notification-rejected" })
           }, onUnavailable: () => observe.onIssue?.({ kind: "notification-unavailable" }),
         })
+        const confirmations = createConfirmationChannel({ storage, portal, policy: account.policy,
+          read: (source) => channel ? channel.read(source) : Promise.resolve(undefined),
+          send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
+          describe: async (target) => {
+            if (target.kind === "session") return (await client.session.get({ sessionID: target.sessionID })).title
+            const value = await backend.query({ backendID: target.ref.backendID, query: { action: "read", threadID: target.ref.threadID } })
+            if (!value || typeof value !== "object" || !("thread" in value) || !value.thread || typeof value.thread !== "object" ||
+              !("id" in value.thread) || value.thread.id !== target.ref.threadID) return undefined
+            return "name" in value.thread && typeof value.thread.name === "string" ? value.thread.name : undefined
+          },
+          onReceipt: (receipt) => {
+            if (receipt.status === "uncertain" || receipt.status === "conflict") observe.onIssue?.({ kind: "notification-uncertain" })
+            if (receipt.status === "sent" && receipt.linkage === "unlinked") observe.onIssue?.({ kind: "notification-unlinked" })
+            if (receipt.status === "forbidden" || receipt.status === "unavailable") observe.onIssue?.({ kind: "notification-unavailable" })
+            if (receipt.status === "rejected") observe.onIssue?.({ kind: "notification-rejected" })
+          },
+        })
         channel = openQQChannel({
         policy: account.policy, connection: { url: account.url, token: account.token },
-        portal,
+        portal: confirmations,
         onResult: async (value) => {
-          if (value.result.status === "accepted" || value.result.status === "followup" || value.result.status === "steered" || value.result.status === "amended")
-            void tasks.admitted(value.result.target, value.result.inputID)
+          const result = value.result.status === "confirmation-control" ? value.result.result : value.result
+          if (result.status === "accepted" || result.status === "followup" || result.status === "steered" || result.status === "amended")
+            void tasks.admitted(result.target, result.inputID)
           if (replies && value.message && value.result.status === "control") {
             const receipt = await replies.deliver(value.message, value.result)
             try {

@@ -15,12 +15,26 @@ const home = await mkdtemp(path.join(root, "output-")),
   directory = path.join(home, "location")
 await mkdir(directory)
 await mkdir(path.join(home, "config"))
-const fake = fakeOneBot(),
+const originals = new Map<string, { message_id: number; message_type: string; user_id: number; message: unknown[] }>()
+const fake = fakeOneBot({
+    call(socket, call) {
+      if (call.action !== "get_msg") return
+      const original = originals.get(String(call.params.message_id))
+      fake.answer(
+        socket,
+        call,
+        original ? { ...original, sender: { user_id: original.user_id } } : null,
+        original ? "ok" : "failed",
+        original ? 0 : 1404,
+      )
+      return true
+    },
+  }),
   checks: string[] = [],
   requests: unknown[] = [],
   results: { source: Source; result: Result }[] = []
-const entered = Array.from({ length: 3 }, () => Promise.withResolvers<void>()),
-  release = Array.from({ length: 3 }, () => Promise.withResolvers<void>())
+const entered = Array.from({ length: 4 }, () => Promise.withResolvers<void>()),
+  release = Array.from({ length: 4 }, () => Promise.withResolvers<void>())
 const upstream = Bun.serve({
   hostname: "127.0.0.1",
   port: 0,
@@ -105,6 +119,16 @@ function body(call: Call) {
         : [],
     )
     .join("")
+}
+function acknowledged(call: Call) {
+  const answer = fake.answers.find((value) => value.echo === call.echo)
+  assert(answer?.status === "ok" && record(answer.data) && typeof answer.data.message_id === "number")
+  return String(answer.data.message_id)
+}
+function post(id: number, text: string, quoted: string) {
+  const raw = message(id, text, quoted)
+  originals.set(String(id), raw)
+  fake.event(raw)
 }
 async function until(check: () => Promise<boolean>) {
   const deadline = Date.now() + 30000
@@ -209,7 +233,7 @@ try {
   const sent = sends(900)[0]!,
     ack = fake.answers.find((value) => value.echo === sent.echo)
   assert(ack?.status === "ok" && record(ack.data) && typeof ack.data.message_id === "number")
-  fake.event(message(905, "Follow up on the old task", String(ack.data.message_id)))
+  post(905, "Follow up on the old task", String(ack.data.message_id))
   await observe(() => results.some((value) => value.source.messageID === "905"))
   const proposal = results.find((value) => value.source.messageID === "905")!.result
   assert(
@@ -220,6 +244,18 @@ try {
   assert.equal(requests.length, 3)
   checks.push(
     "quoting the actual acknowledged assistant reply resolves its original task and requires cross-Session confirmation instead of dispatching into the new binding",
+  )
+  await observe(() => sends(905).length === 1)
+  const consentPrompt = acknowledged(sends(905)[0]!)
+  assert(body(sends(905)[0]!).includes("Original target"))
+  assert(body(sends(905)[0]!).includes("/confirm"))
+  const beforeDuplicate = results.length
+  post(905, "Follow up on the old task", String(ack.data.message_id))
+  await observe(() => results.length > beforeDuplicate)
+  assert.equal(sends(905).length, 1)
+  assert.equal(requests.length, 3)
+  checks.push(
+    "an acknowledged confirmation prompt quotes its original request once and cannot admit model input before explicit consent",
   )
   await host.close()
   host = await boot()
@@ -237,13 +273,86 @@ try {
   checks.push(
     "SQLite restart restores output attribution and first/final receipts without repeating native work or sending historical replies again",
   )
+  post(906, "/CODEX CONFIRM", consentPrompt)
+  await until(async () => requests.length === 4)
+  await observe(() => results.some((value) => value.source.messageID === "906"))
+  const confirmed = results.find((value) => value.source.messageID === "906")!.result
+  assert(confirmed.status === "confirmation-control" && confirmed.result.status === "followup")
+  assert.equal(confirmed.result.inputID, nativeID(905))
+  assert(confirmed.result.target.kind === "session" && confirmed.result.target.sessionID === first.id)
+  assert(JSON.stringify(requests[3]).includes("Follow up on the old task"))
+  assert(!JSON.stringify(requests[3]).includes("/CODEX CONFIRM"))
+  const beforeRepeat = results.length
+  post(906, "/CODEX CONFIRM", consentPrompt)
+  await observe(() => results.length > beforeRepeat)
+  assert.equal(requests.length, 4)
+  assert.equal(sends(906).length, 1)
+  release[3]!.resolve()
+  await observe(() => sends(905).some((call) => body(call) === "Public reply 4"))
+  fake.event(message(908, "/status"))
+  await observe(() => results.some((value) => value.source.messageID === "908"))
+  const current = results.find((value) => value.source.messageID === "908")!.result
+  assert(
+    current.status === "control" &&
+      current.result.kind === "status" &&
+      current.result.target.kind === "session" &&
+      current.result.target.sessionID === other.id,
+  )
+  checks.push(
+    "after SQLite restart a quoted confirmation reads its exact original and creates one native linked input without rebinding; command repeats only reconcile and final output quotes the original request",
+  )
+
+  post(910, "Decline this follow-up", String(ack.data.message_id))
+  await observe(() => sends(910).length === 1)
+  const declinePrompt = acknowledged(sends(910)[0]!)
+  post(911, "/cancel", declinePrompt)
+  await observe(() => results.some((value) => value.source.messageID === "911"))
+  const declined = results.find((value) => value.source.messageID === "911")!.result
+  assert(declined.status === "confirmation-control" && declined.result.status === "confirmation-declined")
+  post(912, "/confirm", declinePrompt)
+  await observe(() => results.some((value) => value.source.messageID === "912"))
+  const opposite = results.find((value) => value.source.messageID === "912")!.result
+  assert(
+    opposite.status === "confirmation-control" &&
+      opposite.result.status === "confirmation-already-decided" &&
+      opposite.result.choice === "decline",
+  )
+  assert.equal(requests.length, 4)
+  checks.push(
+    "decline is acknowledged to its own command and remains immutable when a later approval quotes the same prompt; no model work is admitted",
+  )
+
+  post(913, "Unavailable original", String(ack.data.message_id))
+  await observe(() => sends(913).length === 1)
+  originals.delete("913")
+  post(914, "/confirm", acknowledged(sends(913)[0]!))
+  await observe(() => results.some((value) => value.source.messageID === "914"))
+  const unavailable = results.find((value) => value.source.messageID === "914")!.result
+  assert(unavailable.status === "confirmation-control" && unavailable.result.status === "confirmation-unavailable")
+  post(915, "Recalled original", String(ack.data.message_id))
+  await observe(() => sends(915).length === 1)
+  fake.event({ post_type: "notice", notice_type: "friend_recall", self_id: 10001, user_id: 20001, message_id: 915 })
+  await observe(() => results.some((value) => value.source.messageID === "915" && value.result.status === "unchanged"))
+  post(916, "/confirm", acknowledged(sends(915)[0]!))
+  await observe(() => results.some((value) => value.source.messageID === "916"))
+  const recalled = results.find((value) => value.source.messageID === "916")!.result
+  assert(recalled.status === "confirmation-control" && recalled.result.status === "recalled")
+  assert.equal(requests.length, 4)
+  assert.equal(fake.calls.filter((call) => call.action === "get_msg").length, 4)
+  assert.equal((await host.client.session.inbox.list({ sessionID: first.id })).length, 0)
+  assert.equal((await host.client.session.context({ sessionID: other.id })).length, 0)
+  checks.push(
+    "missing or recalled originals return explicit confirmation feedback without guessed payloads, fallback tasks, cancelled predecessors or another native queue",
+  )
   console.log(
     JSON.stringify({
       status: "passed",
       checks,
       model_requests: requests.length,
       loopback_connections: fake.upgrades.length,
-      loopback_task_send_attempts: sends(900).length + sends(901).length,
+      loopback_task_send_attempts:
+        sends(900).length + sends(901).length + sends(905).filter((call) => body(call) === "Public reply 4").length,
+      loopback_original_reads: fake.calls.filter((call) => call.action === "get_msg").length,
       actual_qq_connection: false,
       external_messages_sent: 0,
       production_credentials_used: false,

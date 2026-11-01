@@ -36,7 +36,7 @@ def _run():
     steps = []
     for module_directory, label, args, expected_count in [
         (module, "r3-qq-module-types", [bun, str(ROOT / "opencode/node_modules/typescript/bin/tsc6"), "--project", "tsconfig.json"], None),
-        (module, "r3-qq-module-tests", [bun, "test"], 178),
+        (module, "r3-qq-module-tests", [bun, "test"], 193),
         (ROOT / "modules/codex-native", "r3-qq-native-guidance-input", [bun, "test", "test/input.test.ts"], 7),
     ]:
         log = reports / (label + ".log")
@@ -90,9 +90,9 @@ def _run():
                              extra_env={"IM_QQ_OUTPUT_ROOT": output_directory}))
     lines = (reports / "r3-qq-output-http.log").read_text(encoding="utf-8").splitlines()
     output = json.loads(next(line for line in reversed(lines) if line.startswith('{"status":')))
-    if (output["status"] != "passed" or len(output["checks"]) != 5 or output["model_requests"] != 3 or
+    if (output["status"] != "passed" or len(output["checks"]) != 9 or output["model_requests"] != 4 or
             output["actual_qq_connection"] or output["external_messages_sent"] or output["production_credentials_used"] or
-            output["loopback_task_send_attempts"] != 3 or output["loopback_connections"] != 2):
+            output["loopback_task_send_attempts"] != 4 or output["loopback_connections"] != 2 or output["loopback_original_reads"] != 4):
         raise RuntimeError("Native input output and first/final forwarding acceptance was incomplete")
     backend_output_parent = ROOT / "runtime/codex-native"
     backend_output_parent.mkdir(parents=True, exist_ok=True)
@@ -208,7 +208,7 @@ def _run():
             "sources": {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in sorted([*module.glob("src/*.ts"), *(module / "test").rglob("*.ts"), module / "package.json", module / "tsconfig.json", *(ROOT / name for name in names)])},
             "remaining": ["authenticated transport, product startup and durable control reply receipts verified only against loopback OneBot fixtures; live QQ, runtime module UI/status and durable offline input recovery are not connected",
-                          "opt-in controls include numbered selections from explicitly quoted published views; implicit latest-list selection, native stop fences, remote confirmation UI and remaining commands are not connected",
+                          "quoted confirmation commands and published-view selections are connected; implicit latest-list selection, native stop fences and remaining commands are not connected",
                           "ordinary Session and native backend current/closed input routing and cross-conversation confirmation are supported; whole-backend pending append remains blocked without native atomic append support",
                           "first/final public output requires proven native input/root/turn identity; unsupported whole backends remain unavailable; receipt recall, ordinary Session failure-only notifications and remote unknown-send recovery remain unimplemented",
                           "attachments and companion routing are not consumed; unsupported input is refused without partial forwarding",

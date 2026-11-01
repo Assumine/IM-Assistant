@@ -17,6 +17,7 @@ export type Result =
   | { status: "steered"; target: Target; inputID: string; continuationID: string; delivery: "accepted" | "pending" | "delivered"; duplicate: boolean }
   | { status: "confirmation-required"; confirmationID: string; target: Target; duplicate: boolean }
   | { status: "confirmation-declined" }
+  | { status: "confirmation-control"; commandID: string; result: Result | { status: "confirmation-unavailable" | "confirmation-selection-required" | "confirmation-previous" } | { status: "confirmation-already-decided"; choice: Choice } }
   | { status: "followup"; target: Target; inputID: string; parentInputID: string; delivery: "accepted" | "pending" | "delivered"; duplicate: boolean }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
@@ -28,7 +29,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
   const confirmationResult = (proposal: Proposal, duplicate: boolean): Result => ({ status: "confirmation-required", confirmationID: proposal.id, target: proposal.to, duplicate })
   const key = (scope: Scope, id: string) => "origin:" + originKey(scope, id)
   const tombstone = (scope: Scope, id: string) => "recall:" + originKey(scope, id)
-  const recalled = async (input: Message) => (await storage.get(tombstone(input.scope, input.messageID))) === input.actorID
+  const recalled = async (input: Source) => (await storage.get(tombstone(input.scope, input.messageID))) === input.actorID
   const lookup = metadata.lookup
   const binding = async (scope: Scope) => {
     const value = await storage.get("binding:" + scopeKey(scope))
@@ -147,6 +148,8 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     return { ...accepted(record, false), ...(input.quoteID ? { reference: "unresolved" as const } : {}) }
   }
   return {
+    /** Shared read-only recall fact for trusted input adapters; never cancels or resumes native work. */
+    recalled,
     /** Trusted host control API; remote transports must authorize controls before calling it. */
     bind,
     /** Trusted transport only, after a real outgoing list/queue reply has an acknowledged QQ message ID. */
@@ -200,3 +203,4 @@ export { configuration, readConfiguration, initialize, setEnabled, type Account,
 export { createControlReplies, type NotificationReceipt } from "./notifications"
 export { controlReply } from "./control-reply"
 export { createTaskReplies, openTaskReplies } from "./task-replies"
+export { createConfirmationChannel } from "./confirmation-channel"

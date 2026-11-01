@@ -151,3 +151,43 @@ test("startup verification has a bounded deadline and never forwards buffered ev
   try { expect(await client.ready).toEqual({ phase: "unavailable", reason: "deadline" }); expect(fake.calls).toHaveLength(1); expect(seen).toEqual([]) }
   finally { client.close(); fake.close() }
 })
+
+test("exact message reads validate ID, actor and kind without requiring a nonstandard group_id", async () => {
+  let group = false
+  const fake = fakeOneBot({ call(socket, call) {
+    if (call.action !== "get_msg") return
+    fake.answer(socket, call, { message_id: call.params.message_id, message_type: group ? "group" : "private",
+      sender: { user_id: "20001" }, message: [{ type: "text", data: { text: "Exact original" } }] })
+    return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event() {} })
+  try {
+    await client.ready
+    for (const kind of ["private", "group"] as const) {
+      group = kind === "group"
+      const source = { scope: { botID: "10001", kind, peerID: group ? "30001" : "20001" }, actorID: "20001", messageID: "10" }
+      expect(await client.read(source)).toEqual({ post_type: "message", self_id: "10001", message_type: kind,
+        user_id: "20001", message_id: "10", ...(group ? { group_id: "30001" } : {}), message: [{ type: "text", data: { text: "Exact original" } }] })
+    }
+    expect(fake.calls.filter((call) => call.action === "get_msg").map((call) => call.params)).toEqual([{ message_id: 10 }, { message_id: 10 }])
+  } finally { client.close(); fake.close() }
+})
+
+test("message reads reject wrong identities and string markup rather than reconstructing content", async () => {
+  const changes = [{ message_id: 11 }, { message_type: "private" }, { sender: { user_id: "20002" } },
+    { group_id: "30002" }, { message: "[CQ:reply,id=1] Original" }]
+  let change = changes[0]
+  const fake = fakeOneBot({ call(socket, call) {
+    if (call.action !== "get_msg") return
+    fake.answer(socket, call, { message_id: 10, message_type: "group", sender: { user_id: "20001" }, message: [], ...change })
+    return true
+  } })
+  const client = openOneBot({ url: fake.url, token: fake.token, botID: "10001" }, { event() {} })
+  try {
+    await client.ready
+    const source = { scope: { botID: "10001", kind: "group" as const, peerID: "30001" }, actorID: "20001", messageID: "10" }
+    for (const item of changes) { change = item; expect(await client.read(source)).toBeUndefined() }
+    client.close(); expect(await client.read(source)).toBeUndefined()
+    expect(fake.calls.filter((call) => call.action === "get_msg")).toHaveLength(changes.length)
+  } finally { client.close(); fake.close() }
+})

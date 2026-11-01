@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { Scope } from "./routing"
+import type { Source } from "./sources"
 
 export type WireState = { phase: "connecting" | "verifying" | "online" | "unavailable" | "closed"; reason?: "configuration" | "transport" | "deadline" | "identity" | "not-online" | "protocol" }
 export type SendResult = { status: "sent"; messageID: string } | { status: "unavailable" | "uncertain" | "rejected" }
@@ -104,6 +105,23 @@ export function openOneBot(options: OneBotOptions, callbacks: { event: (event: u
     ready: ready.promise,
     state: (): WireState => ({ ...current }),
     close() { stop("closed") },
+    /** Read the exact retained source, not arbitrary history. get_msg has no required group_id in OneBot 11. */
+    async read(source: Source): Promise<unknown | undefined> {
+      const id = numericID(source.messageID)
+      if (current.phase !== "online" || source.scope.botID !== options.botID || !id || !accountID(source.actorID) ||
+        !accountID(source.scope.peerID) || !["private", "group"].includes(source.scope.kind) ||
+        source.scope.kind === "private" && source.scope.peerID !== source.actorID) return undefined
+      const response = await request("get_msg", { message_id: Number(id) })
+      if (response.kind !== "reply" || response.reply.status !== "ok" || !record(response.reply.data)) return undefined
+      const data = response.reply.data
+      if (numericID(data.message_id) !== id || data.message_type !== source.scope.kind || !record(data.sender) ||
+        accountID(data.sender.user_id) !== source.actorID || !Array.isArray(data.message) ||
+        data.group_id !== undefined && (source.scope.kind !== "group" || accountID(data.group_id) !== source.scope.peerID) ||
+        data.user_id !== undefined && accountID(data.user_id) !== source.actorID) return undefined
+      // Scope comes from the already-retained source. The portal must still verify the complete original fingerprint.
+      return { post_type: "message", self_id: options.botID, message_type: source.scope.kind, user_id: source.actorID,
+        message_id: id, ...(source.scope.kind === "group" ? { group_id: source.scope.peerID } : {}), message: data.message }
+    },
     async send(scope: Scope, text: string, quoteID: string): Promise<SendResult> {
       const peer = accountID(scope.peerID)
       if (current.phase !== "online" || scope.botID !== options.botID || !["private", "group"].includes(scope.kind) || !peer ||

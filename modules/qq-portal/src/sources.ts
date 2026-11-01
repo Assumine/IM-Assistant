@@ -11,7 +11,7 @@ const record = (value: unknown): value is Record<string, unknown> => !!value && 
 const account = (value: unknown): value is string => typeof value === "string" && /^[1-9][0-9]{0,19}$/.test(value)
 const messageID = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value)
 const controlledID = (value: unknown): value is string => typeof value === "string" && /^msg_[A-Za-z0-9_-]+$/.test(value)
-const source = (value: unknown): Source => {
+export const source = (value: unknown): Source => {
   if (!record(value) || !record(value.scope) || !account(value.scope.botID) ||
     value.scope.kind !== "private" && value.scope.kind !== "group" || !account(value.scope.peerID) ||
     !account(value.actorID) || !messageID(value.messageID) || value.actorID === value.scope.botID ||

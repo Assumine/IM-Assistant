@@ -1365,7 +1365,7 @@
         {
           "path": "packages/server/script/qq-output-smoke.ts",
           "action": "added",
-          "sha256": "f15dffb1861b5c79ff75f27e1ed047ad638f1a77f7d4fa14fcdb860607fad1f8"
+          "sha256": "a1a8c401d283e8edfcd3d129c6c237398032c13a4833b1fcaa2ef7b9418ec9e7"
         },
         {
           "path": "packages/server/src/handlers/session-output.ts",

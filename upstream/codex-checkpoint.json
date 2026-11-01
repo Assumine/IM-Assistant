@@ -579,7 +579,7 @@
     "production_switched": false
   },
   "source_revision": "825f05ff9e85626d4a324679c1019e3c3d4b57a1",
-  "verification_scope_note": "Full R3-01 steps and sources belong to source_revision. They were not rerun for this backend-only R3-02 slice. Current delta evidence is separate below.",
+  "verification_scope_note": "Full R3-01 steps/sources belong to source_revision; current_delta belongs to its own source_revision. Latest QQ-only changes are verified separately in upstream/qq-checkpoint.json. Neither historical full run was repeated for this slice.",
   "current_delta": {
     "task": "R3-02",
     "status": "partial_verified",
@@ -863,6 +863,12 @@
       "opencode/packages/simulation/test/simulated-provider.test.ts": "58ae9918e390d2645d4c6a8770dcd8fc9193fff96a98cfb01f4535b8b6f22ae3",
       "tools/codex_native_smoke.py": "c341ac4fe6e110b3a9221dafd516dc4106845ae5a1115d4a6118e5835081a64d",
       "tools/qq_portal_smoke.py": "49a9a07befc482461aa39eee7bb445361770a20797c94e536cd6aef478053cc5"
-    }
+    },
+    "source_revision": "5705a69f24d4b26e2640bcb35ce26c9be2bd5b52"
+  },
+  "latest_qq_evidence": {
+    "checkpoint": "upstream/qq-checkpoint.json",
+    "scope": "QQ-cross-conversation-confirmation",
+    "native_implementation_changed": false
   }
 }
