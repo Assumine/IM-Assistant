@@ -34,7 +34,11 @@
     "A29",
     "A30",
     "A31",
-    "A32"
+    "A32",
+    "A33",
+    "A34",
+    "A35",
+    "A36"
   ],
   "historical_reference": "docs/archive/python-host-plan/progress.json",
   "tasks": {
@@ -687,9 +691,45 @@
       "blocked_reason": null
     },
     "R5-01": {
-      "status": "pending",
-      "artifacts": [],
-      "verification": [],
+      "status": "done",
+      "artifacts": [
+        "tools/release_smoke.py",
+        "tools/release_native_smoke.py",
+        "tools/release_performance.py",
+        "tests/rebase/test_r5_01.py",
+        "tests/rebase/release-evidence.json",
+        "docs/handoff/迁移与回退验收.md",
+        "modules/codex-native/test/native.test.ts",
+        "modules/codex-native/test/fixture/shared-client.ts",
+        "opencode/packages/server/script/codex-backend-smoke.ts",
+        "opencode/packages/server/script/codex-product-smoke.ts",
+        "upstream/patches.json"
+      ],
+      "verification": [
+        {
+          "kind": "runtime",
+          "plan_id": "opencode-app-base-v2",
+          "status": "passed",
+          "exit_code": 0,
+          "tests_run": 4,
+          "skipped": 0,
+          "acceptance_ids": [
+            "A33",
+            "A34",
+            "A35",
+            "A36"
+          ],
+          "command": "python tools/run_runtime_checks.py --task R5-01",
+          "evidence": "tests/rebase/release-evidence.json",
+          "native_test_executions": 1128,
+          "browser_test_executions": 214,
+          "benchmark_runs": 3,
+          "workspace_checks": 36,
+          "standalone_e2e_diagnostics": 0,
+          "scope": "isolated-release-candidate-not-production-rollout",
+          "publication": "disabled"
+        }
+      ],
       "blocked_reason": null
     }
   }

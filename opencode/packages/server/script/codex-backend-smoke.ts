@@ -178,7 +178,7 @@ async function round(resume: boolean) {
       )
       yield* Effect.addFinalizer(() => Effect.sync(() => detached.resolve()))
       assert.deepEqual(yield* Effect.promise(() => call("list", {})), [
-        { id: "codex-native", label: "Codex", browse: true, execution: true, create: true },
+        { id: "codex-native", label: "Codex", browse: true, execution: true, create: true, images: true },
       ])
       if (!resume)
         checks.push(

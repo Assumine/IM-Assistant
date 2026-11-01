@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import type { ConfigEntry, OpenCodeEvent, SessionMessageInfo, WorktreeDirectory } from "@opencode/client/promise"
+import type { ConfigEntry, OpenCodeEvent, WorktreeDirectory } from "@opencode/client/promise"
 import { NO_PROVIDER, REMOTE_SERVER, SERVER, holdRoute, project, seed, session } from "../utils/app"
 import { mockMissingLocation, mockOpenCodeServer } from "../utils/mock-server"
 import {
@@ -16,6 +16,7 @@ import { backendEvent, backendRpc, backendTabs, backendHref } from "../utils/bac
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 import type { Capability } from "@opencode/schema/capability"
 import { capabilityEvent, capabilityRpc, capabilityVisibility } from "../utils/capabilities"
+import { validateTimelineMessages } from "../utils/timeline"
 
 test("assistant appearance: native theme, font roles and reduced motion survive reload", async ({ page }) => {
   await openSession(page, { name: "AssistantAppearance", workspace: false })
@@ -1343,7 +1344,7 @@ for (const locale of ["en", "ar"]) {
       sessionStatus: { [id]: { type: "busy" }, [childID]: { type: "busy" } },
       seed: { locale },
       pageMessages: () => ({
-        items: [
+        items: validateTimelineMessages([
           { id: "msg_activity_user", type: "user", text: "Inspect the activity capsule", time: { created: 1 } },
           {
             id: "msg_activity_assistant",
@@ -1377,7 +1378,7 @@ for (const locale of ["en", "ar"]) {
             ],
             time: { created: 2 },
           },
-        ],
+        ]),
       }),
       shellCommands: [
         {

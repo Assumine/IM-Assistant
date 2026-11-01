@@ -103,7 +103,7 @@
         {
           "path": "packages/app/e2e/regression/composer.spec.ts",
           "action": "modified",
-          "sha256": "2b05f16c4cf260aea3b17c039fb4594e8832c224f0aae76f82c7fc8a737185c0"
+          "sha256": "c641bcbed9de7067766b88b108bb51607bc57a322b6f940d5b857072ab89537b"
         },
         {
           "path": "packages/app/src/composer/attachments/attachments.ts",
@@ -471,7 +471,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "4036ff0dc5eb14d1b5097c2267f7082dd14cb094858cbb4a04a0e96dc21eed43"
+          "sha256": "b4f529757970490480d81c961a25a965478430ccf8ede3e1920153cbb8c0fa84"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -661,7 +661,7 @@
         {
           "path": "packages/server/script/codex-backend-smoke.ts",
           "action": "added",
-          "sha256": "bbe1e7d082962a76fd0e88c6cf6bd0eca915f0801f80211e908667c61a43a859"
+          "sha256": "199f1258b4efa34e28ce08a5a188a2e220c0bbc560df2cab4ae646ac2028aea2"
         },
         {
           "path": "packages/server/test/conversation-policy.test.ts",
@@ -1030,7 +1030,7 @@
         {
           "path": "packages/server/script/codex-product-smoke.ts",
           "action": "added",
-          "sha256": "69e00735879da91beab7cda6b1d7ef116ae9cbf27f6ca514414c7f56e666ae91"
+          "sha256": "34d97a969463fa084134f938bc6bf9791da40a849c00c04610299647b2465cec"
         }
       ]
     },
@@ -1672,6 +1672,45 @@
           "path": "packages/client/test/solid-data.test.ts",
           "action": "modified",
           "sha256": "bb255e312caeb89973b6835a8616b6af140526fec8464fa94100f09ecb863280"
+        }
+      ]
+    },
+    {
+      "id": "R5-01-release-contracts-250",
+      "reason": "Align inherited browser fixtures and observational benchmark wrappers with the pinned native protocol; preserve assertions and native state owners while preparing release verification.",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task R5-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/e2e/performance/terminals/probe.ts",
+          "action": "modified",
+          "sha256": "9112a437e56efc365cbeddd5ed77a62bf119e12c07ddddcbd566ce4b727a2084"
+        },
+        {
+          "path": "packages/app/e2e/performance/timeline/composer-write-batch-benchmark.spec.ts",
+          "action": "modified",
+          "sha256": "f32b2bca635f2587e3f62b125e8385d906527d24a83b81e197a8724a873f53a1"
+        },
+        {
+          "path": "packages/app/e2e/regression/review.spec.ts",
+          "action": "modified",
+          "sha256": "05e5d877d2177e0bb60ffda4664f125fed90c081ecb87f903d798e674e07a8ef"
+        },
+        {
+          "path": "packages/app/e2e/regression/session-panel-scrollbar.spec.ts",
+          "action": "modified",
+          "sha256": "1785df823d3af4f31b57797248fe30299136f6f3a200f768f46af995c4d8f075"
+        },
+        {
+          "path": "packages/app/e2e/regression/timeline-geometry.spec.ts",
+          "action": "modified",
+          "sha256": "cc9ec14ea553da3619ed1c3207e5d7bdc768a229ba91e4948f195d4fb68f7d04"
+        },
+        {
+          "path": "packages/app/e2e/regression/timeline-stream.spec.ts",
+          "action": "modified",
+          "sha256": "ec8a4cb4fd2a7a7ca790c01b9f3089eba0557239b315f639b3bea8279161eab1"
         }
       ]
     }

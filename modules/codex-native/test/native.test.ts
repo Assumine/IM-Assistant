@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { chmod, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { spawn } from "node:child_process"
-import { createInterface } from "node:readline"
 import { fileURLToPath } from "node:url"
 import { CodexSessionAdapter, createProfile, createSharedProfile, stopSharedService, loadProfile, nativeBackend, NativeError, OutcomeUnknown, type Notification, type Profile } from "../src"
 import { policy } from "../src/profile"
@@ -422,21 +421,36 @@ async function managed(url: string) {
 }
 
 function worker(profile: Profile) {
-  const child = spawn(process.execPath, [fileURLToPath(new URL("./fixture/shared-client.ts", import.meta.url)), profile.home, executable!], {
-    env: process.env, windowsHide: true, stdio: "pipe",
+  const child = Bun.spawn([process.execPath, fileURLToPath(new URL("./fixture/shared-client.ts", import.meta.url)), profile.home, executable!], {
+    env: process.env, windowsHide: true, stdin: "pipe", stdout: "pipe", stderr: "pipe",
   })
   const messages: Record<string, unknown>[] = []
   const waiters = new Set<() => void>()
   const errors: string[] = []
-  const ended = new Promise<void>((resolve) => child.once("close", () => resolve()))
-  createInterface({ input: child.stdout }).on("line", (line) => {
-    messages.push(JSON.parse(line))
+  const consume = async () => {
+    const reader = child.stdout.pipeThrough(new TextDecoderStream()).getReader()
+    let pending = ""
+    while (true) {
+      const next = await reader.read()
+      if (next.done) break
+      pending += next.value
+      let end: number
+      while ((end = pending.indexOf("\n")) >= 0) {
+        messages.push(JSON.parse(pending.slice(0, end)))
+        pending = pending.slice(end + 1)
+        for (const wake of waiters) wake()
+      }
+    }
+    if (pending.trim()) throw new Error("Incomplete worker event")
+  }
+  const output = consume()
+  const error = new Response(child.stderr).text().then((value) => { errors.push(value) })
+  const ended = child.exited.then(async () => {
+    await Promise.all([output, error])
     for (const wake of waiters) wake()
   })
-  child.stderr.on("data", (data) => errors.push(String(data)))
-  child.on("exit", () => { for (const wake of waiters) wake() })
   cleanup.push(async () => {
-    if (child.exitCode === null && child.signalCode === null) child.kill()
+    if (child.exitCode === null) child.kill()
     await ended
   })
   return {
@@ -444,11 +458,14 @@ function worker(profile: Profile) {
     ended,
     send: (command: string) => child.stdin.write(command + "\n"),
     wait: (type: string) => new Promise<Record<string, unknown>>((resolve, reject) => {
-      const timer = setTimeout(() => { waiters.delete(check); reject(new Error("Worker event deadline")) }, 20000)
+      const timer = setTimeout(() => {
+        waiters.delete(check)
+        reject(new Error(`Worker event deadline (${type}); observed: ${messages.map((value) => value.type).join(", ")}; ${errors.join("").slice(-2000)}`))
+      }, 20000)
       function check() {
         const message = messages.find((value) => value.type === type)
         if (message) { clearTimeout(timer); waiters.delete(check); resolve(message); return }
-        if (child.exitCode !== null || child.signalCode !== null) {
+        if (child.exitCode !== null) {
           clearTimeout(timer); waiters.delete(check); reject(new Error("Worker exited: " + errors.join("").slice(-2000)))
         }
       }

@@ -13,6 +13,21 @@ export type TerminalProbe = {
   serialized: { ms: number; bytes: number; value: string }[]
 }
 
+type DrawImageArgs =
+  | [image: CanvasImageSource, dx: number, dy: number]
+  | [image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number]
+  | [
+      image: CanvasImageSource,
+      sx: number,
+      sy: number,
+      sw: number,
+      sh: number,
+      dx: number,
+      dy: number,
+      dw: number,
+      dh: number,
+    ]
+
 declare global {
   interface Window {
     terminalProbe: TerminalProbe
@@ -54,12 +69,15 @@ Terminal.prototype.open = function (element) {
 
   if (new URL(location.href).searchParams.has("terminalDrawProbe")) {
     const context = element.querySelector("canvas")!.getContext("2d")!
-    const draw = context.drawImage
-    context.drawImage = function (...args: unknown[]) {
+    const draw = context.drawImage.bind(context)
+    context.drawImage = function (...args: DrawImageArgs) {
       probe.draws++
 
       if (hidden) probe.hiddenDraws++
-      draw.apply(this, args)
+
+      if (args.length === 3) draw(...args)
+      else if (args.length === 5) draw(...args)
+      else draw(...args)
     }
   }
 }

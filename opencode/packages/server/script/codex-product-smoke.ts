@@ -196,7 +196,7 @@ try {
   const deadline = Date.now() + 20_000
   while (((await host.call("list")) as unknown[]).length === 0 && Date.now() < deadline) await Bun.sleep(20)
   assert.deepEqual(await host.call("list"), [
-    { id: "codex-native", label: "Codex", browse: true, execution: true, create: true },
+    { id: "codex-native", label: "Codex", browse: true, execution: true, create: true, images: true },
   ])
   assert.deepEqual(await host.call("status", { backendID: "codex-native" }), {
     authentication: { state: "not-required" },

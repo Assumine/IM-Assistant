@@ -5,31 +5,53 @@ import { mockPluginsActivating, type MockServerConfig } from "../utils/mock-serv
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] })
 
-test("conversation host uploads selected text as bytes and keeps project and shell controls unavailable", async ({ page }) => {
+test("conversation host uploads selected text as bytes and keeps project and shell controls unavailable", async ({
+  page,
+}) => {
   const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
-  const view = await openSession(page, { name: "Conversation only", workspace: false,
-    onPrompt: input => void prompts.push(input.body) })
+
+  const view = await openSession(page, {
+    name: "Conversation only",
+    workspace: false,
+    onPrompt: (input) => void prompts.push(input.body),
+  })
+
   await expect(page.getByRole("button", { name: "Toggle review", exact: true })).toHaveCount(0)
   await expect(page.locator('[data-slot="session-location-trigger"]')).toHaveCount(0)
   await view.editor.press("ControlOrMeta+Shift+X")
   await view.editor.fill("!")
   await expect(view.editor).toHaveText("!")
   await view.editor.fill("Read the uploaded note")
-  await page.locator('input[type="file"]').setInputFiles({ name: "note.txt", mimeType: "text/plain", buffer: Buffer.from("A controlled attachment") })
+  await page
+    .locator('input[type="file"]')
+    .setInputFiles({ name: "note.txt", mimeType: "text/plain", buffer: Buffer.from("A controlled attachment") })
   await expect(page.getByText("note.txt", { exact: true })).toBeVisible()
   await view.editor.press("Enter")
   await expect.poll(() => prompts.length).toBe(1)
   expect(prompts[0]?.text).toContain("Read the uploaded note")
-  expect(prompts[0]?.files).toMatchObject([{ uri: "data:text/plain;base64," + Buffer.from("A controlled attachment").toString("base64"), name: "note.txt" }])
+  expect(prompts[0]?.files).toMatchObject([
+    { uri: "data:text/plain;base64," + Buffer.from("A controlled attachment").toString("base64"), name: "note.txt" },
+  ])
 })
 
 test("conversation host retains native image preview and byte delivery", async ({ page }) => {
   const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
-  const view = await openSession(page, { name: "Conversation image", workspace: false,
-    onPrompt: input => void prompts.push(input.body) })
+
+  const view = await openSession(page, {
+    name: "Conversation image",
+    workspace: false,
+    onPrompt: (input) => void prompts.push(input.body),
+  })
+
   const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII="
-  await page.locator('input[type="file"]').setInputFiles({ name: "pixel.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") })
-  const thumbnail = page.locator('[data-component="composer-attachments"]').getByRole("img", { name: "pixel.png", exact: true })
+  await page
+    .locator('input[type="file"]')
+    .setInputFiles({ name: "pixel.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") })
+
+  const thumbnail = page
+    .locator('[data-component="composer-attachments"]')
+    .getByRole("img", { name: "pixel.png", exact: true })
+
   await expect(thumbnail).toHaveJSProperty("naturalWidth", 1)
   await thumbnail.click()
   const preview = page.locator('[data-component="image-preview"]')
@@ -171,7 +193,7 @@ test("the free usage limit opens the Go dialog once, leaves a readable notice, a
           : []),
       ],
       connected: state.authorized ? ["opencode", "opencode-go"] : ["opencode"],
-      default: { build: "opencode/big-pickle" },
+      default: { providerID: "opencode", modelID: "big-pickle" },
     }),
     integrations: () => [
       {
@@ -352,7 +374,7 @@ for (const action of ["tray", "picker"] as const) {
           },
         ],
         connected: ["opencode", "opencode-go"],
-        default: { build: "opencode-go/glm-5-go" },
+        default: { providerID: "opencode-go", modelID: "glm-5-go" },
       }),
       pageMessages: () => ({
         items: [
@@ -363,6 +385,8 @@ for (const action of ["tray", "picker"] as const) {
     })
 
     await expect(page.getByText("Refactor the parser", { exact: true })).toBeVisible()
+    // The limit belongs to this model; its catalog selection must have hydrated before the live refusal.
+    await expect(page.locator('[data-action="composer-model"]')).toContainText("GLM-5 Go")
 
     // The refusal OpenCode Console sends a Go subscriber at a limit, as core records it.
     const body = {
@@ -892,7 +916,11 @@ test("keeps a line added at the end of a scrolling prompt clear of the bottom fa
         const viewport = element.closest('[data-component="composer-scroll"]')!
         const range = document.createRange()
         range.selectNodeContents(element)
-        const line = Array.from(range.getClientRects()).reduce((last, rect) => (rect.bottom > last.bottom ? rect : last))
+
+        const line = Array.from(range.getClientRects()).reduce((last, rect) =>
+          rect.bottom > last.bottom ? rect : last,
+        )
+
         const fade = parseFloat(getComputedStyle(viewport).getPropertyValue("--composer-fade-bottom"))
 
         return Math.max(0, Math.round(line.bottom - (viewport.getBoundingClientRect().bottom - fade)))
