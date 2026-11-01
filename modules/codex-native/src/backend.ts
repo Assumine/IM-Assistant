@@ -58,6 +58,36 @@ export function nativeBackend(adapter: CodexSessionAdapter): Definition {
   return {
     descriptor,
     input,
+    output: async (ref, inputID) => {
+      const position = await input(ref, inputID)
+      if (position.status === "unknown" || position.status === "queued") return { ref, inputID, status: position.status }
+      const items: ItemEntry[] = [], cursors = new Set<string>()
+      let cursor: string | undefined
+      do {
+        const page = await adapter.items(ref.threadID, position.turnID, { cursor, limit: 100 })
+        if (page.data.some((entry) => entry.turnId !== position.turnID)) throw new Error("Different native output turn")
+        items.push(...page.data)
+        cursor = page.nextCursor ?? undefined
+        if (cursor && cursors.has(cursor)) throw new Error("Repeated native output cursor")
+        if (cursor) cursors.add(cursor)
+      } while (cursor)
+      const users = items.filter((entry) => entry.item.type === "userMessage")
+      const rootID = users[0]?.item.clientId
+      if (typeof rootID !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(rootID) ||
+        users.filter((entry) => entry.item.clientId === inputID && entry.item.id === position.nativeID).length !== 1)
+        return { ref, inputID, status: "unknown" }
+      const replies: ConversationBackend.OutputReply[] = items.flatMap((entry) => {
+        const item = entry.item
+        if (item.type !== "agentMessage") return []
+        if (typeof item.id !== "string" || typeof item.text !== "string") throw new Error("Invalid native output item")
+        const settled = typeof entry.completedAtMs === "number" && Number.isFinite(entry.completedAtMs) ||
+          position.status === "closed" && position.state === "completed"
+        return [{ messageID: item.id, text: settled ? item.text : "", settled }]
+      })
+      const first = replies.find((reply) => reply.settled && reply.text.trim()), last = replies.at(-1)
+      const boundary = { ref, inputID, rootID, turnID: position.turnID, ...(first ? { first } : {}), ...(last ? { last } : {}) }
+      return position.status === "closed" ? { ...boundary, status: "closed", state: position.state } : { ...boundary, status: "open" }
+    },
     followup: async (request) => {
       if (request.inputID === request.followupOf.inputID) return { status: "rejected", reason: "not-accepted" }
       const valid = async () => {

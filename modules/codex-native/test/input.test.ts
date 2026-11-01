@@ -80,3 +80,35 @@ test("linked native admission revalidates parent identity and termination withou
   expect(await f.backend.followup!(request)).toEqual({ kind: "queued", nativeID: "new-native-pending" })
   expect(f.enqueued).toEqual([[ref.threadID, "child-input", "New linked task"]])
 })
+
+test("public output keeps the proven native root and excludes reasoning and unsettled text through guidance", async () => {
+  const f = fixture()
+  const first: ItemEntry = { turnId: "turn-original", completedAtMs: 10, item: { type: "agentMessage", id: "assistant-first", text: "Public first" } }
+  const last: ItemEntry = { turnId: "turn-original", completedAtMs: null, item: { type: "agentMessage", id: "assistant-final", text: "Unsettled text" } }
+  f.history.set(undefined, { data: [item(), { turnId: "turn-original", item: { type: "reasoning", id: "reason", content: "PRIVATE_REASONING" } }, first], nextCursor: "next" })
+  f.history.set("next", { data: [{ turnId: "turn-original", item: { type: "userMessage", id: "guidance", clientId: "adjustment" } }, last], nextCursor: null })
+  expect(await f.backend.output!(ref, "input-original")).toEqual({ ref, inputID: "input-original", rootID: "input-original", turnID: "turn-original", status: "open",
+    first: { messageID: "assistant-first", text: "Public first", settled: true }, last: { messageID: "assistant-final", text: "", settled: false } })
+  last.completedAtMs = 20
+  last.item.text = "Public final"
+  f.turns.set(undefined, { data: [{ id: "new-active-turn", status: "inProgress" }, { id: "turn-original", status: "completed" }], nextCursor: null })
+  const closed = await f.backend.output!(ref, "input-original")
+  expect(closed).toMatchObject({ rootID: "input-original", turnID: "turn-original", status: "closed", state: "completed", last: { text: "Public final" } })
+  expect(JSON.stringify(closed)).not.toContain("PRIVATE_REASONING")
+  expect(f.enqueued).toEqual([])
+  expect(f.calls.every((name) => ["ownership", "queue", "history", "turns"].includes(name))).toBe(true)
+})
+
+test("queued, missing-root and foreign-turn output cannot manufacture a public reply", async () => {
+  const f = fixture()
+  await expect(f.backend.output!({ ...ref, backendID: "foreign" }, "input-original")).rejects.toThrow("Different native backend")
+  expect(f.calls).toEqual([])
+  f.queued.set(undefined, { data: [{ id: "pending", clientUserMessageId: "input-original", input: [] }], nextCursor: null })
+  expect(await f.backend.output!(ref, "input-original")).toEqual({ ref, inputID: "input-original", status: "queued" })
+  f.queued.clear()
+  f.history.set(undefined, { data: [{ turnId: "turn-original", item: { type: "userMessage", id: "legacy", clientId: null } }, item()], nextCursor: null })
+  expect(await f.backend.output!(ref, "input-original")).toEqual({ ref, inputID: "input-original", status: "unknown" })
+  f.history.set(undefined, { data: [item(), { turnId: "foreign-turn", item: { type: "agentMessage", id: "foreign", text: "Must not escape" } }], nextCursor: null })
+  await expect(f.backend.output!(ref, "input-original")).rejects.toThrow("Different native output turn")
+  expect(f.enqueued).toEqual([])
+})

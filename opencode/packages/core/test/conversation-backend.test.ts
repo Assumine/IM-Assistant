@@ -9,6 +9,7 @@ import {
   type Content,
   type Input,
   type Receipt,
+  type Output,
 } from "@opencode/schema/conversation-backend"
 import { Database } from "@opencode/core/database/database"
 import { KV } from "@opencode/core/kv"
@@ -57,6 +58,40 @@ const input = {
   inputID: "input-1",
   text: "private-input-not-stored-in-receipts",
 }
+
+it.effect("native public output is optional, read-only, schema-filtered and fenced to the registered input owner", () =>
+  Effect.gen(function* () {
+    const host = yield* ConversationBackend.Service,
+      rpc = yield* Rpc.Service,
+      kv = yield* KV.Service
+    yield* host.bind(rpc)
+    const example = fixture(),
+      client = rpc.client(Api)
+    const missing = yield* host.register(example.backend)
+    expect(Exit.isFailure(yield* client.output(input).pipe(Effect.exit))).toBe(true)
+    yield* missing.dispose
+    let output: Output = {
+      ref: input.ref,
+      inputID: input.inputID,
+      rootID: input.inputID,
+      turnID: "native-turn",
+      status: "closed",
+      state: "completed",
+      last: { messageID: "native-item", text: "Public result", settled: true },
+    }
+    yield* host.register({
+      ...example.backend,
+      output: async () => ({ ...output, privateContext: "must-stay-native" }),
+    })
+    const result = yield* client.output(input)
+    expect(result).toEqual(output)
+    expect(JSON.stringify(result)).not.toContain("must-stay-native")
+    output = { ...output, ref: { ...input.ref, threadID: "foreign-thread" } }
+    expect(Exit.isFailure(yield* client.output(input).pipe(Effect.exit))).toBe(true)
+    expect(example.admissions).toEqual([])
+    expect((yield* kv.scan({ prefix: "conversation:admission:" })).entries).toEqual([])
+  }),
+)
 
 it.effect("linked native admission requires whole-backend support and retains an immutable parent across retries", () =>
   Effect.gen(function* () {

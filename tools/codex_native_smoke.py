@@ -59,12 +59,12 @@ def _run(checkpoint):
                       "log": log.relative_to(ROOT).as_posix()})
         if result.returncode:
             raise RuntimeError(f"Native adapter check failed: {label}; see {log.relative_to(ROOT)}\n{content[-7000:]}")
-    if steps[-1]["passed"] != 28 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
+    if steps[-1]["passed"] != 30 or steps[-1]["failed"] != 0 or steps[-1]["skipped"] != 0:
         raise RuntimeError("Required native/OS/activation, wire and input identity scenarios did not all execute")
     core_files = ["test/conversation-backend.test.ts", "test/kv.test.ts", "test/rpc-handler-errors.test.ts", "test/session-inbox-append.test.ts", "test/session-input.test.ts"]
     server_files = ["test/conversation-policy.test.ts", "test/rpc-handler-errors.test.ts"]
     for directory, files, label, count in [
-        ("packages/core", core_files, "r3-host-unit", 52),
+        ("packages/core", core_files, "r3-host-unit", 53),
         ("packages/server", server_files, "r3-host-server-unit", 3),
         ("packages/im-assistant", ["src/storage.test.ts", "src/providers.test.ts"], "r3-profile-unit", 7),
         ("packages/cli", ["test/import-boundaries.test.ts"], "r3-cli-boundaries", 5),
@@ -117,6 +117,7 @@ def _run(checkpoint):
         "packages/im-assistant/src/portals.ts", "packages/server/package.json", "bun.lock",
         "packages/server/script/qq-product-smoke.ts", "packages/server/script/qq-notification-owner-smoke.ts",
         "packages/server/script/qq-output-smoke.ts", "packages/core/src/session/output.ts",
+        "packages/server/script/qq-backend-output-smoke.ts",
         "packages/schema/src/session-input-output.ts", "packages/schema/src/session-message.ts",
         "packages/protocol/src/groups/session-output.ts", "packages/server/src/handlers/session-output.ts",
         "packages/schema/src/conversation-backend.ts", "packages/plugin/src/effect/conversation.ts",

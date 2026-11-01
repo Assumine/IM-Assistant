@@ -49,6 +49,27 @@ export const InputPosition = Schema.Union([
   }),
 ])
 export type InputPosition = typeof InputPosition.Type
+// Public output attributed to an observed native input/turn. It is not model context or an execution claim.
+export const OutputReply = Schema.Struct({ messageID: ID, text: Schema.String, settled: Schema.Boolean })
+export type OutputReply = typeof OutputReply.Type
+const OutputOwner = { ref: Ref, inputID: ID }
+const OutputBoundary = {
+  ...OutputOwner,
+  rootID: ID,
+  turnID: ID,
+  first: optional(OutputReply),
+  last: optional(OutputReply),
+}
+export const Output = Schema.Union([
+  Schema.Struct({ ...OutputOwner, status: Schema.Literals(["unknown", "queued"]) }),
+  Schema.Struct({ ...OutputBoundary, status: Schema.Literal("open") }),
+  Schema.Struct({
+    ...OutputBoundary,
+    status: Schema.Literal("closed"),
+    state: Schema.Literals(["completed", "interrupted", "failed"]),
+  }),
+])
+export type Output = typeof Output.Type
 export const Page = {
   cursor: Schema.optional(Schema.String),
   limit: Schema.optional(Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 100 }))),
@@ -270,6 +291,11 @@ export const Api = Rpc.define({
     input: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, inputID: ID })),
       output: Schema.toStandardSchemaV1(InputPosition),
+      errors,
+    },
+    output: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ ref: Ref, inputID: ID })),
+      output: Schema.toStandardSchemaV1(Output),
       errors,
     },
   },

@@ -24,6 +24,8 @@ export interface Definition {
   ) => Promise<ConversationBackend.Receipt | undefined>
   // Read native pending/history identity without replaying admission, resuming or creating an input.
   readonly input?: (ref: ConversationBackend.Ref, inputID: string) => Promise<ConversationBackend.InputPosition>
+  // Optional read-only first/latest public output with native input/root/turn proof. Never resumes a thread.
+  readonly output?: (ref: ConversationBackend.Ref, inputID: string) => Promise<ConversationBackend.Output>
   readonly subscribe: (listener: (notification: Schema.Json) => void) => () => void
   readonly onClose?: (listener: () => void) => () => void
   // Optional ephemeral native text feed. Completed history still comes from browse.history.

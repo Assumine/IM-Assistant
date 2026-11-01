@@ -78,6 +78,7 @@ async function command(action: string, success = true) {
       connectionVerified: boolean
       controlRepliesSupported: boolean
       automaticTaskReplies: boolean
+      taskReplyTargets: string[]
       appliesTo: string
     }
 }
@@ -243,7 +244,9 @@ try {
       enabled.appliesTo === "next-service-start" &&
       !enabled.connectionVerified &&
       enabled.controlRepliesSupported &&
-      enabled.automaticTaskReplies,
+      enabled.automaticTaskReplies &&
+      enabled.taskReplyTargets.includes("session") &&
+      enabled.taskReplyTargets.includes("backend"),
   )
   assert.equal(first.upgrades.length + second.upgrades.length, 0)
   checks.push(
@@ -446,7 +449,7 @@ try {
       production_credentials_used: false,
       product_entry: "packages/im-assistant/src/cli.ts",
       loopback_connection_attempts: first.upgrades.length + second.upgrades.length,
-      automatic_task_replies: "native-session-only",
+      automatic_task_replies: "native-input-attribution",
       loopback_task_send_attempts: sendsFor(801).length,
       loopback_control_send_attempts: first.calls.filter(
         (call) => call.action.startsWith("send_") && quoteOf(call) !== "801",

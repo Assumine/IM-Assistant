@@ -31,6 +31,6 @@ export async function command(args: readonly string[]) {
     connectionVerified: false,
     controlRepliesSupported: true,
     automaticTaskReplies: true,
-    taskReplyTargets: ["session"],
+    taskReplyTargets: ["session", "backend"],
   }
 }

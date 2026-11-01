@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { createTaskReplies, type Source } from "../src"
 import type { SendResult } from "../src/onebot"
+import type { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
 
 function fixture() {
   type Options = Parameters<typeof createTaskReplies>[0]
@@ -30,7 +31,7 @@ function fixture() {
       return true
     },
   }
-  const open = () => createTaskReplies({ client, storage, policy,
+  const open = (backend?: Options["backend"]) => createTaskReplies({ client, backend, storage, policy,
     sourceFor: async () => permitted ? { status: "found", source } : { status: "forbidden" },
     send: async (source, text) => { sends.push({ source: structuredClone(source), text }); await gate; return answer },
     linkReply: async (_source, id) => { if (publishFails) throw new Error("Publication failed"); links.push(id) },
@@ -50,6 +51,54 @@ test("first and final referring to one native reply share one wire receipt acros
   expect((await f.open().forward("ses_first", "msg_root")).status).toBe("sent")
   expect(f.sends).toEqual([{ source: f.source, text: "Public first response" }])
   expect(JSON.stringify([...f.values])).not.toContain("Public first response")
+})
+
+const nativeRef = { backendID: "codex-native", threadID: "native-thread" }
+const nativeTarget = { kind: "backend" as const, ref: nativeRef }
+function backend(read: () => ConversationBackend.Output): NonNullable<Parameters<typeof createTaskReplies>[0]["backend"]> {
+  return { output: async () => read(), events: { subscribe: () => ({ async *[Symbol.asyncIterator]() {} }), on: () => () => {} } }
+}
+
+test("whole-backend first/final replies reuse source and wire receipts without an OpenCode Session", async () => {
+  const f = fixture()
+  let output: ConversationBackend.Output = { ref: nativeRef, inputID: "msg_root", rootID: "msg_root", turnID: "native-turn", status: "open",
+    first: { messageID: "native-first", text: "Native first", settled: true } }
+  const native = backend(() => output)
+  await f.open(native).forward(nativeTarget, "msg_root")
+  output = { ...output, status: "closed", state: "completed", last: { messageID: "native-final", text: "Native final", settled: true } }
+  await f.open(native).forward(nativeTarget, "msg_root")
+  await f.open(native).forward(nativeTarget, "msg_root")
+  expect(f.sends.map((value) => [value.source.messageID, value.text])).toEqual([["10", "Native first"], ["10", "Native final"]])
+  expect(JSON.stringify([...f.values])).not.toContain("Native first")
+  expect(JSON.stringify([...f.values])).toContain("native-turn")
+})
+
+test("a whole-backend single reply is not duplicated and a foreign native root or target is refused", async () => {
+  const f = fixture()
+  let output: ConversationBackend.Output = { ref: nativeRef, inputID: "msg_root", rootID: "msg_root", turnID: "native-turn", status: "open",
+    first: { messageID: "native-reply", text: "Native response", settled: true }, last: { messageID: "native-reply", text: "Native response", settled: true } }
+  const native = backend(() => output)
+  await f.open(native).forward(nativeTarget, "msg_root")
+  output = { ...output, status: "closed", state: "completed" }
+  await f.open(native).forward(nativeTarget, "msg_root")
+  expect(f.sends).toHaveLength(1)
+  output = { ...output, rootID: "different-input" }
+  expect((await f.open(native).forward(nativeTarget, "msg_root")).status).toBe("conflict")
+  output = { ...output, ref: { ...nativeRef, threadID: "foreign-thread" } }
+  expect((await f.open(native).forward(nativeTarget, "msg_root")).status).toBe("conflict")
+  expect(f.sends).toHaveLength(1)
+})
+
+test("native terminal outcomes with no usable reply notify once without claiming success or leaking errors", async () => {
+  for (const state of ["failed", "interrupted", "completed"] as const) {
+    const f = fixture(), native = backend(() => ({ ref: nativeRef, inputID: "msg_root", rootID: "msg_root", turnID: "native-turn", status: "closed", state,
+      last: { messageID: "unfinished", text: "PRIVATE_UNFINISHED", settled: false } }))
+    await f.open(native).forward(nativeTarget, "msg_root")
+    await f.open(native).forward(nativeTarget, "msg_root")
+    expect(f.sends).toHaveLength(1)
+    expect(f.sends[0]!.text).toContain(state === "failed" ? "失败" : state === "interrupted" ? "中断" : "未生成")
+    expect(f.sends[0]!.text).not.toContain("PRIVATE_UNFINISHED")
+  }
 })
 
 test("only the first and final public replies are forwarded and each stays quoted to the original source", async () => {

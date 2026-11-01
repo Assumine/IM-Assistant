@@ -236,6 +236,26 @@ const layer = Layer.effect(
             Effect.mapError(() => ctx.error("failed", "Unable to locate backend input")),
           )
         },
+        output: (input, ctx) => {
+          const backend = get(input.ref.backendID)
+          if (!backend?.output)
+            return Effect.fail(ctx.error("unavailable", "Backend output attribution is unavailable"))
+          return Effect.tryPromise({
+            try: () => backend.output!(input.ref, input.inputID),
+            catch: () => ctx.error("failed", "Unable to read backend output"),
+          }).pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(Schema.toType(ConversationBackend.Output))),
+            Effect.flatMap((output) =>
+              get(input.ref.backendID) === backend &&
+              output.inputID === input.inputID &&
+              output.ref.backendID === input.ref.backendID &&
+              output.ref.threadID === input.ref.threadID
+                ? Effect.succeed(output)
+                : Effect.fail(ctx.error("failed", "Backend returned a different output owner")),
+            ),
+            Effect.mapError(() => ctx.error("failed", "Unable to read backend output")),
+          )
+        },
         reconcile: (input, ctx) =>
           Effect.gen(function* () {
             const key = `conversation:admission:${Hash.sha256(input.inputID)}`

@@ -22,14 +22,15 @@ export async function configuredModule(home: string, environment: NodeJS.Process
     id: "qq-portal",
     open({ client, storage }) {
       const channels = accounts.map((account) => {
-        const portal = createPortal({ storage, session: client.session, backend: client.rpc(ConversationBackend.Api), policy: account.policy, controls: account.controls })
+        const backend = client.rpc(ConversationBackend.Api)
+        const portal = createPortal({ storage, session: client.session, backend, policy: account.policy, controls: account.controls })
         let channel: ReturnType<typeof openQQChannel> | undefined
         const ready = Promise.withResolvers<boolean>()
         const replies = account.controls ? createControlReplies({ storage, policy: account.policy, permissions: account.controls,
           send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
           publish: portal.linkControlView,
         }) : undefined
-        const tasks = openTaskReplies({ client, storage, policy: account.policy, sourceFor: portal.sourceFor, linkReply: portal.linkReply, ready: ready.promise,
+        const tasks = openTaskReplies({ client, backend, storage, policy: account.policy, sourceFor: portal.sourceFor, linkReply: portal.linkReply, ready: ready.promise,
           send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
           onReceipt: (receipt) => {
             if (receipt.status === "uncertain" || receipt.status === "conflict") observe.onIssue?.({ kind: "notification-uncertain" })
@@ -42,8 +43,8 @@ export async function configuredModule(home: string, environment: NodeJS.Process
         policy: account.policy, connection: { url: account.url, token: account.token },
         portal,
         onResult: async (value) => {
-          if ((value.result.status === "accepted" || value.result.status === "followup" || value.result.status === "steered" || value.result.status === "amended") && value.result.target.kind === "session")
-            void tasks.admitted(value.result.target.sessionID, value.result.inputID)
+          if (value.result.status === "accepted" || value.result.status === "followup" || value.result.status === "steered" || value.result.status === "amended")
+            void tasks.admitted(value.result.target, value.result.inputID)
           if (replies && value.message && value.result.status === "control") {
             const receipt = await replies.deliver(value.message, value.result)
             try {
