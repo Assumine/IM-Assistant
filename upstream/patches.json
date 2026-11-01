@@ -1085,7 +1085,7 @@
         {
           "path": "packages/server/script/qq-portal-smoke.ts",
           "action": "added",
-          "sha256": "5d4a53bbd11b962dd4df5bafada53637a90d031385284c5b9dc2bdc5b32d7025"
+          "sha256": "21815f3b9dc52f8bc62852a3fe80381a8d6a07dd83dc6fa001fda0e8dee4afdb"
         },
         {
           "path": "packages/server/test/vcs.test.ts",
@@ -1110,7 +1110,7 @@
         {
           "path": "packages/server/script/qq-backend-smoke.ts",
           "action": "added",
-          "sha256": "a93efe0459c0d297892736ac19ff0c7b406236e83632decc3d099f51aeb23fe7"
+          "sha256": "d1814c0d7441ae6055845fb74749b8b6ff6c2aea5be638ae354ef1484b8949d3"
         }
       ]
     },

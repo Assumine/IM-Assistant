@@ -457,7 +457,9 @@
         "modules/qq-portal/test/confirmation.test.ts",
         "modules/qq-portal/test/followup.test.ts",
         "modules/qq-portal/test/backend-followup.test.ts",
-        "opencode/packages/server/script/qq-native-followup-smoke.ts"
+        "opencode/packages/server/script/qq-native-followup-smoke.ts",
+        "modules/qq-portal/src/controls.ts",
+        "modules/qq-portal/test/controls.test.ts"
       ],
       "verification": [
         {
@@ -465,12 +467,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 515,
+          "tests_run": 534,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 54,
+          "http_checks": 65,
           "publication": "disabled"
         }
       ],

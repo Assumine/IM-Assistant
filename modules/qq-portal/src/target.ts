@@ -3,8 +3,8 @@ import type { ConversationBackend } from "../../../opencode/packages/schema/src/
 import { isConflictError } from "../../../opencode/packages/client/src/promise"
 
 export type Target = { kind: "session"; sessionID: string } | { kind: "backend"; ref: ConversationBackend.Ref }
-export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> & Partial<Pick<SessionApi["input"], "position" | "followup" | "followupReceipt">> }
-export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input">>
+export type Native = Pick<SessionApi, "get" | "prompt" | "message"> & Partial<Pick<SessionApi, "list">> & { inbox: Pick<SessionApi["inbox"], "list" | "cancel" | "update"> & Partial<Pick<SessionApi["inbox"], "append" | "amendment">>; input?: Pick<SessionApi["input"], "continue" | "continuation"> & Partial<Pick<SessionApi["input"], "position" | "followup" | "followupReceipt">> }
+export type Backend = Pick<RpcClient<typeof ConversationBackend.Api>, "send" | "reconcile" | "execution" | "control" | "query"> & Partial<Pick<RpcClient<typeof ConversationBackend.Api>, "input" | "threads">>
 export type Evidence = "accepted" | "uncertain" | "rejected" | "amended" | "conflict" | "continuation-accepted" | "continuation-pending" | "continuation-delivered" | "continuation-expired" | "continuation-cancelled" | "followup-accepted" | "followup-pending" | "followup-delivered" | "followup-cancelled"
 type SessionParentInput = { inputID: string; rootID: string }
 export type ParentInput = SessionParentInput | ConversationBackend.ParentInput

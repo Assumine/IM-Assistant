@@ -186,6 +186,86 @@ try {
   checks.push(
     "recognized commands bypass AI admission while an actual native model request is held before its first token",
   )
+  const controlled = () =>
+    createPortal({ policy, storage, session: app.session, controls: { allowedUsers: ["20001"] } })
+  const catalog = await controlled().receive(message("controls-list", "/CODEX LIST"))
+  assert(catalog.status === "control" && catalog.result.kind === "conversations")
+  assert(catalog.result.items.some((item) => item.target.kind === "session" && item.target.sessionID === first.id))
+  assert(catalog.result.items.some((item) => item.target.kind === "session" && item.target.sessionID === second.id))
+  assert.equal(requests.length, 1)
+  checks.push(
+    "authorized control list reads the original Session catalog while the real model is busy without admitting AI input",
+  )
+  const bindCommand = message("controls-bind", "/bind session " + first.id)
+  const bindingCopies = await Promise.all(Array.from({ length: 8 }, () => controlled().receive(bindCommand)))
+  assert(bindingCopies.some((row) => row.status === "control" && row.result.kind === "bound"))
+  await controlled().receive(message("controls-move", "/bind " + second.id))
+  const oldBind = await controlled().receive(bindCommand)
+  assert(oldBind.status === "control" && oldBind.duplicate && oldBind.result.kind === "bound")
+  assert.deepEqual(await storage.get("binding:" + scopeKey(peer)), { kind: "session", sessionID: second.id })
+  await controlled().receive(message("controls-restore", "/bind " + first.id))
+  checks.push(
+    "concurrent control binding has one durable intent and replaying its historical receipt cannot overwrite a later binding",
+  )
+  await app.session.prompt({
+    sessionID: first.id,
+    id: "msg_controls_remove",
+    text: "Must not run withdrawn control input",
+    delivery: "queue",
+  })
+  const queueView = await controlled().receive(message("controls-queue", "/queue"))
+  assert(queueView.status === "control" && queueView.result.kind === "queue")
+  assert.deepEqual(
+    queueView.result.items.map((row) => row.inputID),
+    ["msg_controls_remove"],
+  )
+  assert.equal(queueView.result.state, undefined)
+  const cancelCommand = message("controls-remove", "/UNQUEUE msg_controls_remove")
+  const controlCancelResult = await controlled().receive(cancelCommand)
+  assert(controlCancelResult.status === "control" && controlCancelResult.result.kind === "withdraw-requested")
+  assert.deepEqual(await app.session.inbox.list({ sessionID: first.id }), [])
+  assert.equal((await controlled().receive(cancelCommand)).status, "control")
+  assert.equal(requests.length, 1)
+  checks.push(
+    "queue controls inspect and withdraw the exact pending native input without interrupting the active model or persisting a queue copy",
+  )
+  let lostBindingWrites = 0
+  const lostBindCommand = message("controls-lost-bind", "/bind " + second.id)
+  const lostControl = createPortal({
+    policy,
+    session: app.session,
+    controls: { allowedUsers: ["20001"] },
+    storage: {
+      ...storage,
+      set: async (key, value) => {
+        await storage.set(key, value)
+        if (key === "binding:" + scopeKey(peer)) {
+          lostBindingWrites++
+          throw new Error("Lost actual SQLite binding acknowledgment")
+        }
+      },
+    },
+  })
+  const lostBindingResult = await lostControl.receive(lostBindCommand)
+  assert(lostBindingResult.status === "control" && lostBindingResult.result.kind === "uncertain")
+  await controlled().receive(message("controls-restore-lost", "/bind " + first.id))
+  const lostBindAgain = await controlled().receive(lostBindCommand)
+  assert(lostBindAgain.status === "control" && lostBindAgain.result.kind === "uncertain")
+  assert.equal(lostBindingWrites, 1)
+  assert.deepEqual(await storage.get("binding:" + scopeKey(peer)), { kind: "session", sessionID: first.id })
+  checks.push(
+    "an actual SQLite binding write with a lost acknowledgment retains uncertainty and cannot reapply after another binding",
+  )
+  const deniedControl = createPortal({ policy, storage, session: app.session, controls: { allowedUsers: [] } })
+  const deniedResult = await deniedControl.receive(message("controls-denied", "/list"))
+  assert(deniedResult.status === "control" && deniedResult.result.kind === "forbidden")
+  const unsupportedControl = await controlled().receive(message("controls-unsupported", "/queue must-not-run"))
+  assert(unsupportedControl.status === "control" && unsupportedControl.result.kind === "unsupported")
+  assert.equal(requests.length, 1)
+  assert.deepEqual(await app.session.inbox.list({ sessionID: first.id }), [])
+  checks.push(
+    "control grants are separate from task allowlisting and unsupported control variants do not fall through to the model",
+  )
   const queued = message("queued", "Unique QQ queued body")
   const copies = await Promise.all(Array.from({ length: 8 }, () => portal.receive(queued)))
   assert(copies.some((result) => result.status === "accepted"))
@@ -355,7 +435,9 @@ try {
       },
     },
   })
-  await assert.rejects(() => failedStorage.receive(message("store-failure", "Must not claim acceptance")))
+  assert.deepEqual(await failedStorage.receive(message("store-failure", "Must not claim acceptance")), {
+    status: "uncertain",
+  })
   assert.equal((await app.session.inbox.list({ sessionID: first.id })).length, 3)
   const groupMessage = {
     ...message("group", "Group input"),
@@ -399,6 +481,22 @@ try {
   await app.permission.list({ sessionID: first.id })
   storage = await bounded(host.storage)
   portal = createPortal({ policy, storage, session: app.session })
+  const restartedControl = await controlled().receive(bindCommand)
+  assert(
+    restartedControl.status === "control" && restartedControl.duplicate && restartedControl.result.kind === "bound",
+  )
+  const restartedUnknownControl = await controlled().receive(lostBindCommand)
+  assert(restartedUnknownControl.status === "control" && restartedUnknownControl.result.kind === "uncertain")
+  const restartedWithdrawal = await controlled().receive(cancelCommand)
+  assert(
+    restartedWithdrawal.status === "control" &&
+      restartedWithdrawal.duplicate &&
+      restartedWithdrawal.result.kind === "withdraw-requested",
+  )
+  assert.deepEqual(await storage.get("binding:" + scopeKey(peer)), { kind: "session", sessionID: second.id })
+  checks.push(
+    "SQLite reopen restores control facts without rewriting a newer binding, retrying an uncertain control or sending withdrawn model input",
+  )
   const restored = await portal.receive(queued)
   assert(restored.status === "accepted" && restored.sessionID === first.id && restored.duplicate)
   const recoveredSource = await portal.sourceFor(taskTarget, pending[0].id)

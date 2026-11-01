@@ -192,6 +192,7 @@ async function round(restored: boolean) {
         execution: (input) => rpc.execution(input, options),
         control: (input) => rpc.control(input, options),
         query: (input) => rpc.query(input, options),
+        threads: (input) => rpc.threads(input, options),
       }
       const kv = yield* Effect.promise(() => bounded(metadata.promise, "metadata"))
       // Test-only namespace over the same original SQLite KV service; no second metadata database.
@@ -212,6 +213,14 @@ async function round(restored: boolean) {
           },
         },
       })
+      const controlled = () =>
+        createPortal({
+          policy,
+          storage,
+          session: app.session,
+          backend,
+          controls: { allowedUsers: ["20001"], backendIDs: ["codex-native"] },
+        })
       yield* Effect.promise(() => bounded(ready.promise, "module ready"))
       if (!restored) {
         first = {
@@ -238,6 +247,27 @@ async function round(restored: boolean) {
         // Explicit test observer attachment, like codex-backend-smoke; read-only QQ binding never resumes a thread.
         yield* Effect.promise(() => adapter.resume(first.ref.threadID))
         yield* Effect.promise(() => portal.bind(scope, first))
+        const catalog = yield* Effect.promise(() => controlled().receive(message("controls-list", "/list")))
+        assert(catalog.status === "control" && catalog.result.kind === "conversations")
+        assert(catalog.result.items.some((row) => JSON.stringify(row.target) === JSON.stringify(first)))
+        const nativeCatalog = yield* Effect.promise(() => backend.threads!({ backendID: "codex-native", limit: 100 }))
+        assert.deepEqual(
+          catalog.result.items.filter((row) => row.target.kind === "backend").map((row) => row.target),
+          nativeCatalog.items.map((row) => ({ kind: "backend", ref: row.ref })),
+        )
+        assert.equal(requests.length, 1)
+        checks.push(
+          "authorized control browsing lists the original native threads while a native turn runs without creating a shadow Session",
+        )
+        const bindCommand = message("controls-bind", "/bind backend codex-native " + first.ref.threadID)
+        const bindings = yield* Effect.promise(() =>
+          Promise.all(Array.from({ length: 6 }, () => controlled().receive(bindCommand))),
+        )
+        assert(bindings.some((row) => row.status === "control" && row.result.kind === "bound"))
+        assert.equal(admissions, 1)
+        checks.push(
+          "concurrent native binding controls validate the actual public native target without admitting or resuming another input",
+        )
         const copies = yield* Effect.promise(() => Promise.all(Array.from({ length: 8 }, () => portal.receive(kept))))
         assert(
           copies.some((item) => item.status === "accepted" && JSON.stringify(item.target) === JSON.stringify(first)),
@@ -267,6 +297,31 @@ async function round(restored: boolean) {
         checks.push(
           "unknown pre-admission is not replayed; lost native acknowledgment repairs only its original durable receipt",
         )
+        yield* Effect.promise(() =>
+          rpc.send(
+            { ref: first.ref, inputID: "controls-pending", text: "Must never run control-withdrawn native input" },
+            options,
+          ),
+        )
+        const queueControl = yield* Effect.promise(() =>
+          controlled().receive(message("controls-queue", "/CODEX QUEUE")),
+        )
+        assert(queueControl.status === "control" && queueControl.result.kind === "queue")
+        assert.equal(queueControl.result.state, "running")
+        assert(queueControl.result.items.some((row) => row.inputID === "controls-pending"))
+        const cancelledControl = yield* Effect.promise(() =>
+          controlled().receive(message("controls-remove", "/unqueue controls-pending")),
+        )
+        assert(cancelledControl.status === "control" && cancelledControl.result.kind === "withdraw-requested")
+        assert(
+          !(yield* Effect.promise(() => adapter.queue(first.ref.threadID))).data.some(
+            (row) => row.clientUserMessageId === "controls-pending",
+          ),
+        )
+        assert.equal(requests.length, 1)
+        checks.push(
+          "native queue controls use the real native submission ID and withdraw only that pending input while its predecessor keeps running",
+        )
         yield* Effect.promise(() => portal.receive(message("withdraw", "Must never execute recalled QQ input")))
         assert.deepEqual(
           yield* Effect.promise(() =>
@@ -289,12 +344,21 @@ async function round(restored: boolean) {
           queue.data.map((item) => item.clientUserMessageId),
           [inputID(origin(kept)), lostID, "desktop-pending"],
         )
-        assert.equal(admissions, 5)
+        assert.equal(admissions, 6)
         checks.push(
           "QQ recall deletes only a native pending submission; desktop and QQ still share the original native FIFO",
         )
         yield* Effect.promise(() => portal.linkReply(origin(kept), "native-outgoing"))
         yield* Effect.promise(() => portal.bind(scope, second))
+        const replayBinding = yield* Effect.promise(() => controlled().receive(bindCommand))
+        assert(replayBinding.status === "control" && replayBinding.duplicate && replayBinding.result.kind === "bound")
+        const bindingRead = yield* Effect.promise(() => controlled().receive(message("controls-status", "/status")))
+        // The pinned CLI cannot enumerate execution for a never-started empty thread. Keep the binding, not a false empty/idle view.
+        assert(bindingRead.status === "control" && bindingRead.result.kind === "unavailable")
+        assert.deepEqual(bindingRead.result.target, second)
+        checks.push(
+          "a native control binding receipt is historical and cannot replace a newer target selected through the same application",
+        )
         const duplicate = yield* Effect.promise(() => portal.receive(kept))
         assert(duplicate.status === "accepted" && JSON.stringify(duplicate.target) === JSON.stringify(first))
         assert.deepEqual(
@@ -318,16 +382,34 @@ async function round(restored: boolean) {
         assert.deepEqual(yield* Effect.promise(() => portal.sourceFor(second, inputID(origin(kept)))), {
           status: "missing",
         })
-        assert.equal(admissions, 5)
+        assert.equal(admissions, 6)
         checks.push(
           "the real native backend has a recoverable QQ recipient independent of the current binding and without a shadow Session",
         )
       } else {
+        const restoredBinding = yield* Effect.promise(() =>
+          controlled().receive(message("controls-bind", "/bind backend codex-native " + first.ref.threadID)),
+        )
+        assert(
+          restoredBinding.status === "control" && restoredBinding.duplicate && restoredBinding.result.kind === "bound",
+        )
+        const restoredCancel = yield* Effect.promise(() =>
+          controlled().receive(message("controls-remove", "/unqueue controls-pending")),
+        )
+        assert(
+          restoredCancel.status === "control" &&
+            restoredCancel.duplicate &&
+            restoredCancel.result.kind === "withdraw-requested",
+        )
+        assert.equal(admissions, 6)
+        checks.push(
+          "SQLite reopen restores native control receipts without reapplying bindings, reissuing withdrawals or admitting model work",
+        )
         const duplicate = yield* Effect.promise(() => portal.receive(kept))
         assert(duplicate.status === "accepted" && JSON.stringify(duplicate.target) === JSON.stringify(first))
         assert.equal((yield* Effect.promise(() => portal.receive(lost))).status, "accepted")
         assert.equal((yield* Effect.promise(() => portal.receive(unknown))).status, "uncertain")
-        assert.equal(admissions, 5)
+        assert.equal(admissions, 6)
         assert.equal(requests.length, 1)
         const recoveredSource = yield* Effect.promise(() => portal.sourceFor(first, inputID(origin(kept))))
         assert.deepEqual(recoveredSource, { status: "found", source: { scope, messageID: "kept", actorID: "20001" } })
@@ -336,7 +418,7 @@ async function round(restored: boolean) {
         assert.deepEqual(yield* Effect.promise(() => portal.sourceFor(first, inputID(origin(unknown)))), {
           status: "uncertain",
         })
-        assert.equal(admissions, 5)
+        assert.equal(admissions, 6)
         checks.push(
           "application SQLite reopen restores the original native input envelope and reply aliases; unknown handoff lookup never sends",
         )

@@ -3,9 +3,11 @@ import { command, decode, fingerprint, inputID, originKey, scopeKey, type Messag
 import { target, sameTarget, targets, type Target, type Native, type Backend, type Evidence, type ParentInput } from "./target"
 import { sources, type Origin, type Source, type SourceResult } from "./sources"
 import { confirmations, type Choice, type Proposal } from "./confirmation"
+import { claimIngress, controls, type ControlOptions, type ControlResponse } from "./controls"
 
 type Storage = Pick<StorageDomain, "get" | "set" | "insert">
 export type Result =
+  | ControlResponse
   | { status: "ignored" | "unsupported" | "unbound" | "recalled" | "uncertain" | "unchanged" | "withdrawn" | "conflict" }
   | { status: "command"; action: string; arguments: string }
   | { status: "blocked"; reason: "quoted-adjustment-unavailable" | "quoted-task-not-pending" | "quoted-task-not-active" | "quoted-task-not-closed" | "quoted-adjustment-expired" | "quoted-adjustment-cancelled" }
@@ -18,7 +20,7 @@ export type Result =
   | { status: "followup"; target: Target; inputID: string; parentInputID: string; delivery: "accepted" | "pending" | "delivered"; duplicate: boolean }
 
 /** Optional channel adapter. Native API remains the only execution and pending-input authority. No polling or task store. */
-export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy }) {
+export function createPortal(options: { storage: Storage; session: Native; backend?: Backend; policy: Policy; controls?: ControlOptions }) {
   const { storage, session, policy } = options
   const native = targets(session, options.backend)
   const metadata = sources(storage, policy)
@@ -33,6 +35,13 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     if (value === undefined || value === null) return undefined
     return target(value)
   }
+  const bind = async (scope: Scope, value?: string | Target) => {
+    if (scope.botID !== policy.botID) throw new Error("Wrong QQ bot")
+    const destination = value === undefined ? undefined : target(value)
+    if (destination) await native.validate(destination)
+    await storage.set("binding:" + scopeKey(scope), destination ?? null)
+  }
+  const dispatchControl = options.controls ? controls({ storage, policy, permissions: options.controls, session, backend: options.backend, binding, bind, lookup }) : undefined
   const accepted = (record: Origin, duplicate: boolean): Result => ({ status: "accepted", target: record.target,
     ...(record.target.kind === "session" ? { sessionID: record.target.sessionID } : {}), inputID: record.inputID, duplicate })
   const result = (record: Origin, evidence: Evidence, duplicate: boolean): Result => (evidence === "followup-accepted" || evidence === "followup-pending" || evidence === "followup-delivered") && record.followupOf
@@ -67,14 +76,17 @@ export function createPortal(options: { storage: Storage; session: Native; backe
     }
     const input = event.message
     const control = command(input.text)
-    if (control) return { status: "command", ...control }
     if (await recalled(input)) return { status: "recalled" }
     const old = await lookup(input.scope, input.messageID)
     if (old) {
-      if (old.fingerprint !== fingerprint(input)) return { status: "conflict" }
+      if (control || old.fingerprint !== fingerprint(input)) return { status: "conflict" }
       await metadata.retain(old)
       return result(old, await evidence(old), true)
     }
+    let ingress: "new" | "duplicate" | "conflict"
+    try { ingress = await claimIngress(storage, input, !!control) } catch { return { status: "uncertain" } }
+    if (ingress === "conflict") return { status: "conflict" }
+    if (control) return dispatchControl ? dispatchControl(input, control, ingress === "duplicate") : { status: "command", ...control }
     let proposal: Proposal | undefined
     try { proposal = await consent.read(input) } catch { return { status: "conflict" } }
     if (proposal) {
@@ -136,12 +148,7 @@ export function createPortal(options: { storage: Storage; session: Native; backe
   }
   return {
     /** Trusted host control API; remote transports must authorize controls before calling it. */
-    async bind(scope: Scope, value?: string | Target) {
-      if (scope.botID !== policy.botID) throw new Error("Wrong QQ bot")
-      const destination = value === undefined ? undefined : target(value)
-      if (destination) await native.validate(destination)
-      await storage.set("binding:" + scopeKey(scope), destination ?? null)
-    },
+    bind,
     /** Read-only lookup for future outbound transport. Never infer the recipient from the current binding. */
     async sourceFor(value: Target, inputID: string): Promise<SourceResult> {
       try {
@@ -179,4 +186,5 @@ export function createPortal(options: { storage: Storage; session: Native; backe
 
 export { decode, command, type Message, type Policy, type Scope } from "./routing"
 export { type Target, type Backend } from "./target"
+export { type ControlOptions, type ControlResponse, type ControlResult } from "./controls"
 export { type Source, type SourceResult } from "./sources"
