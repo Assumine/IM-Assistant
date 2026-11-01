@@ -46,6 +46,10 @@ export function allows(method: string, pathname: string) {
   if (/^\/api\/experimental\/session\/(stats|import)$/.test(pathname))
     return method === (pathname.endsWith("import") ? "POST" : "GET")
   if (/^\/api\/experimental\/session\/[^/]+\/(export|wait|log)$/.test(pathname)) return method === "GET"
+  // Native API-managed JSON context, not ambient file discovery or a file/URL loader.
+  if (/^\/api\/experimental\/session\/[^/]+\/instructions\/entries$/.test(pathname)) return method === "GET"
+  if (/^\/api\/experimental\/session\/[^/]+\/instructions\/entries\/[^/]+$/.test(pathname))
+    return method === "PUT" || method === "DELETE"
   if (/^\/api\/experimental\/media\/[a-f0-9]+$/.test(pathname)) return method === "GET"
   if (/^\/api\/permission\/(request|saved)(\/[^/]+)?$/.test(pathname)) return method === "GET"
   if (/^\/api\/session\/[^/]+\/permission(?:\/[^/]+(?:\/reply)?)?$/.test(pathname))

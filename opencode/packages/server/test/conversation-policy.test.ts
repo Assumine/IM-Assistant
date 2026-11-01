@@ -52,3 +52,19 @@ test("managed conversation backend RPC does not open generic plugin or file capa
   expect(allows("POST", output)).toBe(false)
   expect(allows("GET", output + "/shell")).toBe(false)
 })
+
+test("managed sessions expose API-owned JSON instruction entries with only their native methods", () => {
+  const entries = "/api/experimental/session/ses_1/instructions/entries"
+  expect(allows("GET", entries)).toBe(true)
+  for (const method of ["POST", "PUT", "DELETE"]) expect(allows(method, entries)).toBe(false)
+  expect(allows("PUT", entries + "/persona")).toBe(true)
+  expect(allows("DELETE", entries + "/persona")).toBe(true)
+  expect(allows("GET", entries + "/persona")).toBe(false)
+  expect(allows("POST", entries + "/persona")).toBe(false)
+})
+
+test("JSON instruction access does not open ambient discovery, paths or generic file operations", () => {
+  for (const pathname of ["/api/instructions", "/api/session/ses_1/instructions",
+    "/api/experimental/session/ses_1/instructions/entries/persona/file", "/api/file", "/api/fs/read", "/api/session/ses_1/shell"])
+    for (const method of ["GET", "POST", "PUT", "DELETE"]) expect(allows(method, pathname)).toBe(false)
+})

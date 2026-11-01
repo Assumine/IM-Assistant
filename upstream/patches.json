@@ -459,13 +459,14 @@
     },
     {
       "id": "R2-02-api-configuration",
-      "reason": "原生Config受限新增兼容API，既有连接ID冲突保护；设置页复用原生凭据连接弹窗，不新增会话、队列或凭据库。",
+      "reason": "原生Config受限新增兼容API，既有连接ID冲突保护；设置页复用原生凭据连接弹窗，不新增会话、队列或凭据库。 Q1-02按实际接入需要开放原生会话JSON指令条目，保留文件发现、文件工具与通用执行禁用；新增独立聊天模块隔离验收。",
       "verification_commands": [
         "python -m tools.provider_configuration_smoke",
         "python tools/native_baseline.py --cwd packages/app --label r2-02-custom-api-browser-final -- run test:e2e:built -- e2e/regression/settings.spec.ts --project chromium --workers=2 --retries=0",
         "python tools/native_baseline.py --cwd packages/client --label r2-02-config-client-contracts -- run test test/promise.test.ts test/effect.test.ts test/deprecated-aliases.test.ts test/contract-identity.test.ts test/import-boundaries.test.ts",
         "python tools/native_baseline.py --cwd . --label r2-02-config-close-check -- run check",
-        "python -m tools.codex_native_smoke"
+        "python -m tools.codex_native_smoke",
+        "python tools/run_runtime_checks.py --task Q1-02"
       ],
       "files": [
         {
@@ -531,7 +532,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "9c8985d27ab6b79b1523db4d89c342919f550a6d117983149d64a532c5e8b1df"
+          "sha256": "329a9a3a39c06bdf9fc17615cd2eaf75ec4f945c520f2d3c537cd9f2b8407dc4"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -617,10 +618,11 @@
     },
     {
       "id": "R3-01-native-backend-host",
-      "reason": "完整原生后端的受控公共RPC注册与原生KV接纳回执；执行/队列/历史归后端，保留任意插件和文件能力禁用，不发布Codex界面入口。",
+      "reason": "完整原生后端的受控公共RPC注册与原生KV接纳回执；执行/队列/历史归后端，保留任意插件和文件能力禁用，不发布Codex界面入口。 Q1-02按实际接入需要开放原生会话JSON指令条目，保留文件发现、文件工具与通用执行禁用；新增独立聊天模块隔离验收。",
       "verification_commands": [
         "python -m tools.codex_native_smoke",
-        "python -m tools.native_baseline --cwd . --label r3-host-check -- run check"
+        "python -m tools.native_baseline --cwd . --label r3-host-check -- run check",
+        "python tools/run_runtime_checks.py --task Q1-02"
       ],
       "files": [
         {
@@ -666,7 +668,7 @@
         {
           "path": "packages/server/test/conversation-policy.test.ts",
           "action": "added",
-          "sha256": "94bc48433477c09c528335720b0311b923c1abda02fcfa37269c2eb126a473cd"
+          "sha256": "1416c463c27a11d31dc023194c3154329b0f36fc424ee97afc69bb17841e75a4"
         }
       ]
     },
@@ -1711,6 +1713,20 @@
           "path": "packages/app/e2e/regression/timeline-stream.spec.ts",
           "action": "modified",
           "sha256": "ec8a4cb4fd2a7a7ca790c01b9f3089eba0557239b315f639b3bea8279161eab1"
+        }
+      ]
+    },
+    {
+      "id": "Q1-02-native-chat-context",
+      "reason": "独立聊天插件通过现有公共客户端、应用Scope、原生会话/Inbox/指令条目和压缩运行的实际HTTP/SQLite验收；不连接真实QQ或导入私人历史。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task Q1-02"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-chatbot-smoke.ts",
+          "action": "added",
+          "sha256": "fe6124fc87584563c27c155643b2f65e3a9ba6c9a092b03b1a452047a8eee11b"
         }
       ]
     }

@@ -740,7 +740,10 @@
     "runtime_acceptance_completed": [
       "B01",
       "B02",
-      "B03"
+      "B03",
+      "B04",
+      "B05",
+      "B06"
     ],
     "tasks": {
       "Q1-01": {
@@ -801,9 +804,55 @@
         "blocked_reason": null
       },
       "Q1-02": {
-        "status": "pending",
-        "artifacts": [],
-        "verification": [],
+        "status": "done",
+        "artifacts": [
+          "modules/qq-chatbot/package.json",
+          "modules/qq-chatbot/tsconfig.json",
+          "modules/qq-chatbot/tsconfig.native.json",
+          "modules/qq-chatbot/src/index.ts",
+          "modules/qq-chatbot/src/types.ts",
+          "modules/qq-chatbot/src/configuration.ts",
+          "modules/qq-chatbot/src/module.ts",
+          "modules/qq-chatbot/src/sessions.ts",
+          "modules/qq-chatbot/test/configuration.test.ts",
+          "modules/qq-chatbot/README.md",
+          "opencode/packages/server/src/middleware/runtime-policy.ts",
+          "opencode/packages/server/test/conversation-policy.test.ts",
+          "opencode/packages/server/script/qq-chatbot-smoke.ts",
+          "upstream/patches.json",
+          "tools/qq_chatbot_smoke.py",
+          "tests/modules/test_q1_02.py",
+          "tests/modules/qq-chatbot-evidence.json"
+        ],
+        "verification": [
+          {
+            "task": "Q1-02",
+            "plan_id": "qq-plugin-migration-v1",
+            "archived_reference": false,
+            "status": "passed",
+            "tests_run": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "acceptance_ids": [
+              "B04",
+              "B05",
+              "B06"
+            ],
+            "progress_updated": false,
+            "kind": "runtime",
+            "exit_code": 0,
+            "command": "python tools/run_runtime_checks.py --task Q1-02",
+            "evidence": "tests/modules/qq-chatbot-evidence.json",
+            "native_unit_executions": 811,
+            "native_chat_checks": 17,
+            "native_chat_stability_runs": 10,
+            "original_qq_chain_checks": 147,
+            "file_policy_denials": 15,
+            "workspace_checks": 36,
+            "publication": "disabled"
+          }
+        ],
         "blocked_reason": null
       },
       "Q1-03": {
