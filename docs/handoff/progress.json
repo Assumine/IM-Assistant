@@ -371,7 +371,11 @@
         "opencode/packages/plugin/src/promise/index.ts",
         "opencode/packages/server/package.json",
         "opencode/packages/server/src/application-modules.ts",
-        "opencode/packages/server/test/application-modules.test.ts"
+        "opencode/packages/server/test/application-modules.test.ts",
+        "modules/qq-portal/src/control-reply.ts",
+        "modules/qq-portal/src/notifications.ts",
+        "opencode/packages/server/script/qq-notification-owner-smoke.ts",
+        "opencode/packages/server/script/qq-product-smoke.ts"
       ],
       "verification": [
         {
@@ -504,7 +508,11 @@
         "opencode/packages/server/src/routes.ts",
         "opencode/packages/server/test/application-modules.test.ts",
         "opencode/packages/server/test/fetch.test.ts",
-        "opencode/packages/server/test/process.test.ts"
+        "opencode/packages/server/test/process.test.ts",
+        "modules/qq-portal/src/control-reply.ts",
+        "modules/qq-portal/src/notifications.ts",
+        "modules/qq-portal/test/notifications.test.ts",
+        "opencode/packages/server/script/qq-notification-owner-smoke.ts"
       ],
       "verification": [
         {
@@ -512,12 +520,12 @@
           "plan_id": "opencode-app-base-v2",
           "status": "partial_verified",
           "exit_code": 0,
-          "tests_run": 590,
+          "tests_run": 613,
           "skipped": 0,
           "acceptance_ids": [],
           "command": "python -m tools.qq_portal_smoke",
           "evidence": "upstream/qq-checkpoint.json",
-          "http_checks": 92,
+          "http_checks": 105,
           "publication": "disabled"
         }
       ],

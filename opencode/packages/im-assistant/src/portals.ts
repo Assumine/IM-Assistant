@@ -29,6 +29,7 @@ export async function command(args: readonly string[]) {
     accountCount: value.accounts.length,
     appliesTo: "next-service-start",
     connectionVerified: false,
-    automaticReplies: false,
+    controlRepliesSupported: true,
+    automaticTaskReplies: false,
   }
 }

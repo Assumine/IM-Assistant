@@ -8,9 +8,12 @@ export function fakeOneBot(options: {
 } = {}) {
   const token = "fixture-access-token"
   const calls: Call[] = [], sockets = new Set<ServerWebSocket<undefined>>(), upgrades: { header: string | null; url: string }[] = []
+  const answers: { echo: string; status: string; data: unknown }[] = []
   let outgoing = -500
-  const answer = (socket: ServerWebSocket<undefined>, call: Call, data: unknown, status = "ok", retcode = 0) =>
-    socket.send(JSON.stringify({ status, retcode, data, echo: call.echo }))
+  const answer = (socket: ServerWebSocket<undefined>, call: Call, data: unknown, status = "ok", retcode = 0) => {
+    answers.push({ echo: call.echo, status, data })
+    return socket.send(JSON.stringify({ status, retcode, data, echo: call.echo }))
+  }
   const server = Bun.serve<undefined>({
     hostname: "127.0.0.1", port: 0,
     fetch(request, server) {
@@ -34,7 +37,7 @@ export function fakeOneBot(options: {
     },
   })
   return {
-    token, calls, sockets, upgrades, answer, url: "ws://127.0.0.1:" + server.port + "/",
+    token, calls, sockets, upgrades, answer, answers, url: "ws://127.0.0.1:" + server.port + "/",
     event(value: unknown) { for (const socket of sockets) socket.send(JSON.stringify(value)) },
     frame(value: string | Buffer) { for (const socket of sockets) socket.send(value) },
     close() { server.stop(true) },

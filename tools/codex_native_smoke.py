@@ -115,6 +115,7 @@ def _run(checkpoint):
         "packages/plugin/src/promise/application.ts", "packages/plugin/src/promise/index.ts",
         "packages/server/src/application-modules.ts", "packages/server/test/application-modules.test.ts",
         "packages/im-assistant/src/portals.ts", "packages/server/package.json", "bun.lock",
+        "packages/server/script/qq-product-smoke.ts", "packages/server/script/qq-notification-owner-smoke.ts",
         "packages/schema/src/conversation-backend.ts", "packages/plugin/src/effect/conversation.ts",
         "packages/plugin/src/effect/plugin.ts", "packages/core/src/conversation-backend.ts",
         "packages/core/src/kv.ts", "packages/core/src/plugin/host.ts",

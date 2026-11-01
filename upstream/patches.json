@@ -377,7 +377,7 @@
         {
           "path": "packages/im-assistant/src/cli.ts",
           "action": "added",
-          "sha256": "b160b6de18fe3ab6f7ded77abc55da39af7cb5ff53a557ff173cd03990136981"
+          "sha256": "dd51088d7e7d7439a282e66c83e7ab017b174bfeda4cb87883e96d093d146c17"
         },
         {
           "path": "packages/im-assistant/src/providers.ts",
@@ -1285,7 +1285,7 @@
         {
           "path": "packages/im-assistant/src/portals.ts",
           "action": "added",
-          "sha256": "20c81e0fe7c20ef58e4e9a58a1cf0291771402c07bc819a40bfba41b8b36004f"
+          "sha256": "83a256585df138b1641ff761fef957660a10f8d655d617df29cc79f0e016cacd"
         },
         {
           "path": "packages/plugin/src/promise/application.ts",
@@ -1305,7 +1305,7 @@
         {
           "path": "packages/server/script/qq-product-smoke.ts",
           "action": "added",
-          "sha256": "a7e8aeabb4c011a67aa968c422ba80d0d052d5fb8d58c2cb832d57c8f391b919"
+          "sha256": "c29fb321957f20a17f10e7d2dd66f1f704a445243a0ce064ae61d01e2dbbf03e"
         },
         {
           "path": "packages/server/src/application-modules.ts",
@@ -1316,6 +1316,21 @@
           "path": "packages/server/test/application-modules.test.ts",
           "action": "added",
           "sha256": "bd1526f8717428f8d4c0c1a54ea61d3bb70852ce14e7fb236cbbf278dc71878d"
+        }
+      ]
+    },
+    {
+      "id": "R3-02-control-notification-owner",
+      "reason": "真实应用Scope内验证控制通知意图/回执、在途关闭及未知结果只读核对、已确认清单元数据修复；不新增任务执行器或模型调用。",
+      "verification_commands": [
+        "python -m tools.qq_portal_smoke",
+        "python tools/run_runtime_checks.py --task R3-01"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/qq-notification-owner-smoke.ts",
+          "action": "added",
+          "sha256": "6ee2ffe91dfd87909db98e4c9369ed4221d0335c95c10338fe6b3426e32460de"
         }
       ]
     }

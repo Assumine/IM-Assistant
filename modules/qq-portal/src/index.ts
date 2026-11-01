@@ -197,3 +197,5 @@ export { openQQChannel, type ChannelOptions, type ChannelIssue } from "./channel
 export { type WireState, type SendResult } from "./onebot"
 export { configuredModule } from "./module"
 export { configuration, readConfiguration, initialize, setEnabled, type Account, type Configuration } from "./configuration"
+export { createControlReplies, type NotificationReceipt } from "./notifications"
+export { controlReply } from "./control-reply"

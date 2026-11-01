@@ -2,6 +2,7 @@ import type { ApplicationModule } from "../../../opencode/packages/plugin/src/pr
 import { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
 import { createPortal, openQQChannel, type ChannelOptions } from "./index"
 import { readConfiguration } from "./configuration"
+import { createControlReplies } from "./notifications"
 
 /** A complete application capability. Per-Location plugin setup never owns a bot connection. */
 export async function configuredModule(home: string, environment: NodeJS.ProcessEnv = process.env, observe: {
@@ -19,12 +20,30 @@ export async function configuredModule(home: string, environment: NodeJS.Process
   return {
     id: "qq-portal",
     open({ client, storage }) {
-      const channels = accounts.map((account) => openQQChannel({
+      const channels = accounts.map((account) => {
+        const portal = createPortal({ storage, session: client.session, backend: client.rpc(ConversationBackend.Api), policy: account.policy, controls: account.controls })
+        let channel: ReturnType<typeof openQQChannel> | undefined
+        const replies = account.controls ? createControlReplies({ storage, policy: account.policy, permissions: account.controls,
+          send: (source, text) => channel ? channel.send(source, text) : Promise.resolve({ status: "unavailable" as const }),
+          publish: portal.linkControlView,
+        }) : undefined
+        channel = openQQChannel({
         policy: account.policy, connection: { url: account.url, token: account.token },
-        portal: createPortal({ storage, session: client.session, backend: client.rpc(ConversationBackend.Api), policy: account.policy, controls: account.controls }),
-        onResult: observe.onResult ?? (() => {}), onIssue: observe.onIssue,
+        portal,
+        onResult: async (value) => {
+          if (replies && value.message && value.result.status === "control") {
+            const receipt = await replies.deliver(value.message, value.result)
+            try {
+              if (receipt.status === "uncertain" || receipt.status === "conflict" || receipt.status === "unavailable" || receipt.status === "forbidden" || receipt.status === "rejected") observe.onIssue?.({ kind: receipt.status === "uncertain" || receipt.status === "conflict" ? "notification-uncertain" : receipt.status === "unavailable" || receipt.status === "forbidden" ? "notification-unavailable" : "notification-rejected", source: value.source })
+              if (receipt.status === "sent" && receipt.linkage === "unlinked") observe.onIssue?.({ kind: "notification-unlinked", source: value.source })
+            } catch { /* An observer cannot invalidate a confirmed receipt or cause another send. */ }
+          }
+          await observe.onResult?.(value)
+        }, onIssue: observe.onIssue,
         onState: (state) => observe.onState?.(account.policy.botID, state),
-      }))
+        })
+        return channel
+      })
       return { close: async () => { await Promise.allSettled(channels.map((channel) => channel.close())) } }
     },
   }

@@ -3,13 +3,20 @@ import assert from "node:assert/strict"
 import { mkdtemp, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { OpenCode } from "@opencode/client"
-import { fakeOneBot, until as observe } from "../../../../modules/qq-portal/test/fixture/onebot"
+import { fakeOneBot, until as observe, type Call } from "../../../../modules/qq-portal/test/fixture/onebot"
 
 const root = process.env.IM_QQ_PRODUCT_TEST_ROOT
 if (!root) throw new Error("Use tools.qq_portal_smoke with an isolated root")
 const product = await mkdtemp(path.join(root, "qq-product-"))
 const entry = path.resolve(import.meta.dirname, "../../im-assistant/src/cli.ts")
-const first = fakeOneBot(),
+const first = fakeOneBot({
+    call(socket, call) {
+      if (call.action.startsWith("send_") && quoteOf(call) === "810") {
+        first.answer(socket, call, null, "async", 1)
+        return true
+      }
+    },
+  }),
   second = fakeOneBot({ botID: "10002" })
 const checks: string[] = [],
   requests: unknown[] = []
@@ -69,7 +76,8 @@ async function command(action: string, success = true) {
       enabled: boolean
       accountCount: number
       connectionVerified: boolean
-      automaticReplies: boolean
+      controlRepliesSupported: boolean
+      automaticTaskReplies: boolean
       appliesTo: string
     }
 }
@@ -130,14 +138,43 @@ async function until(check: () => Promise<boolean>) {
     await Bun.sleep(20)
   }
 }
-const message = (id: number, text: string) => ({
+const message = (id: number, text: string, quote?: string) => ({
   post_type: "message",
   self_id: 10001,
   message_type: "private",
   user_id: 20001,
   message_id: id,
-  message: [{ type: "text", data: { text } }],
+  message: [...(quote ? [{ type: "reply", data: { id: quote } }] : []), { type: "text", data: { text } }],
 })
+function record(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value)
+}
+function quoteOf(call: Call) {
+  if (!Array.isArray(call.params.message)) return undefined
+  const reply: unknown = call.params.message.find((part: unknown) => record(part) && part.type === "reply")
+  return record(reply) && record(reply.data) && typeof reply.data.id === "string" ? reply.data.id : undefined
+}
+function sendsFor(id: number) {
+  return first.calls.filter((call) => call.action.startsWith("send_") && quoteOf(call) === String(id))
+}
+function sentText(id: number) {
+  const parts = sendsFor(id)[0]?.params.message
+  assert(Array.isArray(parts))
+  return parts
+    .map((part: unknown) =>
+      record(part) && part.type === "text" && record(part.data) && typeof part.data.text === "string"
+        ? part.data.text
+        : "",
+    )
+    .join("")
+}
+function sentID(id: number) {
+  const call = sendsFor(id)[0]
+  assert(call)
+  const answer = first.answers.find((reply) => reply.echo === call.echo)
+  assert(answer?.status === "ok" && record(answer.data) && typeof answer.data.message_id === "number")
+  return String(answer.data.message_id)
+}
 
 let host: Awaited<ReturnType<typeof boot>> | undefined
 try {
@@ -156,7 +193,7 @@ try {
       {
         url: first.url,
         tokenEnv: "IM_QQ_TOKEN_FIRST",
-        policy: { botID: "10001", allowedUsers: ["20001"], allowedGroups: [] },
+        policy: { botID: "10001", allowedUsers: ["20001"], allowedGroups: ["30001"] },
         controls: { allowedUsers: ["20001"] },
       },
       {
@@ -205,7 +242,8 @@ try {
     enabled?.enabled &&
       enabled.appliesTo === "next-service-start" &&
       !enabled.connectionVerified &&
-      !enabled.automaticReplies,
+      enabled.controlRepliesSupported &&
+      !enabled.automaticTaskReplies,
   )
   assert.equal(first.upgrades.length + second.upgrades.length, 0)
   checks.push(
@@ -254,6 +292,71 @@ try {
   checks.push(
     "product QQ binds and repeated wire input use the same original native Inbox beside desktop work without a second execution queue",
   )
+  await observe(() => sendsFor(800).length === 1)
+  assert(sentText(800).includes(session.id))
+  assert.equal(quoteOf(sendsFor(800)[0]!), "800")
+  checks.push(
+    "a real product control receipt quotes its original command and uses the actual acknowledged OneBot message ID",
+  )
+  const extra = await host.client.session.prompt({
+    sessionID: session.id,
+    text: "Withdraw only this extra desktop item",
+    delivery: "queue",
+  })
+  first.event(message(802, "/queue"))
+  first.event(message(802, "/queue"))
+  await observe(() => sendsFor(802).length === 1)
+  assert(sentText(802).includes("2. Withdraw only this extra desktop item"))
+  const queueReply = sentID(802)
+  first.event(message(803, "/list"))
+  await observe(() => sendsFor(803).length === 1)
+  const line = sentText(803)
+    .split("\n")
+    .find((row) => row.includes(session.id))
+  const index = line?.match(/^(\d+)\./)?.[1]
+  assert(index)
+  const catalogReply = sentID(803)
+  first.event(message(804, "/bind " + index, catalogReply))
+  await observe(() => sendsFor(804).length === 1)
+  assert(sentText(804).includes(session.id))
+  checks.push(
+    "the product publishes the acknowledged catalog reply and a quoted displayed ordinal binds the exact native session",
+  )
+  first.event(message(805, "/unqueue 2", queueReply))
+  await observe(() => sendsFor(805).length === 1)
+  const remaining = await host.client.session.inbox.list({ sessionID: session.id })
+  assert(remaining.some((row) => row.id === pending.id) && !remaining.some((row) => row.id === extra.id))
+  assert(sentText(805).includes("已发出撤回请求"))
+  checks.push("an acknowledged queue reply enables a stable ordinal withdrawal without cancelling the original QQ task")
+  first.event(message(810, "/queue"))
+  first.event(message(810, "/queue"))
+  await observe(() => sendsFor(810).length === 1)
+  first.event(message(811, "/unqueue 1", "810"))
+  await observe(() => sendsFor(811).length === 1)
+  assert(sentText(811).includes("已完整发布"))
+  assert((await host.client.session.inbox.list({ sessionID: session.id })).some((row) => row.id === pending.id))
+  assert.equal(sendsFor(810).length, 1)
+  checks.push("an async/unknown send is not retried and cannot publish numeric selectors or cancel a native task")
+  const group = {
+    ...message(830, "/status"),
+    message_type: "group",
+    group_id: 30001,
+    message: [
+      { type: "at", data: { qq: "10001" } },
+      { type: "text", data: { text: "/status" } },
+    ],
+  }
+  first.event(group)
+  first.event({ ...group, message_id: 831, message: [{ type: "text", data: { text: "/status" } }] })
+  first.event({ ...group, message_id: 832, user_id: 29999 })
+  first.event({ ...group, message_id: 833, group_id: 30002 })
+  await observe(() => sendsFor(830).length === 1)
+  assert.equal(sendsFor(830)[0]!.action, "send_group_msg")
+  assert.equal(sendsFor(830)[0]!.params.group_id, 30001)
+  assert(sentText(830).includes("尚未绑定"))
+  checks.push(
+    "group control output keeps its own binding and recipient and still requires the allowed group, member and bot mention",
+  )
   assert.equal((await command("disable"))?.enabled, false)
   assert.equal(first.sockets.size, 1)
   release.resolve()
@@ -267,9 +370,10 @@ try {
     history.filter((row) => row.type === "user").map((row) => row.text),
     ["Desktop holds the native runner", "One QQ input through the real product"],
   )
-  assert.equal(first.calls.filter((row) => row.action.startsWith("send_")).length, 0)
+  assert.equal(first.calls.filter((row) => row.action.startsWith("send_")).length, 8)
+  for (const id of [831, 832, 833]) assert.equal(sendsFor(id).length, 0)
   checks.push(
-    "disable does not interrupt current native execution, and the original runner drains the sole QQ input once; no automatic output sender is claimed",
+    "disable does not interrupt current native execution, the runner drains the sole QQ input once and no automatic model-output forwarding is claimed",
   )
   await host.stop()
   await observe(() => first.sockets.size === 0)
@@ -286,11 +390,37 @@ try {
     "disabled next boot preserves native SQLite history without a QQ login, another connection or model replay",
   )
   await host.stop()
+  await command("enable")
+  host = await boot()
+  await observe(
+    () => first.upgrades.length === 2 && first.calls.filter((call) => call.action === "get_status").length === 2,
+  )
+  for (const input of [
+    message(800, "/bind " + session.id),
+    message(802, "/queue"),
+    message(803, "/list"),
+    message(810, "/queue"),
+  ])
+    first.event(input)
+  first.event(message(820, "/bind " + index, catalogReply))
+  await observe(() => sendsFor(820).length === 1)
+  assert(sentText(820).includes(session.id))
+  for (const id of [800, 802, 803, 810]) assert.equal(sendsFor(id).length, 1)
+  assert.equal(requests.length, 2)
+  checks.push(
+    "SQLite restart reconciles successful and unknown notification receipts without another wire send or model request",
+  )
+  assert.equal(first.calls.filter((call) => call.action.startsWith("send_")).length, 9)
+  assert.equal(sendsFor(803).length, 1)
+  checks.push(
+    "the original acknowledged catalog alias remains selectable after a real product restart without publishing a replacement reply",
+  )
+  await host.stop()
   await writeFile(settings, JSON.stringify({ ...config, enabled: true, token: "never-accept-raw-secrets" }))
   await command("status", false)
   host = await boot()
   assert.equal((await host.client.session.get({ sessionID: session.id })).id, session.id)
-  assert.equal(first.upgrades.length + second.upgrades.length, 2)
+  assert.equal(first.upgrades.length + second.upgrades.length, 4)
   assert(!(await readFile(settings, "utf8")).includes(first.token))
   checks.push("malformed optional settings are rejected without opening sockets or blocking the actual product core")
   console.log(
@@ -303,7 +433,11 @@ try {
       production_credentials_used: false,
       product_entry: "packages/im-assistant/src/cli.ts",
       loopback_connection_attempts: first.upgrades.length + second.upgrades.length,
-      automatic_replies: false,
+      automatic_task_replies: false,
+      loopback_control_send_attempts: first.calls.filter((call) => call.action.startsWith("send_")).length,
+      loopback_confirmed_control_replies: first.answers.filter(
+        (answer) => answer.status === "ok" && record(answer.data) && "message_id" in answer.data,
+      ).length,
     }),
   )
 } finally {

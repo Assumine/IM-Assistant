@@ -1,14 +1,14 @@
 import type { createPortal, Result } from "./index"
-import { decode, scopeKey, type Policy } from "./routing"
+import { decode, scopeKey, type Policy, type Message } from "./routing"
 import type { Source } from "./sources"
 import { openOneBot, type OneBotOptions, type SendResult, type WireState } from "./onebot"
 
-export type ChannelIssue = { kind: "unsupported" | "overloaded" | "not-forwarded" | "uncertain" | "handler-error" | "callback-error"; source?: Source }
+export type ChannelIssue = { kind: "unsupported" | "overloaded" | "not-forwarded" | "uncertain" | "handler-error" | "callback-error" | "notification-uncertain" | "notification-unavailable" | "notification-rejected" | "notification-unlinked"; source?: Source }
 export type ChannelOptions = {
   portal: Pick<ReturnType<typeof createPortal>, "receive">; policy: Policy; connection: Omit<OneBotOptions, "botID">
   maxPendingEvents?: number
   /** Finish admission/notification work only; never wait for model completion in this ingress lane. */
-  onResult: (value: { source: Source; result: Result }) => void | Promise<void>
+  onResult: (value: { source: Source; result: Result; message?: Message }) => void | Promise<void>
   onIssue?: (value: ChannelIssue) => void
   onState?: (value: WireState) => void
 }
@@ -42,7 +42,7 @@ export function openQQChannel(options: ChannelOptions) {
             blocked.add(key); issue({ kind: "uncertain", source })
           }
           if (!closing) {
-            try { await options.onResult({ source, result }) } catch { issue({ kind: "callback-error", source }) }
+            try { await options.onResult({ source, result, ...(event.kind === "message" ? { message: event.message } : {}) }) } catch { issue({ kind: "callback-error", source }) }
           }
         } catch { blocked.add(key); issue({ kind: "handler-error", source }) }
         finally { active-- }
