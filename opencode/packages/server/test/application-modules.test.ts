@@ -176,3 +176,16 @@ test("duplicate identities are not started twice and cleanup failure does not sk
   await app.close()
   expect(closes).toBe(2)
 }, 30000)
+
+test("duplicate compiled business tools close their optional resource immediately without blocking native sessions", async () => {
+  let closed = 0
+  const tool = { name: "same", description: "Duplicate compiled tool", input: {}, execute: async () => ({ content: "unused" }) }
+  const app = await boot([{ id: "invalid-tools", tools: [tool, tool],
+    open: () => ({ close: async () => { closed++ } }),
+  }])
+  try {
+    expect((await app.client.session.create({ title: "Unrelated", location: { directory: app.directory } })).id).toStartWith("ses_")
+    expect(closed).toBe(1)
+  } finally { await app.close() }
+  expect(closed).toBe(1)
+}, 30000)

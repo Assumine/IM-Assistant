@@ -530,27 +530,30 @@
         {
           "id": "S1-02",
           "phase": "S1",
-          "title": "研究协助与原生会话接入",
+          "title": "可交接研究协助身份、受控开路与MCP工具",
           "depends_on": [
             "S1-01"
           ],
           "outputs": [
             "modules/research/src/owner.ts",
-            "modules/research/test/owner.test.ts"
+            "modules/research/src/program.ts",
+            "modules/research/src/service.ts",
+            "modules/research/src/mcp.ts",
+            "modules/research/test/owner.test.ts",
+            "opencode/packages/server/script/research-assistance-smoke.ts"
           ],
           "test_files": [
             "tests/modules/test_s1_02.py"
           ],
           "acceptance_ids": [
             "C04",
-            "C05",
             "C06"
           ],
-          "scope": "研究协助先开辟一条完整采集函数；反复报错才从故障点或前置位置开辟同级替代分支，研究任务只运行已验收函数。首轮真实发现的其他方向可标记候选分支入口，未验证前仅提示，不参与评分执行。共享有效主干，只对真正可替换的同级分支独立评分；查明不存在与执行故障分开。",
+          "scope": "研究协助是可由任意授权AI会话接任的逻辑身份，不绑定模型、供应商或固定会话。共享路径、只读探测、受限采集函数编写、真实测试、发布与求助通过同一原生/MCP契约提供。",
           "done_when": [
-            "协助先打通一条完整采集路径；只有实际运行频繁出错才评估分叉位置并验证同级替代路径，不预建空节点或为分支而分支。首轮发现多个真实方向时可以标记候选入口，打通并验证后才注册执行。",
-            "复用原生Session/Inbox、权限与上下文，陌生分支和阻塞带上下文请求协助，取消跟随原生输入。主干输出绑定目标/参数、实现版本和有效性；切换局部分支复用有效结果，失效从最近有效处恢复。同一研究轮共享分支本轮分及轮末汇总，多次工具调用不能重置分数或重复更新历史。",
-            "用受控真实采集适配器和合成模型验证调度，通知只在需要人工时发送，不能自行扩张会话。"
+            "任意授权会话可按身份版本接任，旧会话失去编辑权限；资料、候选、测试和历史保留，不转移原生上下文或中止无关任务。",
+            "协助通过受控读取方法先打通完整函数，草稿实际采集测试且有证据后才发布；首轮发现方向可记候选，未验证不执行，不为画图造节点。",
+            "原生AI和官方MCP客户端实际驱动同一接口，权限与工具隔离、停用、重启及原生Inbox求助验证；无新任务队列或模型循环。"
           ],
           "verification_commands": [
             "python tools/validate_design.py",
@@ -559,11 +562,40 @@
           "native_verification": "Python编排真实Bun实现与隔离原生服务/SQLite；不连接真实账号，不迁移私人历史。"
         },
         {
+          "id": "S1-02B",
+          "phase": "S1",
+          "title": "同轮分支分数与有效主干检查点",
+          "depends_on": [
+            "S1-02"
+          ],
+          "outputs": [
+            "modules/research/src/checkpoints.ts",
+            "modules/research/test/checkpoints.test.ts"
+          ],
+          "test_files": [
+            "tests/modules/test_s1_02b.py"
+          ],
+          "acceptance_ids": [
+            "C05"
+          ],
+          "scope": "将当前完整采集函数扩展到真实局部分支复用：同一研究轮共享本轮分及轮末汇总，不因多次工具调用重置分数，检查目标、参数、版本和有效性。",
+          "done_when": [
+            "同轮同级分支共享分数并仅在轮末一次历史调整，多次原生/MCP调用不得绕过本轮负分。",
+            "主干输出带目标、参数、版本、有效性检查；失效从最近有效处恢复，下游失败不扣成功主干分。",
+            "未知副作用先核对，不因切换分支重复下载；原生输入拥有运行与取消，不加外层队列或通知风暴。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task S1-02B"
+          ],
+          "native_verification": "真实原生输入、公开工具、KV/SQLite与受控I/O验证跨调用复用；不连接真实网站或迁移私人记录。"
+        },
+        {
           "id": "S1-03",
           "phase": "S1",
           "title": "产品配置与轻量执行展示",
           "depends_on": [
-            "S1-02"
+            "S1-02B"
           ],
           "outputs": [
             "modules/research/src/configuration.ts",

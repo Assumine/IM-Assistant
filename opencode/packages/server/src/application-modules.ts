@@ -6,6 +6,7 @@ import { Capabilities } from "@opencode/core/capabilities"
 import { storage } from "@opencode/core/plugin/host"
 import type { ApplicationModuleEntry } from "@opencode/plugin/promise/application"
 import type { StorageDomain } from "@opencode/plugin/promise/storage"
+import { Tool } from "@opencode/schema/tool"
 import { Cause, Effect, Exit, Scope } from "effect"
 
 /** Trusted composition only. Neither requests nor serialized module settings can contribute executable code. */
@@ -84,6 +85,18 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
         scan: (options) =>
           closed ? Promise.reject(new Error("Application module is closed")) : run(original.scan(options)),
       }
+      const expose = () => capability.expose((loaded.tools ?? []).map((tool) => ({
+        ...tool,
+        name: module.id.replaceAll("-", "_") + "_" + tool.name,
+        options: { codemode: false },
+        execute: (input, context) => Effect.tryPromise({
+          try: (signal) => {
+            if (closed) throw new Error("Application module is closed")
+            return tool.execute(input, { ...context, signal, progress: (update) => run(context.progress(update)) })
+          },
+          catch: () => new Tool.Error({ message: "Application tool could not complete; inspect its recorded status before retrying" }),
+        }),
+      })))
       const resource = yield* Effect.acquireRelease(
         Effect.sync(() =>
           loaded.open({
@@ -100,7 +113,9 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
                 closed ? Promise.reject(new Error("Application module is closed")) : run(capability.resolve(id)),
             },
           }),
-        ),
+        ).pipe(Effect.tap((resource) => Effect.try(expose).pipe(
+          Effect.onError(() => Effect.tryPromise(() => resource.close()).pipe(Effect.ignore)),
+        ))),
         (resource) =>
           Effect.tryPromise(() => resource.close()).pipe(
             Effect.catchCause(() => {

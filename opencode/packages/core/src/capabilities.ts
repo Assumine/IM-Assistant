@@ -5,15 +5,20 @@ import { Capability } from "@opencode/schema/capability"
 import { makeGlobalNode } from "@opencode/util/effect/app-node"
 import { CapabilityNotifications } from "./capability-notifications.js"
 import type { Rpc } from "./rpc.js"
+import type { Tool } from "@opencode/schema/tool"
+import { definition, effectiveName } from "./tool/runtime.js"
 
 export interface Registration {
   readonly report: (value: Capability.Health) => void
   readonly state: (value: Capability.Info["state"]) => void
   readonly inspect: (read?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>) => void
+  readonly expose: (tools: readonly Tool.Info[]) => void
   readonly notify: (value: Capability.NoticeInput) => Effect.Effect<void, Error>
   readonly resolve: (id: string) => Effect.Effect<void, Error>
 }
 export interface Interface {
+  /** Only tools installed by the trusted application composition, never Location/project transforms. */
+  readonly tools: () => readonly Tool.Info[]
   readonly register: (input: {
     readonly id: string
     readonly title?: string
@@ -32,6 +37,7 @@ interface Entry {
   readonly stop: () => Promise<void>
   readonly controller: AbortController
   readonly settings?: Parameters<Interface["register"]>[0]["settings"]
+  tools: readonly Tool.Info[]
   metrics?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>
   sample?: { readonly at: number; readonly value: Promise<Capability.Metrics>; pending: boolean }
 }
@@ -84,6 +90,7 @@ const layer = Layer.effect(
       }).pipe(Effect.orDie)
     })
     return Service.of({
+      tools: () => Array.from(entries.values()).flatMap((entry) => entry.info.state === "active" ? entry.tools : []),
       register: Effect.fn("Capabilities.register")(function* (input: Parameters<Interface["register"]>[0]) {
         const id = yield* Schema.decodeUnknownEffect(Capability.ID)(input.id).pipe(Effect.orDie)
         if (entries.has(id)) return yield* Effect.fail(new Error("Capability is already registered"))
@@ -94,7 +101,7 @@ const layer = Layer.effect(
           metrics: false,
           ...(input.settings ? { settings: true } : {}),
         }).pipe(Effect.orDie)
-        const entry: Entry = { info, stop: input.stop, controller: new AbortController(), settings: input.settings }
+        const entry: Entry = { info, stop: input.stop, controller: new AbortController(), settings: input.settings, tools: [] }
         entries.set(id, entry)
         changed()
         return {
@@ -110,6 +117,7 @@ const layer = Layer.effect(
               entry.metrics = undefined
               entry.sample = undefined
               entry.info = { ...entry.info, metrics: false, health: undefined }
+              entry.tools = []
             }
             changed()
           },
@@ -118,6 +126,15 @@ const layer = Layer.effect(
             entry.metrics = read
             entry.info = { ...entry.info, metrics: !!read }
             changed()
+          },
+          expose(tools: readonly Tool.Info[]) {
+            if (!live(entry)) throw new Error("Capability is closed")
+            const names = tools.map(effectiveName)
+            if (new Set(names).size !== names.length || names.some((name) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) ||
+              Array.from(entries.values()).some((other) => other !== entry && other.tools.some((tool) => names.includes(effectiveName(tool)))))
+              throw new Error("Invalid or duplicate application tool")
+            for (const tool of tools) definition(tool)
+            entry.tools = [...tools]
           },
           notify: (value: Capability.NoticeInput) =>
             Effect.suspend(() =>

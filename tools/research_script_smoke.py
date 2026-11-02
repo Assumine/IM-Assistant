@@ -11,7 +11,7 @@ from tools.verify_upstream import verify
 
 
 def sources():
-    files = {p for p in (ROOT / 'modules/research').rglob('*') if p.suffix in {'.ts', '.json'} and p.is_file()}
+    files = {p for p in (ROOT / 'modules/research').rglob('*') if p.suffix in {'.ts', '.json'} and p.is_file() and 'node_modules' not in p.parts}
     files.update(ROOT / name for name in [
         'opencode/packages/server/script/research-dispatch-smoke.ts',
         'opencode/packages/server/src/application-modules.ts', 'opencode/packages/core/src/capabilities.ts',
@@ -49,7 +49,7 @@ def run():
     print('S1-01: research types, two-score selection, no attempt caps and durable round facts', flush=True)
     steps = [module_check('s1-research-types', [compiler, '--project', 'tsconfig.json']),
              module_check('s1-research-harness-types', [compiler, '--project', 'tsconfig.native.json']),
-             module_check('s1-research-unit', ['test'], 25)]
+             module_check('s1-research-unit', ['test', 'test/dispatcher.test.ts'], 25)]
     directory = tempfile.mkdtemp(prefix='research-acceptance-', dir=ROOT / 'runtime/baseline')
     print('S1-01: native Scope/SQLite restart, real loopback collectors and interruption', flush=True)
     step = run_command('packages/server', ['run', 'script/research-dispatch-smoke.ts'], 's1-research-native', timeout=120,

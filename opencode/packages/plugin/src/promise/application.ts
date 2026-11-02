@@ -1,6 +1,7 @@
 import type { OpenCodeClient } from "@opencode/client"
 import type { StorageDomain } from "./storage.js"
 import type { Capability } from "@opencode/schema/capability"
+import type { Info } from "./tool.js"
 
 /** Trusted declarative configuration, available even when the service is disabled or failed. No live task mutation. */
 export interface ApplicationModuleSettings {
@@ -27,6 +28,8 @@ export interface ApplicationModule {
   readonly title?: string
   /** Optional module-owned declarative settings; writes apply on the next service start, independently of resource stop. */
   readonly settings?: ApplicationModuleSettings
+  /** Compiled business tools exposed only while active; host prefixes names and enforces native permissions. */
+  readonly tools?: readonly Info[]
   /** Return the owned resource synchronously; asynchronous startup belongs to that resource and must not delay core boot. */
   readonly open: (context: {
     readonly client: OpenCodeClient

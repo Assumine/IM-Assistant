@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "plan_id": "research-script-dispatch-v1",
+  "task": "S1-02",
+  "status": "passed",
+  "acceptance_ids": [
+    "C04",
+    "C06"
+  ],
+  "sources": {
+    "modules/research/bun.lock": "5e01ac04098f3f041b78d3f0310f29820937dcf981ff094d091db2eaa3402165",
+    "modules/research/package.json": "49401d06db4be2392faf4673295dcd3e191993cc18bb6de72db7a9abfb229a63",
+    "modules/research/src/contracts.ts": "af1dfbe2c8418bb8c1bf9ade80491719a8d930826f890f7cdd7a60e583e939c7",
+    "modules/research/src/dispatcher.ts": "152d2dc90301aafb95cf0730c77e0e332e5499c13391976d00a941fb0caa6e37",
+    "modules/research/src/http.ts": "547dc65d3e8f468f27c529283e7497d469d6e60d720579014954b4897965756e",
+    "modules/research/src/index.ts": "acbbac00e29d9406b26ca449b1b1b172d6e716ce1224a529535f492fec21c371",
+    "modules/research/src/mcp.ts": "d202b32e1121d73e5466f9d717c3f7363e676a9079c27392dbb7be0f52d238a3",
+    "modules/research/src/module.ts": "4a021e58e13a6cfd619c1be4cce9d57c48bb1d9662d1a401de2d9bb564e5f93d",
+    "modules/research/src/owner.ts": "72067507078bdb964fd8cedc7cc3a7694159609c4b541f49f37eb510f53e634c",
+    "modules/research/src/program.ts": "9c01dc15631468501f8a35b27f294c06b6535f4e23de92367102192697ad33c4",
+    "modules/research/src/service.ts": "47be8bd7b2a1ddbee35fd9c4724f42eba9b25bee19026b492e28d499d5763d7b",
+    "modules/research/src/types.ts": "75035ab1567dbec1796d16d8ef66c3f8d0799a9333cb039e058bff5e666a0070",
+    "modules/research/test/dispatcher.test.ts": "0a97a17c6bf035930a825c5dbd0cc4028699df56926225d7bdd7023c11e702d3",
+    "modules/research/test/fixture.ts": "8a490bffe2be7e3de4a2dba045e90dcb806cd04057a97d5ed1fc9b9f4d61c20e",
+    "modules/research/test/http.test.ts": "8b530680fad69d8a461d92e0cbdf3e028f67ac3b37b7a4e50dd9457f24502082",
+    "modules/research/test/mcp-client.ts": "ea6360555204900aa09292b1d4e8785afff1640ae3830d49129380eb9af2f76c",
+    "modules/research/test/owner.test.ts": "9b52d10ea5ef89a73f3d3855440f3c05ec2d8332856f8aafd4c4b81fff227797",
+    "modules/research/tsconfig.json": "3f3cf6a6f68cb141347aa2908dc6d23b7cbec942c9ab356ae943c372412adab2",
+    "modules/research/tsconfig.native.json": "522613cb149cd74906692b4cd8fb7d58113776e9257f50e85c9801d59e830dee",
+    "opencode/packages/core/src/capabilities.ts": "4d5b06ed53f6aca6bc4affeb591882d2a9fb8465cfe778be6226d38fd93d3572",
+    "opencode/packages/core/src/tool.ts": "8d6c211be3e3ec527e1acc1a475015660874a936362e531ff3969146ba849db5",
+    "opencode/packages/core/test/tool-registry.test.ts": "7053bfd84edab4aba9b4f5a4f9c8b9e68880344fd5a0e9ab9d1afee826ca5f5b",
+    "opencode/packages/plugin/src/promise/application.ts": "139b7c593b2182965165f99f88153160e295d9b4bfa66c6d5bb64e68cb15d97b",
+    "opencode/packages/server/script/qq-phase-smoke.ts": "07d9bbf7ee2dd00650f3ba993a760958e6072a7a85f719c35af3fafd5b28ccd3",
+    "opencode/packages/server/script/research-assistance-smoke.ts": "80e9192051f488363a26b2a9bce5b5eadd047e5831c55b7b105485ca7996de66",
+    "opencode/packages/server/script/research-dispatch-smoke.ts": "db192adb1f62606c8b8e62dc3678e752ca9caa8ee35a92b3250b4fed066fdcb4",
+    "opencode/packages/server/src/application-modules.ts": "6ecbf6a8cb203fb1cda1db68835257276bb184affb3a2918802edacd0bcf54b0",
+    "opencode/packages/server/test/application-modules.test.ts": "622023090d9b06d7ca864515bf977815cf849672e516d8eac8693fd00e58ea28",
+    "opencode/packages/server/test/capabilities.test.ts": "8dd530b81d775a38ddfcc100d5978e00bc4bf28b0346cf03abddcd57aee7a218",
+    "tests/modules/test_s1_02.py": "42d37c987e569cb9ae53272f5ff51fb7ec3ce593bc46dddf6076a81cbf6fbe2f",
+    "tests/test_handoff_phases.py": "0ebd7eacc519b8a2925317b72dee26cd7147ac8470852ee37f460d7d1ad658b1",
+    "tests/test_plan_tools.py": "938a2864605c7a092bf61ac3aee032f4630620d6192484bd99e8189bfb46fb96",
+    "tools/handoff_plan.py": "0f5d62fdc85e81ed140f379a24a643f5bd94a4b2ef2c646b412d9155c58dfcab",
+    "tools/qq_phase_smoke.py": "f9f22c29479c0e35be6a368f1777fbd9d80aaede6801566a9e18f04b1473cf96",
+    "tools/research_assistance_smoke.py": "637b9a255b5b870257fb0081d23b0ac97cb5240dd65575e4426aea7e6e1add50",
+    "tools/research_script_smoke.py": "1ff27db27fc2e63be199e61571afd8c7f4f8efa44141242ed171fe0a24719264",
+    "tools/setup_research_dependencies.py": "e124f41bd69dc3ab0ce0970f90f2d1dbca0fe79c11c4929868cff219cb79a399",
+    "tools/validate_design.py": "195f256b733cd436aea29ca3c50d8006488f984fb1e5ac93c5b345b71b678737",
+    "upstream/patches.json": "49200f3e581ceeae944022b9f950ad139bdd873686b6c768688b9b1fc327be6d"
+  },
+  "steps": [
+    {
+      "cwd": "modules/research",
+      "args": [
+        "bun",
+        "<pinned-typescript>",
+        "--project",
+        "tsconfig.json"
+      ],
+      "exit_code": 0,
+      "passed": null,
+      "skipped": 0,
+      "log": ".reports/native/s2-research-types.log"
+    },
+    {
+      "cwd": "modules/research",
+      "args": [
+        "bun",
+        "<pinned-typescript>",
+        "--project",
+        "tsconfig.native.json"
+      ],
+      "exit_code": 0,
+      "passed": null,
+      "skipped": 0,
+      "log": ".reports/native/s2-native-harness-types.log"
+    },
+    {
+      "cwd": "modules/research",
+      "args": [
+        "bun",
+        "test"
+      ],
+      "exit_code": 0,
+      "passed": 49,
+      "skipped": 0,
+      "log": ".reports/native/s2-research-unit.log"
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/research-assistance-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.49,
+      "isolated_home": true,
+      "log": ".reports/native/s2-native-assistance.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/research-dispatch-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.05,
+      "isolated_home": true,
+      "log": ".reports/native/s2-original-dispatch.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/application-modules.test.ts",
+        "test/capabilities.test.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.36,
+      "isolated_home": true,
+      "log": ".reports/native/s2-native-boundaries.log",
+      "native_tests_passed": 10,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/test.ts",
+        "test/tool-registry.test.ts"
+      ],
+      "cwd": "opencode/packages/core",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 4.96,
+      "isolated_home": true,
+      "log": ".reports/native/s2-core-tools.log",
+      "native_tests_passed": 42,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/qq-phase-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 46.13,
+      "isolated_home": true,
+      "log": ".reports/native/s2-qq-product-compat.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 5.94,
+      "isolated_home": true,
+      "log": ".reports/native/s2-research-workspace.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    }
+  ],
+  "unit_tests": 49,
+  "boundary_tests": 10,
+  "tool_registry_tests": 42,
+  "handoff_tests": 17,
+  "workspace_checks": 36,
+  "managed_policy": {
+    "denied_direct_apis": 15,
+    "local_attachment_rejected": true,
+    "external_location_rejected": true,
+    "native_queue_withdrawal": true,
+    "byte_attachment_preserved": true,
+    "native_import_export_and_restart": true,
+    "model_tool_catalog_empty": true,
+    "configured_plugin_and_mcp_blocked": true,
+    "ambient_instructions_and_file_substitution_disabled": true,
+    "external_model_calls": 0
+  },
+  "native_acceptance": {
+    "status": "passed",
+    "checks": [
+      "an ordinary native AI conversation adopts the role through trusted business tools while general tools remain absent",
+      "a deny-all native conversation such as the isolated QQ companion gains no research tools even while the module is active",
+      "the native AI probes real HTTP, authors a confined function, tests the saved revision and publishes its sourced result",
+      "a second native conversation takes over shared knowledge and the previous holder cannot save another revision",
+      "a separate existing AI runner uses only the published function and updates its normal historical score",
+      "the official MCP client negotiates HTTP and reads the same tools, identity and path resources as native AI conversations",
+      "MCP uses identical publication checks and candidate hints never become executable or acquire scores",
+      "the local MCP endpoint rejects unauthenticated callers and foreign browser origins without changing role ownership",
+      "assistance requests enter only the current holder's original native Inbox and duplicate requests do not create more tasks",
+      "SQLite restart retains the movable role, authored paths, tests and shared knowledge without re-exploring or re-running sources",
+      "stopping research removes its native model tools and preserves ordinary conversations and unrelated modules"
+    ],
+    "source_requests": 3,
+    "model_requests": 20,
+    "role_is_model_bound": false,
+    "official_mcp_client": true,
+    "actual_websites": false,
+    "actual_qq_connection": false,
+    "private_data_migrated": false,
+    "production_switch": false
+  },
+  "dispatcher_compatibility": {
+    "status": "passed",
+    "checks": [
+      "optional research starts without QQ while ordinary native Session/Inbox admit work unchanged",
+      "real read-only HTTP collectors re-rank a failed primary and validate the backup result before delivery",
+      "one native KV receipt holds one historical update per path and another module cannot see or corrupt it",
+      "concurrent duplicates execute once and the historically successful path is preferred next round",
+      "reusing a completed round ID for another requirement rejects before external I/O",
+      "a login barrier stops at the current operation and does not retry or punish path reliability",
+      "real SQLite restart restores immutable receipts and history without replaying collectors or consuming native Inbox",
+      "a persisted start without a result requires review rather than replaying an unknown external operation",
+      "native capability stop aborts active collector I/O while another module and native pending work remain available",
+      "cancelled round receipts persist across a second native restart without starting the request again",
+      "invalid research configuration fails only its optional module and leaves core session creation operational"
+    ],
+    "source_requests": 5,
+    "native_sqlite": true,
+    "actual_websites": false,
+    "model_requests": 0,
+    "actual_qq_connection": false,
+    "private_data_migrated": false,
+    "production_switch": false
+  },
+  "qq_product_compatibility": {
+    "status": "passed",
+    "checks": [
+      "the actual product exposes exactly two optional business modules while both default off; settings do not create a third dependency module or a QQ connection",
+      "native configuration RPC validates and persists real settings while disabled, rejects stale writers and raw secrets, and reports next-start desired state without pretending it is online",
+      "chat-only product boot uses its configured native provider/persona and independent member-aware SQLite Session; invalid account selectors never toggle a global switch",
+      "task-only product boot retains original binding, public task replies and native Inbox while the chat module and its model loop stay off",
+      "both real plugins can use the same peer and message numbers without crossing credentials, task bindings, persona, context or outgoing reply identity",
+      "stopping chat via the native module GUI/RPC leaves task forwarding, its original runner and actual QQ connection usable",
+      "product restart restores native history and acknowledged output metadata without replay; stopping the task plugin leaves chat independently active",
+      "a saved reply-off configuration takes effect over the previous persisted switch and observes native context without queueing, sending or model work",
+      "explicit reset/model-persona migration creates a new native context generation, preserves old history and global QQ deduplication, and does not replay observations or old model work",
+      "one chat account's invalid native model is isolated; its sibling and the task plugin continue using their own native Sessions",
+      "chat authentication failure reports actual unavailability and cannot block task forwarding or make a desired configuration appear connected",
+      "malformed optional chat settings fail closed without credential leakage; the task plugin and ordinary desktop generation remain available"
+    ],
+    "model_requests": 12,
+    "product_entry": "packages/im-assistant/src/cli.ts",
+    "business_modules": 2,
+    "history_deleted": false,
+    "actual_qq_connection": false,
+    "production_credentials_used": false,
+    "external_messages_sent": 0,
+    "private_data_migrated": false
+  },
+  "role_is_model_bound": false,
+  "mcp_sdk": "2.3.1",
+  "cross_call_checkpoints_implemented": false,
+  "product_entry_implemented": false,
+  "actual_websites": false,
+  "private_data_migrated": false,
+  "production_switch": false
+}

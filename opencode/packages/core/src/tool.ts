@@ -19,6 +19,7 @@ import { State } from "./state.js"
 import { definition, effectiveName, execute, normalizedName, normalizeContent } from "./tool/runtime.js"
 import { Wildcard } from "./util/wildcard.js"
 import { RuntimePolicy } from "./runtime-policy.js"
+import { Capabilities } from "./capabilities.js"
 
 export class RegistrationError extends Schema.TaggedError<RegistrationError>()("Tool.RegistrationError", {
   name: Schema.String,
@@ -89,6 +90,7 @@ const layer = Layer.effect(
     const image = yield* Image.Service
     const permission = yield* Permission.Service
     const policy = yield* RuntimePolicy.Service
+    const capabilities = yield* Capabilities.Service
 
     type NormalizedItem = Tool.Content | "decode" | "size"
     const normalizeImages = Effect.fnUntraced(function* (content: ReadonlyArray<Tool.Content>) {
@@ -263,15 +265,22 @@ const layer = Layer.effect(
     return Service.of({
       transform: state.transform,
       reload: state.reload,
-      list: () => Effect.sync(() => policy.managed ? [] : Array.from(state.get().tools.values())),
+      list: () => Effect.sync(() => [
+        ...(policy.managed ? [] : Array.from(state.get().tools.values())),
+        ...capabilities.tools().map((tool) => ({ ...tool, id: effectiveName(tool) })),
+      ]),
       snapshot: Effect.fn("Tool.snapshot")((permissions) =>
         Effect.sync(() => {
           const data = state.get()
           const active = new Map<string, Tool.Info>()
           const rules = permissions ?? []
+          const trusted = new Map(capabilities.tools().map((tool) => [effectiveName(tool), tool]))
           for (const [name, tool] of data.tools) {
             if (policy.managed || whollyDisabled(tool.options?.permission ?? name, rules)) continue
             active.set(name, tool)
+          }
+          for (const [name, tool] of trusted) {
+            if (!whollyDisabled(name, rules)) active.set(name, tool)
           }
           const codeModeEnabled = !policy.managed && !whollyDisabled("execute", rules)
           // Without Code Mode its tools would be unreachable, so expose them as direct tools instead.
@@ -312,11 +321,10 @@ const layer = Layer.effect(
             definitions: [
               ...Array.from(direct)
                 .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-                .map(([name]) => data.definitions.get(name)!),
+                .map(([name, tool]) => trusted.has(name) ? definition(tool) : data.definitions.get(name)!),
               ...(codeModeDefinition ? [codeModeDefinition] : []),
             ],
             execute: Effect.fnUntraced(function* (input: Parameters<Snapshot["execute"]>[0]) {
-              if (policy.managed) return yield* new Tool.Error({ message: "Tool execution is disabled by runtime policy" })
               const context: Tool.Context = {
                 sessionID: input.sessionID,
                 agent: input.agent,
@@ -330,6 +338,15 @@ const layer = Layer.effect(
               if (!requested && input.definitions && (direct.has(event.tool) || codeModeTool?.name === event.tool))
                 return yield* new Tool.Error({ message: `Tool is not available for this request: ${event.tool}` })
               const name = requested?.name ?? event.tool
+              const business = trusted.get(name)
+              if (business) {
+                if (!capabilities.tools().includes(business)) return yield* new Tool.Error({ message: "Application tool is no longer active" })
+                yield* permission.assert({ action: name, resources: ["*"], save: ["*"], metadata: {},
+                  sessionID: context.sessionID, agent: context.agent,
+                  source: { type: "tool", messageID: context.messageID, id: context.id },
+                }).pipe(Effect.mapError(() => new Tool.Error({ message: "Application tool permission denied" })))
+              }
+              if (policy.managed && !business) return yield* new Tool.Error({ message: "Tool execution is disabled by runtime policy" })
               if (name === "execute" && codeModeTool)
                 return yield* executeTool(codeModeTool, name, event.input, context)
               const tool = direct.get(name)
@@ -420,5 +437,5 @@ function namespaceError(name: string) {
 export const node = makeLocationNode({
   service: Service,
   layer,
-  deps: [PluginHooks.node, Image.node, Permission.node, RuntimePolicy.node],
+  deps: [PluginHooks.node, Image.node, Permission.node, RuntimePolicy.node, Capabilities.node],
 })

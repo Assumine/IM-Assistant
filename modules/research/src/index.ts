@@ -1,3 +1,8 @@
 export { createDispatcher, defaultScoring } from "./dispatcher"
 export { createResearchModule } from "./module"
+export { createOwner, assistanceInstructions } from "./owner"
+export { researchService } from "./service"
+export { createResearchMcp } from "./mcp"
+export { jsonCollector } from "./http"
+export type { Identity, Role, Primitive, Draft, Candidate } from "./contracts"
 export type { Data, Outcome, ResearchPath, Scoring, Request, PathHistory, PathSummary, Attempt, Report } from "./types"

@@ -93,7 +93,8 @@
         "python tools/run_runtime_checks.py --task R1-02",
         "python tools/run_runtime_checks.py --task R0-01",
         "python -m tools.codex_native_smoke",
-        "python tools/run_runtime_checks.py --task Q1-03"
+        "python tools/run_runtime_checks.py --task Q1-03",
+        "python tools/run_runtime_checks.py --task S1-02"
       ],
       "files": [
         {
@@ -254,7 +255,7 @@
         {
           "path": "packages/core/src/tool.ts",
           "action": "modified",
-          "sha256": "4b288fe0adf439d968a6642fbd15344917f3fd7223de341ef9ce33d3428091d9"
+          "sha256": "8d6c211be3e3ec527e1acc1a475015660874a936362e531ff3969146ba849db5"
         },
         {
           "path": "packages/core/test/plugin/fixture.ts",
@@ -1288,7 +1289,8 @@
       "verification_commands": [
         "python -m tools.qq_portal_smoke",
         "python tools/run_runtime_checks.py --task R3-01",
-        "python tools/run_runtime_checks.py --task Q1-04"
+        "python tools/run_runtime_checks.py --task Q1-04",
+        "python tools/run_runtime_checks.py --task S1-02"
       ],
       "files": [
         {
@@ -1299,7 +1301,7 @@
         {
           "path": "packages/plugin/src/promise/application.ts",
           "action": "added",
-          "sha256": "5ba7e9ffd0a46be3e7b91d77fd7af4e455660316df798dab4a57bff15082f2b0"
+          "sha256": "139b7c593b2182965165f99f88153160e295d9b4bfa66c6d5bb64e68cb15d97b"
         },
         {
           "path": "packages/plugin/src/promise/index.ts",
@@ -1319,12 +1321,12 @@
         {
           "path": "packages/server/src/application-modules.ts",
           "action": "added",
-          "sha256": "3731958faac5929a4e3465379e0f41c3c974e125ccb3dfe889628fffbca74620"
+          "sha256": "6ecbf6a8cb203fb1cda1db68835257276bb184affb3a2918802edacd0bcf54b0"
         },
         {
           "path": "packages/server/test/application-modules.test.ts",
           "action": "added",
-          "sha256": "bd1526f8717428f8d4c0c1a54ea61d3bb70852ce14e7fb236cbbf278dc71878d"
+          "sha256": "622023090d9b06d7ca864515bf977815cf849672e516d8eac8693fd00e58ea28"
         }
       ]
     },
@@ -1444,13 +1446,14 @@
       "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
       "verification_commands": [
         "python tools/run_runtime_checks.py --task R4-01",
-        "python tools/run_runtime_checks.py --task Q1-04"
+        "python tools/run_runtime_checks.py --task Q1-04",
+        "python tools/run_runtime_checks.py --task S1-02"
       ],
       "files": [
         {
           "path": "packages/core/src/capabilities.ts",
           "action": "added",
-          "sha256": "71b0caba0c48c0cc99e80c7db9f45700230ddcb0d00a971604d0344cbcbc30c9"
+          "sha256": "4d5b06ed53f6aca6bc4affeb591882d2a9fb8465cfe778be6226d38fd93d3572"
         },
         {
           "path": "packages/core/src/capability-notifications.ts",
@@ -1789,6 +1792,20 @@
           "path": "packages/server/script/research-dispatch-smoke.ts",
           "action": "added",
           "sha256": "db192adb1f62606c8b8e62dc3678e752ca9caa8ee35a92b3250b4fed066fdcb4"
+        }
+      ]
+    },
+    {
+      "id": "S1-02-research-identity-tools",
+      "reason": "通用可信应用工具在受管模式沿原生权限执行，普通工具仍禁用；可交接身份与MCP业务实现留在研究模块。原生合成模型和官方MCP客户端验证真实读取、函数测试、发布及原生Inbox求助。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task S1-02"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/research-assistance-smoke.ts",
+          "action": "added",
+          "sha256": "80e9192051f488363a26b2a9bce5b5eadd047e5831c55b7b105485ca7996de66"
         }
       ]
     }

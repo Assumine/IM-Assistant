@@ -1011,7 +1011,9 @@
       "runtime_acceptance_completed": [
         "C01",
         "C02",
-        "C03"
+        "C03",
+        "C04",
+        "C06"
       ],
       "tasks": {
         "S1-01": {
@@ -1067,12 +1069,78 @@
           "blocked_reason": null
         },
         "S1-02": {
+          "status": "done",
+          "artifacts": [
+            "modules/research/README.md",
+            "modules/research/bun.lock",
+            "modules/research/package.json",
+            "modules/research/src/contracts.ts",
+            "modules/research/src/dispatcher.ts",
+            "modules/research/src/http.ts",
+            "modules/research/src/index.ts",
+            "modules/research/src/mcp.ts",
+            "modules/research/src/module.ts",
+            "modules/research/src/owner.ts",
+            "modules/research/src/program.ts",
+            "modules/research/src/service.ts",
+            "modules/research/src/types.ts",
+            "modules/research/test/dispatcher.test.ts",
+            "modules/research/test/fixture.ts",
+            "modules/research/test/http.test.ts",
+            "modules/research/test/mcp-client.ts",
+            "modules/research/test/owner.test.ts",
+            "modules/research/tsconfig.json",
+            "modules/research/tsconfig.native.json",
+            "opencode/packages/core/src/capabilities.ts",
+            "opencode/packages/core/src/tool.ts",
+            "opencode/packages/plugin/src/promise/application.ts",
+            "opencode/packages/server/script/research-assistance-smoke.ts",
+            "opencode/packages/server/src/application-modules.ts",
+            "opencode/packages/server/test/application-modules.test.ts",
+            "tests/modules/research-assistance-evidence.json",
+            "tests/modules/test_s1_02.py",
+            "tools/research_assistance_smoke.py",
+            "tools/research_script_smoke.py",
+            "tools/setup_research_dependencies.py",
+            "upstream/patches.json"
+          ],
+          "verification": [
+            {
+              "task": "S1-02",
+              "plan_id": "research-script-dispatch-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 3,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "C04",
+                "C06"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "command": "python tools/run_runtime_checks.py --task S1-02",
+              "evidence": "tests/modules/research-assistance-evidence.json",
+              "native_test_executions": 101,
+              "native_role_checks": 11,
+              "dispatcher_checks": 11,
+              "qq_product_checks": 12,
+              "handoff_tests": 17,
+              "workspace_checks": 36,
+              "production_switch": false
+            }
+          ],
+          "blocked_reason": null
+        },
+        "S1-03": {
           "status": "pending",
           "artifacts": [],
           "verification": [],
           "blocked_reason": null
         },
-        "S1-03": {
+        "S1-02B": {
           "status": "pending",
           "artifacts": [],
           "verification": [],

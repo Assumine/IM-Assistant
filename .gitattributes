@@ -6,5 +6,6 @@
 *.txt text eol=lf
 # Keep module source fingerprints reproducible across Windows checkouts.
 modules/**/*.ts text eol=lf
+modules/**/bun.lock text eol=lf
 # Preserve the imported archive bytes, including upstream fixture line endings.
 opencode/** -text

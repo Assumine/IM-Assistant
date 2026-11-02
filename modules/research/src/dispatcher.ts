@@ -8,11 +8,16 @@ export const defaultScoring: Readonly<Scoring> = Object.freeze({
   historicalFailurePenalty: 0.1,
 })
 
+export function resolveScoring(value?: Partial<Scoring>): Scoring {
+  const scoring = { ...defaultScoring, ...value }
+  if (Object.values(scoring).some((weight) => !Number.isFinite(weight)) || scoring.failurePenalty <= 0 ||
+    scoring.successReward <= 0 || scoring.historicalFailurePenalty <= 0) throw new Error("Invalid scoring weights")
+  return scoring
+}
+
 /** Selects functions inside ONE research invocation; never owns a Session, Inbox or AI loop. */
 export function createDispatcher(options: { storage: StorageDomain; paths: readonly ResearchPath[]; scoring?: Partial<Scoring> }) {
-  const scoring = { ...defaultScoring, ...options.scoring }
-  if (Object.values(scoring).some((value) => !Number.isFinite(value)) || scoring.failurePenalty <= 0 ||
-    scoring.successReward <= 0 || scoring.historicalFailurePenalty <= 0) throw new Error("Invalid scoring weights")
+  const scoring = resolveScoring(options.scoring)
   const paths = options.paths.map((value) => ({ ...value }))
   if (new Set(paths.map((value) => value.id)).size !== paths.length || paths.some((value) =>
     !value.id || !value.revision || !value.category || !value.action || !value.title)) throw new Error("Invalid or duplicate research path")
