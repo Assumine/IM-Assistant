@@ -132,9 +132,12 @@ def validate(root=ROOT):
     used_ids=set(ids) | (set(module_ids) if module_receipt else set())
     for definition,state_record in phases[1 + int('module_plan' in plan):]:
         ident=definition['plan_id']
-        check(ident+' is a separate optional phase without a production switch',
+        desktop_cutover = (definition.get('scope') == 'explicit_desktop_entry_cutover' and
+                           definition.get('user_authorization') == '可以替换现有的助手的位置了' and
+                           definition.get('production_switch') is True)
+        check(ident+' is a separate phase with an explicit production boundary',
               definition['schema_version']==1 and definition['foundation_plan_id']==plan['plan_id'] and
-              definition['production_switch'] is False and definition['private_data_migration'] is False and
+              (definition['production_switch'] is False or desktop_cutover) and definition['private_data_migration'] is False and
               definition['progress_file']=='docs/handoff/progress.json')
         definitions=definition['tasks'];business_states=state_record['tasks']
         check(ident+' starts at an owned task',definition['start_task'] in business_states)

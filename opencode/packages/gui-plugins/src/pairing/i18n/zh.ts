@@ -1,0 +1,28 @@
+import en from "./en"
+
+export default {
+  "command.title": "配对设备",
+  title: "设备配对",
+  description: "将其他设备连接到本机的 OpenCode 服务器。",
+  "pair.title": "配对设备",
+  "pair.description": "通过端到端加密隧道，从任意位置连接手机、平板或其他电脑。",
+  "pair.open": "配对设备",
+  "pair.unavailable": "当前无法配对。",
+  "dialog.description": "用其他设备上的 OpenCode 应用扫描二维码，或复制链接。",
+  "remote.title": "远程访问",
+  "remote.description": "已配对设备通过互联网访问本机 OpenCode 服务器。关闭后连接会中断，需要重新配对。",
+  "remote.error": "无法更新远程访问，请重试。",
+  "setup.title": "正在配置远程访问…",
+  "setup.description": "可能需要一分钟。",
+  "setup.error": "无法配置远程访问。",
+  retry: "重试",
+  "screenActive.title": "保持屏幕唤醒",
+  "screenActive.description": "OpenCode 运行时，阻止这台电脑的显示器进入睡眠。",
+  "screenActive.error": "无法更新屏幕唤醒设置，请重试。",
+  qr: "配对二维码",
+  copyLink: "复制链接",
+  "copy.error": "无法复制配对信息，请重试。",
+  error: "无法更新配对信息，请重试。",
+  expires: "{{time}} 后过期",
+  refresh: "刷新配对码",
+} satisfies Record<keyof typeof en, string>

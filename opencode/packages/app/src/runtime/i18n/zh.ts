@@ -1,4 +1,5 @@
 import en from "./en"
+import supplement from "./zh-supplement"
 
 type Keys = keyof typeof en
 
@@ -111,7 +112,6 @@ export const dict = {
 
   "command.input.focus": "聚焦输入框",
 
-
   "command.review.toggle": "切换审查",
 
   "command.message.previous": "上一条消息",
@@ -134,7 +134,7 @@ export const dict = {
   "command.model.variant.cycle.description": "切换到下一个强度等级",
 
   "command.prompt.mode.shell": "Shell",
-  "command.prompt.mode.normal": "Prompt",
+  "command.prompt.mode.normal": "对话",
 
   "command.permissions.autoaccept.enable": "自动接受权限",
   "command.permissions.autoaccept.disable": "停止自动接受权限",
@@ -201,7 +201,6 @@ export const dict = {
   "provider.connect.toast.connected.title": "{{provider}} 已连接",
   "provider.connect.toast.connected.description": "现在可以使用 {{provider}} 模型了。",
 
-
   "provider.disconnect.toast.disconnected.title": "{{provider}} 已断开连接",
   "provider.disconnect.toast.disconnected.description": "{{provider}} 模型已不再可用。",
   "provider.disconnect.toast.noCredentials.description": "未找到 {{provider}} 的可移除凭据。",
@@ -248,7 +247,7 @@ export const dict = {
   "prompt.placeholder.shell": "输入 shell 命令… {{example}}",
   "prompt.placeholder.normal": '随便问点什么… "{{example}}"',
   "prompt.mode.shell": "Shell",
-  "prompt.mode.normal": "Prompt",
+  "prompt.mode.normal": "对话",
   "session.child.backToParent": "返回主会话。",
   "prompt.action.attachFile": "附加文件",
   "prompt.toast.attachmentDuplicate.title": "此文件已上传",
@@ -266,7 +265,6 @@ export const dict = {
   "dialog.mcp.title": "MCP 服务器",
   "dialog.mcp.empty": "未配置 MCP 服务器",
 
-
   "dialog.fork.empty": "没有可用于创建新会话的消息",
 
   "dialog.directory.action.selectFile": "选择文件",
@@ -282,7 +280,7 @@ export const dict = {
   "dialog.server.add.checking": "检查中…",
   "dialog.server.add.button": "添加服务器",
   "dialog.server.add.name": "服务器名称（可选）",
-  "dialog.server.add.namePlaceholder": "Localhost",
+  "dialog.server.add.namePlaceholder": "本地服务器",
   "dialog.server.add.password": "密码（可选）",
   "dialog.server.edit.title": "编辑服务器",
   "dialog.server.menu.edit": "编辑",
@@ -870,6 +868,7 @@ export const dict = {
   "workspace.delete.confirm": "删除“{{name}}”吗？",
   "workspace.delete.location": "位置",
   "settings.search.empty.query": "“{{query}}”",
-} satisfies Partial<Record<Keys, string>>
+  ...supplement,
+} satisfies Record<Keys, string>
 
 export default dict

@@ -10,4 +10,11 @@ export default {
   "connectionLost.abnormalClose": "WebSocket 异常关闭：{{code}}",
   "connectionLost.description": "终端连接已中断。这可能发生在服务器重启时。",
   "tab.title": "终端",
+  "location.open": "在终端中打开",
+  "quote.actions": "引用选中内容",
+  "quote.add": "引用",
+  "quote.addWithComment": "引用并评论",
+  "quote.addWithoutComment": "仅引用",
+  "quote.tooLong": "选中内容过长",
+  "quote.label": "终端",
 }

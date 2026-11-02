@@ -186,11 +186,12 @@ export async function openSettings(page: Page, input: WorkspaceInput) {
 }
 
 /** Opens Settings without replacing the existing sessions or server fixtures. */
-export async function showSettings(page: Page) {
-  await page.getByRole("button", { name: "Home", exact: true }).click()
+export async function showSettings(page: Page, labels = { home: "Home", tabs: "Tabs", settings: "Settings" }) {
+  await page.getByRole("button", { name: labels.home, exact: true }).click()
 
-  if ((page.viewportSize()?.width ?? 1280) < 800) await page.getByRole("button", { name: "Tabs", exact: true }).click()
-  await page.getByRole("button", { name: "Settings", exact: true }).click()
+  if ((page.viewportSize()?.width ?? 1280) < 800)
+    await page.getByRole("button", { name: labels.tabs, exact: true }).click()
+  await page.getByRole("button", { name: labels.settings, exact: true }).click()
   const settings = page.getByTestId("settings-screen")
   await expect(settings).toBeFocused({ timeout: APP_READY_TIMEOUT })
 

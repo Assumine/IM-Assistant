@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import { DESKTOP_NATIVE_LOCALES } from "./desktop-native"
 import { localizedListParts, richTemplateParts } from "./language"
 
@@ -19,10 +20,7 @@ describe("rich translations", () => {
 describe("dictionaries", () => {
   test("are flat string maps in every locale", async () => {
     const modules = await Promise.all(
-      DESKTOP_NATIVE_LOCALES.flatMap((locale) => [
-        import(`./${locale}`),
-        import(`../../../../ui/src/i18n/${locale}`),
-      ]),
+      DESKTOP_NATIVE_LOCALES.flatMap((locale) => [import(`./${locale}`), import(`../../../../ui/src/i18n/${locale}`)]),
     )
 
     const nested = modules.flatMap((module) =>
@@ -32,4 +30,27 @@ describe("dictionaries", () => {
 
     expect(nested).toEqual([])
   })
+
+  const plugins = fileURLToPath(new URL("../../../../gui-plugins/src/", import.meta.url))
+  const catalogs = [
+    new URL("./", import.meta.url),
+    new URL("../../../../ui/src/i18n/", import.meta.url),
+    ...Array.from(new Bun.Glob("*/i18n/en.ts").scanSync({ cwd: plugins, absolute: true })).map(
+      (file) => new URL("./", pathToFileURL(file)),
+    ),
+  ]
+
+  for (const catalog of catalogs) {
+    test(`Simplified Chinese covers source keys and preserves interpolation: ${catalog}`, async () => {
+      const english = await import(new URL("en.ts", catalog).href)
+      const chinese = await import(new URL("zh.ts", catalog).href)
+      const en = english.default ?? english.dict
+      const zh = chinese.default ?? chinese.dict
+      expect(Object.keys(zh).sort()).toEqual(Object.keys(en).sort())
+      for (const key of Object.keys(en)) {
+        const placeholders = (value: string) => [...value.matchAll(/\{\{[^{}]+\}\}/g)].map(([slot]) => slot).sort()
+        expect(placeholders(zh[key]), key).toEqual(placeholders(en[key]))
+      }
+    })
+  }
 })

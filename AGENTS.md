@@ -1,6 +1,6 @@
 # 当前开发约定
 
-- 活动计划由progress.json的active_plan_id选择，当前为research-script-dispatch-v1；OpenCode基座及QQ阶段已完成并保留原证据。先读docs/handoff/接手指南.md并运行python tools/next_task.py，不按旧聊天或归档任务继续旧P1。
+- 活动计划由progress.json的active_plan_id选择，不得根据旧阶段名猜测当前任务；基座、QQ、研究与桌面/汉化已分阶段验收并保留各自源码证据。先读docs/handoff/接手指南.md并运行python tools/next_task.py，不按旧聊天或归档任务继续旧P1。
 - 以完整OpenCode应用为基座二次开发；不再建设独立Python宿主后接入OpenCode，不将上游核心强制改写为Python。
 - 整体始终是“核心框架＋插件”。OpenCode承担应用/会话核心，个人助手业务按完整能力插件接入；不能把业务逐项硬编码进核心，也不能为了插件再造一个外层宿主。
 - 每次改动先确认核心与插件的职责、原生状态所有者和依赖方向。插件通过公共接口/展示位置接入，不覆盖全局发送/队列函数，不直接操作其他插件或核心的私有数据；依赖库/运行时不是功能插件。

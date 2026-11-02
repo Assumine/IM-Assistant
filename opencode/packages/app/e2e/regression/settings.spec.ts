@@ -14,9 +14,83 @@ import { recordNotifications } from "../utils/notifications"
 import { installSseTransport } from "../utils/sse-transport"
 import { backendEvent, backendRpc, backendTabs, backendHref } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
-import type { Capability } from "@opencode/schema/capability"
+import { Capability } from "@opencode/schema/capability"
 import { capabilityEvent, capabilityRpc, capabilityVisibility, capabilityViewEvent } from "../utils/capabilities"
 import { validateTimelineMessages } from "../utils/timeline"
+
+test("Simplified Chinese follows live language changes across native and plugin settings", async ({ page }) => {
+  const modules = capabilityRpc({
+    list: () => [{ id: "translation-fixture", title: "示例模块", state: "disabled", metrics: false }],
+  })
+  const backends = backendRpc({
+    list: () => [],
+    status: () => {
+      throw new Error("No backend account belongs to this translation scenario")
+    },
+  })
+  const { settings } = await openSettings(page, {
+    name: "Chinese settings",
+    workspace: false,
+    rpc: (input) => (input.id === Capability.Api.id ? modules(input) : backends(input)),
+    sessionStats: () => ({
+      range: { from: 1, to: 2 },
+      sessions: 0,
+      subagents: 0,
+      prompts: 0,
+      steps: 0,
+      tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+      cost: 0,
+      tools: { mode: "none" },
+      activeDays: 0,
+      streak: 0,
+      activity: [],
+      models: [],
+      reporting: {
+        records: 0,
+        complete: 0,
+        fields: { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0 },
+        cost: {
+          reported: { records: 0, amount: 0 },
+          catalog: { records: 0, amount: 0 },
+          mixed: { records: 0, amount: 0 },
+          unavailable: { records: 0, amount: 0 },
+          unknown: { records: 0, amount: 0 },
+        },
+      },
+    }),
+  })
+  // Start in English, then load each plugin's lazy catalog through the real settings host.
+  await expect(settings.getByRole("tab", { name: "Application modules", exact: true })).toBeVisible()
+  await settings.locator('[data-action="settings-language"]').click()
+  await page.getByRole("option", { name: "简体中文", exact: true }).click()
+  await expect(settings.getByRole("tab", { name: "模块管理", exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: /^通知 / })).toHaveAttribute("aria-label", "通知 alt+T")
+  await settings.getByRole("tab", { name: "模块管理", exact: true }).click()
+  const module = settings.getByRole("article", { name: "示例模块", exact: true })
+  await expect(module.getByText("已停用", { exact: true })).toBeVisible()
+  await expect(settings.getByRole("button", { name: "刷新", exact: true })).toBeEnabled()
+  await settings.getByRole("tab", { name: "会话后端", exact: true }).click()
+  await expect(settings.getByText("尚未连接其他会话后端。", { exact: true })).toBeVisible()
+  await settings.getByRole("tab", { name: "用量统计", exact: true }).click()
+  await expect(settings.getByRole("button", { name: "最近 7 天", exact: true })).toBeEnabled()
+  await expect(settings.getByRole("button", { name: "累计", exact: true })).toBeEnabled()
+  await expect(settings.getByRole("button", { name: "刷新用量", exact: true })).toBeEnabled()
+  await expect(settings.getByText("这个时段没有用量记录。", { exact: true })).toBeVisible()
+  await expect(settings.getByText("0 / 0 条记录", { exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("simplified-chinese-usage.png") })
+  await page.reload()
+  const reopened = await showSettings(page, { home: "主页", tabs: "标签页", settings: "设置" })
+  await expect(reopened.getByRole("tab", { name: "模块管理", exact: true })).toBeVisible()
+  await reopened.getByRole("tab", { name: "偏好设置", exact: true }).click()
+  await reopened.locator('[data-action="settings-language"]').click()
+  await page.getByRole("option", { name: "English", exact: true }).click()
+  await expect(reopened.getByRole("tab", { name: "Application modules", exact: true })).toBeVisible()
+  await expect(page.getByRole("region", { name: /^Notifications / })).toHaveAttribute("aria-label", "Notifications alt+T")
+  await reopened.getByRole("tab", { name: "Application modules", exact: true }).click()
+  await expect(
+    reopened.getByRole("article", { name: "示例模块", exact: true }).getByText("Disabled", { exact: true }),
+  ).toBeVisible()
+})
 
 test("assistant appearance: native theme, font roles and reduced motion survive reload", async ({ page }) => {
   await openSession(page, { name: "AssistantAppearance", workspace: false })
@@ -105,29 +179,39 @@ test("capabilities: module failure and explicit stop leave the native conversati
 })
 
 test("capabilities: module-owned settings save by revision while its service stays disabled", async ({ page }) => {
-  const modules: Capability.Info[] = [{ id: "qq-chatbot", title: "QQ chat companion", state: "disabled", metrics: false, settings: true }]
-  let document: Capability.Settings = { revision: "1".repeat(64), text: '{"version":1,"enabled":false,"accounts":[]}', appliesTo: "next-service-start" }
+  const modules: Capability.Info[] = [
+    { id: "qq-chatbot", title: "QQ chat companion", state: "disabled", metrics: false, settings: true },
+  ]
+  let document: Capability.Settings = {
+    revision: "1".repeat(64),
+    text: '{"version":1,"enabled":false,"accounts":[]}',
+    appliesTo: "next-service-start",
+  }
   const saved = Promise.withResolvers<Capability.Settings>()
   const calls: { id: string; revision: string; text: string }[] = []
   let lists = 0
 
-  const workspace = await openSession(page, { name: "ModuleSettings", workspace: false, rpc: capabilityRpc({
-    list: () => {
-      lists++
+  const workspace = await openSession(page, {
+    name: "ModuleSettings",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => {
+        lists++
 
-      return modules
-    },
-    settings: (id) => {
-      expect(id).toBe("qq-chatbot")
+        return modules
+      },
+      settings: (id) => {
+        expect(id).toBe("qq-chatbot")
 
-      return document
-    },
-    configure: (input) => {
-      calls.push(input)
+        return document
+      },
+      configure: (input) => {
+        calls.push(input)
 
-      return saved.promise
-    },
-  }) })
+        return saved.promise
+      },
+    }),
+  })
 
   const settings = await showSettings(page)
   await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
@@ -139,8 +223,20 @@ test("capabilities: module-owned settings save by revision while its service sta
   await expect(editor).toBeEditable()
   await expect(editor).toHaveValue(document.text)
 
-  const edited = JSON.stringify({ version: 1, enabled: false, accounts: [{ botID: "10002", url: "ws://127.0.0.1:12345/", tokenEnv: "IM_QQ_CHAT_TOKEN_SHEEP",
-    model: { providerID: "fixture", id: "fixture" }, persona: { name: "Sheep", prompt: "Synthetic persona" }, policy: { privateUsers: ["20001"], groups: [] } }] })
+  const edited = JSON.stringify({
+    version: 1,
+    enabled: false,
+    accounts: [
+      {
+        botID: "10002",
+        url: "ws://127.0.0.1:12345/",
+        tokenEnv: "IM_QQ_CHAT_TOKEN_SHEEP",
+        model: { providerID: "fixture", id: "fixture" },
+        persona: { name: "Sheep", prompt: "Synthetic persona" },
+        policy: { privateUsers: ["20001"], groups: [] },
+      },
+    ],
+  })
 
   await editor.fill(edited)
   await dialog.getByRole("button", { name: "Save configuration", exact: true }).click()
@@ -164,20 +260,59 @@ test("capabilities: module-owned settings save by revision while its service sta
   expect(calls).toHaveLength(1)
 })
 
-test("capabilities: activity expands in place, refreshes from owned events and bounds technical records", async ({ page }) => {
+test("capabilities: activity expands in place, refreshes from owned events and bounds technical records", async ({
+  page,
+}) => {
   await page.clock.install({ time: new Date("2026-11-02T00:00:00Z") })
-  let reads = 0, lists = 0
+  let reads = 0,
+    lists = 0
   const held = Promise.withResolvers<Capability.ViewResult>()
-  const document: Capability.ViewResult = { id: "research", status: "ready", document: { title: "Research activity",
-    description: "Research assistance: Research owner", items: [{ id: "msg_run", title: "Find a comedy for tonight", subtitle: "Film",
-      state: "attention", status: "Waiting for assistance", fields: [{ label: "Current action", value: "Read movie details" },
-        { label: "Parameters", value: "Fixture comedy" }, { label: "Progress", value: "The source needs access or page review" },
-        { label: "Path selection", value: "Primary: history 1.00 / round -1.00\nBackup: history 1.00 / round 1.00" }],
-      technical: JSON.stringify({ evidence: "<script>window.untrusted=true</script>", records: "bounded evidence ".repeat(1000) }, null, 2) }] } }
-  const workspace = await openSession(page, { name: "ModuleActivity", workspace: false, rpc: capabilityRpc({
-    list: () => { lists++; return [{ id: "research", title: "Research scripts", state: "active", metrics: false, view: true }] },
-    view: (input) => { expect(input.id).toBe("research"); reads++; return reads === 2 ? held.promise : document },
-  }) })
+  const document: Capability.ViewResult = {
+    id: "research",
+    status: "ready",
+    document: {
+      title: "Research activity",
+      description: "Research assistance: Research owner",
+      items: [
+        {
+          id: "msg_run",
+          title: "Find a comedy for tonight",
+          subtitle: "Film",
+          state: "attention",
+          status: "Waiting for assistance",
+          fields: [
+            { label: "Current action", value: "Read movie details" },
+            { label: "Parameters", value: "Fixture comedy" },
+            { label: "Progress", value: "The source needs access or page review" },
+            {
+              label: "Path selection",
+              value: "Primary: history 1.00 / round -1.00\nBackup: history 1.00 / round 1.00",
+            },
+          ],
+          technical: JSON.stringify(
+            { evidence: "<script>window.untrusted=true</script>", records: "bounded evidence ".repeat(1000) },
+            null,
+            2,
+          ),
+        },
+      ],
+    },
+  }
+  const workspace = await openSession(page, {
+    name: "ModuleActivity",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => {
+        lists++
+        return [{ id: "research", title: "Research scripts", state: "active", metrics: false, view: true }]
+      },
+      view: (input) => {
+        expect(input.id).toBe("research")
+        reads++
+        return reads === 2 ? held.promise : document
+      },
+    }),
+  })
   const settings = await showSettings(page)
   await settings.getByRole("tab", { name: "Appearance", exact: true }).click()
   await settings.locator('[data-action="settings-color-scheme"]').click()
@@ -190,7 +325,9 @@ test("capabilities: activity expands in place, refreshes from owned events and b
   const activity = module.getByRole("region", { name: "View activity", exact: true })
   const run = activity.getByRole("article", { name: "Find a comedy for tonight", exact: true })
   await expect(run.getByText("The source needs access or page review", { exact: true })).toBeVisible()
-  await expect(run.getByText("Primary: history 1.00 / round -1.00\nBackup: history 1.00 / round 1.00", { exact: true })).toBeVisible()
+  await expect(
+    run.getByText("Primary: history 1.00 / round -1.00\nBackup: history 1.00 / round 1.00", { exact: true }),
+  ).toBeVisible()
   const technical = run.locator("pre")
   await expect(technical).toBeHidden()
   const before = lists
@@ -200,7 +337,10 @@ test("capabilities: activity expands in place, refreshes from owned events and b
   await expect(run.getByText("Read movie details", { exact: true })).toBeVisible()
   await capabilityVisibility(page, true)
   held.resolve({ id: "research", status: "ready", document: { title: "Stale response", items: [] } })
-  await workspace.push([capabilityViewEvent(workspace.directory, "research"), capabilityViewEvent(workspace.directory, "unrelated")])
+  await workspace.push([
+    capabilityViewEvent(workspace.directory, "research"),
+    capabilityViewEvent(workspace.directory, "unrelated"),
+  ])
   await page.clock.fastForward(60000)
   expect(reads).toBe(2)
   await capabilityVisibility(page, false)

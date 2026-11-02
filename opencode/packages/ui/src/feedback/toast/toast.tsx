@@ -35,6 +35,7 @@ function ToastRegion(props: ToastRegionProps) {
   return (
     <Portal ref={observe}>
       <Toaster
+        containerAriaLabel={i18n.t("ui.toast.notifications")}
         position={isRTL(i18n.locale()) ? "bottom-left" : "bottom-right"}
         offset={isRTL(i18n.locale()) ? { left: 32, bottom: 48 } : { right: 32, bottom: 48 }}
         mobileOffset={16}

@@ -733,7 +733,7 @@
       "blocked_reason": null
     }
   },
-  "active_plan_id": "research-script-dispatch-v1",
+  "active_plan_id": "desktop-entry-cutover-v1",
   "module_plan": {
     "plan_id": "qq-plugin-migration-v1",
     "implementation_started": true,
@@ -1302,6 +1302,82 @@
               "supplementary_public_branch_checks": 7,
               "supplementary_public_source_requests": 3,
               "production_switch": false
+            }
+          ],
+          "blocked_reason": null
+        }
+      }
+    },
+    "desktop-entry-cutover-v1": {
+      "plan_id": "desktop-entry-cutover-v1",
+      "implementation_started": true,
+      "runtime_acceptance_completed": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06"
+      ],
+      "tasks": {
+        "D1-01": {
+          "status": "done",
+          "artifacts": [
+            "opencode/packages/im-assistant/script/launch.pyw",
+            "tests/deployment/desktop-entry-evidence.json",
+            "tests/deployment/test_d1_01.py"
+          ],
+          "verification": [
+            {
+              "task": "D1-01",
+              "plan_id": "desktop-entry-cutover-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 3,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "D01",
+                "D02",
+                "D03"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "evidence": "tests/deployment/desktop-entry-evidence.json",
+              "command": "python tools/run_runtime_checks.py --task D1-01"
+            }
+          ],
+          "blocked_reason": null
+        },
+        "D1-02": {
+          "status": "done",
+          "artifacts": [
+            "opencode/packages/app/src/runtime/i18n/zh-supplement.ts",
+            "tests/deployment/localization-evidence.json",
+            "tests/deployment/test_d1_02.py"
+          ],
+          "verification": [
+            {
+              "task": "D1-02",
+              "plan_id": "desktop-entry-cutover-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 3,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "D04",
+                "D05",
+                "D06"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "evidence": "tests/deployment/localization-evidence.json",
+              "command": "python tools/run_runtime_checks.py --task D1-02"
             }
           ],
           "blocked_reason": null

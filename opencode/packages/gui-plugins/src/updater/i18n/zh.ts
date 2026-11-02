@@ -29,4 +29,13 @@ export default {
   "releaseNotes.action.next": "下一步",
   "releaseNotes.action.hideFuture": "不再显示",
   "releaseNotes.media.alt": "版本说明预览",
+  "beta.title": "更新内容",
+  "beta.since.one": "自构建 {{build}} 起，共 {{count}} 项变更",
+  "beta.since.other": "自构建 {{build}} 起，共 {{count}} 项变更",
+  "beta.added": "新增",
+  "beta.fixed": "修复",
+  "beta.viewAll": "查看全部",
+  "beta.page.description": "此构建中的全部变更。",
+  "beta.github": "在 GitHub 查看历史",
+  "beta.done": "知道了",
 }

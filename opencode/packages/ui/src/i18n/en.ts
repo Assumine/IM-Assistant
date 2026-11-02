@@ -1,4 +1,5 @@
 const source = {
+  "ui.toast.notifications": "Notifications",
   "ui.preview.controls": "Preview controls",
   "ui.preview.zoomIn": "Zoom in",
   "ui.preview.zoomOut": "Zoom out",

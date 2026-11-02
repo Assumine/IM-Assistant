@@ -1,0 +1,2 @@
+# Deployment operator only; the desktop launcher itself uses the Python standard library.
+pywin32==312

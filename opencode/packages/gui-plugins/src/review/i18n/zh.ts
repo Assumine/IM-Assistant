@@ -12,4 +12,8 @@ export default {
   noChanges: "无更改",
   "settings.wrapLines.title": "换行",
   "settings.wrapLines.description": "在移动设备差异中换行，而不是水平滚动",
+  "menu.count.one": "{{count}} 个文件已更改",
+  "menu.count.other": "{{count}} 个文件已更改",
+  "folder.more": "{{count}} · 还有更多未显示",
+  "command.open": "打开审查",
 }

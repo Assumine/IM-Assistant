@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "plan_id": "desktop-entry-cutover-v1",
+  "task": "D1-01",
+  "status": "passed",
+  "acceptance_ids": [
+    "D01",
+    "D02",
+    "D03"
+  ],
+  "checks": [
+    "live shortcuts/startup and original backup readback",
+    "actual desktop shortcut and repeated launcher keep the original native window and empty profile",
+    "live native API, private backup confinement and current source provenance"
+  ],
+  "actual_system_entry_cutover": true,
+  "native_electron_window_verified": true,
+  "window_reused": true,
+  "visual_input_and_settings_verified": false,
+  "ui_validation": "separate built renderer automation; installed window identity and native API readback",
+  "actual_logon_tested": false,
+  "actual_qq_connection": false,
+  "model_requests": 0,
+  "private_data_migrated": false,
+  "old_tasks_replayed": false,
+  "startup_enabled_preserved": true,
+  "private_backups_committed": false,
+  "sources": {
+    "opencode/packages/im-assistant/script/launch.pyw": "e20ebf838c2a9d880da1691d7533effa24721f3dc31b9d9ed6115c5e8fdc0d89",
+    "tools/desktop_entry.py": "115d310320634d015bb747db088adfc6bd1cc1d4730076e2bee4859991eaacb0",
+    "tests/deployment/test_d1_01.py": "d16a90e5d79049e1415342f55592ffff73678c4d3e0e11273345c771d6e3e504",
+    "requirements-windows-entry.txt": "8537adca9629f610c87b6363116227f796ff867ddf250416f57cdc4eb16a106f",
+    "tools/validate_design.py": "b4e0318c31aa4328b0da8a4703d031687873df2d16696fc10733f75fe5ff04b1",
+    "upstream/patches.json": "31c77f75e32163a923d7b6909ab2f04f9552cb521fe3945d12c7381877d81695"
+  }
+}

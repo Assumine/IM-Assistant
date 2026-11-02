@@ -29,7 +29,8 @@ export default {
   "stage.connecting": "正在通过 SSH 连接…",
   "stage.authentication": "需要身份验证",
   "form.name": "服务器名称（可选）",
-  "form.namePlaceholder": "Localhost",
+  "form.namePlaceholder": "本机",
   "form.add": "添加服务器",
   "menu.delete": "删除",
+  "error.unavailable": "SSH 不可用",
 }

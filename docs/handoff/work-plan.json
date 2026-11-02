@@ -628,6 +628,78 @@
           "native_verification": "Python编排真实Bun实现与隔离原生服务/SQLite；不连接真实账号，不迁移私人历史。"
         }
       ]
+    },
+    "desktop-entry-cutover-v1": {
+      "schema_version": 1,
+      "plan_id": "desktop-entry-cutover-v1",
+      "foundation_plan_id": "opencode-app-base-v2",
+      "scope": "explicit_desktop_entry_cutover",
+      "user_authorization": "可以替换现有的助手的位置了",
+      "start_task": "D1-01",
+      "progress_file": "docs/handoff/progress.json",
+      "production_switch": true,
+      "private_data_migration": false,
+      "acceptance_document": "docs/architecture/桌面主入口切换验收.md",
+      "tasks": [
+        {
+          "id": "D1-01",
+          "phase": "D1",
+          "title": "主入口切换与可回退部署",
+          "depends_on": [],
+          "outputs": [
+            "opencode/packages/im-assistant/script/launch.pyw",
+            "tests/deployment/desktop-entry-evidence.json"
+          ],
+          "test_files": [
+            "tests/deployment/test_d1_01.py"
+          ],
+          "acceptance_ids": [
+            "D01",
+            "D02",
+            "D03"
+          ],
+          "scope": "仅切换当前用户的桌面/开始菜单及原登录启动项，保留旧数据和任务归属。",
+          "done_when": [
+            "原入口与计划任务备份可回读，无关项保持不变。",
+            "最新原生桌面与服务实际可用，重复启动复用，不触发模型、QQ或旧任务。",
+            "实际系统入口回读、备份和私密边界验收完成。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task D1-01"
+          ],
+          "native_verification": "实际Windows快捷方式/计划任务/原生窗口与产品HTTP接口，来源和备份验证；无合成模型调用或私人历史迁移。"
+        },
+        {
+          "id": "D1-02",
+          "phase": "D1",
+          "title": "简体中文语言包补齐与实际界面验收",
+          "depends_on": [],
+          "outputs": [
+            "opencode/packages/app/src/runtime/i18n/zh-supplement.ts",
+            "tests/deployment/localization-evidence.json"
+          ],
+          "test_files": [
+            "tests/deployment/test_d1_02.py"
+          ],
+          "acceptance_ids": [
+            "D04",
+            "D05",
+            "D06"
+          ],
+          "scope": "补齐简体中文及插件语言注册；保持英文语义源、原生 UI 和用户数据所有权。",
+          "done_when": [
+            "应用/组件/插件目录逐键覆盖且占位符一致。",
+            "实际构建界面切换语言与重载保持通过。",
+            "新主入口重开后实际中文窗口可用，记录术语和英文保留项。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task D1-02"
+          ],
+          "native_verification": "原生 Bun 字典契约、构建后的 Playwright settings keeper 和实际 Electron 窗口；不调用模型或真实 QQ。"
+        }
+      ]
     }
   }
 }
