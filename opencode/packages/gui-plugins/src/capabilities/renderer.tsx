@@ -93,9 +93,14 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
   )
 
   createKeyed(
-    () => data.modules.map((item) => item.id).join("|"),
+    () =>
+      data.modules
+        .filter((item) => item.view)
+        .map((item) => item.id)
+        .join("|"),
     () => {
-      for (const [index, item] of data.modules.entries()) {
+      // A configuration document is not a daily-use page. Only module-owned views earn a navigation entry.
+      for (const [index, item] of data.modules.filter((item) => item.view).entries()) {
         ctx.add(ApplicationPage, {
           id: "module-" + item.id,
           order: index,

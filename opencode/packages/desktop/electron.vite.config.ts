@@ -57,6 +57,8 @@ export default defineConfig(async ({ command }) => {
         "import.meta.env.OPENCODE_CHANNEL": JSON.stringify(channel === "local" ? "dev" : channel),
       },
       build: {
+        // Keep hashed lazy chunks for an already-open development window. Installed launches use immutable snapshots.
+        emptyOutDir: false,
         minify: command === "build",
         rolldownOptions: {
           input: { index: "src/main/index.ts" },
@@ -98,6 +100,7 @@ export default defineConfig(async ({ command }) => {
     },
     preload: {
       build: {
+        emptyOutDir: false,
         minify: command === "build",
         rolldownOptions: {
           input: { index: "src/preload/index.ts" },
@@ -128,6 +131,7 @@ export default defineConfig(async ({ command }) => {
       publicDir: "../../../app/public",
       root: "src/renderer",
       build: {
+        emptyOutDir: false,
         minify: command === "build",
         sourcemap: true,
         rolldownOptions: {

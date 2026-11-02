@@ -826,6 +826,46 @@
           "native_verification": "真实构建表单 keeper、原生类型、中文与构建检查。"
         }
       ]
+    },
+    "assistant-purpose-v1": {
+      "schema_version": 1,
+      "plan_id": "assistant-purpose-v1",
+      "foundation_plan_id": "opencode-app-base-v2",
+      "scope": "assistant_daily_entry",
+      "start_task": "U3-01",
+      "progress_file": "docs/handoff/progress.json",
+      "production_switch": false,
+      "private_data_migration": false,
+      "acceptance_document": "docs/architecture/助手入口用途验收.md",
+      "tasks": [
+        {
+          "id": "U3-01",
+          "phase": "U3",
+          "title": "按实际能力组织助手总览与导航",
+          "depends_on": [],
+          "outputs": [
+            "opencode/packages/gui-plugins/src/capabilities/workspace.tsx",
+            "tests/modules/assistant-purpose-evidence.json"
+          ],
+          "test_files": [
+            "tests/modules/test_assistant_purpose.py"
+          ],
+          "acceptance_ids": [
+            "H01"
+          ],
+          "scope": "实际可操作的助手入口、配置归位及构建资源隔离；不启用或迁移私人账号，不重建会话和队列。",
+          "done_when": [
+            "只有提供业务视图的模块进入主导航，纯配置模块在模块管理可编辑。",
+            "总览沿用原生会话引用继续任务，空状态可创建任务，窄窗口可用。",
+            "桌面更新保留运行资源，启动快照隔离构建且不拷贝个人数据。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task U3-01"
+          ],
+          "native_verification": "原生 GUI 注册与路由、构建 keeper、语言/生命周期回归和 canonical 检查。"
+        }
+      ]
     }
   }
 }

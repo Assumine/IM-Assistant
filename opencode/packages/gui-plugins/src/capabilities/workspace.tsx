@@ -3,7 +3,7 @@ import { Capability } from "@opencode/schema/capability"
 import { Button } from "@opencode/ui/button"
 import { Icon } from "@opencode/ui/icon"
 import { Loader } from "@opencode/ui/loader"
-import { For, onCleanup, Show } from "solid-js"
+import { createMemo, For, onCleanup, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import type definition from "./index"
 import ModuleView from "./view"
@@ -32,6 +32,12 @@ export default function Workspace(props: {
       </ctx.ui.Dialog>
     ))
 
+  const catalogStatus = () => (
+    <p role="status" class="text-13-regular text-v2-text-text-muted">
+      {ctx.t({ loading: "loading", offline: "offline", failed: "failed", ready: "failed" }[props.data.phase])}
+    </p>
+  )
+
   return (
     <div class="assistant-workspace">
       <header class="assistant-workspace-header">
@@ -59,7 +65,7 @@ export default function Workspace(props: {
         </Show>
       </header>
       <Show
-        when={props.data.phase !== "loading"}
+        when={!props.moduleID || props.data.phase !== "loading"}
         fallback={
           <div class="flex gap-2" role="status">
             <Loader />
@@ -68,34 +74,76 @@ export default function Workspace(props: {
         }
       >
         <Show
-          when={props.data.phase === "ready"}
+          when={!props.moduleID || props.data.phase === "ready"}
           fallback={<p role="status">{ctx.t(props.data.phase === "offline" ? "offline" : "failed")}</p>}
         >
           <Show
             when={props.moduleID}
             fallback={
               <div class="assistant-overview-grid">
-                <section aria-label={ctx.t("workspace.services")}>
-                  <h2 class="text-16-medium mb-4">{ctx.t("workspace.services")}</h2>
-                  <For each={props.data.modules} fallback={<p>{ctx.t("empty")}</p>}>
-                    {(item) => (
-                      <button class="assistant-service-row" onClick={() => ctx.layout.page("module-" + item.id)}>
-                        <Icon name={props.icon(item)} size="large" />
-                        <span class="min-w-0 flex-1 text-left">
-                          <span class="block text-14-medium truncate">{props.label(item)}</span>
-                          <Show when={item.health?.message}>
-                            <span class="block text-13-regular text-v2-text-text-muted truncate">
-                              {item.health?.message}
+                <div class="assistant-overview-main">
+                  <ContinueWork />
+                  <section aria-label={ctx.t("workspace.services")}>
+                    <div class="assistant-section-heading">
+                      <h2 class="text-16-medium">{ctx.t("workspace.services")}</h2>
+                      <Button size="small" variant="ghost" onClick={() => ctx.layout.page("modules")}>
+                        {ctx.t("workspace.manage")}
+                      </Button>
+                    </div>
+                    <Show when={props.data.phase === "ready"} fallback={catalogStatus()}>
+                      <For
+                        each={props.data.modules.filter((item) => item.view)}
+                        fallback={
+                          <div class="assistant-workspace-empty">
+                            <p class="text-14-regular text-v2-text-text-muted">{ctx.t("workspace.noTools")}</p>
+                          </div>
+                        }
+                      >
+                        {(item) => (
+                          <button class="assistant-service-row" onClick={() => ctx.layout.page("module-" + item.id)}>
+                            <Icon name={props.icon(item)} size="large" />
+                            <span class="min-w-0 flex-1 text-left">
+                              <span class="block text-14-medium truncate">{props.label(item)}</span>
+                              <Show when={item.health?.message}>
+                                <span class="block text-13-regular text-v2-text-text-muted truncate">
+                                  {item.health?.message}
+                                </span>
+                              </Show>
                             </span>
-                          </Show>
-                        </span>
-                        <span class="text-13-regular text-v2-text-text-muted">{ctx.t(`state.${item.state}`)}</span>
-                        <Icon name="chevron-right" />
-                      </button>
-                    )}
-                  </For>
-                </section>
-                <Attention server={props.server} />
+                            <span class="text-13-regular text-v2-text-text-muted">{ctx.t(`state.${item.state}`)}</span>
+                            <Icon name="chevron-right" />
+                          </button>
+                        )}
+                      </For>
+                    </Show>
+                  </section>
+                </div>
+                <div class="assistant-overview-aside">
+                  <Attention server={props.server} />
+                  <section class="assistant-connections" aria-label={ctx.t("workspace.connections")}>
+                    <div class="assistant-section-heading">
+                      <h2 class="text-16-medium">{ctx.t("workspace.connections")}</h2>
+                      <Button size="small" variant="ghost" onClick={() => ctx.layout.page("modules")}>
+                        {ctx.t("settings")}
+                      </Button>
+                    </div>
+                    <Show when={props.data.phase === "ready"} fallback={catalogStatus()}>
+                      <For
+                        each={props.data.modules.filter((item) => !item.view)}
+                        fallback={
+                          <p class="text-13-regular text-v2-text-text-muted">{ctx.t("workspace.noConnections")}</p>
+                        }
+                      >
+                        {(item) => (
+                          <div class="assistant-connection-row">
+                            <span class="text-14-regular">{props.label(item)}</span>
+                            <span class="text-13-regular text-v2-text-text-muted">{ctx.t(`state.${item.state}`)}</span>
+                          </div>
+                        )}
+                      </For>
+                    </Show>
+                  </section>
+                </div>
               </div>
             }
           >
@@ -127,6 +175,77 @@ export default function Workspace(props: {
         </Show>
       </Show>
     </div>
+  )
+}
+
+function ContinueWork() {
+  const ctx = usePlugin<typeof definition>()
+
+  // Read the native tab/cache owners. No second history store, list request, execution or queue.
+  const sessions = createMemo(() =>
+    ctx.sessions
+      .list()
+      .flatMap((ref) => {
+        const info = ref.server.data.session.get(ref.id)
+
+        return info && !info.parentID && !info.time.archived ? [{ ref, info }] : []
+      })
+      .toSorted((a, b) => b.info.time.updated - a.info.time.updated)
+      .slice(0, 6),
+  )
+
+  return (
+    <section aria-label={ctx.t("workspace.continue")}>
+      <div class="assistant-section-heading">
+        <h2 class="text-16-medium">{ctx.t("workspace.continue")}</h2>
+        <a class="text-13-medium" href="/conversations">
+          {ctx.t("workspace.allConversations")}
+        </a>
+      </div>
+      <For
+        each={sessions()}
+        fallback={
+          <div class="assistant-workspace-empty">
+            <p class="text-14-regular text-v2-text-text-muted">{ctx.t("workspace.noSessions")}</p>
+            <button
+              type="button"
+              class="assistant-start-action text-14-medium"
+              onClick={() => ctx.commands.run("tab.new")}
+            >
+              <Icon name="plus-small" />
+              {ctx.t("workspace.newTask")}
+            </button>
+          </div>
+        }
+      >
+        {({ ref, info }) => (
+          <button
+            class="assistant-service-row"
+            onClick={() => ctx.tabs.open({ server: ref.server.id, id: ref.id }, { focus: true })}
+          >
+            <Icon name="speech-bubble" size="large" />
+            <span class="min-w-0 flex-1 text-left">
+              <span class="block text-14-medium truncate">{info.title}</span>
+              <span class="block text-13-regular text-v2-text-text-muted">{ref.server.name}</span>
+            </span>
+            <Show when={ref.server.data.session.status(ref.id) === "running"}>
+              <span class="text-13-regular">{ctx.t("workspace.running")}</span>
+            </Show>
+            <Icon name="chevron-right" />
+          </button>
+        )}
+      </For>
+      <Show when={sessions().length}>
+        <button
+          type="button"
+          class="assistant-start-action text-14-medium mt-4"
+          onClick={() => ctx.commands.run("tab.new")}
+        >
+          <Icon name="plus-small" />
+          {ctx.t("workspace.newTask")}
+        </button>
+      </Show>
+    </section>
   )
 }
 

@@ -1,0 +1,153 @@
+{
+  "plan_id": "assistant-purpose-v1",
+  "task": "U3-01",
+  "status": "passed",
+  "acceptance_ids": [
+    "H01"
+  ],
+  "sources": {
+    "opencode/packages/app/e2e/regression/home.spec.ts": "5f9704169d8d9a39dd21b434ffe77e9b1a0aed2cab58b967f3df60ec057af84b",
+    "opencode/packages/desktop/electron.vite.config.ts": "de238d698067a29fbf3c526e6fe1e9608b0899c5607645bd4fda5e525e029579",
+    "opencode/packages/gui-plugins/src/capabilities/i18n/en.ts": "1f6b515cf506658387f195fe556e89c8610a1876488fa091b2a83369d929a0e6",
+    "opencode/packages/gui-plugins/src/capabilities/i18n/zh.ts": "4103e4aec26bfbdf455efe49454d6fac7fab59545796f5b7a1bb1893bb28ab66",
+    "opencode/packages/gui-plugins/src/capabilities/renderer.tsx": "dfc4a0f052d44c9bca3f813a322e8584dc7931ed082f380290322bc79efa3043",
+    "opencode/packages/gui-plugins/src/capabilities/workspace.css": "82fa3e1b648b0cf107e5303a08fef992b460a7daab517a8c69b0400891233d33",
+    "opencode/packages/gui-plugins/src/capabilities/workspace.tsx": "8880592666690fff4d444e257ebc03673f9adc4b75a26ea771a969432688232a",
+    "opencode/packages/im-assistant/script/desktop.ts": "5a33a2829da2899aa6463d82c6fc7cc2115cbbc274f20ff19b7cbf6d334bea84",
+    "opencode/packages/im-assistant/script/desktop_release.py": "426fff43e9f36a6e4cdfb5a16e54866bbba8284281b587f644060e2f13d923b5",
+    "opencode/packages/im-assistant/script/launch.pyw": "cc0bf63a9cdf9fb842eb673d0689de67384827d7d38d5709cef4dc6e173b8465",
+    "tests/deployment/test_desktop_release.py": "45c5c33b2456f5b07eb1b6a202aa44c7fd52235d2e3c48083095a3a0ada966c3",
+    "tests/modules/test_assistant_purpose.py": "2c3aa77e90796438cdc4e89a3528cf471d4a42111560f25dfeeefb8a9de6da14",
+    "upstream/patches.json": "eb0dcb904f4a0d9645a892b3343bdb3cb01d4e3b56802868eee981c32240c0e0"
+  },
+  "steps": [
+    {
+      "args": [
+        "bun",
+        "run",
+        "test:e2e:built",
+        "--",
+        "e2e/regression/home.spec.ts",
+        "e2e/regression/settings.spec.ts",
+        "--grep",
+        "assistant workspace:|module settings form:|module-owned settings",
+        "--project",
+        "chromium",
+        "--workers=2",
+        "--retries=0",
+        "--max-failures=1"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 43.03,
+      "isolated_home": true,
+      "log": ".reports/native/assistant-purpose-browser.log",
+      "native_tests_passed": 6,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 15.06,
+      "isolated_home": true,
+      "log": ".reports/native/assistant-purpose-check.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "--conditions=solid",
+        "--isolate",
+        "--preload",
+        "../ui/test/solid-jsx.ts",
+        "--preload",
+        "./happydom.ts",
+        "./src/runtime/i18n/language.test.ts"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.92,
+      "isolated_home": true,
+      "log": ".reports/native/assistant-purpose-catalogs.log",
+      "native_tests_passed": 22,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "typecheck:e2e"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 5.73,
+      "isolated_home": true,
+      "log": ".reports/native/assistant-purpose-e2e-types.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "oxlint",
+        "--deny-warnings",
+        "packages/app/e2e/regression/home.spec.ts",
+        "packages/desktop/electron.vite.config.ts",
+        "packages/gui-plugins/src/capabilities/i18n/en.ts",
+        "packages/gui-plugins/src/capabilities/i18n/zh.ts",
+        "packages/gui-plugins/src/capabilities/renderer.tsx",
+        "packages/gui-plugins/src/capabilities/workspace.tsx",
+        "packages/im-assistant/script/desktop.ts"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.42,
+      "isolated_home": true,
+      "log": ".reports/native/assistant-purpose-lint.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "electron-vite",
+        "build"
+      ],
+      "cwd": "opencode/packages/desktop",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 19.74,
+      "isolated_home": true,
+      "log": ".reports/native/assistant-purpose-desktop-build.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    }
+  ],
+  "browser_cases": 6,
+  "catalog_cases": 22,
+  "snapshot_cases": 2,
+  "skipped": 0,
+  "private_data_migrated": false,
+  "production_switch": false,
+  "new_execution_queue": false
+}

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from desktop_release import prepare_release
 
 ROOT = Path(__file__).resolve().parents[4]
 
@@ -20,6 +21,7 @@ def configuration():
 
 def launch():
     bun, profile = configuration()
+    release = prepare_release(ROOT / 'opencode/packages/desktop')
     logdir = profile / 'launcher'
     logdir.mkdir(parents=True, exist_ok=True)
     environment = dict(os.environ)
@@ -29,6 +31,7 @@ def launch():
         environment.pop(key, None)
     environment['IM_ASSISTANT_DATA_ROOT'] = str(profile)
     environment['IM_ASSISTANT_PROFILE'] = 'personal'
+    environment['IM_ASSISTANT_DESKTOP_RELEASE'] = str(release)
     environment['OPENCODE_DESKTOP_REMOTE_DEBUGGING_PORT'] = 'off'
     stamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     with (logdir / f'desktop-{stamp}-{os.getpid()}.log').open('ab') as output:

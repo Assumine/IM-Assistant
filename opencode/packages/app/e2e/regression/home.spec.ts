@@ -20,6 +20,7 @@ test("assistant workspace: daily tools open as full pages while configuration st
     { id: "downloads", title: "Downloads", state: "active", metrics: false, settings: true, view: true },
     { id: "research", title: "Research scripts", state: "disabled", metrics: false, settings: true },
     { id: "qq-portal", title: "QQ forwarding", state: "failed", metrics: false },
+    { id: "qq-chatbot", title: "QQ companion", state: "active", metrics: false, settings: true },
   ]
 
   const workspace = await openSession(page, {
@@ -52,6 +53,17 @@ test("assistant workspace: daily tools open as full pages while configuration st
   await expectPath(page, "/")
   await expect(page.getByRole("heading", { name: "消息助手", exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { name: "日常功能", exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "继续处理", exact: true })).toBeVisible()
+  const continuation = page.getByRole("region", { name: "继续处理", exact: true })
+  await expect(continuation.getByRole("button", { name: /AssistantWorkspace/ })).toBeVisible()
+  await continuation.getByRole("button", { name: /AssistantWorkspace/ }).click()
+  await expectPath(page, sessionHref(workspace.sessions[0].id))
+  await nav.getByRole("link", { name: "总览", exact: true }).click()
+  await expect(nav.getByRole("link", { name: "QQ 任务", exact: true })).toHaveCount(0)
+  await expect(nav.getByRole("link", { name: "QQ 附属机器人", exact: true })).toHaveCount(0)
+  await expect(nav.getByRole("link", { name: "研究", exact: true })).toHaveCount(0)
+  const connections = page.getByRole("region", { name: "连接状态", exact: true })
+  await expect(connections.getByText("QQ 附属机器人", { exact: true })).toBeVisible()
   await expect(page.getByRole("heading", { name: "待处理", exact: true })).toBeVisible()
   await expect(page.getByText("当前没有需要你处理的事项。", { exact: true })).toBeVisible()
   await page.screenshot({ path: test.info().outputPath("assistant-overview.png") })
@@ -71,8 +83,12 @@ test("assistant workspace: daily tools open as full pages while configuration st
   await expect(page.getByRole("dialog").getByRole("textbox", { name: "配置 JSON" })).toHaveValue("{}")
   await expectPath(page, "/page/capabilities/module-downloads")
   await page.keyboard.press("Escape")
-  await nav.getByRole("link", { name: "研究", exact: true }).click()
-  await expect(page.getByText("这个模块未运行。", { exact: true })).toBeVisible()
+  await nav.getByRole("link", { name: "模块管理", exact: true }).click()
+  await expect(page.getByRole("article", { name: "Research scripts", exact: true })).toBeVisible()
+  const companion = page.getByRole("article", { name: "QQ companion", exact: true })
+  await companion.getByRole("button", { name: "配置", exact: true }).click()
+  await expect(page.getByRole("dialog")).toBeVisible()
+  await page.keyboard.press("Escape")
   await page.goBack()
   await expectPath(page, "/page/capabilities/module-downloads")
   await page.reload()
@@ -129,6 +145,62 @@ test("assistant workspace: leaving stops progress reads and an unavailable page 
   await nav.getByRole("link", { name: "Conversations and tasks", exact: true }).click()
   await expectPath(page, "/conversations")
   await expect(page.locator('[data-slot="home-panel"]')).toBeVisible()
+})
+
+test("assistant workspace: an empty installation offers real task and configuration actions", async ({ page }) => {
+  await mockWorkspace(page, {
+    name: "AssistantEmpty",
+    workspace: false,
+    sessions: [],
+    seed: { locale: "zh", theme: { id: "oc-2", scheme: "dark" } },
+    rpc: capabilityRpc({
+      list: () => [{ id: "qq-chatbot", title: "QQ companion", state: "active", metrics: false, settings: true }],
+      notifications: () => ({ items: [], counts: { unread: 0, attention: 0 } }),
+    }),
+  })
+  await page.goto("/")
+  await expect(page.getByText("当前没有打开的会话。可以新建任务，或从历史会话继续。", { exact: true })).toBeVisible()
+  await expect(page.getByText("暂无可用的日常工具，可在模块管理中启用已安装的工具。", { exact: true })).toBeVisible()
+  const nav = page.getByRole("navigation", { name: "应用导航", exact: true })
+  await expect(nav.getByRole("link", { name: "QQ 附属机器人", exact: true })).toHaveCount(0)
+  await page
+    .getByRole("region", { name: "日常功能", exact: true })
+    .getByRole("button", { name: "管理模块", exact: true })
+    .click()
+  await expect(page.getByRole("article", { name: "QQ companion", exact: true })).toBeVisible()
+  await nav.getByRole("link", { name: "总览", exact: true }).click()
+  await page.setViewportSize({ width: 680, height: 900 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: test.info().outputPath("assistant-empty-narrow.png") })
+  await page.getByRole("button", { name: "新建任务", exact: true }).click()
+  await expect(page.locator('[data-component="composer-editor"]')).toBeEditable()
+  await expect(page).toHaveURL(/\/new-session\?draftId=[^&]+$/)
+})
+
+test("assistant workspace: failed module discovery does not block native task entry", async ({ page }) => {
+  const workspace = await openSession(page, {
+    name: "AssistantCatalogFailure",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => {
+        throw new Error("Module directory unavailable")
+      },
+      notifications: () => ({ items: [], counts: { unread: 0, attention: 0 } }),
+    }),
+  })
+
+  await page
+    .getByRole("navigation", { name: "Application navigation", exact: true })
+    .getByRole("link", { name: "Overview", exact: true })
+    .click()
+  const continuation = page.getByRole("region", { name: "Continue working", exact: true })
+  await expect(continuation.getByRole("button", { name: /AssistantCatalogFailure/ })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Everyday tools", exact: true }).getByRole("status")).toHaveText(
+    "Could not load this view. Refresh to check the connection.",
+  )
+  await continuation.getByRole("button", { name: /AssistantCatalogFailure/ }).click()
+  await expectPath(page, sessionHref(workspace.sessions[0].id))
+  await expect(page.locator('[data-component="composer-editor"]')).toBeEditable()
 })
 
 test("whole backend Home: loads only on demand and opens the original native reference directly", async ({

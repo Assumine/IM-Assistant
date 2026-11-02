@@ -35,6 +35,7 @@ __pycache__/
 .mypy_cache/
 dist/
 build/
+.im-releases/
 *.egg-info/
 
 # Editors and OS
