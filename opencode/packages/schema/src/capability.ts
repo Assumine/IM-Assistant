@@ -23,6 +23,7 @@ export const Info = Schema.Struct({
   health: optional(Health),
   metrics: Schema.Boolean,
   settings: optional(Schema.Boolean),
+  view: optional(Schema.Boolean),
 })
 export type Info = typeof Info.Type
 
@@ -49,6 +50,33 @@ export const Metrics = Schema.Struct({
   items: Schema.Array(Metric).check(Schema.isMaxLength(64)),
 })
 export type Metrics = typeof Metrics.Type
+
+/** Module-owned read-only content. It cannot carry executable HTML, controls or native task mutations. */
+export interface ViewItem extends Schema.Schema.Type<typeof ViewItem> {}
+export const ViewItem = Schema.Struct({
+  id: LocalID,
+  title: Label,
+  subtitle: optional(Schema.String.check(Schema.isMaxLength(300))),
+  state: Schema.Literals(["running", "waiting", "success", "attention", "error", "unknown"]),
+  status: Label,
+  fields: Schema.Array(Schema.Struct({ label: Label, value: Schema.String.check(Schema.isMaxLength(4000)) })).check(Schema.isMaxLength(16)),
+  technical: optional(Schema.String.check(Schema.isMaxLength(32000))),
+}).annotate({ identifier: "Capability.ViewItem" })
+
+export interface View extends Schema.Schema.Type<typeof View> {}
+export const View = Schema.Struct({
+  title: Label,
+  description: optional(Schema.String.check(Schema.isMaxLength(1000))),
+  empty: optional(Schema.String.check(Schema.isMaxLength(1000))),
+  items: Schema.Array(ViewItem).check(Schema.isMaxLength(30)),
+}).annotate({ identifier: "Capability.View" })
+
+export interface ViewResult extends Schema.Schema.Type<typeof ViewResult> {}
+export const ViewResult = Schema.Struct({
+  id: ID,
+  status: Schema.Literals(["ready", "unsupported", "unavailable", "failed"]),
+  document: optional(View),
+}).annotate({ identifier: "Capability.ViewResult" })
 
 export const NoticeRef = Schema.Struct({ moduleID: ID, id: LocalID })
 export type NoticeRef = typeof NoticeRef.Type
@@ -108,6 +136,11 @@ export const Api = Rpc.define({
       output: Schema.toStandardSchemaV1(Metrics),
       errors,
     },
+    view: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID, locale: optional(Schema.String.check(Schema.isMaxLength(40))) })),
+      output: Schema.toStandardSchemaV1(ViewResult),
+      errors,
+    },
     settings: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID })),
       output: Schema.toStandardSchemaV1(Settings),
@@ -125,5 +158,8 @@ export const Api = Rpc.define({
     },
     markRead: { input: Schema.toStandardSchemaV1(NoticeRef), output: Schema.toStandardSchemaV1(Notice), errors },
   },
-  events: { changed: { schema: Schema.toStandardSchemaV1(Schema.Struct({})) } },
+  events: {
+    changed: { schema: Schema.toStandardSchemaV1(Schema.Struct({})) },
+    viewChanged: { schema: Schema.toStandardSchemaV1(Schema.Struct({ id: ID })) },
+  },
 })

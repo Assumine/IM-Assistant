@@ -281,3 +281,34 @@ test("metrics are opt-in, coalesced while in flight and cancelled when only thei
     await app.close()
   }
 }, 30000)
+
+test("module documents are lazy, schema bounded and stopped reads cannot publish stale content", async () => {
+  let reads = 0, invalid = false, held = false
+  const entered = Promise.withResolvers<AbortSignal>()
+  const app = await boot([{ id: "document", open() {
+    return { close: async () => {}, view: async ({ signal, locale }) => {
+      reads++
+      if (held) { entered.resolve(signal); await new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve(), { once: true })) }
+      return { title: locale ?? "Activity", items: [{ id: "input", title: "Current goal", state: "running", status: "Running",
+        fields: [{ label: "Function", value: invalid ? "x".repeat(4001) : "Read approved source" }] }] }
+    } }
+  } }, { id: "plain", open: () => ({ close: async () => {} }) }])
+  try {
+    expect((await app.api.list({})).find((item) => item.id === "document")?.view).toBe(true)
+    expect(reads).toBe(0)
+    expect((await app.api.view({ id: "plain" })).status).toBe("unsupported")
+    expect((await app.api.view({ id: "document", locale: "zh" })).document?.title).toBe("zh")
+    expect(reads).toBe(1)
+    invalid = true
+    expect((await app.api.view({ id: "document" })).status).toBe("failed")
+    invalid = false; held = true
+    const reading = app.api.view({ id: "document" })
+    const signal = await entered.promise
+    await app.api.stop({ id: "document" })
+    expect(signal.aborted).toBe(true)
+    expect((await reading).status).toBe("unavailable")
+    expect((await app.api.view({ id: "document" })).status).toBe("unavailable")
+    expect(reads).toBe(3)
+    expect((await app.api.list({})).find((item) => item.id === "plain")?.state).toBe("active")
+  } finally { await app.close() }
+}, 30000)

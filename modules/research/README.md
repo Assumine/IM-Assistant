@@ -59,4 +59,29 @@ authenticate(token)须由宿主验证凭据并返回真实会话的backendID/thr
 
 原生输入的experimental.outcome提供正常结束、失败或中断的只读证据。旧记录没有该字段时不猜测成功。原生事件和按需读取触发核对，没有后台轮询；结束的输入仍可读取原结果，不能执行新目标。其他整套后端也必须通过原有公共API证明原始输入及结束状态。
 
-当前运行证据见[检查点验收](../../tests/modules/research-checkpoints-evidence.json)。产品设置、实际MCP配置、BrowserAct和可读执行界面属于S1-03及后续适配，不迁入旧任务或私人历史。
+此前检查点运行证据见[检查点验收](../../tests/modules/research-checkpoints-evidence.json)，保留原源码指纹。当前产品阶段验收运行`python tools/run_runtime_checks.py --task S1-03`；BrowserAct、真实网站及生产启用仍须后续单独验证，不迁入旧任务或私人历史。
+
+## 产品配置和执行展示
+
+研究作为第三个独立可选业务模块与QQ转发、小羊并列，默认关闭。产品CLI支持`research init|status|enable|disable`以及`research configure <绝对JSON文件路径>`；也可在原生设置的Application modules中点Research的Configure。配置文件位于当前独立资料目录的`modules/research/research.json`，不读取旧助手资料。
+
+最小设置：
+
+```json
+{
+  "version": 1,
+  "enabled": false,
+  "sources": [],
+  "mcp": { "enabled": false, "port": 0, "clients": [] }
+}
+```
+
+sources仅接受宿主批准的HTTPS origin或本机HTTP origin，最多16个，不含路径、查询串、凭据或代码。每项为`{"id":"github","origin":"https://api.github.com","minimumIntervalMs":5000}`。一次调用只传已批准的source和相对path；仅一个来源时source可省略。间隔按来源共用，最低5秒，页面HTML、重定向、登录门槛及未知结果不盲目重试。scoring可选，完整字段为initial、failurePenalty、successReward、historicalFailurePenalty；不改变双分含义，也不是次数限制。
+
+保存通过实际文件版本、锁和原子替换避免互相覆盖，明确在**下次服务启动**生效；Stop service仅停止本次资源，不修改下次启用开关。配置损坏或MCP端口异常只影响研究模块，不依赖QQ登录。配置读取、打开界面、重启均不发起研究任务。
+
+启用本机MCP时设置mcp.enabled、port（0为系统分配）及clients。每项只保存tokenEnv（`IM_RESEARCH_MCP_TOKEN_`开头的环境变量名）、backendID、threadID和可选inputID。实际令牌从环境读取后清除，不写入配置、视图或模型请求；至少24字符，不含空白。界面显示实际loopback地址。当前原生opencode输入可通过公开输入归属和结束事件核实取消；其他后端的静态配置仅允许开路/读资料，不允许绑定执行inputID。没有可信原始inputID的MCP调用仍可授权开路，但不能执行采集；不会默认选择最新任务。
+
+原生设置中展开Research的View activity，可读当前目标、会话、实际执行函数、参数摘要、进度/卡点及历史与本轮分。运行记录归插件KV；展示使用通用只读模块文档，不在核心定义研究字段。仅打开且可见时读取，后续由本模块viewChanged事件刷新，关闭或隐藏即取消在途读取，无后台轮询。最近记录和未结算输入以有界列表展示；技术记录默认收起，展开后的文本限制高度并使用原生滚动条。
+
+产品阶段使用真实CLI服务进程、原生AI工具/SQLite、官方MCP客户端及构建后的GUI验证，来源和模型响应均为受控本机测试数据。此前公开GitHub小函数仍是独立联网证据；本阶段不宣称已完成真实影视、音乐、浏览器或账号接入。

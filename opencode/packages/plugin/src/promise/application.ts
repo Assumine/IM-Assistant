@@ -13,6 +13,8 @@ export interface ApplicationModuleSettings {
 
 /** Capabilities owned by one compiled application module. Notifications never change native tasks. */
 export interface ApplicationCapability {
+  /** Invalidate this module's read-only view after a fact changes; never submits or resumes native work. */
+  readonly invalidate?: () => void
   /** Report connection/health independently of whether this resource has opened. Never include credentials. */
   readonly report: (value: Capability.Health) => void
   /** Publish one immutable, idempotent notice in this module's namespace. A conflicting id rejects. */
@@ -40,6 +42,8 @@ export interface ApplicationModule {
     readonly close: () => Promise<void>
     /** Optional on-demand snapshot, called at most once per second while requested; honor the abort signal. */
     readonly metrics?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>
+    /** Read module-owned presentation only when requested. Bound output stays data, never HTML or executable controls. */
+    readonly view?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>
   }
 }
 

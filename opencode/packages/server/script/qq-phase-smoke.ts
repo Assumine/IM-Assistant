@@ -103,10 +103,11 @@ try {
   } } }))
   host = await boot()
   await until(async () => (await state("qq-chatbot"))?.state === "disabled" && (await state("qq-portal"))?.state === "disabled", 30000)
-  assert.equal((await host.api.list({})).length, 2)
+  assert.equal((await host.api.list({})).length, 3)
+  assert.equal((await state("research"))?.state, "disabled")
   assert((await state("qq-chatbot"))?.settings)
   assert.equal(task.upgrades.length + chat.upgrades.length + other.upgrades.length, 0)
-  checks.push("the actual product exposes exactly two optional business modules while both default off; settings do not create a third dependency module or a QQ connection")
+  checks.push("the actual product exposes three optional business modules, all default off; settings do not create a dependency module or a QQ connection")
 
   const initial = await host.api.settings({ id: "qq-chatbot" })
   await host.api.configure({ id: "qq-chatbot", revision: initial.revision, text: JSON.stringify(chatSettings()) })
@@ -212,7 +213,7 @@ try {
   checks.push("malformed optional chat settings fail closed without credential leakage; the task plugin and ordinary desktop generation remain available")
   assert(!JSON.stringify(requests).includes(chat.token) && !JSON.stringify(requests).includes(task.token))
   console.log(JSON.stringify({ status: "passed", checks, model_requests: requests.length,
-    product_entry: "packages/im-assistant/src/cli.ts", business_modules: 2, history_deleted: false,
+    product_entry: "packages/im-assistant/src/cli.ts", business_modules: 3, history_deleted: false,
     actual_qq_connection: false, production_credentials_used: false, external_messages_sent: 0, private_data_migrated: false }))
 } catch (error) { console.error(JSON.stringify({ completed_checks: checks.length, last_check: checks.at(-1), model_requests: requests.length })); throw error }
 finally { await host?.stop(); task.close(); chat.close(); other.close(); upstream.stop(true) }

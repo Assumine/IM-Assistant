@@ -18,6 +18,7 @@ export function capabilityRpc(fixture: {
   markRead?: (input: Capability.NoticeRef) => Capability.Notice | Promise<Capability.Notice>
   stop?: (id: string) => Capability.Info | Promise<Capability.Info>
   metrics?: (id: string) => Capability.Metrics | Promise<Capability.Metrics>
+  view?: (input: { id: string; locale?: string }) => Capability.ViewResult | Promise<Capability.ViewResult>
   settings?: (id: string) => Capability.Settings | Promise<Capability.Settings>
   configure?: (input: { id: string; revision: string; text: string }) => Capability.Settings | Promise<Capability.Settings>
 }): NonNullable<MockServerConfig["rpc"]> {
@@ -37,6 +38,9 @@ export function capabilityRpc(fixture: {
 
     if (method === "metrics" && fixture.metrics) return fixture.metrics(input.id)
 
+    if (method === "view" && fixture.view)
+      return fixture.view(Schema.decodeUnknownSync(Schema.Struct({ id: Capability.ID, locale: Schema.optional(Schema.String) }))(body))
+
     if (method === "settings" && fixture.settings) return fixture.settings(input.id)
 
     if (method === "configure" && fixture.configure)
@@ -54,4 +58,8 @@ export function capabilityEvent(directory: string): OpenCodeEvent {
     location: { directory },
     data: {},
   }
+}
+
+export function capabilityViewEvent(directory: string, id: string): OpenCodeEvent {
+  return { id: "evt_module_view_" + id, created: Date.now(), type: "rpc.experimental.capability.viewChanged", location: { directory }, data: { id } }
 }

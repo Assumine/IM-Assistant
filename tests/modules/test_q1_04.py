@@ -14,7 +14,7 @@ class QQProductComposition(unittest.TestCase):
     def test_b10_real_configuration_runtime_state_and_independent_secret_ownership(self):
         result = self.result
         self.assertTrue(result['product_composition_implemented'])
-        self.assertEqual(result['product_acceptance']['business_modules'], 2)
+        self.assertEqual(result['product_acceptance']['business_modules'], 3)
         self.assertEqual(result['ownership']['credentials'], 'native-provider-store-and-distinct-qq-environment-references')
         self.assertFalse(result['default_enabled'])
         self.assertFalse(result['actual_qq_connection'])
@@ -39,7 +39,7 @@ class QQProductComposition(unittest.TestCase):
         self.assertEqual(result['original_qq_tests'], 699)
         self.assertEqual(result['original_qq_chain_checks'], 147)
         self.assertEqual(result['workspace_checks'], 36)
-        self.assertEqual(result['browser']['executions'], 14)
+        self.assertEqual(result['browser']['executions'], 15)
         self.assertEqual(result['browser']['retries'], 0)
         self.assertGreaterEqual(result['gui_linted_files'], 5)
         self.assertEqual(result['standalone_e2e_diagnostics'], 0)

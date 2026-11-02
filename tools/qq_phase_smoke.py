@@ -42,7 +42,7 @@ def acceptance(label):
     lines = (ROOT / step['log']).read_text(encoding='utf-8').splitlines()
     result = json.loads([line for line in lines if line.startswith('{')][-1])
     if (result['status'] != 'passed' or len(result['checks']) != 12 or result['model_requests'] != 12 or
-            result['business_modules'] != 2 or result['history_deleted'] or result['actual_qq_connection'] or
+            result['business_modules'] != 3 or result['history_deleted'] or result['actual_qq_connection'] or
             result['production_credentials_used'] or result['external_messages_sent'] or result['private_data_migrated'] or
             result['product_entry'] != 'packages/im-assistant/src/cli.ts'):
         raise RuntimeError('QQ real-product composition acceptance was incomplete')
@@ -100,7 +100,7 @@ def run():
     browser = required_tests(run_command('packages/app', ['run', 'test:e2e:built', '--', 'e2e/regression/settings.spec.ts',
         '--project', 'chromium', '--workers=2', '--retries=0', '-g', 'capabilities:'], 'q4-phase-browser', timeout=600,
         extra_env={'PLAYWRIGHT_PORT': '4317'}))
-    if browser['native_tests_passed'] != 4:
+    if browser['native_tests_passed'] != 5:
         raise RuntimeError('Required module browser cases are missing')
     browser_stability = required_tests(run_command('packages/app', ['run', 'test:e2e:built', '--', 'e2e/regression/settings.spec.ts',
         '--project', 'chromium', '--workers=5', '--retries=0', '-g', 'module-owned settings', '--repeat-each=10'],
@@ -124,7 +124,7 @@ def run():
               'publication': 'disabled', 'scope': 'real-product-composition-with-isolated-accounts-not-live-rollout',
               'sources': before, 'steps': steps, 'product_acceptance': product, 'session_compatibility': sessions,
               'channel_compatibility': channel, 'product_stability': {'steps': stability, 'extra_runs': 2, 'chain_checks': 24},
-              'browser': {'step': browser, 'stability': browser_stability, 'executions': 14, 'retries': 0},
+              'browser': {'step': browser, 'stability': browser_stability, 'executions': 15, 'retries': 0},
               'native_test_executions': unit, 'product_checks': 12, 'original_qq_tests': original_tests,
               'original_qq_chain_checks': original_checks, 'workspace_checks': 36, 'gui_linted_files': int(lint[1]),
               'standalone_e2e_diagnostics': 0, 'qq_compatibility': qq, 'managed_policy': managed,

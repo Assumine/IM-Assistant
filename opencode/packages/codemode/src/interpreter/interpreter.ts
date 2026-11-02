@@ -2203,8 +2203,9 @@ class Frame<R> {
       checkStringLength(output.length)
 
       if (index < expressions.length) {
-        const raw = yield* this.evaluateExpression(expressions[index])
-        output += coerceToString(yield* this.toPrimitive(raw, "string", expressions[index]))
+        const expression = expressions[index]!
+        const raw = yield* this.evaluateExpression(expression)
+        output += coerceToString(yield* this.toPrimitive(raw, "string", expression))
         checkStringLength(output.length)
       }
     }

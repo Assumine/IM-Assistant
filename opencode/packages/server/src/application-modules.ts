@@ -103,6 +103,7 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
             client,
             storage: owned,
             capability: {
+              invalidate: () => { if (!closed) capability.invalidate() },
               report: (value) => {
                 if (closed) throw new Error("Application module is closed")
                 capability.report(value)
@@ -138,6 +139,7 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
         ),
       )
       capability.inspect(resource.metrics)
+      capability.present(resource.view)
       capability.state("active")
     }).pipe(
       Effect.provideService(Scope.Scope, owner),

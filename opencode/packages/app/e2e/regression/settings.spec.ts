@@ -15,7 +15,7 @@ import { installSseTransport } from "../utils/sse-transport"
 import { backendEvent, backendRpc, backendTabs, backendHref } from "../utils/backends"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 import type { Capability } from "@opencode/schema/capability"
-import { capabilityEvent, capabilityRpc, capabilityVisibility } from "../utils/capabilities"
+import { capabilityEvent, capabilityRpc, capabilityVisibility, capabilityViewEvent } from "../utils/capabilities"
 import { validateTimelineMessages } from "../utils/timeline"
 
 test("assistant appearance: native theme, font roles and reduced motion survive reload", async ({ page }) => {
@@ -162,6 +162,64 @@ test("capabilities: module-owned settings save by revision while its service sta
   await expect(dialog).toBeHidden()
   await expect(module.getByText("Disabled", { exact: true })).toBeVisible()
   expect(calls).toHaveLength(1)
+})
+
+test("capabilities: activity expands in place, refreshes from owned events and bounds technical records", async ({ page }) => {
+  await page.clock.install({ time: new Date("2026-11-02T00:00:00Z") })
+  let reads = 0, lists = 0
+  const held = Promise.withResolvers<Capability.ViewResult>()
+  const document: Capability.ViewResult = { id: "research", status: "ready", document: { title: "Research activity",
+    description: "Research assistance: Research owner", items: [{ id: "msg_run", title: "Find a comedy for tonight", subtitle: "Film",
+      state: "attention", status: "Waiting for assistance", fields: [{ label: "Current action", value: "Read movie details" },
+        { label: "Parameters", value: "Fixture comedy" }, { label: "Progress", value: "The source needs access or page review" },
+        { label: "Path selection", value: "Primary: history 1.00 / round -1.00\nBackup: history 1.00 / round 1.00" }],
+      technical: JSON.stringify({ evidence: "<script>window.untrusted=true</script>", records: "bounded evidence ".repeat(1000) }, null, 2) }] } }
+  const workspace = await openSession(page, { name: "ModuleActivity", workspace: false, rpc: capabilityRpc({
+    list: () => { lists++; return [{ id: "research", title: "Research scripts", state: "active", metrics: false, view: true }] },
+    view: (input) => { expect(input.id).toBe("research"); reads++; return reads === 2 ? held.promise : document },
+  }) })
+  const settings = await showSettings(page)
+  await settings.getByRole("tab", { name: "Appearance", exact: true }).click()
+  await settings.locator('[data-action="settings-color-scheme"]').click()
+  await page.getByRole("option", { name: "Dark", exact: true }).click()
+  await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
+  const module = page.getByRole("article", { name: "Research scripts", exact: true })
+  await expect(module.getByRole("button", { name: "View activity", exact: true })).toBeEnabled()
+  expect(reads).toBe(0)
+  await module.getByRole("button", { name: "View activity", exact: true }).click()
+  const activity = module.getByRole("region", { name: "View activity", exact: true })
+  const run = activity.getByRole("article", { name: "Find a comedy for tonight", exact: true })
+  await expect(run.getByText("The source needs access or page review", { exact: true })).toBeVisible()
+  await expect(run.getByText("Primary: history 1.00 / round -1.00\nBackup: history 1.00 / round 1.00", { exact: true })).toBeVisible()
+  const technical = run.locator("pre")
+  await expect(technical).toBeHidden()
+  const before = lists
+  await workspace.push([capabilityViewEvent(workspace.directory, "research")])
+  await expect.poll(() => reads).toBe(2)
+  // Keep the existing document while a new snapshot is in flight.
+  await expect(run.getByText("Read movie details", { exact: true })).toBeVisible()
+  await capabilityVisibility(page, true)
+  held.resolve({ id: "research", status: "ready", document: { title: "Stale response", items: [] } })
+  await workspace.push([capabilityViewEvent(workspace.directory, "research"), capabilityViewEvent(workspace.directory, "unrelated")])
+  await page.clock.fastForward(60000)
+  expect(reads).toBe(2)
+  await capabilityVisibility(page, false)
+  await expect.poll(() => reads).toBe(3)
+  await expect(activity.getByRole("heading", { name: "Research activity", exact: true })).toBeVisible()
+  await expect(activity.getByText("Stale response", { exact: true })).toHaveCount(0)
+  await run.getByText("Technical records", { exact: true }).click()
+  await expect(technical).toBeVisible()
+  await expect(technical).toHaveCSS("max-height", "240px")
+  await expect(technical).toContainText("<script>window.untrusted=true</script>")
+  await expect(run.locator("script")).toHaveCount(0)
+  expect(lists).toBe(before)
+  await page.screenshot({ path: test.info().outputPath("research-activity-dark.png"), fullPage: true })
+  await module.getByRole("button", { name: "Hide activity", exact: true }).click()
+  await expect(activity).toHaveCount(0)
+  await workspace.push([capabilityViewEvent(workspace.directory, "research")])
+  await page.clock.fastForward(60000)
+  expect(reads).toBe(3)
+  expect(workspace.sessions).toHaveLength(1)
 })
 
 test("capabilities: reading a module notice clears unread without resolving its request", async ({ page }) => {

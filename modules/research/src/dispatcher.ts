@@ -22,7 +22,8 @@ export function historicalDelta(summary: PathSummary, past: PathHistory, scoring
 }
 
 export function createDispatcher(options: { storage: StorageDomain; paths: readonly ResearchPath[]; scoring?: Partial<Scoring>;
-  frame?: { history: readonly PathHistory[]; previous: readonly PathSummary[] } }) {
+  frame?: { history: readonly PathHistory[]; previous: readonly PathSummary[] };
+  onSelect?: (value: { pathID: string; revision: string; score: number; attempt: number }) => Promise<void> }) {
   const scoring = resolveScoring(options.scoring)
   const paths = options.paths.map((value) => ({ ...value }))
   if (new Set(paths.map((value) => value.id)).size !== paths.length || paths.some((value) =>
@@ -90,6 +91,7 @@ export function createDispatcher(options: { storage: StorageDomain; paths: reado
         b.summary.score - a.summary.score || a.summary.attempts - b.summary.attempts || a.path.id.localeCompare(b.path.id))[0]!
       const before = current.summary.score
       current.summary.attempts++
+      await options.onSelect?.({ pathID: current.path.id, revision: current.path.revision, score: before, attempt: current.summary.attempts })
       let outcome: Outcome
       try {
         outcome = await current.path.run(structuredClone(request.input), { signal, roundID: request.roundID, attempt: current.summary.attempts })

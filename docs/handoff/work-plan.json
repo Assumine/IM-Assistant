@@ -599,7 +599,13 @@
           ],
           "outputs": [
             "modules/research/src/configuration.ts",
-            "modules/research/test/configuration.test.ts"
+            "modules/research/src/configured.ts",
+            "modules/research/src/presentation.ts",
+            "modules/research/test/configuration.test.ts",
+            "opencode/packages/im-assistant/src/research.ts",
+            "opencode/packages/gui-plugins/src/capabilities/view.tsx",
+            "opencode/packages/server/script/research-phase-smoke.ts",
+            "tests/modules/research-phase-evidence.json"
           ],
           "test_files": [
             "tests/modules/test_s1_03.py"

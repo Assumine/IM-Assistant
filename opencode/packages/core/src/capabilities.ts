@@ -13,6 +13,8 @@ export interface Registration {
   readonly state: (value: Capability.Info["state"]) => void
   readonly inspect: (read?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>) => void
   readonly expose: (tools: readonly Tool.Info[]) => void
+  readonly present: (read?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>) => void
+  readonly invalidate: () => void
   readonly notify: (value: Capability.NoticeInput) => Effect.Effect<void, Error>
   readonly resolve: (id: string) => Effect.Effect<void, Error>
 }
@@ -40,6 +42,7 @@ interface Entry {
   tools: readonly Tool.Info[]
   metrics?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>
   sample?: { readonly at: number; readonly value: Promise<Capability.Metrics>; pending: boolean }
+  view?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>
 }
 
 const layer = Layer.effect(
@@ -48,6 +51,8 @@ const layer = Layer.effect(
     const notices = yield* CapabilityNotifications.Service
     const entries = new Map<string, Entry>()
     const listeners = new Set<() => void>()
+    const viewListeners = new Set<(id: string) => void>()
+    const viewChanged = (id: string) => { for (const listener of viewListeners) listener(id) }
     const changed = () => {
       for (const listener of listeners) listener()
     }
@@ -118,6 +123,8 @@ const layer = Layer.effect(
               entry.sample = undefined
               entry.info = { ...entry.info, metrics: false, health: undefined }
               entry.tools = []
+              entry.view = undefined
+              if (entry.info.view) { entry.info = { ...entry.info, view: false }; viewChanged(id) }
             }
             changed()
           },
@@ -136,6 +143,13 @@ const layer = Layer.effect(
             for (const tool of tools) definition(tool)
             entry.tools = [...tools]
           },
+          present(read) {
+            if (!live(entry)) throw new Error("Capability is closed")
+            entry.view = read
+            if (read || entry.info.view) entry.info = { ...entry.info, view: !!read }
+            changed()
+          },
+          invalidate() { if (live(entry) && entry.view) viewChanged(id) },
           notify: (value: Capability.NoticeInput) =>
             Effect.suspend(() =>
               live(entry)
@@ -179,6 +193,20 @@ const layer = Layer.effect(
               return snapshot(entry)
             }),
           metrics: (input) => metrics(input.id),
+          view: (input) => Effect.gen(function* () {
+            const entry = entries.get(input.id)
+            if (!entry || entry.info.state !== "active") return { id: input.id, status: "unavailable" as const }
+            const read = entry.view
+            if (!read) return { id: input.id, status: "unsupported" as const }
+            return yield* Effect.tryPromise({
+              try: async (signal): Promise<Capability.ViewResult> => {
+                const document = await read({ ...(input.locale ? { locale: input.locale } : {}), signal: AbortSignal.any([signal, entry.controller.signal]) })
+                if (!live(entry)) return { id: input.id, status: "unavailable" }
+                return { id: input.id, status: "ready", document: Schema.decodeUnknownSync(Capability.View)(document) }
+              },
+              catch: () => new Error("Module view unavailable"),
+            }).pipe(Effect.catchCause(() => Effect.succeed({ id: input.id, status: "failed" as const })))
+          }),
           settings: (input, ctx) => Effect.gen(function* () {
             const settings = entries.get(input.id)?.settings
             if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
@@ -221,10 +249,14 @@ const layer = Layer.effect(
             registration.events.emit("changed", {}).pipe(Effect.catchCause(() => Effect.void)),
           )
         }
+        const viewListener = (id: string) => {
+          Effect.runForkWith(context)(registration.events.emit("viewChanged", { id }).pipe(Effect.catchCause(() => Effect.void)))
+        }
         yield* Effect.acquireRelease(
           Effect.sync(() => listeners.add(listener)),
           () => Effect.sync(() => listeners.delete(listener)),
         )
+        yield* Effect.acquireRelease(Effect.sync(() => viewListeners.add(viewListener)), () => Effect.sync(() => viewListeners.delete(viewListener)))
       }),
     })
   }),

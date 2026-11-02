@@ -7,6 +7,7 @@ import { Loader } from "@opencode/ui/loader"
 import type definition from "./index"
 import Monitor from "./monitor"
 import Settings from "./settings"
+import ModuleView from "./view"
 
 type View = "modules" | "messages"
 
@@ -63,6 +64,7 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
     filter: "all" | "unread" | "attention"
     next?: Capability.NoticeQuery["cursor"]
     monitor?: string
+    inspect?: string
   }>({
     modules: [],
     messages: [],
@@ -247,7 +249,7 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
                     </p>
                   )}
                 </Show>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                   <Show when={item.settings}>
                     <Button
                       size="small"
@@ -270,6 +272,12 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
                       {ctx.t(state.monitor === item.id ? "closeMonitor" : "monitor")}
                     </Button>
                   </Show>
+                  <Show when={item.view && item.state === "active"}>
+                    <Button size="small" variant="outline" aria-expanded={state.inspect === item.id}
+                      onClick={() => setState("inspect", state.inspect === item.id ? undefined : item.id)}>
+                      {ctx.t(state.inspect === item.id ? "closeActivity" : "activity")}
+                    </Button>
+                  </Show>
                   <Show when={item.state === "active" || item.state === "loading"}>
                     <Button
                       size="small"
@@ -281,6 +289,9 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
                     </Button>
                   </Show>
                 </div>
+                <Show when={item.view && item.state === "active" && state.inspect === item.id}>
+                  <ModuleView id={item.id} server={props.server} />
+                </Show>
               </article>
             )}
           </For>

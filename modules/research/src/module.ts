@@ -3,6 +3,7 @@ import type { Info } from "../../../opencode/packages/plugin/src/promise/tool"
 import { createOwner } from "./owner"
 import { researchService } from "./service"
 import { createResearchMcp } from "./mcp"
+import { researchView } from "./presentation"
 import type { Caller, Primitive } from "./contracts"
 import { json } from "./contracts"
 import { ConversationBackend } from "../../../opencode/packages/schema/src/conversation-backend"
@@ -11,6 +12,8 @@ import type { Data, ResearchInput, ResearchPath, Scoring } from "./types"
 /** Optional application capability. Native Session/Inbox remain the owners of AI tasks. */
 export function createResearchModule(options: { paths?: readonly ResearchPath[]; primitives?: readonly Primitive[]; scoring?: Partial<Scoring> }) {
   const ready = Promise.withResolvers<void>()
+  // A caller may only use the native tool surface and never await the MCP startup.
+  void ready.promise.catch(() => {})
   let active: ReturnType<typeof createOwner> | undefined
   let service: ReturnType<typeof researchService> | undefined
   const tools: Info[] = []
@@ -49,6 +52,20 @@ export function createResearchModule(options: { paths?: readonly ResearchPath[];
       }
       let connected = false
       active = createOwner({ ...options, primitives: options.primitives ?? [], storage: context.storage,
+        changed: () => context.capability.invalidate?.(),
+        describeInput: async (input) => {
+          if (input.backendID !== "opencode") {
+            const execution = await conversation.execution({ ref: input, limit: 1 })
+            return { goal: "Research", conversation: execution.thread.title }
+          }
+          const [message, session] = await Promise.all([
+            context.client.session.message.get({ sessionID: input.threadID, messageID: input.inputID }),
+            context.client.session.get({ sessionID: input.threadID }),
+          ])
+          const text = message.type === "user" ? message.text : ""
+          const goal = text.trim().split(/\r?\n/).find(Boolean)?.replace(/\s+/g, " ").slice(0, 160) || session.title || "Research"
+          return { goal, conversation: session.title }
+        },
         isOpen: async (input) => connected && await observe(input) === "open",
         deliver: async (target, id, text) => {
           if (target.backendID !== "opencode") return json(await conversation.send({ ref: target, inputID: id, text, delivery: "queue" }))
@@ -102,12 +119,26 @@ export function createResearchModule(options: { paths?: readonly ResearchPath[];
             if (event.type === "session.execution.interrupted" && event.data.reason === "shutdown") continue
             if ("sessionID" in event.data) await reconcile(event.data.sessionID)
           }
-        } catch { if (!controller.signal.aborted) connected = false }
-        finally { connected = false }
+        } catch { /* Failure is reported once below, without exposing transport details. */ }
+        finally {
+          connected = false
+          if (!controller.signal.aborted) context.capability.report({ phase: "unavailable", message: "Research lifecycle observation is unavailable" })
+          ready.reject(new Error("Research lifecycle observation ended"))
+        }
       })()
       return {
+        async view(input) {
+          if (!connected) throw new Error("Research lifecycle observation is unavailable")
+          await reconcile()
+          const role = await owner.role()
+          const title = role.holder ? role.holder.backendID === "opencode"
+            ? (await context.client.session.get({ sessionID: role.holder.threadID })).title
+            : (await conversation.execution({ ref: role.holder, limit: 1 })).thread.title : undefined
+          return researchView(owner, input, title)
+        },
         async close() {
           controller.abort()
+          ready.reject(new Error("Research module stopped"))
           const dispatcher = active
           const port = service
           active = undefined

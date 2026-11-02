@@ -5,7 +5,11 @@ import path from "node:path"
 
 process.env.IM_ASSISTANT_PROFILE = "personal"
 Storage.prepare()
-if (process.argv[2] === "backend") {
+if (process.argv[2] === "research") {
+  const { Research } = await import("./research.js")
+  try { console.log(JSON.stringify(await Research.command(process.argv.slice(3)))) }
+  catch { console.error("Research configuration failed; use research init|status|enable|disable or configure <absolute-json-file>. Changes apply on the next service start; native input bindings are required for MCP execution."); process.exitCode = 1 }
+} else if (process.argv[2] === "backend") {
   const { Backends } = await import("./backends.js")
   try {
     console.log(JSON.stringify(await Backends.command(process.argv.slice(3))))

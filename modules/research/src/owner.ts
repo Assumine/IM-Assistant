@@ -16,6 +16,8 @@ Native Session/Inbox own tasks, queue, context and compaction. Do not create mor
 
 export function createOwner(options: { storage: StorageDomain; primitives: readonly Primitive[]; paths?: readonly ResearchPath[]; scoring?: Partial<Scoring>;
   isOpen?: (input: ResearchInput) => Promise<boolean>;
+  describeInput?: (input: ResearchInput) => Promise<{ goal: string; conversation?: string }>;
+  changed?: () => void;
   deliver?: (target: Identity, id: string, text: string) => Promise<Data> }) {
   const storage = options.storage, lifetime = new AbortController()
   const scoring = resolveScoring(options.scoring)
@@ -81,13 +83,14 @@ export function createOwner(options: { storage: StorageDomain; primitives: reado
     try { return await dispatcher.run({ ...request, signal: AbortSignal.any([lifetime.signal, ...(request.signal ? [request.signal] : [])]) }) }
     finally { await dispatcher.close(); dispatchers.delete(dispatcher) }
   }
-  const checkpoints = createCheckpoints({ storage, paths: published, scoring, isOpen: options.isOpen ?? (async () => false) })
+  const checkpoints = createCheckpoints({ storage, paths: published, scoring, isOpen: options.isOpen ?? (async () => false), describe: options.describeInput, changed: options.changed })
   return {
     collect: checkpoints.run,
     progress: checkpoints.inspect,
     finish: checkpoints.finish,
     pending: checkpoints.pending,
     inputOpen: (input: ResearchInput) => options.isOpen?.(input) ?? Promise.resolve(false),
+    activity: checkpoints.recent,
     role,
     adopt: (actor: Identity, expectedVersion: number) => mutate(async () => {
       validIdentity(actor)

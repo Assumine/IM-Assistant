@@ -34,7 +34,7 @@ const isEffectEmptyStruct = (schema: JsonSchema) =>
 const intersection = (members: ReadonlyArray<string>): string => {
   const concrete = members.filter((member) => member !== "unknown")
   if (concrete.length === 0) return "unknown"
-  if (concrete.length === 1) return concrete[0]
+  if (concrete.length === 1) return concrete[0]!
   return concrete.map((member) => (member.includes(" | ") ? `(${member})` : member)).join(" & ")
 }
 
@@ -101,7 +101,7 @@ const docLines = (schema: JsonSchema, width: number): Array<string> => {
   const lines = (schema.description ?? "").split("\n").map((line) => line.replace(/\s+$/, ""))
   while (lines.length > 0 && lines[0]!.trim() === "") lines.shift()
   while (lines.length > 0 && lines[lines.length - 1]!.trim() === "") lines.pop()
-  const inline = lines.length === 1 ? `${lines[0]}${lines[0].endsWith(".") ? "" : "."} ${summary}` : summary
+  const inline = lines.length === 1 ? `${lines[0]}${lines[0]!.endsWith(".") ? "" : "."} ${summary}` : summary
   return summary && lines.length === 1 && !summary.includes("\n") && width + inline.length + 7 <= 120
     ? [inline]
     : [...lines, ...(summary ? summary.split("\n") : [])]
@@ -131,7 +131,7 @@ const jsdoc = (schema: JsonSchema, pad: string): string => {
 
   if (content.length === 0) return ""
   const escaped = content.map((line) => line.replaceAll("*/", "* /"))
-  if (escaped.length === 1 && pad.length + escaped[0].length + 7 <= 120) return `${pad}/** ${escaped[0]} */\n`
+  if (escaped.length === 1 && pad.length + escaped[0]!.length + 7 <= 120) return `${pad}/** ${escaped[0]} */\n`
   const body = escaped.map((line) => `${pad} *${line === "" ? "" : ` ${line}`}`).join("\n")
   return `${pad}/**\n${body}\n${pad} */\n`
 }
