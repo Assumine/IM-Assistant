@@ -733,7 +733,7 @@
       "blocked_reason": null
     }
   },
-  "active_plan_id": "qq-plugin-migration-v1",
+  "active_plan_id": "research-script-dispatch-v1",
   "module_plan": {
     "plan_id": "qq-plugin-migration-v1",
     "implementation_started": true,
@@ -1001,6 +1001,83 @@
           }
         ],
         "blocked_reason": null
+      }
+    }
+  },
+  "business_plans": {
+    "research-script-dispatch-v1": {
+      "plan_id": "research-script-dispatch-v1",
+      "implementation_started": true,
+      "runtime_acceptance_completed": [
+        "C01",
+        "C02",
+        "C03"
+      ],
+      "tasks": {
+        "S1-01": {
+          "status": "done",
+          "artifacts": [
+            "modules/research/README.md",
+            "modules/research/package.json",
+            "modules/research/src/dispatcher.ts",
+            "modules/research/src/index.ts",
+            "modules/research/src/module.ts",
+            "modules/research/src/types.ts",
+            "modules/research/test/dispatcher.test.ts",
+            "modules/research/tsconfig.json",
+            "modules/research/tsconfig.native.json",
+            "opencode/packages/server/script/research-dispatch-smoke.ts",
+            "tests/modules/research-dispatch-evidence.json",
+            "tests/modules/test_s1_01.py",
+            "tests/test_handoff_phases.py",
+            "tests/test_plan_tools.py",
+            "tools/handoff_plan.py",
+            "tools/qq_protocol_smoke.py",
+            "tools/research_script_smoke.py",
+            "tools/validate_design.py",
+            "upstream/patches.json"
+          ],
+          "verification": [
+            {
+              "task": "S1-01",
+              "plan_id": "research-script-dispatch-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 3,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "C01",
+                "C02",
+                "C03"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "command": "python tools/run_runtime_checks.py --task S1-01",
+              "evidence": "tests/modules/research-dispatch-evidence.json",
+              "native_tests": 34,
+              "native_chain_checks": 11,
+              "handoff_tests": 17,
+              "workspace_checks": 36,
+              "production_switch": false
+            }
+          ],
+          "blocked_reason": null
+        },
+        "S1-02": {
+          "status": "pending",
+          "artifacts": [],
+          "verification": [],
+          "blocked_reason": null
+        },
+        "S1-03": {
+          "status": "pending",
+          "artifacts": [],
+          "verification": [],
+          "blocked_reason": null
+        }
       }
     }
   }

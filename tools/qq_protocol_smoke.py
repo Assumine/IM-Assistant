@@ -51,7 +51,7 @@ def run():
                              'tests.test_handoff_phases', 'tests.test_plan_tools', '-v'], cwd=ROOT,
                             capture_output=True, text=True, encoding='utf-8', timeout=30,
                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
-    if python.returncode or 'Ran 15 tests' not in python.stderr or 'OK' not in python.stderr:
+    if python.returncode or not re.search(r'Ran ([1-9]\d*) tests', python.stderr) or 'OK' not in python.stderr:
         raise RuntimeError('Handoff phase selection checks failed: ' + python.stdout + python.stderr)
     print('Q1-01: original QQ native Session, Inbox, backend, image, reply and product regressions', flush=True)
     compatibility = _run()

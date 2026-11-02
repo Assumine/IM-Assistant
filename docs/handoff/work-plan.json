@@ -484,5 +484,112 @@
         "native_verification": "Python 编排实际 Bun/原生公共接口和产品进程；默认关闭，不连接真实 QQ、用户模型账号或旧数据库。"
       }
     ]
+  },
+  "business_plans": {
+    "research-script-dispatch-v1": {
+      "schema_version": 1,
+      "plan_id": "research-script-dispatch-v1",
+      "foundation_plan_id": "opencode-app-base-v2",
+      "scope": "optional_lightweight_research_scripts",
+      "start_task": "S1-01",
+      "progress_file": "docs/handoff/progress.json",
+      "production_switch": false,
+      "private_data_migration": false,
+      "acceptance_document": "docs/architecture/轻量研究调度验收.md",
+      "tasks": [
+        {
+          "id": "S1-01",
+          "phase": "S1",
+          "title": "轻量脚本与双分调度内核",
+          "depends_on": [],
+          "outputs": [
+            "modules/research/src/dispatcher.ts",
+            "modules/research/src/module.ts",
+            "opencode/packages/server/script/research-dispatch-smoke.ts"
+          ],
+          "test_files": [
+            "tests/modules/test_s1_01.py"
+          ],
+          "acceptance_ids": [
+            "C01",
+            "C02",
+            "C03"
+          ],
+          "scope": "轻量脚本与双分调度内核",
+          "done_when": [
+            "可信函数声明参数与结果，按适用路径双分选择；无固定重试次数，负分退出，成功即交付。",
+            "轮末汇总才一次小幅调整历史分；历史轮数加权、版本隔离，失败不立即破坏长期可靠路径。评分对应可替换函数，普通函数组合中下游故障不扣成功主干；有证据的负结果不视为方法失败。",
+            "真实原生Scope/KV/SQLite验证持久化、去重和停用；不创建竞争会话/队列，不连接真实网站。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task S1-01"
+          ],
+          "native_verification": "Python编排真实Bun实现与隔离原生服务/SQLite；不连接真实账号，不迁移私人历史。"
+        },
+        {
+          "id": "S1-02",
+          "phase": "S1",
+          "title": "研究协助与原生会话接入",
+          "depends_on": [
+            "S1-01"
+          ],
+          "outputs": [
+            "modules/research/src/owner.ts",
+            "modules/research/test/owner.test.ts"
+          ],
+          "test_files": [
+            "tests/modules/test_s1_02.py"
+          ],
+          "acceptance_ids": [
+            "C04",
+            "C05",
+            "C06"
+          ],
+          "scope": "研究协助先开辟一条完整采集函数；反复报错才从故障点或前置位置开辟同级替代分支，研究任务只运行已验收函数。首轮真实发现的其他方向可标记候选分支入口，未验证前仅提示，不参与评分执行。共享有效主干，只对真正可替换的同级分支独立评分；查明不存在与执行故障分开。",
+          "done_when": [
+            "协助先打通一条完整采集路径；只有实际运行频繁出错才评估分叉位置并验证同级替代路径，不预建空节点或为分支而分支。首轮发现多个真实方向时可以标记候选入口，打通并验证后才注册执行。",
+            "复用原生Session/Inbox、权限与上下文，陌生分支和阻塞带上下文请求协助，取消跟随原生输入。主干输出绑定目标/参数、实现版本和有效性；切换局部分支复用有效结果，失效从最近有效处恢复。同一研究轮共享分支本轮分及轮末汇总，多次工具调用不能重置分数或重复更新历史。",
+            "用受控真实采集适配器和合成模型验证调度，通知只在需要人工时发送，不能自行扩张会话。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task S1-02"
+          ],
+          "native_verification": "Python编排真实Bun实现与隔离原生服务/SQLite；不连接真实账号，不迁移私人历史。"
+        },
+        {
+          "id": "S1-03",
+          "phase": "S1",
+          "title": "产品配置与轻量执行展示",
+          "depends_on": [
+            "S1-02"
+          ],
+          "outputs": [
+            "modules/research/src/configuration.ts",
+            "modules/research/test/configuration.test.ts"
+          ],
+          "test_files": [
+            "tests/modules/test_s1_03.py"
+          ],
+          "acceptance_ids": [
+            "C07",
+            "C08",
+            "C09"
+          ],
+          "scope": "产品配置与轻量执行展示",
+          "done_when": [
+            "可信Loader与默认关闭设置接入产品，研究故障不阻塞主应用或QQ。",
+            "展示当前函数/参数摘要/进度/卡点和双分依据，紧凑展示，不重建复杂路线编辑器。",
+            "完整产品联调验证协助调度、备用路径、终态和重启；保留原有会话、QQ与权限回归。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task S1-03"
+          ],
+          "native_verification": "Python编排真实Bun实现与隔离原生服务/SQLite；不连接真实账号，不迁移私人历史。"
+        }
+      ]
+    }
   }
 }

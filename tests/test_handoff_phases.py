@@ -90,6 +90,39 @@ class HandoffPhases(unittest.TestCase):
         self.modules(); self.write()
         with self.assertRaises(ValueError): select_plan(self.root, 'missing')
 
+    def business(self):
+        self.modules()
+        self.plan['business_plans'] = {'research': {'plan_id': 'research', 'tasks': [
+            {'id': 'S1', 'depends_on': []}, {'id': 'S2', 'depends_on': ['S1']}]}}
+        self.progress['business_plans'] = {'research': {'plan_id': 'research', 'tasks': {
+            'S1': {'status': 'in_progress'}, 'S2': {'status': 'pending'}}}}
+        self.progress['active_plan_id'] = 'research'
+
+    def test_business_phase_preserves_prior_phase_lookup_and_progress(self):
+        self.business(); self.write()
+        result = next_task(self.root)
+        self.assertEqual((result['plan_id'], result['completed_tasks'], result['total_tasks']), ('research', 0, 2))
+        self.assertEqual(result['next_task']['id'], 'S1')
+        self.assertEqual(select_plan(self.root, 'Q1')[0]['plan_id'], 'modules')
+        self.assertEqual(select_plan(self.root, 'R1')[0]['plan_id'], 'foundation')
+
+    def test_business_phase_rejects_missing_mismatched_and_duplicate_records(self):
+        self.business()
+        for mutation in ['missing', 'key', 'id', 'task']:
+            with self.subTest(mutation=mutation):
+                plan, progress = copy.deepcopy(self.plan), copy.deepcopy(self.progress)
+                if mutation == 'missing': self.progress.pop('business_plans')
+                if mutation == 'key': self.progress['business_plans']['other'] = self.progress['business_plans'].pop('research')
+                if mutation == 'id': self.plan['business_plans']['research']['plan_id'] = 'modules'
+                if mutation == 'task':
+                    item = self.plan['business_plans']['research']['tasks'][0]
+                    item['id'] = 'Q1'
+                    self.plan['business_plans']['research']['tasks'][1]['depends_on'] = ['Q1']
+                    self.progress['business_plans']['research']['tasks']['Q1'] = self.progress['business_plans']['research']['tasks'].pop('S1')
+                self.write()
+                with self.assertRaises(ValueError): select_plan(self.root)
+                self.plan, self.progress = plan, progress
+
 
 if __name__ == '__main__':
     unittest.main()

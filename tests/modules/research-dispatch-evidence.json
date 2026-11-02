@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "plan_id": "research-script-dispatch-v1",
+  "task": "S1-01",
+  "status": "passed",
+  "acceptance_ids": [
+    "C01",
+    "C02",
+    "C03"
+  ],
+  "sources": {
+    "modules/research/package.json": "a1019bc7f1ddfba714483dab561ea819d098e196acdc4965ceb19637295ef83e",
+    "modules/research/src/dispatcher.ts": "b0ffba55f4b3825d30c18bb44c4b193382f81ddd8415e43572a01cfffbea9e87",
+    "modules/research/src/index.ts": "a135d2d02d54e4bee806a9980f569d9a8ef627b91035a880dded99e52d037ade",
+    "modules/research/src/module.ts": "11773fc11463d1f99cc7757678ff35ed9714bd7c88c7da1f57a9c63d81722d8d",
+    "modules/research/src/types.ts": "75035ab1567dbec1796d16d8ef66c3f8d0799a9333cb039e058bff5e666a0070",
+    "modules/research/test/dispatcher.test.ts": "0a97a17c6bf035930a825c5dbd0cc4028699df56926225d7bdd7023c11e702d3",
+    "modules/research/tsconfig.json": "60b04ea374fcfbe69388b6980d7e074d71f27117eecc82f6c0d7527eb25c5947",
+    "modules/research/tsconfig.native.json": "349691f45e7ea1beee2a45d8dad3c03835c896dcf3b10b9d9aa9c2878c4ecfe5",
+    "opencode/packages/core/src/capabilities.ts": "71b0caba0c48c0cc99e80c7db9f45700230ddcb0d00a971604d0344cbcbc30c9",
+    "opencode/packages/core/src/kv.ts": "bcb6601fbf4d0dec0f8e7ecd403db9059c88bfe3a8d94eae50a7f04baa6053eb",
+    "opencode/packages/plugin/src/promise/application.ts": "5ba7e9ffd0a46be3e7b91d77fd7af4e455660316df798dab4a57bff15082f2b0",
+    "opencode/packages/plugin/src/promise/storage.ts": "1311c43aa1449ce849211f14cd00a8b33b8ece6375688e57dfabebc240a49604",
+    "opencode/packages/server/script/research-dispatch-smoke.ts": "db192adb1f62606c8b8e62dc3678e752ca9caa8ee35a92b3250b4fed066fdcb4",
+    "opencode/packages/server/src/application-modules.ts": "3731958faac5929a4e3465379e0f41c3c974e125ccb3dfe889628fffbca74620",
+    "tests/modules/test_s1_01.py": "ca4bf00760d9cd49098a5cd0967eb9030438fe8be03365ecf3ec4b88fb06840e",
+    "tests/test_handoff_phases.py": "0ebd7eacc519b8a2925317b72dee26cd7147ac8470852ee37f460d7d1ad658b1",
+    "tests/test_plan_tools.py": "938a2864605c7a092bf61ac3aee032f4630620d6192484bd99e8189bfb46fb96",
+    "tools/handoff_plan.py": "0f5d62fdc85e81ed140f379a24a643f5bd94a4b2ef2c646b412d9155c58dfcab",
+    "tools/native_baseline.py": "5f62e4198c42b519bf29e5b2127d762c224e9d285605053bc54a92e321e44150",
+    "tools/next_task.py": "10548cc84c9c4abf3b90525c28454b8a45b0493a99510bc0afaa143de1f012ca",
+    "tools/qq_protocol_smoke.py": "0857aab82517437547c81436264d092f6f759613be55b75598e778ebccab1910",
+    "tools/research_script_smoke.py": "dfde7e34799bd752ab1f5a6042543be98d76fa2accef191d55f5d802399c2b66",
+    "tools/run_runtime_checks.py": "5c9fa1110ea61942bab9a48b0dfe7ed4b01e7db46799825b4a06a35becc1dcf0",
+    "tools/validate_design.py": "195f256b733cd436aea29ca3c50d8006488f984fb1e5ac93c5b345b71b678737",
+    "upstream/patches.json": "0ca4d2d27ed5fad34e20d7326129d4b52bac6d5cd3acd79b9cb6f684320c7312"
+  },
+  "steps": [
+    {
+      "cwd": "modules/research",
+      "args": [
+        "bun",
+        "<pinned-typescript>",
+        "--project",
+        "tsconfig.json"
+      ],
+      "exit_code": 0,
+      "passed": null,
+      "skipped": 0,
+      "log": ".reports/native/s1-research-types.log"
+    },
+    {
+      "cwd": "modules/research",
+      "args": [
+        "bun",
+        "<pinned-typescript>",
+        "--project",
+        "tsconfig.native.json"
+      ],
+      "exit_code": 0,
+      "passed": null,
+      "skipped": 0,
+      "log": ".reports/native/s1-research-harness-types.log"
+    },
+    {
+      "cwd": "modules/research",
+      "args": [
+        "bun",
+        "test"
+      ],
+      "exit_code": 0,
+      "passed": 25,
+      "skipped": 0,
+      "log": ".reports/native/s1-research-unit.log"
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/research-dispatch-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.97,
+      "isolated_home": true,
+      "log": ".reports/native/s1-research-native.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/application-modules.test.ts",
+        "test/capabilities.test.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.35,
+      "isolated_home": true,
+      "log": ".reports/native/s1-native-boundaries.log",
+      "native_tests_passed": 9,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 11.7,
+      "isolated_home": true,
+      "log": ".reports/native/s1-research-workspace.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    }
+  ],
+  "unit_tests": 25,
+  "native_boundary_tests": 9,
+  "handoff_tests": 17,
+  "workspace_checks": 36,
+  "native_acceptance": {
+    "status": "passed",
+    "checks": [
+      "optional research starts without QQ while ordinary native Session/Inbox admit work unchanged",
+      "real read-only HTTP collectors re-rank a failed primary and validate the backup result before delivery",
+      "one native KV receipt holds one historical update per path and another module cannot see or corrupt it",
+      "concurrent duplicates execute once and the historically successful path is preferred next round",
+      "reusing a completed round ID for another requirement rejects before external I/O",
+      "a login barrier stops at the current operation and does not retry or punish path reliability",
+      "real SQLite restart restores immutable receipts and history without replaying collectors or consuming native Inbox",
+      "a persisted start without a result requires review rather than replaying an unknown external operation",
+      "native capability stop aborts active collector I/O while another module and native pending work remain available",
+      "cancelled round receipts persist across a second native restart without starting the request again",
+      "invalid research configuration fails only its optional module and leaves core session creation operational"
+    ],
+    "source_requests": 5,
+    "native_sqlite": true,
+    "actual_websites": false,
+    "model_requests": 0,
+    "actual_qq_connection": false,
+    "private_data_migrated": false,
+    "production_switch": false
+  },
+  "fixed_attempt_cap": false,
+  "history_update": "one-immutable-round-receipt-weighted-by-prior-rounds",
+  "task_owner": "original-native-session-and-inbox",
+  "product_entry_implemented": false,
+  "actual_websites": false,
+  "private_data_migrated": false,
+  "production_switch": false
+}

@@ -88,7 +88,7 @@ def validate(root=ROOT):
 
     phases,active_id=load_plans(root)
     module_receipt=None
-    if len(phases)>1:
+    if 'module_plan' in plan:
         module,module_progress=phases[1]
         check('QQ phase extends the completed foundation without production or private migration',
               module['schema_version']==1 and module['plan_id']=='qq-plugin-migration-v1' and
@@ -128,6 +128,47 @@ def validate(root=ROOT):
         module_receipt={'plan_id':module['plan_id'],'implementation_work_items':len(definitions),
                         'planned_runtime_acceptance_count':len(module_ids),'runtime_acceptance_recorded_completed':len(module_completed)}
 
+    business_receipts={}
+    used_ids=set(ids) | (set(module_ids) if module_receipt else set())
+    for definition,state_record in phases[1 + int('module_plan' in plan):]:
+        ident=definition['plan_id']
+        check(ident+' is a separate optional phase without a production switch',
+              definition['schema_version']==1 and definition['foundation_plan_id']==plan['plan_id'] and
+              definition['production_switch'] is False and definition['private_data_migration'] is False and
+              definition['progress_file']=='docs/handoff/progress.json')
+        definitions=definition['tasks'];business_states=state_record['tasks']
+        check(ident+' starts at an owned task',definition['start_task'] in business_states)
+        document=(root/definition['acceptance_document']).resolve()
+        check(ident+' has a confined acceptance document',document.is_relative_to(root/'docs') and document.is_file())
+        checklist=document.read_text(encoding='utf-8')
+        cases=re.findall(r'- \[ \] ([A-Z]\d{2})\b',checklist)
+        assigned=[case for task in definitions for case in task['acceptance_ids']]
+        check(ident+' assigns each new acceptance case once',bool(cases) and len(cases)==len(set(cases))==len(assigned)==len(set(assigned)) and
+              set(cases)==set(assigned) and not used_ids&set(cases) and '- [x]' not in checklist.lower())
+        used_ids.update(cases)
+        completed=[]
+        for task in definitions:
+            task_id=task['id'];state=business_states[task_id]
+            check(task_id+' defines scoped outputs and actual verification',bool(task['outputs']) and bool(task['test_files']) and
+                  len(task['done_when'])>=3 and bool(task['native_verification']) and
+                  'python tools/run_runtime_checks.py --task '+task_id in task['verification_commands'] and
+                  all((root/p).resolve().is_relative_to(root) and p.split('/')[0] in {'modules','opencode','tests'} for p in task['outputs']+task['test_files']))
+            if state['status'] in {'in_progress','done'}:
+                check(task_id+' explicitly started in its own phase',state_record['implementation_started'] is True)
+            if state['status']=='blocked':check(task_id+' records a blocker',bool(state.get('blocked_reason')))
+            if state['status']!='done':continue
+            check(task_id+' has implemented artifacts and tests',bool(state['artifacts']) and
+                  all((root/p).resolve().is_relative_to(root) and (root/p).is_file() for p in state['artifacts']+task['outputs']+task['test_files']))
+            evidence=[v for v in state['verification'] if v.get('kind')=='runtime' and v.get('status')=='passed' and
+                      v.get('exit_code')==0 and v.get('tests_run',0)>0 and v.get('skipped',0)==0 and v.get('plan_id')==ident]
+            check(task_id+' has real phase-specific runtime evidence',bool(evidence) and all((root/v.get('evidence','')).is_file() for v in evidence))
+            check(task_id+' evidence covers assigned cases',set(task['acceptance_ids'])<={case for v in evidence for case in v.get('acceptance_ids',[])})
+            completed.extend(task['acceptance_ids'])
+        check(ident+' only advances its own acceptance',set(completed)==set(state_record['runtime_acceptance_completed']) and
+              len(completed)==len(state_record['runtime_acceptance_completed']))
+        business_receipts[ident]={'plan_id':ident,'implementation_work_items':len(definitions),
+                                 'planned_runtime_acceptance_count':len(cases),'runtime_acceptance_recorded_completed':len(completed)}
+
     oldplan=load('docs/archive/python-host-plan/work-plan.json')
     oldprogress=load('docs/archive/python-host-plan/progress.json')
     check('superseded plan remains separately archived',len(oldplan['tasks'])==18 and plan['supersedes']=='docs/archive/python-host-plan/work-plan.json')
@@ -164,10 +205,12 @@ def validate(root=ROOT):
              'runtime_acceptance_executed':0,'runtime_acceptance_recorded_completed':len(recorded),
              'archived_recorded_tests':49,'model_calls':0,'qq_calls':0,'production_deployments':0,
              'documents':{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in documents}}
-    if module_receipt and active_id==module_receipt['plan_id']:
+    receipt['business_plans']=business_receipts
+    active_receipt=business_receipts.get(active_id) or (module_receipt if module_receipt and active_id==module_receipt['plan_id'] else None)
+    if active_receipt:
         receipt['foundation']={'plan_id':plan['plan_id'],'implementation_work_items':len(tasks),
                                'planned_runtime_acceptance_count':len(ids),'runtime_acceptance_recorded_completed':len(recorded)}
-        receipt.update(module_receipt)
+        receipt.update(active_receipt)
     output=root/'.reports/design-validation.json';output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     return receipt

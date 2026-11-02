@@ -26,6 +26,8 @@ class PlanToolTests(unittest.TestCase):
         # A plan-tool fixture must not change meaning as real implementation advances.
         self.plan.pop('module_plan',None)
         self.progress.pop('module_plan',None)
+        self.plan.pop('business_plans',None)
+        self.progress.pop('business_plans',None)
         self.progress.pop('active_plan_id',None)
         self.progress['implementation_started']=False
         self.progress['runtime_acceptance_completed']=[]
@@ -91,7 +93,8 @@ class PlanToolTests(unittest.TestCase):
         before=hashlib.sha256(path.read_bytes()).hexdigest()
         report=validate_design.validate()
         progress=json.loads(path.read_text(encoding='utf-8'))
-        active=progress['module_plan'] if progress.get('active_plan_id')==progress.get('module_plan',{}).get('plan_id') else progress
+        active=validate_design.load_plans(ROOT)[0]
+        active=next(state for definition,state in active if definition['plan_id']==report['plan_id'])
         recorded=active['runtime_acceptance_completed']
         self.assertEqual(report['plan_id'],active['plan_id'])
         self.assertEqual(report['runtime_acceptance_recorded_completed'],len(recorded))

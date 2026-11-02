@@ -12,6 +12,14 @@ def load_plans(root):
         raise ValueError('Module definitions and progress must be introduced together')
     if 'module_plan' in definition:
         result.append((definition['module_plan'], record['module_plan']))
+    definitions = definition.get('business_plans', {})
+    records = record.get('business_plans', {})
+    if not isinstance(definitions, dict) or not isinstance(records, dict) or set(definitions) != set(records):
+        raise ValueError('Business definitions and progress must be introduced together')
+    for ident, plan in definitions.items():
+        if plan['plan_id'] != ident or records[ident]['plan_id'] != ident:
+            raise ValueError('Business plan key and ID do not match')
+        result.append((plan, records[ident]))
     plan_ids = [plan['plan_id'] for plan, _ in result]
     if len(set(plan_ids)) != len(plan_ids):
         raise ValueError('Duplicate plan ID')

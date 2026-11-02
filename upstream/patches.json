@@ -1777,6 +1777,20 @@
           "sha256": "07d9bbf7ee2dd00650f3ba993a760958e6072a7a85f719c35af3fafd5b28ccd3"
         }
       ]
+    },
+    {
+      "id": "S1-01-lightweight-research-dispatch",
+      "reason": "隔离原生Scope/SQLite和回环HTTP验收可选研究脚本、双分历史事实、停止及重启去重；业务实现留在modules/research，不接真实网站或第二套会话。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task S1-01"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/research-dispatch-smoke.ts",
+          "action": "added",
+          "sha256": "db192adb1f62606c8b8e62dc3678e752ca9caa8ee35a92b3250b4fed066fdcb4"
+        }
+      ]
     }
   ]
 }
