@@ -7,6 +7,8 @@ export type Account = {
   botID: string
   model: { providerID: string; id: string; variant?: string }
   agentID?: string
+  /** Explicitly increased to start new native histories while retaining previous generations. */
+  contextGeneration?: number
   persona: { name: string; prompt: string }
 }
 export type Configuration = { location: { directory: string }; accounts: readonly Account[] }

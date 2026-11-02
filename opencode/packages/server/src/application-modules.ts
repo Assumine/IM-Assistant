@@ -32,6 +32,7 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
         id: module.id,
         title: module.title,
         stop: () => run(Scope.close(owner, Exit.void)),
+        settings: module.settings,
       })
       .pipe(Effect.catchCause(() => Effect.succeed(undefined)))
     if (!capability) {

@@ -2,6 +2,14 @@ import type { OpenCodeClient } from "@opencode/client"
 import type { StorageDomain } from "./storage.js"
 import type { Capability } from "@opencode/schema/capability"
 
+/** Trusted declarative configuration, available even when the service is disabled or failed. No live task mutation. */
+export interface ApplicationModuleSettings {
+  /** Return validated non-secret settings and their current revision; reject when they cannot be read safely. */
+  readonly read: (signal: AbortSignal) => Promise<Capability.Settings>
+  /** Validate and atomically replace the expected revision. Undefined means a concurrent change; never silently overwrite. */
+  readonly write: (input: { readonly revision: string; readonly text: string }, signal: AbortSignal) => Promise<Capability.Settings | undefined>
+}
+
 /** Capabilities owned by one compiled application module. Notifications never change native tasks. */
 export interface ApplicationCapability {
   /** Report connection/health independently of whether this resource has opened. Never include credentials. */
@@ -17,6 +25,8 @@ export interface ApplicationModule {
   readonly id: string
   /** Display name supplied by the capability, never inferred from dependencies. Defaults to the id. */
   readonly title?: string
+  /** Optional module-owned declarative settings; writes apply on the next service start, independently of resource stop. */
+  readonly settings?: ApplicationModuleSettings
   /** Return the owned resource synchronously; asynchronous startup belongs to that resource and must not delay core boot. */
   readonly open: (context: {
     readonly client: OpenCodeClient
@@ -36,6 +46,8 @@ export interface ApplicationModuleLoader {
   readonly id: string
   /** Display name for disabled, loading and failed configurations. Defaults to the id. */
   readonly title?: string
+  /** Optional trusted settings owner, usable without opening the service or its network connection. */
+  readonly settings?: ApplicationModuleSettings
   /** Return undefined when configured off. Abort prevents a late module from opening after stop/shutdown. */
   readonly load: (signal: AbortSignal) => Promise<ApplicationModule | undefined>
 }

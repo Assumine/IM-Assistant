@@ -22,8 +22,18 @@ export const Info = Schema.Struct({
   state: Schema.Literals(["loading", "active", "disabled", "failed", "stopped"]),
   health: optional(Health),
   metrics: Schema.Boolean,
+  settings: optional(Schema.Boolean),
 })
 export type Info = typeof Info.Type
+
+/** Declarative module-owned settings. Secrets must remain outside this document. */
+export const Settings = Schema.Struct({
+  revision: Schema.String.check(Schema.isPattern(/^[0-9a-f]{64}$/)),
+  text: Schema.String.check(Schema.isMaxLength(524288)),
+  description: optional(Schema.String.check(Schema.isMaxLength(1000))),
+  appliesTo: Schema.Literal("next-service-start"),
+}).annotate({ identifier: "Capability.Settings" })
+export interface Settings extends Schema.Schema.Type<typeof Settings> {}
 
 export const Metric = Schema.Struct({
   id: LocalID,
@@ -77,6 +87,7 @@ export type NoticePage = typeof NoticePage.Type
 const errors = {
   unavailable: Schema.toStandardSchemaV1(Schema.Undefined),
   failed: Schema.toStandardSchemaV1(Schema.Undefined),
+  conflict: Schema.toStandardSchemaV1(Schema.Undefined),
 }
 
 /** Experimental application metadata over the original RPC transport; cannot submit or resume AI work. */
@@ -95,6 +106,16 @@ export const Api = Rpc.define({
     metrics: {
       input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID })),
       output: Schema.toStandardSchemaV1(Metrics),
+      errors,
+    },
+    settings: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID })),
+      output: Schema.toStandardSchemaV1(Settings),
+      errors,
+    },
+    configure: {
+      input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID, revision: Settings.fields.revision, text: Settings.fields.text })),
+      output: Schema.toStandardSchemaV1(Settings),
       errors,
     },
     notifications: {

@@ -18,6 +18,8 @@ export function capabilityRpc(fixture: {
   markRead?: (input: Capability.NoticeRef) => Capability.Notice | Promise<Capability.Notice>
   stop?: (id: string) => Capability.Info | Promise<Capability.Info>
   metrics?: (id: string) => Capability.Metrics | Promise<Capability.Metrics>
+  settings?: (id: string) => Capability.Settings | Promise<Capability.Settings>
+  configure?: (input: { id: string; revision: string; text: string }) => Capability.Settings | Promise<Capability.Settings>
 }): NonNullable<MockServerConfig["rpc"]> {
   return async ({ id, method, body }) => {
     if (id !== Capability.Api.id) throw new Error(`Unexpected RPC: ${id}.${method}`)
@@ -34,6 +36,12 @@ export function capabilityRpc(fixture: {
     if (method === "stop" && fixture.stop) return fixture.stop(input.id)
 
     if (method === "metrics" && fixture.metrics) return fixture.metrics(input.id)
+
+    if (method === "settings" && fixture.settings) return fixture.settings(input.id)
+
+    if (method === "configure" && fixture.configure)
+      return fixture.configure(Schema.decodeUnknownSync(Schema.Struct({ id: Capability.ID,
+        revision: Capability.Settings.fields.revision, text: Capability.Settings.fields.text }))(body))
     throw new Error(`Unexpected capability operation: ${method}`)
   }
 }

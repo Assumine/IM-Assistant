@@ -746,7 +746,10 @@
       "B06",
       "B07",
       "B08",
-      "B09"
+      "B09",
+      "B10",
+      "B11",
+      "B12"
     ],
     "tasks": {
       "Q1-01": {
@@ -929,9 +932,74 @@
         "blocked_reason": null
       },
       "Q1-04": {
-        "status": "pending",
-        "artifacts": [],
-        "verification": [],
+        "status": "done",
+        "artifacts": [
+          "modules/qq-chatbot/package.json",
+          "modules/qq-chatbot/src/channel.ts",
+          "modules/qq-chatbot/src/configuration.ts",
+          "modules/qq-chatbot/src/configured.ts",
+          "modules/qq-chatbot/src/index.ts",
+          "modules/qq-chatbot/src/module.ts",
+          "modules/qq-chatbot/src/policy.ts",
+          "modules/qq-chatbot/src/replies.ts",
+          "modules/qq-chatbot/src/sessions.ts",
+          "modules/qq-chatbot/src/settings.ts",
+          "modules/qq-chatbot/src/types.ts",
+          "modules/qq-chatbot/test/configuration.test.ts",
+          "modules/qq-chatbot/test/policy.test.ts",
+          "modules/qq-chatbot/test/replies.test.ts",
+          "modules/qq-chatbot/test/settings.test.ts",
+          "modules/qq-chatbot/tsconfig.json",
+          "modules/qq-chatbot/tsconfig.native.json",
+          "opencode/packages/app/e2e/regression/settings.spec.ts",
+          "opencode/packages/app/e2e/utils/capabilities.ts",
+          "opencode/packages/core/src/capabilities.ts",
+          "opencode/packages/gui-plugins/src/capabilities/i18n/en.ts",
+          "opencode/packages/gui-plugins/src/capabilities/page.tsx",
+          "opencode/packages/gui-plugins/src/capabilities/settings.tsx",
+          "opencode/packages/im-assistant/src/capabilities.ts",
+          "opencode/packages/im-assistant/src/chatbots.ts",
+          "opencode/packages/im-assistant/src/cli.ts",
+          "opencode/packages/plugin/src/promise/application.ts",
+          "opencode/packages/plugin/src/promise/index.ts",
+          "opencode/packages/schema/src/capability.ts",
+          "opencode/packages/server/script/qq-phase-smoke.ts",
+          "opencode/packages/server/src/application-modules.ts",
+          "tests/modules/qq-phase-evidence.json",
+          "tests/modules/test_q1_04.py",
+          "tools/qq_phase_smoke.py",
+          "upstream/patches.json"
+        ],
+        "verification": [
+          {
+            "task": "Q1-04",
+            "plan_id": "qq-plugin-migration-v1",
+            "archived_reference": false,
+            "status": "passed",
+            "tests_run": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "acceptance_ids": [
+              "B10",
+              "B11",
+              "B12"
+            ],
+            "progress_updated": false,
+            "kind": "runtime",
+            "exit_code": 0,
+            "command": "python tools/run_runtime_checks.py --task Q1-04",
+            "evidence": "tests/modules/qq-phase-evidence.json",
+            "native_test_executions": 826,
+            "product_checks": 12,
+            "extra_product_runs": 2,
+            "original_qq_chain_checks": 147,
+            "browser_executions": 14,
+            "workspace_checks": 36,
+            "standalone_e2e_diagnostics": 0,
+            "publication": "disabled"
+          }
+        ],
         "blocked_reason": null
       }
     }

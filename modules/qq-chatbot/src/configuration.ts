@@ -13,11 +13,13 @@ export function configuration(options: Configuration): Configuration {
   const accounts = options.accounts.map((value): Account => {
     if (!accountID(value.botID) || !value.model || !text(value.model.providerID, 256) || !text(value.model.id, 256) ||
       value.model.variant !== undefined && !text(value.model.variant, 256) ||
-      value.agentID !== undefined && !text(value.agentID, 128) || !value.persona ||
+      value.agentID !== undefined && !text(value.agentID, 128) ||
+      value.contextGeneration !== undefined && (!Number.isSafeInteger(value.contextGeneration) || value.contextGeneration < 0) || !value.persona ||
       !text(value.persona.name, 80) || !text(value.persona.prompt, 16000)) throw new Error("Invalid QQ chatbot account")
     // Native Session.Info exposes an omitted variant as "default". Freeze that same explicit selection.
     return { botID: value.botID, model: { providerID: value.model.providerID, id: value.model.id, variant: value.model.variant ?? "default" },
-      agentID: value.agentID ?? "build", persona: { name: value.persona.name, prompt: value.persona.prompt } }
+      agentID: value.agentID ?? "build", persona: { name: value.persona.name, prompt: value.persona.prompt },
+      ...(value.contextGeneration ? { contextGeneration: value.contextGeneration } : {}) }
   })
   if (new Set(accounts.map((value) => value.botID)).size !== accounts.length) throw new Error("Duplicate QQ chatbot account")
   return { location: { directory: path.resolve(options.location.directory) }, accounts }

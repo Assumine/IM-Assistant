@@ -104,6 +104,66 @@ test("capabilities: module failure and explicit stop leave the native conversati
   expect(workspace.sessions).toHaveLength(1)
 })
 
+test("capabilities: module-owned settings save by revision while its service stays disabled", async ({ page }) => {
+  const modules: Capability.Info[] = [{ id: "qq-chatbot", title: "QQ chat companion", state: "disabled", metrics: false, settings: true }]
+  let document: Capability.Settings = { revision: "1".repeat(64), text: '{"version":1,"enabled":false,"accounts":[]}', appliesTo: "next-service-start" }
+  const saved = Promise.withResolvers<Capability.Settings>()
+  const calls: { id: string; revision: string; text: string }[] = []
+  let lists = 0
+
+  const workspace = await openSession(page, { name: "ModuleSettings", workspace: false, rpc: capabilityRpc({
+    list: () => {
+      lists++
+
+      return modules
+    },
+    settings: (id) => {
+      expect(id).toBe("qq-chatbot")
+
+      return document
+    },
+    configure: (input) => {
+      calls.push(input)
+
+      return saved.promise
+    },
+  }) })
+
+  const settings = await showSettings(page)
+  await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
+  const module = page.getByRole("article", { name: "QQ chat companion" })
+  await expect(module.getByText("Disabled", { exact: true })).toBeVisible()
+  await module.getByRole("button", { name: "Configure", exact: true }).click()
+  const dialog = page.getByRole("dialog", { name: "QQ chat companion", exact: true })
+  const editor = dialog.getByRole("textbox", { name: "Configuration JSON", exact: true })
+  await expect(editor).toBeEditable()
+  await expect(editor).toHaveValue(document.text)
+
+  const edited = JSON.stringify({ version: 1, enabled: false, accounts: [{ botID: "10002", url: "ws://127.0.0.1:12345/", tokenEnv: "IM_QQ_CHAT_TOKEN_SHEEP",
+    model: { providerID: "fixture", id: "fixture" }, persona: { name: "Sheep", prompt: "Synthetic persona" }, policy: { privateUsers: ["20001"], groups: [] } }] })
+
+  await editor.fill(edited)
+  await dialog.getByRole("button", { name: "Save configuration", exact: true }).click()
+  await expect(dialog.getByRole("button", { name: "Saving", exact: true })).toBeDisabled()
+  await expect(editor).toBeDisabled()
+  expect(calls).toEqual([{ id: "qq-chatbot", revision: "1".repeat(64), text: edited }])
+  document = { ...document, revision: "2".repeat(64), text: edited }
+  const beforeRefresh = lists
+
+  await workspace.push([capabilityEvent(workspace.directory)])
+  await expect.poll(() => lists).toBe(beforeRefresh + 1)
+  await expect(editor).toBeDisabled()
+  saved.resolve(document)
+  await expect(dialog.getByText("Saved for the next service start.", { exact: true })).toBeVisible()
+  await expect(editor).toBeEditable()
+  await expect(dialog.getByRole("button", { name: "Save configuration", exact: true })).toBeDisabled()
+  await page.screenshot({ path: test.info().outputPath("module-settings.png"), fullPage: true })
+  await page.keyboard.press("Escape")
+  await expect(dialog).toBeHidden()
+  await expect(module.getByText("Disabled", { exact: true })).toBeVisible()
+  expect(calls).toHaveLength(1)
+})
+
 test("capabilities: reading a module notice clears unread without resolving its request", async ({ page }) => {
   let notice: Capability.Notice = {
     moduleID: "research",

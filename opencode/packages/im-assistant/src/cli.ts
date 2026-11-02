@@ -25,6 +25,16 @@ if (process.argv[2] === "backend") {
     )
     process.exitCode = 1
   }
+} else if (process.argv[2] === "chat") {
+  const { Chatbots } = await import("./chatbots.js")
+  try {
+    console.log(JSON.stringify(await Chatbots.command(process.argv.slice(3))))
+  } catch {
+    console.error(
+      "Chat configuration failed; use chat qq init|status|enable|disable [botID], configure <absolute-json-file>, or reset <botID>. Persona/model changes require an explicit context reset. Settings apply on the next service start.",
+    )
+    process.exitCode = 1
+  }
 } else if (process.argv[2] === "models" && process.argv.length === 3) {
   const { Providers } = await import("./providers.js")
   try {

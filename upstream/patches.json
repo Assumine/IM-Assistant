@@ -372,13 +372,14 @@
       "reason": "进行中的 API 接入检查点：按需查询兼容 API 模型 ID，通过标准输入接收密钥；不修改默认模型、原生会话或队列。",
       "verification_commands": [
         "python -m tools.provider_discovery_smoke",
-        "python tools/native_baseline.py --cwd packages/im-assistant --label r2-02-provider-discovery -- run test src/providers.test.ts src/storage.test.ts"
+        "python tools/native_baseline.py --cwd packages/im-assistant --label r2-02-provider-discovery -- run test src/providers.test.ts src/storage.test.ts",
+        "python tools/run_runtime_checks.py --task Q1-04"
       ],
       "files": [
         {
           "path": "packages/im-assistant/src/cli.ts",
           "action": "added",
-          "sha256": "ef74cbd9956f4fcb8c14e6ae7706add66eb44b76336cdca967353e5bf19f2100"
+          "sha256": "81cb58d66c44a5d2c6efe3594a163dbdc33de0342cfafec4852aa7a669af82da"
         },
         {
           "path": "packages/im-assistant/src/providers.ts",
@@ -468,13 +469,14 @@
         "python tools/native_baseline.py --cwd . --label r2-02-config-close-check -- run check",
         "python -m tools.codex_native_smoke",
         "python tools/run_runtime_checks.py --task Q1-02",
-        "python tools/run_runtime_checks.py --task Q1-03"
+        "python tools/run_runtime_checks.py --task Q1-03",
+        "python tools/run_runtime_checks.py --task Q1-04"
       ],
       "files": [
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "b4f529757970490480d81c961a25a965478430ccf8ede3e1920153cbb8c0fa84"
+          "sha256": "04b2c150de2e0f7426dac0feacdc7add741457405f3957cd630611d7028510d6"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -534,7 +536,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "171b67aa073b2a9a00c6071eacb8aaf90393f30ef5aa9671597e5f011146d5b0"
+          "sha256": "fecd1224dd50008ac3a9c91a0e6bacd903e1ffd4636fb6e41f77211342b69192"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -1285,7 +1287,8 @@
       "reason": "通用可信应用级资源契约与作用域释放，产品层显式装配可选QQ能力；复用公共会话客户端和原插件KV，不另建调度器。",
       "verification_commands": [
         "python -m tools.qq_portal_smoke",
-        "python tools/run_runtime_checks.py --task R3-01"
+        "python tools/run_runtime_checks.py --task R3-01",
+        "python tools/run_runtime_checks.py --task Q1-04"
       ],
       "files": [
         {
@@ -1296,12 +1299,12 @@
         {
           "path": "packages/plugin/src/promise/application.ts",
           "action": "added",
-          "sha256": "4c5c35dec913c60efbdd079eeed9f3d17f327796f1f7c5b94b98230e68028a8d"
+          "sha256": "5ba7e9ffd0a46be3e7b91d77fd7af4e455660316df798dab4a57bff15082f2b0"
         },
         {
           "path": "packages/plugin/src/promise/index.ts",
           "action": "modified",
-          "sha256": "175c1974bd78cf6d498fa5712ca952dbcf70370e555c1578a55fa72cbb23c03e"
+          "sha256": "0c82fa13ab7e07382355503f89e6d03f58d442be1b991f96d0ac5a36e938d32d"
         },
         {
           "path": "packages/server/package.json",
@@ -1316,7 +1319,7 @@
         {
           "path": "packages/server/src/application-modules.ts",
           "action": "added",
-          "sha256": "e3b52c1f8d5fa5018ed9d3959e1b2868d54b20d919648468271889d52760bc72"
+          "sha256": "3731958faac5929a4e3465379e0f41c3c974e125ccb3dfe889628fffbca74620"
         },
         {
           "path": "packages/server/test/application-modules.test.ts",
@@ -1440,13 +1443,14 @@
       "id": "R4-01-native-capabilities-219",
       "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
       "verification_commands": [
-        "python tools/run_runtime_checks.py --task R4-01"
+        "python tools/run_runtime_checks.py --task R4-01",
+        "python tools/run_runtime_checks.py --task Q1-04"
       ],
       "files": [
         {
           "path": "packages/core/src/capabilities.ts",
           "action": "added",
-          "sha256": "38ee0af7688b0a4011d5a1440e1528d952b4ec3374ecd46e59dbe86e774344f7"
+          "sha256": "71b0caba0c48c0cc99e80c7db9f45700230ddcb0d00a971604d0344cbcbc30c9"
         },
         {
           "path": "packages/core/src/capability-notifications.ts",
@@ -1456,7 +1460,7 @@
         {
           "path": "packages/im-assistant/src/capabilities.ts",
           "action": "added",
-          "sha256": "636a56e46bda1e260378ae66dcaef651e357c1f7d758333ec5357154da1375df"
+          "sha256": "58256a502ba347540e48debff6163fe76b1c25e7fcfee4876ba7cbdcebbd0b00"
         },
         {
           "path": "packages/im-assistant/src/notifications.ts",
@@ -1466,7 +1470,7 @@
         {
           "path": "packages/schema/src/capability.ts",
           "action": "added",
-          "sha256": "5e8ba5dc63049f1f1911972b02e2928f7b8805c7452c49ae7bbe9c7db7eb7cf7"
+          "sha256": "52d86ff0903c1d6a6ba3699e0132b7fed04d44d53954fe6b077182827d180bd7"
         }
       ]
     },
@@ -1474,13 +1478,14 @@
       "id": "R4-01-native-capabilities-224",
       "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
       "verification_commands": [
-        "python tools/run_runtime_checks.py --task R4-01"
+        "python tools/run_runtime_checks.py --task R4-01",
+        "python tools/run_runtime_checks.py --task Q1-04"
       ],
       "files": [
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/en.ts",
           "action": "added",
-          "sha256": "ebfd147beb9dea9c00554c7dc12a2bc24ba3eb86aff7b55e8703a597e1b05304"
+          "sha256": "77f76415c073960ae77d8b1b8b0423e521d44640761669fa5a407290ea2320f1"
         },
         {
           "path": "packages/gui-plugins/src/capabilities/index.ts",
@@ -1495,7 +1500,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/page.tsx",
           "action": "added",
-          "sha256": "65cc7c095563a923cfefca3ada1d09ecaa7bcb920dc0a8601a322d27ed5b3e8f"
+          "sha256": "be5a14bfcd2180abd22b4c145425209f66ea9c6366b18a899f287572453c692d"
         },
         {
           "path": "packages/gui-plugins/src/capabilities/renderer.tsx",
@@ -1513,13 +1518,14 @@
       "id": "R4-01-native-capabilities-230",
       "reason": "Expose native application capability lifecycle and isolated notification metadata through original RPC/GUI extension points; no extra host, conversation queue or background hardware scan.",
       "verification_commands": [
-        "python tools/run_runtime_checks.py --task R4-01"
+        "python tools/run_runtime_checks.py --task R4-01",
+        "python tools/run_runtime_checks.py --task Q1-04"
       ],
       "files": [
         {
           "path": "packages/app/e2e/utils/capabilities.ts",
           "action": "added",
-          "sha256": "dcdc558204678ba6f04b435497978316ff2c2a136b1f3e7e72c13c5899e90210"
+          "sha256": "a14b72e484787f75d4814d6c15603793998dbd449959ef88a65f2d2be623cea8"
         }
       ]
     },
@@ -1745,6 +1751,30 @@
           "path": "packages/server/script/qq-chatbot-channel-smoke.ts",
           "action": "added",
           "sha256": "0cefb7dd88350245e2923890c4ad4d32849411cc26983138b23f0ad39df443cd"
+        }
+      ]
+    },
+    {
+      "id": "Q1-04-product-chat-composition",
+      "reason": "通过原生应用Loader装配独立聊天插件；通用、模块自有的声明式配置RPC与GUI只保存下次启动配置，保留原生执行和数据所有者。真实产品进程验证双插件、上下文显式重置、故障与重启。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task Q1-04"
+      ],
+      "files": [
+        {
+          "path": "packages/gui-plugins/src/capabilities/settings.tsx",
+          "action": "added",
+          "sha256": "6d4ec0675f272d2281d447f8bb8f2b03d2206c6ad953f8ac35c03acf23fe39a8"
+        },
+        {
+          "path": "packages/im-assistant/src/chatbots.ts",
+          "action": "added",
+          "sha256": "66615664b840c02c36611387fe2ca6ae603f378a3bea69cbaa1b068ec43f0e0c"
+        },
+        {
+          "path": "packages/server/script/qq-phase-smoke.ts",
+          "action": "added",
+          "sha256": "07d9bbf7ee2dd00650f3ba993a760958e6072a7a85f719c35af3fafd5b28ccd3"
         }
       ]
     }

@@ -18,6 +18,10 @@ export interface Interface {
     readonly id: string
     readonly title?: string
     readonly stop: () => Promise<void>
+    readonly settings?: {
+      readonly read: (signal: AbortSignal) => Promise<Capability.Settings>
+      readonly write: (input: { readonly revision: string; readonly text: string }, signal: AbortSignal) => Promise<Capability.Settings | undefined>
+    }
   }) => Effect.Effect<Registration, Error>
   readonly bind: (rpc: Rpc.Interface) => Effect.Effect<void, unknown, Scope.Scope>
 }
@@ -27,6 +31,7 @@ interface Entry {
   info: Capability.Info
   readonly stop: () => Promise<void>
   readonly controller: AbortController
+  readonly settings?: Parameters<Interface["register"]>[0]["settings"]
   metrics?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>
   sample?: { readonly at: number; readonly value: Promise<Capability.Metrics>; pending: boolean }
 }
@@ -87,8 +92,9 @@ const layer = Layer.effect(
           title: input.title ?? id,
           state: "loading",
           metrics: false,
+          ...(input.settings ? { settings: true } : {}),
         }).pipe(Effect.orDie)
-        const entry: Entry = { info, stop: input.stop, controller: new AbortController() }
+        const entry: Entry = { info, stop: input.stop, controller: new AbortController(), settings: input.settings }
         entries.set(id, entry)
         changed()
         return {
@@ -156,6 +162,28 @@ const layer = Layer.effect(
               return snapshot(entry)
             }),
           metrics: (input) => metrics(input.id),
+          settings: (input, ctx) => Effect.gen(function* () {
+            const settings = entries.get(input.id)?.settings
+            if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
+            return yield* Effect.tryPromise({
+              try: async (signal) => Schema.decodeUnknownSync(Capability.Settings)(await settings.read(signal)),
+              catch: () => ctx.error("failed", "Module settings could not be read safely"),
+            })
+          }),
+          configure: (input, ctx) => Effect.gen(function* () {
+            const settings = entries.get(input.id)?.settings
+            if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
+            const result = yield* Effect.tryPromise({
+              try: async (signal) => {
+                const value = await settings.write({ revision: input.revision, text: input.text }, signal)
+                return value === undefined ? undefined : Schema.decodeUnknownSync(Capability.Settings)(value)
+              },
+              catch: () => ctx.error("failed", "Settings were not confirmed. Check the configuration and explicit context-reset requirements"),
+            })
+            if (!result) return yield* Effect.fail(ctx.error("conflict", "Settings changed. Reload before saving again"))
+            changed()
+            return result
+          }),
           notifications: (input, ctx) =>
             notices
               .list(input)

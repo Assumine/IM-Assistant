@@ -6,6 +6,7 @@ import { Button } from "@opencode/ui/button"
 import { Loader } from "@opencode/ui/loader"
 import type definition from "./index"
 import Monitor from "./monitor"
+import Settings from "./settings"
 
 type View = "modules" | "messages"
 
@@ -247,6 +248,19 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
                   )}
                 </Show>
                 <div class="flex gap-2">
+                  <Show when={item.settings}>
+                    <Button
+                      size="small"
+                      variant="outline"
+                      onClick={() => ctx.dialogs.open(() => (
+                        <ctx.ui.Dialog title={item.title}>
+                          <Settings id={item.id} server={props.server} />
+                        </ctx.ui.Dialog>
+                      ))}
+                    >
+                      {ctx.t("settings")}
+                    </Button>
+                  </Show>
                   <Show when={item.metrics && item.state === "active"}>
                     <Button
                       size="small"

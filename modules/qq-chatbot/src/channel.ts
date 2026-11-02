@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { openOneBot, decodeImage, imageFrameBytes, inlineImage, maximumImageBytes, type OneBotOptions, type Source, type OutgoingPart } from "../../qq-protocol/src/index"
+import { openOneBot, decodeImage, imageFrameBytes, inlineImage, maximumImageBytes, type OneBotOptions, type Source, type Scope, type OutgoingPart } from "../../qq-protocol/src/index"
 import { createChatbotModule } from "./module"
 import { nativeSessionID, nativeInputID, scopeIdentity } from "./sessions"
 import { accountID, messageID, record, policy, decode, directed, type ChatPolicy } from "./policy"
@@ -7,11 +7,10 @@ import { parseReply, replyProtocol, type Sticker } from "./replies"
 import type { Account, Context, Receipt } from "./types"
 
 export type ChannelAccount = Account & { connection: Omit<OneBotOptions, "botID">; policy: ChatPolicy;
-  images?: { maxBytes: number }; stickers?: readonly Sticker[] }
+  images?: { maxBytes: number }; stickers?: readonly Sticker[]; replyConfiguration?: string }
 export type ChatIssue = { kind: "unsupported" | "overloaded" | "admission" | "image-unavailable" | "image-model-unsupported" | "invalid-reply" | "send-uncertain" | "metadata" | "native-output" | "event-stream"; botID?: string }
 type Watch = { version: 1; source: Source; sessionID: string; inputID: string; revision: number }
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex")
-const memberKey = (source: Source, member: string) => "chat-member:" + scopeIdentity(source.scope) + ":" + member
 const watchKey = (id: string) => "chat-watch:" + id
 
 /** Optional QQ ingress/output resource. Native Session/Inbox remain the only execution owners. */
@@ -28,6 +27,11 @@ export function createQQChatbot(options: { location: { directory: string }; acco
   const base = createChatbotModule({ location: options.location, accounts: accounts.map((account) => ({ ...account,
     persona: { name: account.persona.name, prompt: account.persona.prompt + "\n\n" + replyProtocol + "\nApproved stickers: " +
       JSON.stringify(account.stickers.map(({ id, label }) => ({ id, label }))) } })) })
+  const generation = (scope: Scope) => accounts.find((account) => account.botID === scope.botID)?.contextGeneration ?? 0
+  const scopeKey = (scope: Scope) => scopeIdentity(scope, generation(scope))
+  const sessionID = (scope: Scope) => nativeSessionID(scope, generation(scope))
+  const inputID = (source: Source) => nativeInputID(source, generation(source.scope))
+  const memberKey = (source: Source, member: string) => "chat-member:" + scopeKey(source.scope) + ":" + member
   const runtime = new Map(accounts.map((account) => [account.botID, { enabled: account.rules.repliesEnabled, revision: 0 }]))
   const ready = Promise.withResolvers<"ready" | "degraded" | "unavailable" | "closed">()
   let context: Context | undefined, closed = false, opened = false, switchesReady = false, writes = Promise.resolve()
@@ -96,7 +100,7 @@ export function createQQChatbot(options: { location: { directory: string }; acco
       const result = await wires.get(account.botID)!.sendMessage(watch.source.scope, plans[index]!, index === 0 ? watch.source.messageID : undefined)
       await context.storage.insert(key + ":receipt", { ...result, hash: digest })
       if (result.status !== "sent") { issue("send-uncertain", account.botID); await finish(watch); return }
-      await context.storage.insert("chat-own-reply:" + scopeIdentity(watch.source.scope) + ":" + result.messageID,
+      await context.storage.insert("chat-own-reply:" + scopeKey(watch.source.scope) + ":" + result.messageID,
         { inputID: watch.inputID, source: watch.source })
     }
     await finish(watch)
@@ -121,8 +125,9 @@ export function createQQChatbot(options: { location: { directory: string }; acco
         if (!record(value) || value.version !== 1 || !record(value.source) || !record(value.source.scope) ||
           typeof value.sessionID !== "string" || typeof value.inputID !== "string" || !Number.isSafeInteger(value.revision)) { issue("metadata"); continue }
         const watch = value as unknown as Watch
-        if (!permitted(watch.source) || watch.sessionID !== nativeSessionID(watch.source.scope) || entry.key !== watchKey(watch.inputID) ||
-          watch.inputID !== nativeInputID(watch.source)) { issue("metadata"); continue }
+        if (!permitted(watch.source) || entry.key !== watchKey(watch.inputID)) { issue("metadata"); continue }
+        // Explicit context reset retains native history but retires old public reply watches.
+        if (watch.sessionID !== sessionID(watch.source.scope) || watch.inputID !== inputID(watch.source)) { await finish(watch); continue }
         watches.set(watch.inputID, watch); schedule(watch)
       }
       if (page.next === after && after) throw new Error("Repeated native metadata cursor")
@@ -136,8 +141,8 @@ export function createQQChatbot(options: { location: { directory: string }; acco
     const source: Source = { scope: input.scope, actorID: input.actorID, messageID: input.messageID }
     if (source.scope.kind === "group") await context!.storage.insert(memberKey(source, source.actorID), { version: 1, memberID: source.actorID })
     const state = runtime.get(account.botID)!, revision = state.revision
-    const isDirected = directed(input, account.persona.name) || !!(input.quoteID && await context!.storage.get("chat-own-reply:" + scopeIdentity(input.scope) + ":" + input.quoteID))
-    const busy = [...watches.values()].some((watch) => watch.sessionID === nativeSessionID(input.scope))
+    const isDirected = directed(input, account.persona.name) || !!(input.quoteID && await context!.storage.get("chat-own-reply:" + scopeKey(input.scope) + ":" + input.quoteID))
+    const busy = [...watches.values()].some((watch) => watch.sessionID === sessionID(input.scope))
     let respond = state.enabled && (input.scope.kind === "private" || account.rules.groupReplies !== "off" &&
       (isDirected || account.rules.groupReplies === "auto" && !busy))
     const files = []
@@ -173,7 +178,8 @@ export function createQQChatbot(options: { location: { directory: string }; acco
       if (closed || !context || !switchesReady || !runtime.has(botID) || typeof enabled !== "boolean") throw new Error("Chat reply switch is unavailable")
       const state = runtime.get(botID)!
       if (state.enabled !== enabled) { state.enabled = enabled; state.revision++ }
-      const saved = { enabled: state.enabled, revision: state.revision }
+      const configuration = accounts.find((account) => account.botID === botID)?.replyConfiguration
+      const saved = { enabled: state.enabled, revision: state.revision, ...(configuration ? { configuration } : {}) }
       const save = writes.then(() => context!.storage.set("chat-switch:" + botID, saved))
       writes = save.catch(() => { issue("metadata", botID) })
       await save
@@ -197,7 +203,13 @@ export function createQQChatbot(options: { location: { directory: string }; acco
         if (native === "unavailable") { ready.resolve("unavailable"); return }
         for (const account of accounts) {
           const saved = await value.storage.get("chat-switch:" + account.botID)
-          if (record(saved) && typeof saved.enabled === "boolean" && Number.isSafeInteger(saved.revision)) runtime.set(account.botID, { enabled: saved.enabled, revision: saved.revision as number })
+          if (record(saved) && typeof saved.enabled === "boolean" && Number.isSafeInteger(saved.revision)) {
+            if (saved.configuration === account.replyConfiguration) runtime.set(account.botID, { enabled: saved.enabled, revision: saved.revision as number })
+            else runtime.set(account.botID, { enabled: account.rules.repliesEnabled, revision: (saved.revision as number) + 1 })
+          }
+          if (account.replyConfiguration) await value.storage.set("chat-switch:" + account.botID, {
+            ...runtime.get(account.botID)!, configuration: account.replyConfiguration,
+          })
         }
         if (closed) return
         switchesReady = true
@@ -222,7 +234,7 @@ export function createQQChatbot(options: { location: { directory: string }; acco
               const decoded = decode(raw, account.botID, account.rules, accounts.map((item) => item.botID))
               if (typeof decoded === "string") { if (decoded === "unsupported") issue("unsupported", account.botID); return }
               if (jobs.size >= 128) { issue("overloaded", account.botID); return }
-              const key = scopeIdentity(decoded.scope)
+              const key = scopeKey(decoded.scope)
               const pending = (lanes.get(key) ?? Promise.resolve()).then(() => consume(account, raw)).catch(() => { if (!closed) issue("metadata", account.botID) })
               lanes.set(key, pending); track(pending)
               void pending.finally(() => { if (lanes.get(key) === pending) lanes.delete(key) })

@@ -9,9 +9,9 @@ const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(valu
 const same = (left: unknown, right: unknown) => isDeepStrictEqual(left, right)
 const permissions = [{ action: "*", resource: "*", effect: "deny" as const }]
 const instructionKey = "qq-chatbot.persona"
-export const scopeIdentity = (scope: Scope) => hash(["qq-chatbot", scope.botID, scope.kind, scope.peerID])
-export const nativeSessionID = (scope: Scope) => "ses_qqchat_" + scopeIdentity(scope)
-export const nativeInputID = (source: Source) => "msg_qqchat_" + hash([scopeIdentity(source.scope), source.messageID])
+export const scopeIdentity = (scope: Scope, generation = 0) => hash(["qq-chatbot", scope.botID, scope.kind, scope.peerID, ...(generation ? [generation] : [])])
+export const nativeSessionID = (scope: Scope, generation = 0) => "ses_qqchat_" + scopeIdentity(scope, generation)
+export const nativeInputID = (source: Source, generation = 0) => "msg_qqchat_" + hash([scopeIdentity(source.scope, generation), source.messageID])
 const contentHash = (input: ChatInput) => input.images?.length || input.mentions?.length || input.quoteID !== undefined
   ? hash([input.actorID, input.text, input.images ?? [], input.mentions ?? [], input.quoteID ?? null]) : hash([input.actorID, input.text])
 
@@ -49,9 +49,9 @@ export function createChatSessions(options: { context: Context; config: Configur
   let stopped = false
   const request = { signal: controller.signal }
   const ensure = async (scope: Scope, account: Account): Promise<{ sessionID: string } | Receipt> => {
-    const sessionID = nativeSessionID(scope), revision = profile(account)
+    const sessionID = nativeSessionID(scope, account.contextGeneration), revision = profile(account)
     const owner = { version: 1, scope, sessionID, profile: revision }
-    const key = "conversation:" + scopeIdentity(scope)
+    const key = "conversation:" + scopeIdentity(scope, account.contextGeneration)
     if (stopped) return { status: "unavailable" }
     const recorded = await storage.get(key)
     if (recorded !== undefined && !same(recorded, owner)) return { status: "blocked", reason: "configuration-changed" }
@@ -82,7 +82,8 @@ export function createChatSessions(options: { context: Context; config: Configur
       const conversation = await ensure(input.scope, account)
       if ("status" in conversation) return conversation
       if (stopped) return { status: "unavailable" }
-      const id = hash([scopeIdentity(input.scope), input.messageID]), inputID = "msg_qqchat_" + id
+      // QQ source deduplication survives a context reset; only new native history/input IDs change generation.
+      const id = hash([scopeIdentity(input.scope), input.messageID]), inputID = nativeInputID(input, account.contextGeneration)
       const sender = { id: input.actorID, ...(input.displayName !== undefined ? { name: input.displayName } : {}) }
       const text = JSON.stringify({ kind: "qq-message", sender, text: input.text,
         ...(input.images?.length ? { images: input.images, ...(observe ? { imageContent: "not-interpreted" } : {}) } : {}),

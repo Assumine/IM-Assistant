@@ -1,6 +1,43 @@
 # QQ 聊天附属插件
 
-独立ApplicationModule、原生会话、人格指令和成员归属由Q1-02接入。Q1-03增加认证QQ通道、独立参与策略、回复开关、结构化@及受控图片。它可以在没有任务转发模块时装配。产品Capabilities.load、CLI/GUI配置和明确的资料重置/迁移属于Q1-04，当前没有将聊天模块加入默认产品启动，也没有导入旧小羊人格、私人历史或真实账号。
+独立ApplicationModule、原生会话、人格指令和成员归属由Q1-02接入；Q1-03增加认证QQ通道、独立参与策略、回复开关、结构化@及受控图片。Q1-04通过产品Capabilities.load、CLI和原生模块设置接入实际装配，默认关闭，可独立于任务转发运行。没有导入旧小羊人格、私人历史或真实账号，也没有切换生产启动入口。
+
+## 产品配置
+
+模块文件位于助手独立数据根目录的modules/qq-chatbot/channels.json，与任务转发分开。模块管理中的Configure按钮通过原生公共能力RPC读取和保存真实配置；关闭或故障的服务也可读取合法配置。保存核对revision并原子替换，并发编辑冲突会拒绝覆盖。格式错误或含原始凭据的文件不会直接展示。配置单独保存为下次启动期望状态，不把保存成功当作当前已上线。
+
+开发入口与工具链见[助手入口](../../docs/handoff/助手入口与隔离.md)。从本仓库根目录使用已锁定的Bun：
+
+```text
+.\runtime\tools\bun-1.4.4\bun-windows-x64-baseline\bun.exe --cwd opencode/packages/im-assistant run cli chat qq init
+.\runtime\tools\bun-1.4.4\bun-windows-x64-baseline\bun.exe --cwd opencode/packages/im-assistant run cli chat qq configure C:/absolute/channels.json
+.\runtime\tools\bun-1.4.4\bun-windows-x64-baseline\bun.exe --cwd opencode/packages/im-assistant run cli chat qq status
+```
+
+CLI还提供enable/disable [botID]、status [botID]与reset <botID>；修改均在下次服务启动生效。空或未知账号不会退回成全局操作。模块管理里的Stop service只停止本次资源，保留配置、原生会话与已交给原生的工作。
+
+首次配置示例使用合成账号和占位模型，保持关闭：
+
+```json
+{
+  "version": 1,
+  "enabled": false,
+  "accounts": [{
+    "enabled": true,
+    "botID": "10002",
+    "url": "ws://127.0.0.1:3001/",
+    "tokenEnv": "IM_QQ_CHAT_TOKEN_SHEEP",
+    "model": { "providerID": "your-provider", "id": "your-model", "variant": "default" },
+    "persona": { "name": "Sheep", "prompt": "Replace with the explicitly selected persona." },
+    "contextGeneration": 0,
+    "policy": { "privateUsers": ["20001"], "groups": ["30001"], "groupReplies": "auto", "repliesEnabled": true }
+  }]
+}
+```
+
+模型/API使用原生Provider设置和模型目录；本文件仅引用providerID/id/variant。启动进程通过tokenEnv对应的环境变量取得QQ令牌，不将令牌值放入配置。聊天令牌名使用IM_QQ_CHAT_TOKEN_前缀，与任务转发的IM_QQ_TOKEN_分开。配置合计最多512KiB UTF8，媒体资产也计入此上限。
+
+修改模型、Agent或人格时，在同一次保存中增加该账号的contextGeneration，显式开启新的原生历史代际；reset命令用于保留当前模型/人格的独立上下文重置。重置影响该机器人账号的私聊和群聊，旧原生历史保留，已有QQ消息去重不清除，旧代际待发回复不补发。已经交给原生的执行仍归原生所有，不隐式取消或回滚任务。策略和账号开关变化不要求重置人格历史。
 
 ## 原生所有权
 
@@ -32,12 +69,12 @@ QQ内置face保留表情ID文本。发送表情包仅使用配置明确提供的
 
 已有指纹的重投只核对原生Inbox或历史，绝不重新发送prompt。原生普通prompt允许同ID撤回后再次入队，所以不能把再次提交当作重复消息核对。消息已撤回、原生结果不存在或未知时返回uncertain，不能声称已执行，也不会自动重放。显示名变化不修改旧输入或转移成员身份。
 
-已有绑定的原生Session被删除后不自动创建替代会话；人格/模型发生冲突时也不覆盖历史。显式更换配置与重置上下文需要后续受控迁移入口，当前收到此类不一致会拒绝接纳。模块停止后拒绝新输入、结束自身接纳资源；已交给原生的推理和待办继续由原生负责。
+已有绑定的原生Session被删除后不自动创建替代会话；人格/模型发生冲突时也不覆盖历史。只有显式增加contextGeneration才为后续新输入选择新Session。未遵守显式配置迁移的直接文件修改仍会被原生身份核对拒绝，不静默接管历史。模块停止后拒绝新输入、结束自身接纳资源；已交给原生的推理和待办继续由原生负责。
 
 公开发送先保存意图再发QQ，确认回执单独保存。只有与原生关闭输入、正确rootID/Session及原始来源对应的已定稿输出可发送；未知发送结果不盲重试。原生事件流驱动检查，没有后台轮询。停止完成后本插件不继续收发；显式重启可恢复仅含来源/输入ID的结果通知观察，不重新提交模型。已确认发送和未知回执均不会重复发送。自动重连和跨进程账号租约尚未实现。
 
 ## 验收范围
 
-当前阶段运行python tools/run_runtime_checks.py --task Q1-03；此前Q1-02证据固定在原提交，保持原记录。当前验收使用实际HTTP、原生应用Scope/SQLite、认证loopback OneBot及合成模型，核对只读观察、参与策略、开关版本、成员@、多气泡、图像内容、未知回执、重复消息和停用/重启；同时执行原聊天内核及任务转发回归。人格验证证明指令进入真实模型请求及压缩后保留，不代表合成模型测试已评价真实小羊的角色表现。
+当前阶段运行python tools/run_runtime_checks.py --task Q1-04；此前Q1-01/02/03证据固定在原提交。当前验收使用真实产品CLI/服务、原生Scope/SQLite、认证loopback和合成模型，覆盖只聊天、只转发、双插件、配置/故障/启停/重启及显式上下文重置，并回归原聊天内核、媒体和任务转发链路。原生GUI以真实Chromium验证Configure、保存反馈、停用、通知和按需监控；合成模型不代表真实小羊角色效果评价。
 
 API-managed JSON会话指令条目作为通用原生能力接入宿主，文件和URL标记按字面文本处理；不打开项目指令发现、文件路径、Shell、MCP或外部插件。原文件边界和受控附件另跑真实产品回归。日志和合成数据库留在忽略目录，公开证据只有源码指纹和验收结果。
