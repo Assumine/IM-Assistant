@@ -20,7 +20,41 @@ export interface ResearchPath {
   title: string
   accepts: (input: Data) => boolean
   validates: (output: Data) => boolean
+  /** Only host-proven read-only functions may recollect an expired checkpoint. */
+  readOnly?: boolean
+  /** Omit for validity within the owning native input. */
+  validForMs?: number
   run: (input: Data, context: { signal: AbortSignal; roundID: string; attempt: number }) => Promise<Outcome>
+}
+
+/** Proven by the host's native input API, never accepted in model arguments. */
+export interface ResearchInput {
+  backendID: string
+  threadID: string
+  inputID: string
+}
+
+export interface Checkpoint {
+  id: string
+  category: string
+  action: string
+  input: Data
+  output: Data
+  pathID: string
+  revision: string
+  parents: string[]
+  createdAt: number
+  expiresAt?: number
+  readOnly: boolean
+}
+
+export interface CollectionRequest extends Request { after?: string[] }
+
+export interface CollectionReport extends Report {
+  checkpoint?: string
+  reused?: boolean
+  recovery?: { reason: string; checkpoints: Checkpoint[] }
+  assistance?: Data
 }
 
 export interface Scoring {

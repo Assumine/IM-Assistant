@@ -43,7 +43,7 @@ def run():
     compiler = str(ROOT / 'opencode/node_modules/typescript/bin/tsc6')
     steps = [module_check('s2-research-types', [compiler, '--project', 'tsconfig.json']),
              module_check('s2-native-harness-types', [compiler, '--project', 'tsconfig.native.json']),
-             module_check('s2-research-unit', ['test'], 49)]
+             module_check('s2-research-unit', ['test', 'test/dispatcher.test.ts', 'test/owner.test.ts', 'test/http.test.ts'], 49)]
     print('S1-02: actual native models adopt/build/test/publish/handoff, plus official MCP HTTP clients and native Inbox', flush=True)
     step, native = acceptance('research-assistance-smoke.ts', 's2-native-assistance', 'IM_RESEARCH_ASSISTANCE_TEST_ROOT')
     steps.append(step)

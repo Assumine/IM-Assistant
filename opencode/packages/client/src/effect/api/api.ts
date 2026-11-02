@@ -1681,6 +1681,7 @@ export type ExperimentalSessionInputOutputOutput = {
   readonly inputID: SessionMessage.ID
   readonly rootID?: SessionMessage.ID | undefined
   readonly status: "pending" | "open" | "closed" | "unknown"
+  readonly experimental?: { readonly outcome: "completed" | "interrupted" | "failed" } | undefined
   readonly first?:
     | { readonly messageID: SessionMessage.ID; readonly text: string; readonly settled: boolean }
     | undefined

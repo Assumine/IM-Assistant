@@ -1013,6 +1013,7 @@
         "C02",
         "C03",
         "C04",
+        "C05",
         "C06"
       ],
       "tasks": {
@@ -1164,9 +1165,70 @@
           "blocked_reason": null
         },
         "S1-02B": {
-          "status": "pending",
-          "artifacts": [],
-          "verification": [],
+          "status": "done",
+          "artifacts": [
+            "modules/research/src/checkpoints.ts",
+            "modules/research/src/contracts.ts",
+            "modules/research/src/dispatcher.ts",
+            "modules/research/src/http.ts",
+            "modules/research/src/index.ts",
+            "modules/research/src/mcp.ts",
+            "modules/research/src/module.ts",
+            "modules/research/src/owner.ts",
+            "modules/research/src/program.ts",
+            "modules/research/src/service.ts",
+            "modules/research/src/types.ts",
+            "modules/research/test/checkpoints.test.ts",
+            "modules/research/README.md",
+            "modules/research/tsconfig.native.json",
+            "opencode/packages/schema/src/session-inbox.ts",
+            "opencode/packages/core/src/session/input.ts",
+            "opencode/packages/core/src/session/inbox.ts",
+            "opencode/packages/core/src/session/projector.ts",
+            "opencode/packages/core/test/session-input.test.ts",
+            "opencode/packages/client/src/effect/api/api.ts",
+            "opencode/packages/client/src/promise/generated/types.ts",
+            "opencode/packages/server/script/research-checkpoints-smoke.ts",
+            "opencode/packages/server/script/research-assistance-smoke.ts",
+            "opencode/packages/server/script/research-public-branch.ts",
+            "tools/research_checkpoints_smoke.py",
+            "tools/research_assistance_smoke.py",
+            "tools/research_public_branch.py",
+            "tests/modules/test_s1_02b.py",
+            "tests/modules/research-checkpoints-evidence.json",
+            "upstream/patches.json"
+          ],
+          "verification": [
+            {
+              "task": "S1-02B",
+              "plan_id": "research-script-dispatch-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 3,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "C05"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "command": "python tools/run_runtime_checks.py --task S1-02B",
+              "evidence": "tests/modules/research-checkpoints-evidence.json",
+              "native_test_executions": 367,
+              "native_checkpoint_checks": 8,
+              "native_input_stability_repetitions": 10,
+              "identity_regression_checks": 11,
+              "direct_dispatch_regression_checks": 11,
+              "qq_product_regression_checks": 12,
+              "handoff_tests": 17,
+              "workspace_checks": 36,
+              "supplementary_public_branch_checks": 7,
+              "supplementary_public_source_requests": 3,
+              "production_switch": false
+            }
+          ],
           "blocked_reason": null
         }
       }

@@ -36,6 +36,8 @@ export const InputPosition = Schema.Struct({
   inputID: SessionMessage.ID,
   rootID: SessionMessage.ID.pipe(optional),
   status: Schema.Literals(["pending", "open", "closed", "unknown"]),
+  /** Read-only native terminal evidence. Absent on older projections; closed alone never implies success. */
+  experimental: Schema.Struct({ outcome: Schema.Literals(["completed", "interrupted", "failed"]) }).pipe(optional),
 }).annotate({ identifier: "Session.InputPosition" })
 export type InputPosition = typeof InputPosition.Type
 

@@ -8,7 +8,7 @@ import { Effect, Exit, Scope } from "effect"
 import { OpenCode } from "@opencode/client"
 import { Capability } from "@opencode/schema/capability"
 import { ServerFetch } from "../src/fetch"
-import { createResearchModule, jsonCollector, type Draft, type Identity } from "../../../../modules/research/src/index"
+import { createResearchModule, jsonCollector, type Caller, type Draft } from "../../../../modules/research/src/index"
 import { Client, StreamableHTTPClientTransport } from "../../../../modules/research/test/mcp-client"
 
 const root = process.env.IM_RESEARCH_PUBLIC_TEST_ROOT
@@ -18,6 +18,13 @@ await mkdir(root, { recursive: true })
 const home = await mkdtemp(path.join(root, "public-branch-")), directory = path.join(home, "location")
 await mkdir(directory); await mkdir(path.join(home, "config"))
 const sourceURL = "https://api.github.com/repos/browser-act/skills"
+const held = Promise.withResolvers<void>(), release = Promise.withResolvers<void>()
+let modelRequests = 0
+const upstream = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
+  if (request.method !== "POST") return Response.json({ data: [] })
+  modelRequests++; held.resolve(); await release.promise
+  return new Response('data: {"id":"held-input","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":"Fixture done"},"finish_reason":null}]}\n\ndata: {"id":"held-input","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n', { headers: { "content-type": "text/event-stream" } })
+} })
 const source = jsonCollector({ baseURL: "https://api.github.com" })
 const reads: { finishedAt: string; outcome: string }[] = []
 const research = createResearchModule({ primitives: [{ ...source, async execute(input, context) {
@@ -39,7 +46,11 @@ function object(value: unknown): Record<string, unknown> {
 try {
   const handler = await Effect.runPromise(ServerFetch.make({ database: { path: path.join(home, "native.sqlite") }, models: { fetch: false },
     config: { directory: path.join(home, "config"), project: false, claude: false,
-      content: JSON.stringify({ update: "disable", share: "disabled", providers: {} }) },
+      content: JSON.stringify({ update: "disable", share: "disabled", model: "fixture/fixture", providers: { fixture: {
+        name: "Held native input fixture", package: "@opencode/ai/providers/openai-compatible",
+        settings: { baseURL: `http://127.0.0.1:${upstream.port}/v1`, apiKey: "fixture" },
+        models: { fixture: { name: "Fixture", limit: { context: 32000, output: 2048 }, capabilities: { tools: true, input: ["text"], output: ["text"] } } },
+      } } }) },
     runtime: { managedDirectory: directory }, fs: { filewatcher: false },
   }, { modules: [research] }).pipe(Effect.provideService(Scope.Scope, scope)))
   server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: (request) => handler(request) })
@@ -47,9 +58,11 @@ try {
   await native.rpc(Capability.Api).list({}); await research.ready
   const assistance = await native.session.create({ title: "Public branch test assistance identity", location: { directory } })
   const runner = await native.session.create({ title: "Public branch test execution identity", location: { directory } })
-  const actors = new Map<string, Identity>([
+  const input = await native.session.prompt({ sessionID: runner.id, text: "Hold this isolated native input while the external test caller verifies a public-source branch." })
+  await held.promise
+  const actors = new Map<string, Caller>([
     [randomUUID(), { backendID: "opencode", threadID: assistance.id }],
-    [randomUUID(), { backendID: "opencode", threadID: runner.id }],
+    [randomUUID(), { backendID: "opencode", threadID: runner.id, inputID: input.id }],
   ])
   endpoint = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: research.mcp(async (token) => actors.get(token)) })
   for (const token of actors.keys()) {
@@ -59,7 +72,7 @@ try {
       requestInit: { headers: { authorization: "Bearer " + token } },
     }))
   }
-  assert.equal((await clients[0]!.listTools()).tools.length, 10)
+  assert.equal((await clients[0]!.listTools()).tools.length, 11)
   emit({ status: "ready", source: sourceURL, minimumIntervalMs: 5000, privateReportDirectory: home })
   const definition = replay ? await Bun.file(path.resolve(import.meta.dir, "../../../../modules/research/examples/github-repository.json")).json() as Draft : undefined
   const run = { caller: "runner", tool: "research_run", arguments: { roundID: "public-github-round", category: "misc", action: "repository-metadata", input: { repository: "browser-act/skills" } } }
@@ -85,7 +98,8 @@ try {
         const runs = records.filter((record) => record.tool === "research_run" && record.caller === "runner")
         assert.equal(runs.length, 2, "Run then repeat the same round")
         assert.equal(object(runs[0]!.output).status, "success")
-        assert.deepEqual(runs[0]!.output, runs[1]!.output)
+        assert.equal(object(runs[1]!.output).reused, true)
+        assert.deepEqual({ ...object(runs[0]!.output), reused: true }, runs[1]!.output)
         assert.equal(runs[0]!.sourceReads, runs[1]!.sourceReads, "A duplicate must not revisit the source")
         const output = object(object(runs[0]!.output).output)
         assert.equal(output.fullName, "browser-act/skills")
@@ -97,7 +111,8 @@ try {
           scope: "one-live-public-json-branch-not-a-complete-research-workflow", sourceURL,
           authoring: replay ? "replay-of-agent-authored-example" : "current-agent-over-official-mcp-client",
           execution: "separate-test-identity-runs-published-function", toolErrors,
-          sourceReads: reads, sourceRequestCount: reads.length, duplicateExtraSourceRequests: 0, modelApiRequests: 0,
+          sourceReads: reads, sourceRequestCount: reads.length, duplicateExtraSourceRequests: 0, modelApiRequests: modelRequests,
+          realModelApiRequests: 0, modelTraffic: "one local synthetic response holds the actual native input open; no real model inference",
           temporaryNativeIdentities: 2, productionSwitch: false,
           checks: ["official MCP authentication and tool negotiation", "role adoption by a temporary native identity",
             "live public source probe", "agent-authored immutable draft tested with source I/O",
@@ -105,7 +120,7 @@ try {
             "duplicate round returns its receipt without another source read"],
           toolCalls: records.map((record) => ({ caller: record.caller, tool: record.tool,
             status: object(record.output).status ?? "returned", sourceReads: record.sourceReads })), output,
-          limitations: ["No browser or login flow exercised", "No model inference launched by the test host",
+          limitations: ["No browser or login flow exercised", "One local synthetic native-input model request; no real model inference",
             "No whole movie/music workflow", "No persistent partial-trunk checkpoint verification"],
         }
         await writeFile(path.join(home, "proof.json"), JSON.stringify(report, null, 2) + "\n")
@@ -134,9 +149,11 @@ try {
     }
   }
 } finally {
+  release.resolve()
   process.stdin.destroy()
   await Promise.all(clients.map((client) => client.close()))
   endpoint?.stop(true)
   await Effect.runPromise(Scope.close(scope, Exit.void))
   server?.stop(true)
+  upstream.stop(true)
 }

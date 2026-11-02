@@ -811,7 +811,7 @@ export const projectFinished = Effect.fn("SessionInbox.projectFinished")(functio
   const active = yield* SessionInput.current(db, sessionID)
   if (active?.rootID !== rootID) return
   if (yield* has(db, sessionID, "steer")) return yield* Effect.die(new LifecycleConflict({ id: rootID }))
-  yield* SessionInput.projectClosed(db, sessionID, rootID)
+  yield* SessionInput.projectClosed(db, sessionID, rootID, "completed")
 })
 /** Caller owns `serialized`; do not acquire the non-reentrant Inbox lock a second time. */
 export const finish = Effect.fn("SessionInbox.finish")(function* (

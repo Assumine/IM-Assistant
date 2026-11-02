@@ -2,12 +2,15 @@ import { JsonSchema, Schema, SchemaRepresentation } from "effect"
 import type { Data, Outcome } from "./types"
 
 export interface Identity { backendID: string; threadID: string }
+/** Host-bound external input provenance; never accepted in model tool arguments. */
+export interface Caller extends Identity { inputID?: string; signal?: AbortSignal }
 export interface Role { version: number; holder: Identity | null }
 export interface Primitive {
   id: string
   description: string
   inputSchema: Record<string, Data>
   outputSchema: Record<string, Data>
+  readOnly?: boolean
   execute: (input: Data, context: { signal: AbortSignal }) => Promise<Outcome>
 }
 export interface Draft {
@@ -20,6 +23,7 @@ export interface Draft {
   tools: string[]
   inputSchema: Record<string, Data>
   outputSchema: Record<string, Data>
+  validForMs?: number
 }
 export interface Candidate {
   id: string
@@ -62,6 +66,7 @@ export const draftSchema = Schema.Struct({
   title: Schema.String.check(Schema.isMinLength(1)), program: Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(200000)),
   tools: Schema.mutable(Schema.Array(Schema.String)),
   inputSchema: Schema.Record(Schema.String, Schema.Json), outputSchema: Schema.Record(Schema.String, Schema.Json),
+  validForMs: Schema.optional(Schema.Number.check(Schema.isGreaterThan(0), Schema.isFinite())),
 })
 export function draft(value: unknown): Draft { return Schema.decodeUnknownSync(draftSchema)(value) }
 

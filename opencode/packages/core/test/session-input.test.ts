@@ -1,7 +1,7 @@
 import { expect } from "bun:test"
 import { and, eq } from "drizzle-orm"
 import { Effect, Exit, Logger, Schema } from "effect"
-import { Continuation, UserPayload } from "@opencode/schema/session-inbox"
+import { Continuation, InputPosition, UserPayload } from "@opencode/schema/session-inbox"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { Global } from "@opencode/util/global"
 import { Project } from "@opencode/schema/project"
@@ -120,6 +120,7 @@ it.effect(
       yield* outputStep(f.bus, "reply_second", "Second task reply")
       const closed = yield* SessionOutput.read(f.db, sessionID, id("first"))
       expect(closed.status).toBe("closed")
+      expect(closed.experimental?.outcome).toBe("completed")
       expect(closed.last?.messageID).toBe(id("reply_final"))
       expect((yield* SessionOutput.read(f.db, sessionID, id("second"))).first?.text).toBe("Second task reply")
       yield* f.db
@@ -220,7 +221,11 @@ it.effect(
         inputID: id("first"),
         rootID: id("first"),
         status: "closed",
+        experimental: { outcome: "completed" },
       })
+      const old = (yield* f.db.select().from(KVTable).all().pipe(Effect.orDie)).find((row) => row.key.startsWith("session:input-closed:"))!
+      yield* f.db.update(KVTable).set({ value: { sessionID, rootID: id("first") } }).where(eq(KVTable.key, old.key)).run().pipe(Effect.orDie)
+      expect(Schema.encodeSync(InputPosition)(yield* SessionInput.inspect(f.db, sessionID, id("first")))).not.toHaveProperty("experimental")
       yield* f.db
         .delete(SessionMessageTable)
         .where(eq(SessionMessageTable.id, id("first")))
@@ -479,6 +484,9 @@ it.effect(
             sessionID,
             reason: outcome === "shutdown" ? "shutdown" : "user",
           })
+        const position = yield* SessionInput.inspect(f.db, sessionID, root)
+        expect(position.experimental?.outcome).toBe(outcome === "shutdown" ? undefined : outcome === "stopped" ? "interrupted" : outcome)
+        if (outcome === "shutdown") expect(Schema.encodeSync(InputPosition)(position)).not.toHaveProperty("experimental")
         expect((yield* f.inbox.continuation({ sessionID, id: adjust, expectedInputID: root })).status).toBe(
           outcome === "shutdown" ? "pending" : "expired",
         )

@@ -8,6 +8,7 @@ export function jsonCollector(options: { baseURL: string; minimumIntervalMs?: nu
     throw new Error("Invalid approved collector origin")
   let next = 0
   return {
+    readOnly: true,
     id: "read_json", description: "GET JSON from the configured source origin. Input path is relative; no arbitrary host, credentials, writes or redirect following. Verified 404 is a successful negative finding.",
     inputSchema: { type: "object", properties: { path: { type: "string" } }, required: ["path"], additionalProperties: false }, outputSchema: {},
     async execute(input, { signal }) {

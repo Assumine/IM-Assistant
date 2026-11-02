@@ -1,12 +1,12 @@
 import { createMcpHandler, Server } from "@modelcontextprotocol/server"
 import type { ListToolsResult } from "@modelcontextprotocol/server"
-import type { Identity } from "./contracts"
+import type { Caller } from "./contracts"
 import { researchService } from "./service"
 
 /** Host-owned local HTTP endpoint. Authorization resolves a conversation; model arguments never select their identity. */
 export function createResearchMcp(options: {
   service: ReturnType<typeof researchService>
-  authenticate: (token: string) => Promise<Identity | undefined>
+  authenticate: (token: string) => Promise<Caller | undefined>
 }) {
   return async (request: Request): Promise<Response> => {
     const url = new URL(request.url)

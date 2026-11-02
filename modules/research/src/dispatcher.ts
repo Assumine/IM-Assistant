@@ -1,5 +1,5 @@
 import type { StorageDomain } from "../../../opencode/packages/plugin/src/promise/storage"
-import type { Data, Outcome, PathHistory, Report, Request, ResearchPath, Scoring } from "./types"
+import type { Data, Outcome, PathHistory, PathSummary, Report, Request, ResearchPath, Scoring } from "./types"
 
 export const defaultScoring: Readonly<Scoring> = Object.freeze({
   initial: 1,
@@ -16,7 +16,13 @@ export function resolveScoring(value?: Partial<Scoring>): Scoring {
 }
 
 /** Selects functions inside ONE research invocation; never owns a Session, Inbox or AI loop. */
-export function createDispatcher(options: { storage: StorageDomain; paths: readonly ResearchPath[]; scoring?: Partial<Scoring> }) {
+export function historicalDelta(summary: PathSummary, past: PathHistory, scoring: Scoring): number {
+  const delta = summary.successes ? scoring.successReward / (1 + summary.failures) : summary.failures ? -scoring.historicalFailurePenalty : 0
+  return delta / Math.sqrt(1 + past.rounds)
+}
+
+export function createDispatcher(options: { storage: StorageDomain; paths: readonly ResearchPath[]; scoring?: Partial<Scoring>;
+  frame?: { history: readonly PathHistory[]; previous: readonly PathSummary[] } }) {
   const scoring = resolveScoring(options.scoring)
   const paths = options.paths.map((value) => ({ ...value }))
   if (new Set(paths.map((value) => value.id)).size !== paths.length || paths.some((value) =>
@@ -65,11 +71,13 @@ export function createDispatcher(options: { storage: StorageDomain; paths: reado
       if (await storage.get("round/intent/" + suffix) !== fingerprint) throw new Error("Research round input conflict")
       return { ...report, status: "uncertain", reason: "round-incomplete-review-required" }
     }
-    const histories = await history()
+    const histories = options.frame?.history ?? await history()
     const candidates = paths.filter((path) => path.category === request.category && path.action === request.action && path.accepts(structuredClone(request.input)))
       .map((path) => {
-        const past = histories.find((item) => item.id === path.id)!
-        const summary = { id: path.id, revision: path.revision, initialScore: past.score, score: past.score,
+        const past = histories.find((item) => item.id === path.id && item.revision === path.revision) ??
+          { id: path.id, revision: path.revision, score: scoring.initial, rounds: 0, successes: 0, failures: 0 }
+        const previous = options.frame?.previous.find((item) => item.id === path.id && item.revision === path.revision)
+        const summary = previous ? structuredClone(previous) : { id: path.id, revision: path.revision, initialScore: past.score, score: past.score,
           attempts: 0, successes: 0, failures: 0, historicalDelta: 0 }
         report.paths.push(summary)
         return { path, past, summary }
@@ -110,10 +118,9 @@ export function createDispatcher(options: { storage: StorageDomain; paths: reado
       break
     }
     // Fold the round first. Ten failures in one round are ONE historical adjustment, not ten.
-    if (report.status === "success" || report.status === "exhausted") {
+    if (!options.frame && (report.status === "success" || report.status === "exhausted")) {
       for (const { summary, past } of candidates) {
-        const delta = summary.successes ? scoring.successReward / (1 + summary.failures) : summary.failures ? -scoring.historicalFailurePenalty : 0
-        summary.historicalDelta = delta / Math.sqrt(1 + past.rounds)
+        summary.historicalDelta = historicalDelta(summary, past, scoring)
       }
     }
     // One immutable receipt is also the history fact: no competing mutable aggregate or partial score updates.

@@ -2,7 +2,8 @@ import type { StorageDomain } from "../../../opencode/packages/plugin/src/promis
 import { createDispatcher, resolveScoring } from "./dispatcher"
 import { candidate, digest, draft, json, same, stable, validIdentity, type Candidate, type CollectionEvidence, type Draft, type Identity, type Primitive, type Role } from "./contracts"
 import { compilePath } from "./program"
-import type { Data, Outcome, Report, Request, ResearchPath, Scoring } from "./types"
+import { createCheckpoints } from "./checkpoints"
+import type { Data, Outcome, Report, Request, ResearchInput, ResearchPath, Scoring } from "./types"
 
 export const assistanceInstructions = `Research assistance is a transferable role, not a model, provider or permanently assigned conversation.
 Read role, paths, candidates and requests first. Adopt only when this conversation is assigned to take responsibility, not to bypass another holder's rejection. Changing the role never moves native history or interrupts unrelated tasks.
@@ -14,6 +15,7 @@ Research runners execute published functions only. Goals, new paths, recommendat
 Native Session/Inbox own tasks, queue, context and compaction. Do not create more sessions or a second task queue.`
 
 export function createOwner(options: { storage: StorageDomain; primitives: readonly Primitive[]; paths?: readonly ResearchPath[]; scoring?: Partial<Scoring>;
+  isOpen?: (input: ResearchInput) => Promise<boolean>;
   deliver?: (target: Identity, id: string, text: string) => Promise<Data> }) {
   const storage = options.storage, lifetime = new AbortController()
   const scoring = resolveScoring(options.scoring)
@@ -79,7 +81,13 @@ export function createOwner(options: { storage: StorageDomain; primitives: reado
     try { return await dispatcher.run({ ...request, signal: AbortSignal.any([lifetime.signal, ...(request.signal ? [request.signal] : [])]) }) }
     finally { await dispatcher.close(); dispatchers.delete(dispatcher) }
   }
+  const checkpoints = createCheckpoints({ storage, paths: published, scoring, isOpen: options.isOpen ?? (async () => false) })
   return {
+    collect: checkpoints.run,
+    progress: checkpoints.inspect,
+    finish: checkpoints.finish,
+    pending: checkpoints.pending,
+    inputOpen: (input: ResearchInput) => options.isOpen?.(input) ?? Promise.resolve(false),
     role,
     adopt: (actor: Identity, expectedVersion: number) => mutate(async () => {
       validIdentity(actor)
@@ -101,7 +109,7 @@ export function createOwner(options: { storage: StorageDomain; primitives: reado
         if (!existing || "admission" in record) requests.set(record.id as string, value)
       }
       return { role: await role(), instructions: assistanceInstructions,
-        primitives: options.primitives.map(({ id, description, inputSchema, outputSchema }) => ({ id, description, inputSchema, outputSchema })),
+        primitives: options.primitives.map(({ id, description, inputSchema, outputSchema, readOnly }) => ({ id, description, inputSchema, outputSchema, ...(readOnly === undefined ? {} : { readOnly }) })),
         drafts: drafts.map(({ definition: item }) => ({ id: item.id, revision: item.revision, category: item.category, action: item.action, title: item.title, tools: item.tools })),
         published: await entries("path/published/"), candidates: await entries("path/candidate/"), requests: [...requests.values()] }
     },
@@ -176,13 +184,14 @@ export function createOwner(options: { storage: StorageDomain; primitives: reado
       const dispatcher = createDispatcher({ storage, paths: await published(), scoring })
       try { return await dispatcher.history() } finally { await dispatcher.close() }
     },
-    async requestHelp(actor: Identity, request: { id: string; goal: string; issue: string; evidence: Data }) {
+    async requestHelp(actor: Identity, request: { id: string; goal: string; issue: string; evidence: Data }, coalesce = false) {
       if (lifetime.signal.aborted) throw new Error("Research module is closed")
       const current = await role()
       const name = "assist/request/" + key(request.id)
       const saved = await storage.get(name)
       if (saved) {
         const record = saved as Record<string, Data>
+        if (coalesce && stable(record.from!) === stable(json(actor))) return saved
         if (record.goal !== request.goal || record.issue !== request.issue || stable(record.evidence!) !== stable(request.evidence) || stable(record.from!) !== stable(json(actor)))
           throw new Error("Research assistance request conflict")
         return saved
@@ -201,7 +210,7 @@ export function createOwner(options: { storage: StorageDomain; primitives: reado
       lifetime.abort()
       const calls = [...active]
       for (const call of calls) call.controller.abort()
-      await Promise.allSettled([commit, ...calls.map((call) => call.done.promise), ...[...dispatchers].map((value) => value.close())])
+      await Promise.allSettled([commit, checkpoints.close(), ...calls.map((call) => call.done.promise), ...[...dispatchers].map((value) => value.close())])
     },
   }
 }

@@ -10,6 +10,8 @@ export function compilePath(draft: Draft, available: readonly Primitive[], obser
     throw new Error("Unknown or duplicate collector primitive")
   return {
     id: draft.id, revision: draft.revision, category: draft.category, action: draft.action, title: draft.title,
+    readOnly: draft.tools.every((id) => available.find((item) => item.id === id)?.readOnly === true),
+    ...(draft.validForMs === undefined ? {} : { validForMs: draft.validForMs }),
     accepts: input, validates: output,
     async run(parameters, { signal }) {
       const memo = new Map<string, Promise<Outcome>>()

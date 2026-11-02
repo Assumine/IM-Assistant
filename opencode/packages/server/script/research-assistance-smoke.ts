@@ -94,7 +94,7 @@ try {
   const identity = object(await host.research.call({ backendID: "opencode", threadID: a.id }, "identity", {}))
   assert.deepEqual(object(identity.role).holder, { backendID: "opencode", threadID: a.id })
   assert(modelRequests[0]!.tools?.every((value) => value.function.name.startsWith("research_")))
-  assert.equal(modelRequests[0]!.tools?.length, 10)
+  assert.equal(modelRequests[0]!.tools?.length, 11)
   checks.push("an ordinary native AI conversation adopts the role through trusted business tools while general tools remain absent")
 
   const restricted = await host.client.session.create({ title: "Chat-only permission boundary", location: { directory },
@@ -127,7 +127,7 @@ try {
   const url = `http://127.0.0.1:${mcpServer.port}/mcp`
   mcp = new Client({ name: "external-ai-host-fixture", version: "1.0.0" })
   await mcp.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: { authorization: "Bearer synthetic-role-token" } } }))
-  assert.equal((await mcp.listTools()).tools.length, 10)
+  assert.equal((await mcp.listTools()).tools.length, 11)
   const resources = await mcp.listResources(); assert.equal(resources.resources.length, 2)
   const read = await mcp.readResource({ uri: "research://paths" }); assert.equal(read.contents.length, 1)
   const published = await mcp.callTool({ name: "research_paths", arguments: {} })

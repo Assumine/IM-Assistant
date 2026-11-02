@@ -524,7 +524,6 @@ function projectIdle(
   return Effect.gen(function* () {
     yield* run(db, event)
     if (event.type === SessionEvent.Execution.Interrupted.type && event.data.reason === "shutdown") return
-    yield* SessionInput.projectTerminal(db, event.data.sessionID)
     const time = event.created
     const outcome =
       event.type === SessionEvent.Execution.Succeeded.type
@@ -532,6 +531,7 @@ function projectIdle(
         : event.type === SessionEvent.Execution.Failed.type
           ? "failed"
           : "interrupted"
+    yield* SessionInput.projectTerminal(db, event.data.sessionID, outcome === "succeeded" ? "completed" : outcome)
     yield* db
       .update(SessionTable)
       .set({

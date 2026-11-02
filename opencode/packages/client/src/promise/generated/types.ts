@@ -483,6 +483,7 @@ export type SessionInputPosition = {
   inputID: SessionMessageID
   rootID?: SessionMessageID
   status: "pending" | "open" | "closed" | "unknown"
+  experimental?: { outcome: "completed" | "interrupted" | "failed" }
 }
 
 export type SessionInboxFollowup = {
@@ -498,6 +499,7 @@ export type SessionInputOutput = {
   inputID: SessionMessageID
   rootID?: SessionMessageID
   status: "pending" | "open" | "closed" | "unknown"
+  experimental?: { outcome: "completed" | "interrupted" | "failed" }
   first?: { messageID: SessionMessageID; text: string; settled: boolean }
   last?: { messageID: SessionMessageID; text: string; settled: boolean }
 }

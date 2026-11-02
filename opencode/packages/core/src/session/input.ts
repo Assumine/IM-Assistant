@@ -25,6 +25,7 @@ const followupKey = (sessionID: SessionSchema.ID, id: SessionMessage.ID) =>
 const prefix = (sessionID: SessionSchema.ID) => `session:input-continuation:${Hash.sha256(sessionID)}:`
 const key = (sessionID: SessionSchema.ID, id: SessionMessage.ID) => prefix(sessionID) + Hash.sha256(id)
 const Owner = Schema.Struct({ sessionID: SessionSchema.ID, rootID: SessionMessage.ID })
+const Closed = Schema.Struct({ ...Owner.fields, outcome: Schema.optional(Schema.Literals(["completed", "interrupted", "failed"])) })
 const Record = Schema.Struct({
   ...Continuation.fields,
   rootID: SessionMessage.ID,
@@ -124,10 +125,10 @@ export const inspect = Effect.fn("SessionInput.inspect")(function* (
     return InputPosition.make({ sessionID, inputID, rootID: owner.rootID, status: "open" })
   const ended = yield* read(db, closedKey(owner.rootID))
   if (ended === undefined) return InputPosition.make(unknown)
-  const closed = yield* Schema.decodeUnknownEffect(Owner)(ended).pipe(Effect.orDie)
+  const closed = yield* Schema.decodeUnknownEffect(Closed)(ended).pipe(Effect.orDie)
   return InputPosition.make(
     closed.sessionID === sessionID && closed.rootID === owner.rootID
-      ? { sessionID, inputID, rootID: owner.rootID, status: "closed" }
+      ? { sessionID, inputID, rootID: owner.rootID, status: "closed", ...(closed.outcome ? { experimental: { outcome: closed.outcome } } : {}) }
       : unknown,
   )
 })
@@ -231,10 +232,11 @@ export const projectClosed = Effect.fn("SessionInput.projectClosed")(function* (
   db: DB,
   sessionID: SessionSchema.ID,
   rootID: SessionMessage.ID,
+  outcome?: "completed" | "interrupted" | "failed",
 ) {
   const active = yield* current(db, sessionID)
   if (!active || active.rootID !== rootID) return
-  yield* write(db, closedKey(rootID), { sessionID, rootID })
+  yield* write(db, closedKey(rootID), { sessionID, rootID, ...(outcome ? { outcome } : {}) })
   const pending = yield* db
     .select({ key: KVTable.key, value: KVTable.value })
     .from(KVTable)
@@ -267,9 +269,10 @@ export const projectClosed = Effect.fn("SessionInput.projectClosed")(function* (
 export const projectTerminal = Effect.fn("SessionInput.projectTerminal")(function* (
   db: DB,
   sessionID: SessionSchema.ID,
+  outcome: "completed" | "interrupted" | "failed",
 ) {
   const active = yield* current(db, sessionID)
-  if (active) yield* projectClosed(db, sessionID, active.rootID)
+  if (active) yield* projectClosed(db, sessionID, active.rootID, outcome)
 })
 
 /** Queue deliveries open a fresh boundary; ordinary steers inherit the current one. */

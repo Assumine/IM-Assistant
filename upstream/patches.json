@@ -552,18 +552,19 @@
       "verification_commands": [
         "python tools/run_runtime_checks.py --task R2-02",
         "python -m tools.codex_native_smoke",
-        "python tools/run_runtime_checks.py --task Q1-03"
+        "python tools/run_runtime_checks.py --task Q1-03",
+        "python tools/run_runtime_checks.py --task S1-02B"
       ],
       "files": [
         {
           "path": "packages/client/src/effect/api/api.ts",
           "action": "modified",
-          "sha256": "087d7de18db4713293f85bbe509a53cf7d5dcb5e2872bff79b23422c1ff95190"
+          "sha256": "32fbd247f1a3cd50062d65de85dd6d4fd5ac9fefe412fb10c8f207c16767fa17"
         },
         {
           "path": "packages/client/src/promise/generated/types.ts",
           "action": "modified",
-          "sha256": "cc0fa563487edc4680e66f465977479e1f70aa5eb6e83749099459efba1e3047"
+          "sha256": "25ee252675bb537aa0297989b639c81f0e1a066c22adf658c22cbc9cd3e34b5c"
         },
         {
           "path": "packages/core/src/bus.ts",
@@ -1128,7 +1129,8 @@
       "verification_commands": [
         "python -m tools.qq_portal_smoke",
         "python tools/run_runtime_checks.py --task R3-01",
-        "python tools/run_runtime_checks.py --task Q1-03"
+        "python tools/run_runtime_checks.py --task Q1-03",
+        "python tools/run_runtime_checks.py --task S1-02B"
       ],
       "files": [
         {
@@ -1149,7 +1151,7 @@
         {
           "path": "packages/core/src/session/inbox.ts",
           "action": "modified",
-          "sha256": "ae494f081537a2dab20343f48e096b55ef77e7092e0d088f70e326415afcdd99"
+          "sha256": "c3bd33e7a5d9637deeb4443f30ccbd5dd31c079f37f154a8960fa04b618d3ed6"
         },
         {
           "path": "packages/core/src/session/message-updater.ts",
@@ -1159,7 +1161,7 @@
         {
           "path": "packages/core/src/session/projector.ts",
           "action": "modified",
-          "sha256": "29b046c6696a92185f46a1778bfeb9670914ca817433563143b2e1cf11efb534"
+          "sha256": "9203b4dd7d995845dab0c44974e5ab6a8327b56f3c6b3150a407a7acfc0c695d"
         },
         {
           "path": "packages/core/test/session-inbox-append.test.ts",
@@ -1174,7 +1176,7 @@
         {
           "path": "packages/schema/src/session-inbox.ts",
           "action": "modified",
-          "sha256": "c571abb67efdf201a7dabc0c4caad8dcdc4661600275d7cc6c272392451a8002"
+          "sha256": "0e73c51fa9a1272841f45b335428b046258a04efd85a477aa3563a1a26911c29"
         },
         {
           "path": "packages/server/src/handlers/session.ts",
@@ -1188,7 +1190,8 @@
       "reason": "原生输入交付边界与可重放的续接护栏；追加录入/消费原子校验归属，终止作废未交付续接、关闭保留恢复；客户端不复活过期占位，禁止跨任务移动，QQ仅调用公共原生接口。",
       "verification_commands": [
         "python -m tools.qq_portal_smoke",
-        "python tools/run_runtime_checks.py --task R3-01"
+        "python tools/run_runtime_checks.py --task R3-01",
+        "python tools/run_runtime_checks.py --task S1-02B"
       ],
       "files": [
         {
@@ -1209,7 +1212,7 @@
         {
           "path": "packages/core/src/session/input.ts",
           "action": "added",
-          "sha256": "84c0c0d76e357f0b7f75e1afb402e78dc2af7bf5a901d1849db9a4a6924ced3b"
+          "sha256": "2c3fd9c8c496acbf37000d3e7e4a5316a65e93f881df94f9add45cac6ddc3f71"
         },
         {
           "path": "packages/core/src/session/runner/llm.ts",
@@ -1219,7 +1222,7 @@
         {
           "path": "packages/core/test/session-input.test.ts",
           "action": "added",
-          "sha256": "a7aff4b40af1b8728f812f6b2724c246d916eafeef528bbbb91591a0eff712bb"
+          "sha256": "f2b46e0e4ebc68950c32f661f565f5b5a80d75dc010179deb3b06da137af805b"
         },
         {
           "path": "packages/server/script/qq-continuation-smoke.ts",
@@ -1799,13 +1802,14 @@
       "id": "S1-02-research-identity-tools",
       "reason": "通用可信应用工具在受管模式沿原生权限执行，普通工具仍禁用；可交接身份与MCP业务实现留在研究模块。原生合成模型和官方MCP客户端验证真实读取、函数测试、发布及原生Inbox求助。",
       "verification_commands": [
-        "python tools/run_runtime_checks.py --task S1-02"
+        "python tools/run_runtime_checks.py --task S1-02",
+        "python tools/run_runtime_checks.py --task S1-02B"
       ],
       "files": [
         {
           "path": "packages/server/script/research-assistance-smoke.ts",
           "action": "added",
-          "sha256": "80e9192051f488363a26b2a9bce5b5eadd047e5831c55b7b105485ca7996de66"
+          "sha256": "e6dec20985991546b7f3258a0d6c6ed2854064fd75e97f1318c2ac4c6344ecf1"
         }
       ]
     },
@@ -1813,13 +1817,29 @@
       "id": "S1-02-live-public-branch",
       "reason": "仅添加隔离公开来源测试宿主，真实AI经官方MCP编写的轻量函数可由另一测试身份复用；不改变生产模块或会话核心。",
       "verification_commands": [
-        "python -m tools.research_public_branch"
+        "python -m tools.research_public_branch",
+        "python tools/run_runtime_checks.py --task S1-02B"
       ],
       "files": [
         {
           "path": "packages/server/script/research-public-branch.ts",
           "action": "added",
-          "sha256": "60f4dc1523890d5d37f8c08e351da74e3ce311889f30ff642778919e9dd7ed18"
+          "sha256": "f3f47330cb5344853243e0c1a08833c9cc307436a658394707f1cafa7223b5c0"
+        }
+      ]
+    },
+    {
+      "id": "S1-02B-native-input-checkpoints",
+      "reason": "原生输入投影只读暴露结束原因，旧记录不猜测成功；研究的跨调用评分和检查点留在插件，原生会话与Inbox仍是唯一执行者。新增隔离原生AI/MCP/SQLite联调。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task S1-02B",
+        "python -m tools.native_baseline --cwd packages/client --label s2b-native-client-generate -- run generate"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/research-checkpoints-smoke.ts",
+          "action": "added",
+          "sha256": "637004e481affcc632e1996f56b08ca8c2a7ed27754f337d38d6f4e86a1bd335"
         }
       ]
     }

@@ -1,6 +1,7 @@
 """Replay one agent-authored public-source branch using native SQLite and official MCP.
 
-No model inference, production credentials or browser is involved. The default run
+No real model inference, production credentials or browser is involved. One local
+synthetic response holds a native input open for the authenticated MCP caller. The run
 performs three live read-only GitHub requests, separated by the collector's 5 s cadence.
 Use --interactive for an agent to author a new draft over JSON-lines tool commands.
 """
@@ -29,7 +30,7 @@ def run(interactive=False):
         raise RuntimeError('No completed public-source proof; inspect ' + step['log'])
     report = result['report']
     if (len(report['checks']) != 7 or report['sourceRequestCount'] != 3 or report['toolErrors'] or
-            report['modelApiRequests'] or report['productionSwitch'] or report['duplicateExtraSourceRequests']):
+            report['modelApiRequests'] != 1 or report['realModelApiRequests'] or report['productionSwitch'] or report['duplicateExtraSourceRequests']):
         raise RuntimeError('Public-source proof did not meet its declared scope')
     output = ROOT / '.reports/research-public-branch.json'
     output.write_text(json.dumps({'step': step, 'result': report}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
