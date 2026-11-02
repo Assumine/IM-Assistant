@@ -1808,6 +1808,20 @@
           "sha256": "80e9192051f488363a26b2a9bce5b5eadd047e5831c55b7b105485ca7996de66"
         }
       ]
+    },
+    {
+      "id": "S1-02-live-public-branch",
+      "reason": "仅添加隔离公开来源测试宿主，真实AI经官方MCP编写的轻量函数可由另一测试身份复用；不改变生产模块或会话核心。",
+      "verification_commands": [
+        "python -m tools.research_public_branch"
+      ],
+      "files": [
+        {
+          "path": "packages/server/script/research-public-branch.ts",
+          "action": "added",
+          "sha256": "60f4dc1523890d5d37f8c08e351da74e3ce311889f30ff642778919e9dd7ed18"
+        }
+      ]
     }
   ]
 }

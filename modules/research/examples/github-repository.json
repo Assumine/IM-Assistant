@@ -1,0 +1,46 @@
+{
+  "id": "github-repository-metadata",
+  "revision": "1",
+  "category": "misc",
+  "action": "repository-metadata",
+  "title": "读取公开 GitHub 仓库基本资料",
+  "tools": [
+    "read_json"
+  ],
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "repository": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 200
+      }
+    },
+    "required": [
+      "repository"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "found": {
+        "type": "boolean"
+      },
+      "fullName": {
+        "type": "string"
+      },
+      "pageURL": {
+        "type": "string"
+      },
+      "defaultBranch": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "found"
+    ],
+    "additionalProperties": false
+  },
+  "program": "const parts = input.repository.split(\"/\"); if (parts.length !== 2 || parts.some(part => !part.length || part === \".\" || part === \"..\")) return {status:\"failure\",reason:\"Expected owner/repository\"}; const path = \"/repos/\" + parts.map(encodeURIComponent).join(\"/\"); const page = await tools.read_json({path}); if (page.status !== \"success\") return page; const value = page.value; if (value.found === false && value.status === 404) return {status:\"success\",value:{found:false}}; if (typeof value.full_name !== \"string\" || typeof value.html_url !== \"string\" || typeof value.default_branch !== \"string\") return {status:\"uncertain\",reason:\"Repository response schema changed; ask research assistance\"}; return {status:\"success\",value:{found:true,fullName:value.full_name,pageURL:value.html_url,defaultBranch:value.default_branch}};"
+}

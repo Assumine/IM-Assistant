@@ -4,6 +4,6 @@
     "noEmit": true, "composite": false, "rootDir": "../..",
     "typeRoots": ["../../opencode/node_modules/@types"]
   },
-  "include": ["../../opencode/packages/server/script/research-dispatch-smoke.ts", "../../opencode/packages/server/script/research-assistance-smoke.ts"],
+  "include": ["../../opencode/packages/server/script/research-dispatch-smoke.ts", "../../opencode/packages/server/script/research-assistance-smoke.ts", "../../opencode/packages/server/script/research-public-branch.ts"],
   "exclude": []
 }

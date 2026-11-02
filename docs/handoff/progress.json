@@ -1102,7 +1102,11 @@
             "tools/research_assistance_smoke.py",
             "tools/research_script_smoke.py",
             "tools/setup_research_dependencies.py",
-            "upstream/patches.json"
+            "upstream/patches.json",
+            "modules/research/examples/github-repository.json",
+            "opencode/packages/server/script/research-public-branch.ts",
+            "tools/research_public_branch.py",
+            "tests/modules/research-public-branch-evidence.json"
           ],
           "verification": [
             {
@@ -1129,6 +1133,25 @@
               "qq_product_checks": 12,
               "handoff_tests": 17,
               "workspace_checks": 36,
+              "production_switch": false
+            },
+            {
+              "kind": "runtime",
+              "plan_id": "research-script-dispatch-v1",
+              "supplemental": true,
+              "status": "passed",
+              "exit_code": 0,
+              "tests_run": 7,
+              "skipped": 0,
+              "acceptance_ids": [
+                "C06"
+              ],
+              "command": "python -m tools.research_public_branch",
+              "evidence": "tests/modules/research-public-branch-evidence.json",
+              "live_authoring_checks": 7,
+              "live_replay_checks": 7,
+              "live_source_requests": 6,
+              "model_inference_requests_by_host": 0,
               "production_switch": false
             }
           ],

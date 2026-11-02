@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "plan_id": "research-script-dispatch-v1",
+  "task": "S1-02",
+  "status": "passed",
+  "supplemental": true,
+  "acceptance_ids": [
+    "C06"
+  ],
+  "scope": "minimal-live-public-source-mcp-branch-only",
+  "live_authoring": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "verifiedAt": "2026-11-02T04:45:58.636Z",
+    "scope": "one-live-public-json-branch-not-a-complete-research-workflow",
+    "sourceURL": "https://api.github.com/repos/browser-act/skills",
+    "authoring": "current-agent-over-official-mcp-client",
+    "execution": "separate-test-identity-runs-published-function",
+    "sourceReads": [
+      {
+        "finishedAt": "2026-11-02T04:43:50.789Z",
+        "outcome": "success"
+      },
+      {
+        "finishedAt": "2026-11-02T04:45:26.598Z",
+        "outcome": "success"
+      },
+      {
+        "finishedAt": "2026-11-02T04:45:41.317Z",
+        "outcome": "success"
+      }
+    ],
+    "sourceRequestCount": 3,
+    "duplicateExtraSourceRequests": 0,
+    "modelApiRequests": 0,
+    "temporaryNativeIdentities": 2,
+    "productionSwitch": false,
+    "checks": [
+      "official MCP authentication and tool negotiation",
+      "role adoption by a temporary native identity",
+      "live public source probe",
+      "agent-authored immutable draft tested with source I/O",
+      "publication of the exact tested revision",
+      "published function reused by a separate test identity",
+      "duplicate round returns its receipt without another source read"
+    ],
+    "toolCalls": [
+      {
+        "caller": "assistance",
+        "tool": "research_identity",
+        "status": "returned",
+        "sourceReads": 0
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_adopt",
+        "status": "returned",
+        "sourceReads": 0
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_paths",
+        "status": "returned",
+        "sourceReads": 0
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_probe",
+        "status": "success",
+        "sourceReads": 1
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_paths",
+        "status": "returned",
+        "sourceReads": 1
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_save",
+        "status": "returned",
+        "sourceReads": 1
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_test",
+        "status": "returned",
+        "sourceReads": 2
+      },
+      {
+        "caller": "assistance",
+        "tool": "research_publish",
+        "status": "returned",
+        "sourceReads": 2
+      },
+      {
+        "caller": "runner",
+        "tool": "research_run",
+        "status": "success",
+        "sourceReads": 3
+      },
+      {
+        "caller": "runner",
+        "tool": "research_run",
+        "status": "success",
+        "sourceReads": 3
+      }
+    ],
+    "output": {
+      "found": true,
+      "fullName": "browser-act/skills",
+      "pageURL": "https://github.com/browser-act/skills",
+      "defaultBranch": "main"
+    },
+    "limitations": [
+      "No browser or login flow exercised",
+      "No model inference launched by the test host",
+      "No whole movie/music workflow",
+      "No persistent partial-trunk checkpoint verification"
+    ]
+  },
+  "authoring_findings": [
+    {
+      "stage": "save",
+      "finding": "Effect rejects JSON-schema pattern constraints by default",
+      "draft_persisted": false,
+      "resolution": "Use a simple contract and check owner/repository inside the collection function"
+    }
+  ],
+  "interactive_host_cleanup": "The initial completed TTY host retained stdin; explicitly stopped only that test process, added stdin cleanup and verified normal replay exit 0",
+  "current_source_replay": {
+    "step": {
+      "args": [
+        "bun",
+        "run",
+        "script/research-public-branch.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 11.97,
+      "isolated_home": true,
+      "log": ".reports/native/research-public-branch.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    "result": {
+      "schemaVersion": 1,
+      "status": "passed",
+      "verifiedAt": "2026-11-02T04:49:19.667Z",
+      "scope": "one-live-public-json-branch-not-a-complete-research-workflow",
+      "sourceURL": "https://api.github.com/repos/browser-act/skills",
+      "authoring": "replay-of-agent-authored-example",
+      "execution": "separate-test-identity-runs-published-function",
+      "toolErrors": [],
+      "sourceReads": [
+        {
+          "finishedAt": "2026-11-02T04:49:10.093Z",
+          "outcome": "success"
+        },
+        {
+          "finishedAt": "2026-11-02T04:49:14.656Z",
+          "outcome": "success"
+        },
+        {
+          "finishedAt": "2026-11-02T04:49:19.660Z",
+          "outcome": "success"
+        }
+      ],
+      "sourceRequestCount": 3,
+      "duplicateExtraSourceRequests": 0,
+      "modelApiRequests": 0,
+      "temporaryNativeIdentities": 2,
+      "productionSwitch": false,
+      "checks": [
+        "official MCP authentication and tool negotiation",
+        "role adoption by a temporary native identity",
+        "live public source probe",
+        "agent-authored immutable draft tested with source I/O",
+        "publication of the exact tested revision",
+        "published function reused by a separate test identity",
+        "duplicate round returns its receipt without another source read"
+      ],
+      "toolCalls": [
+        {
+          "caller": "assistance",
+          "tool": "research_identity",
+          "status": "returned",
+          "sourceReads": 0
+        },
+        {
+          "caller": "assistance",
+          "tool": "research_adopt",
+          "status": "returned",
+          "sourceReads": 0
+        },
+        {
+          "caller": "assistance",
+          "tool": "research_paths",
+          "status": "returned",
+          "sourceReads": 0
+        },
+        {
+          "caller": "assistance",
+          "tool": "research_probe",
+          "status": "success",
+          "sourceReads": 1
+        },
+        {
+          "caller": "assistance",
+          "tool": "research_save",
+          "status": "returned",
+          "sourceReads": 1
+        },
+        {
+          "caller": "assistance",
+          "tool": "research_test",
+          "status": "returned",
+          "sourceReads": 2
+        },
+        {
+          "caller": "assistance",
+          "tool": "research_publish",
+          "status": "returned",
+          "sourceReads": 2
+        },
+        {
+          "caller": "runner",
+          "tool": "research_run",
+          "status": "success",
+          "sourceReads": 3
+        },
+        {
+          "caller": "runner",
+          "tool": "research_run",
+          "status": "success",
+          "sourceReads": 3
+        }
+      ],
+      "output": {
+        "found": true,
+        "fullName": "browser-act/skills",
+        "pageURL": "https://github.com/browser-act/skills",
+        "defaultBranch": "main"
+      },
+      "limitations": [
+        "No browser or login flow exercised",
+        "No model inference launched by the test host",
+        "No whole movie/music workflow",
+        "No persistent partial-trunk checkpoint verification"
+      ]
+    }
+  },
+  "strict_types": {
+    "command": "pinned Bun TypeScript --project modules/research/tsconfig.native.json",
+    "exit_code": 0,
+    "log": ".reports/native/research-public-branch-types.log"
+  },
+  "sources": {
+    "modules/research/src/contracts.ts": "af1dfbe2c8418bb8c1bf9ade80491719a8d930826f890f7cdd7a60e583e939c7",
+    "modules/research/src/dispatcher.ts": "152d2dc90301aafb95cf0730c77e0e332e5499c13391976d00a941fb0caa6e37",
+    "modules/research/src/http.ts": "547dc65d3e8f468f27c529283e7497d469d6e60d720579014954b4897965756e",
+    "modules/research/src/index.ts": "acbbac00e29d9406b26ca449b1b1b172d6e716ce1224a529535f492fec21c371",
+    "modules/research/src/mcp.ts": "d202b32e1121d73e5466f9d717c3f7363e676a9079c27392dbb7be0f52d238a3",
+    "modules/research/src/module.ts": "4a021e58e13a6cfd619c1be4cce9d57c48bb1d9662d1a401de2d9bb564e5f93d",
+    "modules/research/src/owner.ts": "72067507078bdb964fd8cedc7cc3a7694159609c4b541f49f37eb510f53e634c",
+    "modules/research/src/program.ts": "9c01dc15631468501f8a35b27f294c06b6535f4e23de92367102192697ad33c4",
+    "modules/research/src/service.ts": "47be8bd7b2a1ddbee35fd9c4724f42eba9b25bee19026b492e28d499d5763d7b",
+    "modules/research/src/types.ts": "75035ab1567dbec1796d16d8ef66c3f8d0799a9333cb039e058bff5e666a0070",
+    "modules/research/examples/github-repository.json": "03919cb32ae7ad4bb62b2d606cc4c2227bd1549a685bbd58f8a496b7642cc237",
+    "modules/research/package.json": "49401d06db4be2392faf4673295dcd3e191993cc18bb6de72db7a9abfb229a63",
+    "modules/research/bun.lock": "5e01ac04098f3f041b78d3f0310f29820937dcf981ff094d091db2eaa3402165",
+    "modules/research/tsconfig.native.json": "a6cea3c885a6a55f70f6631bc73f78327554735841a52d37e20d1a39caa05f36",
+    "modules/research/test/mcp-client.ts": "ea6360555204900aa09292b1d4e8785afff1640ae3830d49129380eb9af2f76c",
+    "opencode/packages/server/script/research-public-branch.ts": "60f4dc1523890d5d37f8c08e351da74e3ce311889f30ff642778919e9dd7ed18",
+    "tools/research_public_branch.py": "76ac5fb010baacb5117733b1480d14659ce8adc4dd69a5239d6a250294c88487",
+    "tools/native_baseline.py": "5f62e4198c42b519bf29e5b2127d762c224e9d285605053bc54a92e321e44150",
+    "upstream/patches.json": "61637a0e8e5760cbeb9e3d6eb4bc9acb80a61289a483e4abef5378728aef59ea"
+  },
+  "upstream_verification": {
+    "source_files": 9236,
+    "verified": true,
+    "unchanged": false,
+    "declared_product_files": 264,
+    "materialized_windows_symlinks": 43
+  },
+  "total_live_source_requests": 6,
+  "model_inference_requests_by_host": 0,
+  "new_phase_acceptance_completed": [],
+  "production_switch": false,
+  "supplemental_checks": {
+    "handoff_tests": 17,
+    "design_checks": 243,
+    "remaining_test_processes": 0
+  }
+}
