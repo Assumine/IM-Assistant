@@ -394,6 +394,22 @@ export interface Panel {
   enter?(input: PanelProps): void
 }
 
+/** A standalone application workspace, independent of settings and session tabs. */
+export interface ApplicationPage {
+  /** Stable page id within your plugin; opened with `Layout.page(id)`. */
+  readonly id: string
+  /** Localized navigation label; use a getter so live language changes apply. */
+  readonly title: string
+  /** Navigation icon. Defaults to the host's generic page icon. */
+  readonly icon?: IconName
+  /** Lower values appear earlier in the application rail; defaults to zero. */
+  readonly order?: number
+  /** Use as the assistant's landing page; the first ordered home page wins. Defaults to false. */
+  readonly home?: boolean
+  /** Render only while selected. The host provides plugin context, error isolation and owner cleanup. */
+  render(): JSX.Element
+}
+
 /** A search entry of a `SettingsPage`, indexed without mounting the page. */
 export interface SettingEntry {
   /** The `data-action` of the row search reveals. An entry with the SettingsPage's own id describes the page itself. */
@@ -824,6 +840,16 @@ export const Panel = Registry.define<Panel>("panel")
  * ```
  */
 export const SettingsPage = Registry.define<SettingsPage>("settings-page")
+
+/**
+ * Standalone application pages in the main navigation, separate from configuration.
+ *
+ * @example
+ * ```ts
+ * ctx.add(ApplicationPage, { id: "activity", title: ctx.t("activity"), render: () => <Activity /> })
+ * ```
+ */
+export const ApplicationPage = Registry.define<ApplicationPage>("application-page")
 
 /**
  * The registry of server sources the app lists.

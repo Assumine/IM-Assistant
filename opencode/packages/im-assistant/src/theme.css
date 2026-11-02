@@ -177,7 +177,8 @@
 
 @media (max-width: 767px) {
   :root[data-interface="assistant"] [data-component="application-navigation"] {
-    display: none;
+    --assistant-rail-size: 48px;
+    padding-block: 8px;
   }
 
   :root[data-interface="assistant"] .settings-screen .settings-content {

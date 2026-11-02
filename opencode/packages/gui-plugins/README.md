@@ -835,3 +835,9 @@ Your own plugin takes the same steps:
 7. **Register both entries** in `src/renderer.ts` and `src/main.ts`, as above. The graph matrix then boots the app with your plugin disabled.
 8. **Test it.** Unit-test pure logic beside the code. Prove what the user sees with a case in the area's keeper suite in `packages/app/e2e/regression/`.
 9. **Check it.** Run `bun run lint`, which includes `script/sdk-docs.ts`, then `bun run lint:changed`, and `bun typecheck` in `packages/gui-plugins` and `packages/plugin`.
+
+## Application workspaces
+
+`ApplicationPage` contributes an entire daily-use page to the main navigation, separate from `SettingsPage` configuration. Its stable `id` is scoped to the plugin, localized `title` uses a getter, `icon` and `order` control navigation, and `home: true` offers the assistant landing page. `render()` runs only while selected, under the same contribution context/error boundary and owner cleanup as other plugin views.
+
+Call `ctx.layout.page(id)` to open your own registered page. The host owns stable `/page/<plugin>/<id>` routes, reload/history and selection; absent pages stay unavailable rather than opening settings or dispatching work. The assistant landing page uses the first ordered home contribution; native conversations remain at `/conversations`. Contributing a page never starts a backend or changes Session/Inbox ownership. Keep heavy page code lazy, and use SettingsPage or a module-owned configuration dialog for preferences.

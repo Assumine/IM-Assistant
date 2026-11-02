@@ -528,9 +528,7 @@ export function mountBrowserPane(input: PaneHost) {
               aria-label="Picked element scenario"
               onChange={(event) => setStore("selection", event.currentTarget.value)}
             >
-              <For each={["default", "long", "fallback", "low", "zoomed"]}>
-                {(value) => <option>{value}</option>}
-              </For>
+              <For each={["default", "long", "fallback", "low", "zoomed"]}>{(value) => <option>{value}</option>}</For>
             </select>
             <button onClick={() => setStore("history", { visits })}>Seed history</button>
             <button onClick={() => emit(store.session, { type: "page", tabID: current().id, icon, zoom: store.zoom })}>
@@ -863,6 +861,7 @@ export function mountBrowserRegion(input: RegionHost) {
       sidebar: { opened: () => true },
       scroll: { get: () => undefined, set() {} },
       settings() {},
+      page() {},
       project() {},
       draft() {},
       command() {},

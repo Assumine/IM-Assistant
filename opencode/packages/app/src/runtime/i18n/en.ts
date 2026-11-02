@@ -2,6 +2,9 @@ import { DESKTOP_NATIVE_ENGLISH } from "./desktop-native"
 
 export const dict = {
   "assistant.navigation": "Application navigation",
+  "assistant.overview": "Overview",
+  "assistant.conversations": "Conversations and tasks",
+  "assistant.pageUnavailable": "This workspace is unavailable. Open conversations or select another page.",
   "assistant.modules": "Application modules",
   "assistant.notifications": "Module notifications",
   "backend.question.unavailable": "This question is no longer available. Refresh the native state.",

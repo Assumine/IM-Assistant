@@ -11,7 +11,17 @@ import ModuleView from "./view"
 
 type View = "modules" | "messages"
 
-export default function Page(props: { view: View }) {
+export default function Page(props: { view: View; standalone?: boolean }) {
+  return (
+    <Show when={props.standalone} fallback={<Content view={props.view} />}>
+      <div class="assistant-workspace">
+        <Content view={props.view} />
+      </div>
+    </Show>
+  )
+}
+
+function Content(props: { view: View }) {
   const ctx = usePlugin<typeof definition>()
   const [state, setState] = createStore<{ server?: string }>({})
   const servers = createMemo(() => ctx.servers.list().flatMap((id) => ctx.servers.get(id) ?? []))
@@ -254,11 +264,13 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
                     <Button
                       size="small"
                       variant="outline"
-                      onClick={() => ctx.dialogs.open(() => (
-                        <ctx.ui.Dialog title={item.title}>
-                          <Settings id={item.id} server={props.server} />
-                        </ctx.ui.Dialog>
-                      ))}
+                      onClick={() =>
+                        ctx.dialogs.open(() => (
+                          <ctx.ui.Dialog title={item.title}>
+                            <Settings id={item.id} server={props.server} />
+                          </ctx.ui.Dialog>
+                        ))
+                      }
                     >
                       {ctx.t("settings")}
                     </Button>
@@ -273,8 +285,12 @@ function Catalog(props: { view: View; server: ServerRef | undefined }) {
                     </Button>
                   </Show>
                   <Show when={item.view && item.state === "active"}>
-                    <Button size="small" variant="outline" aria-expanded={state.inspect === item.id}
-                      onClick={() => setState("inspect", state.inspect === item.id ? undefined : item.id)}>
+                    <Button
+                      size="small"
+                      variant="outline"
+                      aria-expanded={state.inspect === item.id}
+                      onClick={() => setState("inspect", state.inspect === item.id ? undefined : item.id)}
+                    >
                       {ctx.t(state.inspect === item.id ? "closeActivity" : "activity")}
                     </Button>
                   </Show>

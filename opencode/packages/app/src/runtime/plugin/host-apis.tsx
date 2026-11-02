@@ -34,6 +34,7 @@ import {
   type Storage,
   type StorageScope,
   type Tabs,
+  ApplicationPage,
 } from "@opencode/plugin/gui"
 import { BuiltinPanel, type BuiltinStoreFrom, type BuiltinStoreOptions } from "@opencode/plugin/gui/builtin"
 import { usePlatform } from "@/runtime/platform/platform"
@@ -53,7 +54,8 @@ import { terminalFontFamily, useSettings } from "@/settings/model"
 import { useSettingsSurface } from "@/settings/surface"
 import { formatKeybindParts, useCommand } from "@/shell/commands/command"
 import { createMediaQuery } from "@solid-primitives/media"
-import { useIsRouting, useLocation } from "@solidjs/router"
+import { useIsRouting, useLocation, useNavigate } from "@solidjs/router"
+import { applicationPagePath } from "./application-page-path"
 import { useLanguage } from "@/runtime/i18n/language"
 import { closedEntry, createClosedTabs } from "./closed-tabs"
 import { panelsMoving } from "@/shell/panel-motion"
@@ -81,10 +83,11 @@ type Attached = {
   scope: (server: string) => ServerScope
   /** Records a session-scoped store so layout pruning drops it with the session. */
   scoped: (name: string) => void
-  layout: Omit<Layout, "narrow" | "settings" | "project" | "draft" | "command" | "stored"> & {
+  layout: Omit<Layout, "narrow" | "settings" | "page" | "project" | "draft" | "command" | "stored"> & {
     stored(plugin: string, session: SessionRef): readonly string[]
   }
   settings: (page?: string) => void
+  page: (plugin: string, id: string) => void
   project: (server: string, title: string) => void
   draft: Layout["draft"]
   command: (id: string) => void
@@ -311,6 +314,7 @@ export function createHostApis() {
       channel: (import.meta.env.VITE_OPENCODE_CHANNEL ?? "local") as App["channel"],
       platform: platform.platform,
       packaged: platform.plugins?.packaged ?? false,
+      workspace: platform.workspace !== false,
     }),
     locale: () => ({
       locale: language.intl,
@@ -420,6 +424,7 @@ export function createHostApis() {
         set: (session, key, value) => write((connected) => connected.layout.scroll.set(session, key, value)),
       },
       settings: (page) => write((value) => value.settings(page)),
+      page: (id) => write((value) => value.page(plugin, id)),
       project: (server, title) => write((value) => value.project(server, title)),
       draft: (input) => write((value) => value.draft(input)),
       command: (id) => write((value) => value.command(id)),
@@ -475,6 +480,7 @@ export function createPluginAttachment(apis: HostApis) {
   const host = usePluginHost()
   const command = useCommand()
   const location = useLocation()
+  const navigate = useNavigate()
   const platform = usePlatform()
   const theme = useTheme()
   const menu = createSessionPanelMenu()
@@ -1111,6 +1117,10 @@ export function createPluginAttachment(apis: HostApis) {
     server,
     // SAFETY: a plugin names a page it contributed through `SettingsPage`, which settings lists as a plugin tab.
     settings: (page) => surface.open(page as Parameters<typeof surface.open>[0]),
+    page: (plugin, id) => {
+      if (host.items(ApplicationPage).some((item) => item.plugin === plugin && item.value.id === id))
+        navigate(applicationPagePath(plugin, id))
+    },
     layout: {
       ready: layout.ready,
       open,

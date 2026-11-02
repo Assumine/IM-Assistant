@@ -12,23 +12,31 @@ export async function capabilityVisibility(page: Page, hidden: boolean) {
   }, hidden)
 }
 
-export function capabilityRpc(fixture: {
-  list: () => readonly Capability.Info[]
-  notifications?: (input: Capability.NoticeQuery) => Capability.NoticePage | Promise<Capability.NoticePage>
-  markRead?: (input: Capability.NoticeRef) => Capability.Notice | Promise<Capability.Notice>
-  stop?: (id: string) => Capability.Info | Promise<Capability.Info>
-  metrics?: (id: string) => Capability.Metrics | Promise<Capability.Metrics>
-  view?: (input: { id: string; locale?: string }) => Capability.ViewResult | Promise<Capability.ViewResult>
-  invoke?: (input: Capability.Invocation) => Capability.ActionResult | Promise<Capability.ActionResult>
-  settings?: (id: string) => Capability.Settings | Promise<Capability.Settings>
-  configure?: (input: {
-    id: string
-    revision: string
-    text: string
-  }) => Capability.Settings | Promise<Capability.Settings>
-}): NonNullable<MockServerConfig["rpc"]> {
-  return async ({ id, method, body }) => {
-    if (id !== Capability.Api.id) throw new Error(`Unexpected RPC: ${id}.${method}`)
+export function capabilityRpc(
+  fixture: {
+    list: () => readonly Capability.Info[]
+    notifications?: (input: Capability.NoticeQuery) => Capability.NoticePage | Promise<Capability.NoticePage>
+    markRead?: (input: Capability.NoticeRef) => Capability.Notice | Promise<Capability.Notice>
+    stop?: (id: string) => Capability.Info | Promise<Capability.Info>
+    metrics?: (id: string) => Capability.Metrics | Promise<Capability.Metrics>
+    view?: (input: { id: string; locale?: string }) => Capability.ViewResult | Promise<Capability.ViewResult>
+    invoke?: (input: Capability.Invocation) => Capability.ActionResult | Promise<Capability.ActionResult>
+    settings?: (id: string) => Capability.Settings | Promise<Capability.Settings>
+    configure?: (input: {
+      id: string
+      revision: string
+      text: string
+    }) => Capability.Settings | Promise<Capability.Settings>
+  },
+  fallback?: NonNullable<MockServerConfig["rpc"]>,
+): NonNullable<MockServerConfig["rpc"]> {
+  return async (request) => {
+    const { id, method, body } = request
+
+    if (id !== Capability.Api.id) {
+      if (fallback) return fallback(request)
+      throw new Error(`Unexpected RPC: ${id}.${method}`)
+    }
 
     if (method === "list") return [...fixture.list()]
 

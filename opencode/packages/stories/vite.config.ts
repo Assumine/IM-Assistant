@@ -35,6 +35,17 @@ export default defineConfig({
   plugins: [solid(), tailwindcss(), storyIndex(roots)],
   publicDir: path.resolve(packages, "app/public"),
   optimizeDeps: {
+    // Registry renderers load these lazily during the real plugin graph tests. Prebundle them before the
+    // first page, so dependency discovery cannot reload and destroy an in-flight host lifecycle check.
+    include: [
+      "@dnd-kit/solid",
+      "@dnd-kit/solid/sortable",
+      "@dnd-kit/dom",
+      "@dnd-kit/abstract/modifiers",
+      "@dnd-kit/dom/modifiers",
+      "@pierre/trees",
+      "@pierre/trees/web-components",
+    ],
     // Vite finds a dependency on its first import and reloads every open page, which would abort a component test
     // mid-import. Crawl the stories, the workers (the scan does not follow `new Worker(new URL(…))`), the modules the
     // component tests load, and the frame, so the first browser request never discovers a new dependency.

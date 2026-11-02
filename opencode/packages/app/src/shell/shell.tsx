@@ -27,6 +27,7 @@ import { createPanelMotion, guardClosingFocus, panelOpacity } from "@/shell/pane
 import { createSidebarPeek } from "@/shell/sidebar-peek"
 import { windowDragEnabled } from "@/session/header/drag-area"
 import { ConversationNavigation } from "./conversation-navigation"
+import { useLocation } from "@solidjs/router"
 
 // How far Home steps along a peek's header to clear the collapsed toggle: to the toggle's end, from the sidebar's 18px
 // start padding.
@@ -47,6 +48,11 @@ export default function Layout(props: ParentProps) {
   const servers = useServers()
   const tabs = useTabs()
   const mobile = createMediaQuery("(max-width: 767px)")
+  const location = useLocation()
+
+  const workspacePage = () =>
+    platform.workspace === false &&
+    (location.pathname === "/" || location.pathname.startsWith("/page/") || location.pathname === "/settings")
 
   const [state, setState] = createStore<{
     tabsWidth: number
@@ -60,7 +66,7 @@ export default function Layout(props: ParentProps) {
     tabsPanel: undefined,
   })
 
-  const verticalTabs = () => preferences.appearance.tabLayout() !== "horizontal" && !mobile()
+  const verticalTabs = () => preferences.appearance.tabLayout() !== "horizontal" && !mobile() && !workspacePage()
 
   const toggleSidebar = () => preferences.appearance.setSidebarOpen(!preferences.appearance.sidebarOpen())
 
@@ -223,7 +229,10 @@ export default function Layout(props: ParentProps) {
           : "max(0px, calc(8px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))",
       }}
     >
-      <Titlebar verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined} />
+      <Titlebar
+        navigationOnly={workspacePage()}
+        verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined}
+      />
       <div data-slot="application-content" class="relative flex flex-1 min-h-0 min-w-0 flex-row">
         <Show when={platform.workspace === false}>
           <ConversationNavigation />

@@ -3,12 +3,132 @@ import { expect, test, type Page } from "@playwright/test"
 import { expectPath, holdRoute, NO_PROVIDER, project, REMOTE_SERVER, seed, sessionHref, T0 } from "../utils/app"
 import { mockOpenCodeServer } from "../utils/mock-server"
 import { fixture, mockStressTimeline } from "../utils/session-fixture"
-import { mockRemoteServer, mockWorkspace, newSessionLocation } from "../utils/workspace"
+import { mockRemoteServer, mockWorkspace, newSessionLocation, openSession } from "../utils/workspace"
+import { capabilityRpc } from "../utils/capabilities"
+import type { Capability } from "@opencode/schema/capability"
 import { APP_READY_TIMEOUT, expectAppVisible } from "../utils/waits"
 import type { ConversationBackend } from "@opencode/schema/conversation-backend"
 import { backendEvent, backendHref, backendRpc } from "../utils/backends"
 
 test.use({ serviceWorkers: "block" })
+
+test("assistant workspace: daily tools open as full pages while configuration stays separate", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const calls: Capability.Invocation[] = []
+
+  const modules: Capability.Info[] = [
+    { id: "downloads", title: "Downloads", state: "active", metrics: false, settings: true, view: true },
+    { id: "research", title: "Research scripts", state: "disabled", metrics: false, settings: true },
+    { id: "qq-portal", title: "QQ forwarding", state: "failed", metrics: false },
+  ]
+
+  const workspace = await openSession(page, {
+    name: "AssistantWorkspace",
+    workspace: false,
+    seed: { locale: "zh", theme: { id: "oc-2", scheme: "dark" } },
+    rpc: capabilityRpc({
+      list: () => modules,
+      notifications: () => ({ items: [], counts: { unread: 0, attention: 0 } }),
+      settings: () => ({ revision: "1".repeat(64), text: "{}", appliesTo: "next-service-start" }),
+      invoke: (input) => {
+        calls.push(input)
+
+        return { state: "applied", message: "下载任务已记录。" }
+      },
+      view: ({ id }) => ({
+        id,
+        status: "ready",
+        document: {
+          title: "下载管理",
+          items: [],
+          actions: [{ id: "create", label: "新增下载", fields: [{ name: "uri", label: "下载地址", required: true }] }],
+        },
+      }),
+    }),
+  })
+
+  const nav = page.getByRole("navigation", { name: "应用导航", exact: true })
+  await nav.getByRole("link", { name: "总览", exact: true }).click()
+  await expectPath(page, "/")
+  await expect(page.getByRole("heading", { name: "消息助手", exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "日常功能", exact: true })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "待处理", exact: true })).toBeVisible()
+  await expect(page.getByText("当前没有需要你处理的事项。", { exact: true })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath("assistant-overview.png") })
+  await nav.getByRole("link", { name: "下载管理", exact: true }).click()
+  await expectPath(page, "/page/capabilities/module-downloads")
+  await expect(page.getByRole("button", { name: "新增下载", exact: true })).toBeVisible()
+  await expect(page.locator('[data-component="settings"]')).toHaveCount(0)
+  await page.getByRole("button", { name: "新增下载", exact: true }).click()
+  const form = page.getByRole("form", { name: "新增下载" })
+  await form.getByRole("textbox", { name: "下载地址" }).fill("https://example.test/file.mp4")
+  await form.getByRole("button", { name: "新增下载", exact: true }).click()
+  await expect(page.getByText("下载任务已记录。", { exact: true })).toBeVisible()
+  expect(calls).toHaveLength(1)
+  expect(calls[0].id).toBe("downloads")
+  await page.getByRole("button", { name: "配置", exact: true }).click()
+  await expect(page.getByRole("dialog").getByRole("textbox", { name: "配置 JSON" })).toHaveValue("{}")
+  await expectPath(page, "/page/capabilities/module-downloads")
+  await page.keyboard.press("Escape")
+  await nav.getByRole("link", { name: "研究", exact: true }).click()
+  await expect(page.getByText("这个模块未运行。", { exact: true })).toBeVisible()
+  await page.goBack()
+  await expectPath(page, "/page/capabilities/module-downloads")
+  await page.reload()
+  await expect(page.getByRole("button", { name: "新增下载", exact: true })).toBeVisible()
+  await expect(nav.getByRole("link", { name: "下载管理", exact: true })).toHaveAttribute("aria-current", "page")
+  await page.setViewportSize({ width: 680, height: 900 })
+  await expect(page.getByRole("button", { name: "新增下载", exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: test.info().outputPath("assistant-downloads-narrow.png") })
+  await nav.getByRole("link", { name: "会话与任务", exact: true }).click()
+  await expectPath(page, "/conversations")
+  expect(calls).toHaveLength(1)
+  await page.goto(sessionHref(workspace.sessions[0].id))
+  await expect(page.locator('[data-component="composer-editor"]')).toBeEditable()
+})
+
+test("assistant workspace: leaving stops progress reads and an unavailable page does not block conversations", async ({
+  page,
+}) => {
+  await page.clock.install()
+  let reads = 0
+
+  const modules: Capability.Info[] = [
+    { id: "downloads", title: "Downloads", state: "active", metrics: false, view: true },
+  ]
+
+  await openSession(page, {
+    name: "WorkspaceLifetime",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => modules,
+      notifications: () => ({ items: [], counts: { unread: 0, attention: 0 } }),
+      view: ({ id }) => {
+        reads++
+
+        return { id, status: "ready", document: { title: "Owned activity", refreshAfterMs: 1000, items: [] } }
+      },
+    }),
+  })
+  const nav = page.getByRole("navigation", { name: "Application navigation", exact: true })
+  await nav.getByRole("link", { name: "Downloads", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Owned activity", exact: true })).toBeVisible()
+  await page.clock.runFor(1100)
+  await expect.poll(() => reads).toBeGreaterThan(1)
+  await nav.getByRole("link", { name: "Overview", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Assistant", exact: true })).toBeVisible()
+  const previous = reads
+  await page.clock.runFor(3100)
+  expect(reads).toBe(previous)
+  await page.goto("/page/missing/unknown")
+  await expect(
+    page.getByText("This workspace is unavailable. Open conversations or select another page.", { exact: true }),
+  ).toBeVisible()
+  await nav.getByRole("link", { name: "Conversations and tasks", exact: true }).click()
+  await expectPath(page, "/conversations")
+  await expect(page.locator('[data-slot="home-panel"]')).toBeVisible()
+})
 
 test("whole backend Home: loads only on demand and opens the original native reference directly", async ({
   page,
@@ -48,14 +168,14 @@ test("whole backend Home: loads only on demand and opens the original native ref
     name: "NativeHome",
     workspace: false,
     sessions: [{ id: thread.ref.threadID, title: "OpenCode conversation" }],
-    rpc: (input) => {
+    rpc: capabilityRpc({ list: () => [] }, (input) => {
       methods.push(input.method)
 
       return rpc(input)
-    },
+    }),
   })
 
-  await page.goto("/")
+  await page.goto("/conversations")
   const section = page.getByRole("region", { name: "Other backends", exact: true })
   const toggle = section.getByRole("button", { name: "Other backends", exact: true })
   await expect(toggle).toBeEnabled()
@@ -111,14 +231,14 @@ test("whole backend Home: failed catalogs can retry, unavailable selections stay
   const view = await mockWorkspace(page, {
     name: "NativeHomeAvailability",
     workspace: false,
-    rpc: (input) => {
+    rpc: capabilityRpc({ list: () => [] }, (input) => {
       methods.push(input.method)
 
       return rpc(input)
-    },
+    }),
   })
 
-  await page.goto("/")
+  await page.goto("/conversations")
   const section = page.getByRole("region", { name: "Other backends", exact: true })
   const toggle = section.getByRole("button", { name: "Other backends", exact: true })
   await toggle.click()

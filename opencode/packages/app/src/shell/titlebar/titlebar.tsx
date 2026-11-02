@@ -64,7 +64,7 @@ const macTrafficLightsDefaultPosition = { x: 14, y: 14 }
 // titlebar row stays 16px clear of it, as ChatGPT's phone header does. Without one, 8px matches the content gap below.
 const mobileTopClearance = "max(8px, min(16px, env(safe-area-inset-top, 0px) * 1000))"
 
-export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
+export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement }; navigationOnly?: boolean }) {
   const platform = usePlatform()
   const command = useCommand()
   const language = useLanguage()
@@ -407,6 +407,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 case "settings":
                 case "connect":
                 case "components":
+                case "application":
                 case "home": {
                   const selection = layout.home.selection()
 
@@ -658,264 +659,266 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 <Show when={windows() && props.verticalTabs}>
                   <SidebarToggle />
                 </Show>
-                <Show when={!mobile() && !props.verticalTabs}>
+                <Show when={!mobile() && !props.verticalTabs && !props.navigationOnly}>
                   <div class="flex shrink-0 items-center gap-0.5">
                     {homeButton()}
                     {searchButton()}
                   </div>
                 </Show>
 
-                <Show
-                  when={!mobile()}
-                  fallback={
-                    <MobileDrawer
-                      open={mobileTabs.open}
-                      onOpenChange={(open) => setMobileTabs("open", open)}
-                      onContentPresentChange={(present) => {
-                        if (present || !mobileTabs.settings) return
-                        setMobileTabs("settings", false)
-                        openSettings()
-                      }}
-                    >
-                      <MobileDrawerTrigger
-                        data-slot="mobile-tabs-trigger"
-                        class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-base focus-visible:outline-none [app-region:no-drag]"
-                        aria-label={language.t("titlebar.tabs")}
-                      >
-                        <Show when={currentTab()} fallback={<Icon name="grid-plus" class="shrink-0" />}>
-                          {(tab) => (
-                            <span
-                              data-slot="project-avatar-slot"
-                              class="flex size-4 shrink-0 items-center justify-center"
-                            >
-                              <Show
-                                when={session()}
-                                fallback={
-                                  tab().type === "draft" ? (
-                                    <Icon name="edit" />
-                                  ) : (
-                                    <span
-                                      class="block size-4 rounded-[3px] border border-v2-border-border-muted"
-                                      aria-hidden="true"
-                                    />
-                                  )
-                                }
-                              >
-                                {(value) => (
-                                  <SessionTabAvatarView
-                                    project={currentProject()}
-                                    directory={value().location.directory}
-                                    unread={currentStatus.unread() && !currentStatus.loading()}
-                                  />
-                                )}
-                              </Show>
-                            </span>
-                          )}
-                        </Show>
-                        <span data-slot="mobile-tab-title" dir="auto" class="min-w-0 flex-1 truncate text-start">
-                          {currentTitle()}
-                        </span>
-                        <Show when={preparing() || currentStatus.loading()}>
-                          <ActivityRing />
-                        </Show>
-                        <span class="shrink-0 text-v2-text-text-muted">{tabsStore.length}</span>
-                      </MobileDrawerTrigger>
-                      <MobileDrawerContent>
-                        <MobileDrawerLabel class="sr-only">{language.t("titlebar.tabs")}</MobileDrawerLabel>
-                        <div data-slot="mobile-tabs-drawer" data-corvu-no-drag>
-                          <div data-slot="mobile-tabs-drawer-list">
-                            <TitlebarTabStrip
-                              orientation="vertical"
-                              tabs={tabsStore}
-                              currentTab={currentTab()}
-                              onNavigate={(tab) => {
-                                tabs.select(tab)
-                                setMobileTabs("open", false)
-                              }}
-                              onClose={(tab) => {
-                                const index = tabsStore.findIndex((item) => tabKey(item) === tabKey(tab))
-
-                                if (index !== -1) tabsStoreActions.closeTab(index)
-                              }}
-                              onReorder={(keys) => tabsStoreActions.reorder(keys)}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            data-action="mobile-tabs-new-session"
-                            class="flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-base hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
-                            onClick={() => {
-                              openNewTab()
-                              setMobileTabs("open", false)
-                            }}
-                          >
-                            <Icon name="plus" />
-                            {language.t("command.session.new")}
-                          </button>
-                          <div class="flex shrink-0 flex-col gap-1 border-t border-v2-border-border-muted pt-2">
-                            <button
-                              type="button"
-                              data-action="mobile-tabs-home"
-                              data-state={layout.route().type === "home" ? "pressed" : undefined}
-                              aria-current={layout.route().type === "home" ? "page" : undefined}
-                              class="flex h-7 w-full items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint data-[state=pressed]:text-v2-text-text-base focus-visible:outline-none"
-                              onClick={() => {
-                                if (layout.route().type !== "home") toggleHome()
-                                setMobileTabs("open", false)
-                              }}
-                            >
-                              <Icon name="grid-plus" />
-                              {language.t("home.title")}
-                            </button>
-                            <div class="flex items-center gap-1">
-                              <button
-                                type="button"
-                                data-action="mobile-tabs-settings"
-                                class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
-                                onClick={() => setMobileTabs({ open: false, settings: true })}
-                              >
-                                <Icon name="settings-gear" size="small" />
-                                {language.t("sidebar.settings")}
-                              </button>
-                              <button
-                                type="button"
-                                data-action="mobile-tabs-help"
-                                class="flex h-7 shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
-                                onClick={() => {
-                                  setMobileTabs("open", false)
-                                  platform.openExternal("https://opencode.ai/desktop-feedback")
-                                }}
-                              >
-                                <Icon name="help" size="small" />
-                                {language.t("sidebar.help")}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </MobileDrawerContent>
-                    </MobileDrawer>
-                  }
-                >
+                <Show when={!props.navigationOnly}>
                   <Show
-                    when={props.verticalTabs}
+                    when={!mobile()}
                     fallback={
-                      <>
-                        <TitlebarTabStrip
-                          tabs={tabsStore}
-                          currentTab={currentTab()}
-                          onNavigate={(tab, el) => {
-                            tabs.select(tab)
-                            el?.scrollIntoView({ behavior: "instant" })
-                          }}
-                          onClose={(tab) => {
-                            const index = tabsStore.findIndex((item) => tabKey(item) === tabKey(tab))
-
-                            if (index !== -1) tabsStoreActions.closeTab(index)
-                          }}
-                          onReorder={(keys) => tabsStoreActions.reorder(keys)}
-                        />
-                        <RecentlyClosedTabsMenu
-                          onNewTab={openNewTab}
-                          tooltip={
-                            <>
-                              {language.t("command.session.new")}
-                              <Keybind keys={command.keybindParts("tab.new")} variant="neutral" />
-                            </>
-                          }
-                        />
-                      </>
-                    }
-                  >
-                    {(vertical) => (
-                      <Show when={vertical().mount} keyed>
-                        {(mount) => (
-                          <Portal
-                            mount={mount}
-                            ref={(element) => (element.className = "flex size-full min-h-0 flex-col")}
-                          >
-                            <Show when={!windows()}>
-                              {/* Shares the session header's 48px center line. Without traffic lights, Home fills the
-                                  start so the row doesn't leave an empty band. */}
-                              <div
-                                data-slot="sidebar-header"
-                                data-home={homeInSidebarHeader() ? "" : undefined}
-                                class="flex w-full shrink-0 gap-2"
-                                classList={{
-                                  "items-start pt-2.5 pb-1": homeInSidebarHeader(),
-                                  "mb-2 h-12 items-center": !homeInSidebarHeader(),
-                                }}
-                                style={{
-                                  "min-height": macVerticalTabs()
-                                    ? `${macTrafficLightsTopClearance / zoom()}px`
-                                    : undefined,
-                                }}
-                                data-tauri-drag-region
+                      <MobileDrawer
+                        open={mobileTabs.open}
+                        onOpenChange={(open) => setMobileTabs("open", open)}
+                        onContentPresentChange={(present) => {
+                          if (present || !mobileTabs.settings) return
+                          setMobileTabs("settings", false)
+                          openSettings()
+                        }}
+                      >
+                        <MobileDrawerTrigger
+                          data-slot="mobile-tabs-trigger"
+                          class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-base focus-visible:outline-none [app-region:no-drag]"
+                          aria-label={language.t("titlebar.tabs")}
+                        >
+                          <Show when={currentTab()} fallback={<Icon name="grid-plus" class="shrink-0" />}>
+                            {(tab) => (
+                              <span
+                                data-slot="project-avatar-slot"
+                                class="flex size-4 shrink-0 items-center justify-center"
                               >
-                                <Show when={macTrafficLights()}>
-                                  {/* The sidebar's 18px start padding already covers part of the traffic lights. */}
-                                  <div
-                                    class="shrink-0"
-                                    style={{
-                                      width: `calc(${macVerticalTrafficLights(zoom()).width / zoom()}px - 18px)`,
-                                    }}
-                                    aria-hidden="true"
-                                  />
+                                <Show
+                                  when={session()}
+                                  fallback={
+                                    tab().type === "draft" ? (
+                                      <Icon name="edit" />
+                                    ) : (
+                                      <span
+                                        class="block size-4 rounded-[3px] border border-v2-border-border-muted"
+                                        aria-hidden="true"
+                                      />
+                                    )
+                                  }
+                                >
+                                  {(value) => (
+                                    <SessionTabAvatarView
+                                      project={currentProject()}
+                                      directory={value().location.directory}
+                                      unread={currentStatus.unread() && !currentStatus.loading()}
+                                    />
+                                  )}
                                 </Show>
-                                <Show when={homeInSidebarHeader()} fallback={<div class="flex-1" />}>
-                                  <div class="min-w-0 flex-1">{homeButton(true)}</div>
-                                </Show>
-                                {/* Optically aligns the toggle's glyph with the selected session's end edge. */}
-                                <div class="-me-0.5 flex shrink-0">
-                                  <SidebarToggle handoff="out" />
-                                </div>
-                              </div>
-                            </Show>
-                            <div class="flex w-full shrink-0 flex-col gap-1">
-                              <Show when={!homeInSidebarHeader()}>{homeButton(true)}</Show>
-                              {searchButton(true)}
-                              <RecentlyClosedTabsMenu
-                                vertical
-                                onNewTab={openNewTab}
-                                keybind={command.keybind("tab.new")}
+                              </span>
+                            )}
+                          </Show>
+                          <span data-slot="mobile-tab-title" dir="auto" class="min-w-0 flex-1 truncate text-start">
+                            {currentTitle()}
+                          </span>
+                          <Show when={preparing() || currentStatus.loading()}>
+                            <ActivityRing />
+                          </Show>
+                          <span class="shrink-0 text-v2-text-text-muted">{tabsStore.length}</span>
+                        </MobileDrawerTrigger>
+                        <MobileDrawerContent>
+                          <MobileDrawerLabel class="sr-only">{language.t("titlebar.tabs")}</MobileDrawerLabel>
+                          <div data-slot="mobile-tabs-drawer" data-corvu-no-drag>
+                            <div data-slot="mobile-tabs-drawer-list">
+                              <TitlebarTabStrip
+                                orientation="vertical"
+                                tabs={tabsStore}
+                                currentTab={currentTab()}
+                                onNavigate={(tab) => {
+                                  tabs.select(tab)
+                                  setMobileTabs("open", false)
+                                }}
+                                onClose={(tab) => {
+                                  const index = tabsStore.findIndex((item) => tabKey(item) === tabKey(tab))
+
+                                  if (index !== -1) tabsStoreActions.closeTab(index)
+                                }}
+                                onReorder={(keys) => tabsStoreActions.reorder(keys)}
                               />
                             </div>
-                            <div class="h-4 w-full shrink-0" aria-hidden="true" />
-                            <div class="flex min-h-0 flex-1 flex-col gap-1">
-                              <Show
-                                when={settings.appearance.tabLayout() === "inbox"}
-                                fallback={
-                                  <TitlebarTabStrip
-                                    orientation="vertical"
-                                    tabs={tabsStore}
-                                    currentTab={currentTab()}
-                                    onNavigate={(tab, el) => {
-                                      tabs.select(tab)
-                                      el?.scrollIntoView({ behavior: "instant", block: "nearest" })
-                                    }}
-                                    onClose={(tab) => {
-                                      const index = tabsStore.findIndex((item) => tabKey(item) === tabKey(tab))
-
-                                      if (index !== -1) tabsStoreActions.closeTab(index)
-                                    }}
-                                    onReorder={(keys) => tabsStoreActions.reorder(keys)}
-                                  />
-                                }
+                            <button
+                              type="button"
+                              data-action="mobile-tabs-new-session"
+                              class="flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-base hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
+                              onClick={() => {
+                                openNewTab()
+                                setMobileTabs("open", false)
+                              }}
+                            >
+                              <Icon name="plus" />
+                              {language.t("command.session.new")}
+                            </button>
+                            <div class="flex shrink-0 flex-col gap-1 border-t border-v2-border-border-muted pt-2">
+                              <button
+                                type="button"
+                                data-action="mobile-tabs-home"
+                                data-state={layout.route().type === "home" ? "pressed" : undefined}
+                                aria-current={layout.route().type === "home" ? "page" : undefined}
+                                class="flex h-7 w-full items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint data-[state=pressed]:text-v2-text-text-base focus-visible:outline-none"
+                                onClick={() => {
+                                  if (layout.route().type !== "home") toggleHome()
+                                  setMobileTabs("open", false)
+                                }}
                               >
-                                <SidebarInbox />
-                              </Show>
-                            </div>
-                            <Show when={titlebarItems.ids().length > 0}>
-                              <div data-slot="vertical-tabs-footer" class="mt-2 flex w-full shrink-0 flex-col">
-                                <TitlebarItems items={titlebarItems} vertical />
+                                <Icon name="grid-plus" />
+                                {language.t("home.title")}
+                              </button>
+                              <div class="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  data-action="mobile-tabs-settings"
+                                  class="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
+                                  onClick={() => setMobileTabs({ open: false, settings: true })}
+                                >
+                                  <Icon name="settings-gear" size="small" />
+                                  {language.t("sidebar.settings")}
+                                </button>
+                                <button
+                                  type="button"
+                                  data-action="mobile-tabs-help"
+                                  class="flex h-7 shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:bg-v2-background-bg-layer-02 focus-visible:outline-none focus-visible:bg-v2-background-bg-layer-02"
+                                  onClick={() => {
+                                    setMobileTabs("open", false)
+                                    platform.openExternal("https://opencode.ai/desktop-feedback")
+                                  }}
+                                >
+                                  <Icon name="help" size="small" />
+                                  {language.t("sidebar.help")}
+                                </button>
                               </div>
-                            </Show>
-                          </Portal>
-                        )}
-                      </Show>
-                    )}
+                            </div>
+                          </div>
+                        </MobileDrawerContent>
+                      </MobileDrawer>
+                    }
+                  >
+                    <Show
+                      when={props.verticalTabs}
+                      fallback={
+                        <>
+                          <TitlebarTabStrip
+                            tabs={tabsStore}
+                            currentTab={currentTab()}
+                            onNavigate={(tab, el) => {
+                              tabs.select(tab)
+                              el?.scrollIntoView({ behavior: "instant" })
+                            }}
+                            onClose={(tab) => {
+                              const index = tabsStore.findIndex((item) => tabKey(item) === tabKey(tab))
+
+                              if (index !== -1) tabsStoreActions.closeTab(index)
+                            }}
+                            onReorder={(keys) => tabsStoreActions.reorder(keys)}
+                          />
+                          <RecentlyClosedTabsMenu
+                            onNewTab={openNewTab}
+                            tooltip={
+                              <>
+                                {language.t("command.session.new")}
+                                <Keybind keys={command.keybindParts("tab.new")} variant="neutral" />
+                              </>
+                            }
+                          />
+                        </>
+                      }
+                    >
+                      {(vertical) => (
+                        <Show when={vertical().mount} keyed>
+                          {(mount) => (
+                            <Portal
+                              mount={mount}
+                              ref={(element) => (element.className = "flex size-full min-h-0 flex-col")}
+                            >
+                              <Show when={!windows()}>
+                                {/* Shares the session header's 48px center line. Without traffic lights, Home fills the
+                                  start so the row doesn't leave an empty band. */}
+                                <div
+                                  data-slot="sidebar-header"
+                                  data-home={homeInSidebarHeader() ? "" : undefined}
+                                  class="flex w-full shrink-0 gap-2"
+                                  classList={{
+                                    "items-start pt-2.5 pb-1": homeInSidebarHeader(),
+                                    "mb-2 h-12 items-center": !homeInSidebarHeader(),
+                                  }}
+                                  style={{
+                                    "min-height": macVerticalTabs()
+                                      ? `${macTrafficLightsTopClearance / zoom()}px`
+                                      : undefined,
+                                  }}
+                                  data-tauri-drag-region
+                                >
+                                  <Show when={macTrafficLights()}>
+                                    {/* The sidebar's 18px start padding already covers part of the traffic lights. */}
+                                    <div
+                                      class="shrink-0"
+                                      style={{
+                                        width: `calc(${macVerticalTrafficLights(zoom()).width / zoom()}px - 18px)`,
+                                      }}
+                                      aria-hidden="true"
+                                    />
+                                  </Show>
+                                  <Show when={homeInSidebarHeader()} fallback={<div class="flex-1" />}>
+                                    <div class="min-w-0 flex-1">{homeButton(true)}</div>
+                                  </Show>
+                                  {/* Optically aligns the toggle's glyph with the selected session's end edge. */}
+                                  <div class="-me-0.5 flex shrink-0">
+                                    <SidebarToggle handoff="out" />
+                                  </div>
+                                </div>
+                              </Show>
+                              <div class="flex w-full shrink-0 flex-col gap-1">
+                                <Show when={!homeInSidebarHeader()}>{homeButton(true)}</Show>
+                                {searchButton(true)}
+                                <RecentlyClosedTabsMenu
+                                  vertical
+                                  onNewTab={openNewTab}
+                                  keybind={command.keybind("tab.new")}
+                                />
+                              </div>
+                              <div class="h-4 w-full shrink-0" aria-hidden="true" />
+                              <div class="flex min-h-0 flex-1 flex-col gap-1">
+                                <Show
+                                  when={settings.appearance.tabLayout() === "inbox"}
+                                  fallback={
+                                    <TitlebarTabStrip
+                                      orientation="vertical"
+                                      tabs={tabsStore}
+                                      currentTab={currentTab()}
+                                      onNavigate={(tab, el) => {
+                                        tabs.select(tab)
+                                        el?.scrollIntoView({ behavior: "instant", block: "nearest" })
+                                      }}
+                                      onClose={(tab) => {
+                                        const index = tabsStore.findIndex((item) => tabKey(item) === tabKey(tab))
+
+                                        if (index !== -1) tabsStoreActions.closeTab(index)
+                                      }}
+                                      onReorder={(keys) => tabsStoreActions.reorder(keys)}
+                                    />
+                                  }
+                                >
+                                  <SidebarInbox />
+                                </Show>
+                              </div>
+                              <Show when={titlebarItems.ids().length > 0}>
+                                <div data-slot="vertical-tabs-footer" class="mt-2 flex w-full shrink-0 flex-col">
+                                  <TitlebarItems items={titlebarItems} vertical />
+                                </div>
+                              </Show>
+                            </Portal>
+                          )}
+                        </Show>
+                      )}
+                    </Show>
                   </Show>
                 </Show>
-                <Show when={!mobile()}>
+                <Show when={!mobile() || props.navigationOnly}>
                   <div class="flex-1" />
                 </Show>
                 <Show when={!props.verticalTabs}>

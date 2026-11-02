@@ -1,6 +1,16 @@
 import en from "./en"
 
 export default {
+  "workspace.title": "消息助手",
+  "workspace.overview": "总览",
+  "workspace.conversations": "会话与任务",
+  "workspace.services": "日常功能",
+  "workspace.allMessages": "全部通知",
+  "workspace.noAttention": "当前没有需要你处理的事项。",
+  "workspace.downloads": "下载管理",
+  "workspace.research": "研究",
+  "workspace.qq": "QQ 任务",
+  "workspace.chatbot": "QQ 附属机器人",
   "action.new": "已核对，开始新操作",
   "action.pending": "正在提交…",
   "action.check": "重试或核对操作",

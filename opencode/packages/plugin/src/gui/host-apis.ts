@@ -946,6 +946,17 @@ export interface Layout {
    */
   settings(page?: string): void
   /**
+   * Opens a standalone application page contributed by this plugin, without selecting a session or settings tab.
+   * Does nothing if the contribution is unavailable. Before interface mount, waits in the normal layout write order.
+   *
+   * @param id - Your `ApplicationPage.id`.
+   * @example
+   * ```ts
+   * ctx.layout.page("activity")
+   * ```
+   */
+  page(id: string): void
+  /**
    * Opens a project on a server: a directory picker titled `title`, then a new draft. Waits until the server is listed.
    *
    * @param server - The server's `ServerRef.id`.

@@ -69,6 +69,8 @@ export interface App {
   readonly platform: "web" | "desktop"
   /** A packaged desktop app, not a development run. Always false on the web. */
   readonly packaged: boolean
+  /** Whether this host exposes project workspaces. False for a personal-assistant shell; undefined on older hosts. */
+  readonly workspace?: boolean
 }
 
 declare const brand: unique symbol

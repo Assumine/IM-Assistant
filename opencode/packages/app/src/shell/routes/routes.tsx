@@ -10,6 +10,7 @@ import { SettingsSurfaceProvider } from "@/settings/surface"
 import Shell from "@/shell/shell"
 import { requireServerKey } from "./session"
 import { PluginAttachment } from "@/runtime/plugin/root"
+import { usePlatform } from "@/runtime/platform/platform"
 
 export const File = lazy(() => import("@opencode/session-ui/file").then((module) => ({ default: module.File })))
 
@@ -20,6 +21,8 @@ const DraftRoute = lazy(() => import("@/new-session/route").then((module) => ({ 
 const SettingsScreen = lazy(() => import("@/settings/shell").then((module) => ({ default: module.SettingsScreen })))
 
 const BackendRoute = lazy(() => import("@/runtime/plugin/backend-view"))
+
+const ApplicationPage = lazy(() => import("@/runtime/plugin/application-pages"))
 
 const ConnectServerScreen = lazy(() =>
   import("@/servers/connect/screen").then((module) => ({ default: module.ConnectServerScreen })),
@@ -55,7 +58,16 @@ export function preloadRoute(url: string) {
 export function AppRoutes() {
   return (
     <Route component={AppLayout}>
-      <Route path="/" component={Home} />
+      <Route
+        path="/"
+        component={() => (
+          <Show when={usePlatform().workspace === false} fallback={<Home />}>
+            <ApplicationPage home />
+          </Show>
+        )}
+      />
+      <Route path="/conversations" component={Home} />
+      <Route path="/page/:plugin/:page" component={ApplicationPage} />
       <Route path="/settings" component={SettingsScreen} />
       <Route
         path="/server/:serverKey/backend/:backendID/thread/:threadID"

@@ -187,11 +187,23 @@ export async function openSettings(page: Page, input: WorkspaceInput) {
 
 /** Opens Settings without replacing the existing sessions or server fixtures. */
 export async function showSettings(page: Page, labels = { home: "Home", tabs: "Tabs", settings: "Settings" }) {
-  await page.getByRole("button", { name: labels.home, exact: true }).click()
+  await expect(page.locator('[data-slot="application-shell"]')).toBeVisible({ timeout: APP_READY_TIMEOUT })
 
-  if ((page.viewportSize()?.width ?? 1280) < 800)
-    await page.getByRole("button", { name: labels.tabs, exact: true }).click()
-  await page.getByRole("button", { name: labels.settings, exact: true }).click()
+  if (new URL(page.url()).pathname === "/settings") {
+    // Reload already mounted the settings owner; do not move focus back into the navigation.
+  } else if ((await page.locator("html").getAttribute("data-interface")) === "assistant") {
+    await page
+      .locator('[data-component="application-navigation"]')
+      .getByRole("button", { name: new RegExp(labels.settings, "i") })
+      .click()
+  } else {
+    await page.getByRole("button", { name: labels.home, exact: true }).click()
+
+    if ((page.viewportSize()?.width ?? 1280) < 800)
+      await page.getByRole("button", { name: labels.tabs, exact: true }).click()
+    await page.getByRole("button", { name: labels.settings, exact: true }).click()
+  }
+
   const settings = page.getByTestId("settings-screen")
   await expect(settings).toBeFocused({ timeout: APP_READY_TIMEOUT })
 

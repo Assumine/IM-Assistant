@@ -8,7 +8,7 @@ import type definition from "./index"
 import Actions from "./actions"
 
 /** Bounded module data and explicit controls. Refresh only while visible when the owner requests it. */
-export default function View(props: { id: string; server: ServerRef | undefined }) {
+export default function View(props: { id: string; server: ServerRef | undefined; parentTitle?: string }) {
   const ctx = usePlugin<typeof definition>()
   const [state, setState] = createStore<{ pending: boolean; result?: Capability.ViewResult }>({ pending: true })
   let refresh = () => {}
@@ -85,8 +85,10 @@ export default function View(props: { id: string; server: ServerRef | undefined 
       class="min-w-0 border-t border-v2-border-border-base pt-3 flex flex-col gap-3"
     >
       <div class="flex items-center justify-between gap-3">
-        <h4 class="text-14-medium">{state.result?.document?.title ?? ctx.t("activity")}</h4>
-        <Button size="small" variant="ghost" disabled={state.pending} onClick={() => refresh()}>
+        <Show when={!props.parentTitle || props.parentTitle !== state.result?.document?.title}>
+          <h4 class="text-14-medium">{state.result?.document?.title ?? ctx.t("activity")}</h4>
+        </Show>
+        <Button class="ms-auto" size="small" variant="ghost" disabled={state.pending} onClick={() => refresh()}>
           {ctx.t("refresh")}
         </Button>
       </div>

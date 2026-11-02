@@ -3,6 +3,9 @@ import en from "./en"
 // Reviewed additions for the pinned upstream and assistant UI.
 export default {
   "assistant.navigation": "应用导航",
+  "assistant.overview": "总览",
+  "assistant.conversations": "会话与任务",
+  "assistant.pageUnavailable": "此工作区暂不可用，可打开会话或选择其他页面。",
   "assistant.modules": "模块管理",
   "assistant.notifications": "模块通知",
   "backend.question.unavailable": "这个问题已失效，请刷新原生执行状态。",

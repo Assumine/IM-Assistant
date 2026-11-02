@@ -175,7 +175,7 @@
         {
           "path": "packages/app/src/shell/titlebar/titlebar.tsx",
           "action": "modified",
-          "sha256": "61969bc063699f52d1ed8d47fcbf2d6e9f4d166844dabe4fc6a353fab949b589"
+          "sha256": "7d7541a8d8475b8768aa4a68ea8bcfd874c98e83a249d5be104ad1e4dc98e297"
         },
         {
           "path": "packages/cli/src/index.ts",
@@ -494,7 +494,7 @@
         {
           "path": "packages/app/src/runtime/i18n/en.ts",
           "action": "modified",
-          "sha256": "b27bd3c5ab725620ec6a234ccd3450fe7dff41e5783d64105a12ad3ec7a88904"
+          "sha256": "c29abd799c5fd25b758c87ceca4e98368ff915164ef91899bd89ee846c4801af"
         },
         {
           "path": "packages/app/src/settings/providers/providers.tsx",
@@ -696,7 +696,7 @@
         {
           "path": "packages/gui-plugins/README.md",
           "action": "modified",
-          "sha256": "efbe415082963c9ba85812be3d86e531d9796ad3c50e3e935d29ea4687503b7f"
+          "sha256": "d65d7e0bf945d0b81d0f39d22c81f941a7e5d5f42e824ff392eb1784796d97a0"
         },
         {
           "path": "packages/gui-plugins/src/backends/i18n/en.ts",
@@ -754,7 +754,7 @@
         {
           "path": "packages/app/component-tests/plugin-host.fixture.tsx",
           "action": "modified",
-          "sha256": "7a87aebbc18d47eead93e080269ed0bc1d848a449922b204b90fbf655e3fa33c"
+          "sha256": "79d8834d2c2b1d8ad0bdebccc39394779776f72671de3f8b92d1d8aa79625057"
         },
         {
           "path": "packages/app/e2e/regression/tabs.spec.ts",
@@ -769,7 +769,7 @@
         {
           "path": "packages/app/src/runtime/plugin/host-apis.tsx",
           "action": "modified",
-          "sha256": "50915fb56bd250b8b98752e87be67d6fbb42c00011974d6cf23d2117fdb82c7f"
+          "sha256": "de4570afd015f9f80e758708e5e2f094cb680588cf4371628431ea9c6c0531eb"
         },
         {
           "path": "packages/app/src/runtime/plugin/server-shell.tsx",
@@ -784,7 +784,7 @@
         {
           "path": "packages/app/src/shell/routes/routes.tsx",
           "action": "modified",
-          "sha256": "0fcabbb22d1387ecd57ddb756795c8a878a9d02be7790717297cd5656a51701a"
+          "sha256": "3318612cc884feba8ef7ce9ece08f0a0e45d0dc5a0bdc24c5119bc5581909d47"
         },
         {
           "path": "packages/app/src/shell/routes/session.ts",
@@ -794,7 +794,7 @@
         {
           "path": "packages/app/src/shell/state/layout.tsx",
           "action": "modified",
-          "sha256": "b95c69f9ee7ed45fc6d4a053ec9ebf71a24b950ed6c8422b8f6d9db3efb1a020"
+          "sha256": "e2b583f3c1a95a0ceb10360712376c5f05457f5f254e8127957b5332de423013"
         },
         {
           "path": "packages/app/src/shell/tabs/closed.ts",
@@ -839,12 +839,12 @@
         {
           "path": "packages/plugin/src/gui/host-apis.ts",
           "action": "modified",
-          "sha256": "af9d9e618d70e0e3b30ac899cacd8bae7ea3f2550be294022000dcaecdf27ecd"
+          "sha256": "020c26f0faf0b30814f7dcecf3a2ca88c0beaaab796bd424bb158c41cb4bc268"
         },
         {
           "path": "packages/plugin/src/gui/registries.ts",
           "action": "modified",
-          "sha256": "69a5d0d518a8353b0474174c519aa86b9cb56cf20770381631cc6e3228a7af5c"
+          "sha256": "9ad07b7206819f79de6780806b38a696080ca08eb18088ec7622e068a7dccb12"
         }
       ]
     },
@@ -986,7 +986,7 @@
         {
           "path": "packages/app/e2e/regression/home.spec.ts",
           "action": "modified",
-          "sha256": "0544ba76853c1eb6ae431d8e412ddde5d01bf00329f197fcba9a54ec81acc4c2"
+          "sha256": "4031fee6d508fb6982d17d24b3b40c183976adb964c6a27aae25c53be95201d7"
         },
         {
           "path": "packages/app/src/home/sessions/view.tsx",
@@ -1496,7 +1496,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/en.ts",
           "action": "added",
-          "sha256": "b8bf746224790bb222486b762eca58963f5ebbcfc3f10e53b861d80962112f6d"
+          "sha256": "f755b3ef0a6c27457665ee99f47841eacf864aa8064b4694c30b4cf49213b45e"
         },
         {
           "path": "packages/gui-plugins/src/capabilities/index.ts",
@@ -1511,12 +1511,12 @@
         {
           "path": "packages/gui-plugins/src/capabilities/page.tsx",
           "action": "added",
-          "sha256": "e90f33ee2cc10673380b06c586305e8fdce759da181adf832ebdc7fa09fe7da5"
+          "sha256": "b49b7b571062c20010b80b7c89f40caa23b97ec11e8a8ac55e9407d6052ea781"
         },
         {
           "path": "packages/gui-plugins/src/capabilities/renderer.tsx",
           "action": "added",
-          "sha256": "d022d6029fb7e2dd40c267c8ef9a97c368fab6743f6aa807816a2756eebcf9fe"
+          "sha256": "0fb7c7aafafb8c9b7c9c3a43d271a4e52b98a37d2820c4b77eff6ed3c054483a"
         },
         {
           "path": "packages/server/test/capabilities.test.ts",
@@ -1537,7 +1537,7 @@
         {
           "path": "packages/app/e2e/utils/capabilities.ts",
           "action": "added",
-          "sha256": "9116495ff923424fdbbf1189d83e313bc0e078cea193dc6ce23b90323d4e72ee"
+          "sha256": "93ddbefdb47dfbf92dc9d197961b6120a3006fe6424a94a0db5e4d10ac22ec96"
         }
       ]
     },
@@ -1551,7 +1551,7 @@
         {
           "path": "packages/app/e2e/utils/workspace.ts",
           "action": "modified",
-          "sha256": "24ca0f12470c61161f7439e87804f2c0aa2a7f2432e7eb8b0773b38f1c55aef4"
+          "sha256": "05b0cb38cd17e0c2677abd0b94927876516d77bff880999d555ed778769b364d"
         },
         {
           "path": "packages/server/script/capabilities-smoke.ts",
@@ -1600,12 +1600,12 @@
         {
           "path": "packages/app/src/shell/conversation-navigation.tsx",
           "action": "added",
-          "sha256": "e103be379587ec68ea42680346b05bc5b4c3f15783e5400934c8f5366a2c6179"
+          "sha256": "e98df1e7398afd3c5292f42119b8b3e824eeb81a86d32e0122226801de726c1a"
         },
         {
           "path": "packages/app/src/shell/shell.tsx",
           "action": "modified",
-          "sha256": "6855f965311f0cc7f3957f5ffcb1da9c881e14953ca9dbda3ec3ed3aeb1ddf14"
+          "sha256": "3708f36277bed0257bbf39113bc098f8bb8122da5fb52071141f456555db01e8"
         },
         {
           "path": "packages/im-assistant/src/motion.css",
@@ -1615,7 +1615,7 @@
         {
           "path": "packages/im-assistant/src/theme.css",
           "action": "added",
-          "sha256": "f0700ed04456f4ee35f0d61d124cb097cd554ea74f2cfd248aeacca04ec8263e"
+          "sha256": "55309078c8a797aae243ff5c580ec50835834b60232f224062f970686d385fef"
         }
       ]
     },
@@ -1860,7 +1860,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/view.tsx",
           "action": "added",
-          "sha256": "99db064a3567a8754400a4ccf69e734d9342768226f6b142b8d371a16303b7c0"
+          "sha256": "802523eebca1ca3befa291bdab671fbc233cd18ff2b86ecbaeed2585277b15d6"
         },
         {
           "path": "packages/im-assistant/src/research.ts",
@@ -1918,7 +1918,7 @@
         {
           "path": "packages/app/src/runtime/i18n/zh-supplement.ts",
           "action": "added",
-          "sha256": "9175810926d53eb88f85af4dcb4ca07a86370824431b3714ba3d9f083fd69f91"
+          "sha256": "c04a52296159abae6f75dfdaf6b3bbd28d7bfb30e86c0e6149ac2b1ac46f3702"
         },
         {
           "path": "packages/app/src/runtime/i18n/zh.ts",
@@ -1948,7 +1948,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/zh.ts",
           "action": "added",
-          "sha256": "3aa9155d634b8a3a4781f258105748abab9b9e211a03490c55869451138c3be3"
+          "sha256": "7dba78dbd7161ba8b966de02501297b124a897a4a10afa9493f6ef9abaa35d70"
         },
         {
           "path": "packages/gui-plugins/src/context/i18n/zh.ts",
@@ -2068,6 +2068,50 @@
           "path": "packages/server/script/downloads-smoke.ts",
           "action": "added",
           "sha256": "ed08c9a18469b3c80fdf723f0c79e7beb8fcb8b319b9a795eb35811b1cf8b3ba"
+        }
+      ]
+    },
+    {
+      "id": "U1-01-application-workspaces",
+      "reason": "通用独立应用页面/导航扩展；助手总览、日常业务与设置分离，保留原生会话和 Inbox 所有权。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task U1-01"
+      ],
+      "files": [
+        {
+          "path": "packages/app/src/runtime/plugin/application-pages.tsx",
+          "action": "added",
+          "sha256": "3aea616f82238ad0f91b85fe8995ad76531eb757ae7e6111c04b39b22292d631"
+        },
+        {
+          "path": "packages/gui-plugins/src/browser/panel.fixture.tsx",
+          "action": "modified",
+          "sha256": "c4c8dcced1bcae7a344d5161e483f4e91e812816e008dbcc7fb07c29bf63a61f"
+        },
+        {
+          "path": "packages/gui-plugins/src/capabilities/workspace.css",
+          "action": "added",
+          "sha256": "29c918ac8f5bce8bfe41db31ad1a36384e6e2a3a97488b0194ee691ccb1fb186"
+        },
+        {
+          "path": "packages/gui-plugins/src/capabilities/workspace.tsx",
+          "action": "added",
+          "sha256": "23ca4635b2b27eb1a30b4dd67af50c604432799cc08409a5b789b709eb8b57c8"
+        },
+        {
+          "path": "packages/plugin/src/gui/core.ts",
+          "action": "modified",
+          "sha256": "d32345d00ba1d00738b3783be8293aebd7f349329c65841825d02d9e9f5a54e9"
+        },
+        {
+          "path": "packages/app/src/runtime/plugin/application-page-path.ts",
+          "action": "added",
+          "sha256": "a5d3d9cf1a8145a0c1c78c44f9414b684008f47b5390580fb3869a5a2ea27a27"
+        },
+        {
+          "path": "packages/stories/vite.config.ts",
+          "action": "modified",
+          "sha256": "44ade193b99ee9db33216e5bc3be8dfc47ea5c61f13aaa0f22d212c8df88aed5"
         }
       ]
     }
