@@ -479,7 +479,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "0ec4d08483a0cc43116f3a34cd94aaf98b2a4f6643ca3fc7b09ad2a412d3c697"
+          "sha256": "da198c94bc1c97f90f08df4a46a3ea2f2545fe21f30f1834c44114d41db6207b"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -986,7 +986,7 @@
         {
           "path": "packages/app/e2e/regression/home.spec.ts",
           "action": "modified",
-          "sha256": "4031fee6d508fb6982d17d24b3b40c183976adb964c6a27aae25c53be95201d7"
+          "sha256": "cd32136c43c8b219a64828e31e284019bc8c6309201b6d127f152df39e3dcfb2"
         },
         {
           "path": "packages/app/src/home/sessions/view.tsx",
@@ -1496,7 +1496,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/en.ts",
           "action": "added",
-          "sha256": "f755b3ef0a6c27457665ee99f47841eacf864aa8064b4694c30b4cf49213b45e"
+          "sha256": "bd97cc557f5d12c817a1f31f43e1e719a3720ab371cef1afa248a8b8c5c9aa76"
         },
         {
           "path": "packages/gui-plugins/src/capabilities/index.ts",
@@ -1777,7 +1777,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/settings.tsx",
           "action": "added",
-          "sha256": "6d4ec0675f272d2281d447f8bb8f2b03d2206c6ad953f8ac35c03acf23fe39a8"
+          "sha256": "ada14e461fcd9872952cbcbd1997a0aa714df68b786d929d9b150fd248d6b4db"
         },
         {
           "path": "packages/im-assistant/src/chatbots.ts",
@@ -1948,7 +1948,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/zh.ts",
           "action": "added",
-          "sha256": "7dba78dbd7161ba8b966de02501297b124a897a4a10afa9493f6ef9abaa35d70"
+          "sha256": "e107d1c9f321b73e77634d67b85bdf817a7c9a84a9ab88035281c57e1b411b4f"
         },
         {
           "path": "packages/gui-plugins/src/context/i18n/zh.ts",
@@ -2112,6 +2112,20 @@
           "path": "packages/stories/vite.config.ts",
           "action": "modified",
           "sha256": "44ade193b99ee9db33216e5bc3be8dfc47ea5c61f13aaa0f22d212c8df88aed5"
+        }
+      ]
+    },
+    {
+      "id": "U2-01-simple-config",
+      "reason": "通用独立应用页面/导航扩展；助手总览、日常业务与设置分离，保留原生会话和 Inbox 所有权。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task U2-01"
+      ],
+      "files": [
+        {
+          "path": "packages/gui-plugins/src/capabilities/settings-form.tsx",
+          "action": "added",
+          "sha256": "6a275e9fc2657e20589f284e8589d5fa4fd220622802499b6afb6cd366b8b531"
         }
       ]
     }

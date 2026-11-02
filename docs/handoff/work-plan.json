@@ -786,6 +786,46 @@
           "native_verification": "原生 GUI 注册与路由、构建 keeper、语言/生命周期回归和 canonical 检查。"
         }
       ]
+    },
+    "simple-config-v1": {
+      "schema_version": 1,
+      "plan_id": "simple-config-v1",
+      "foundation_plan_id": "opencode-app-base-v2",
+      "scope": "simple_module_configuration",
+      "start_task": "U2-01",
+      "progress_file": "docs/handoff/progress.json",
+      "production_switch": false,
+      "private_data_migration": false,
+      "acceptance_document": "docs/architecture/简易配置验收.md",
+      "tasks": [
+        {
+          "id": "U2-01",
+          "phase": "U2",
+          "title": "模块简易配置表单",
+          "depends_on": [],
+          "outputs": [
+            "opencode/packages/gui-plugins/src/capabilities/settings-form.tsx",
+            "tests/modules/config-form-evidence.json"
+          ],
+          "test_files": [
+            "tests/modules/test_config_form.py"
+          ],
+          "acceptance_ids": [
+            "G01"
+          ],
+          "scope": "通用配置表单，不改业务校验和运行开关语义。",
+          "done_when": [
+            "字符串、数字和布尔值使用对应的原生控件，嵌套字段不丢失。",
+            "简易与高级编辑同源，保存保持原有类型与版本校验。",
+            "构建界面验证输入焦点、保存、冲突及长配置可访问性。各模块启停语义保持不变。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task U2-01"
+          ],
+          "native_verification": "真实构建表单 keeper、原生类型、中文与构建检查。"
+        }
+      ]
     }
   }
 }

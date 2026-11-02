@@ -733,7 +733,7 @@
       "blocked_reason": null
     }
   },
-  "active_plan_id": "assistant-workspace-v1",
+  "active_plan_id": "simple-config-v1",
   "module_plan": {
     "plan_id": "qq-plugin-migration-v1",
     "implementation_started": true,
@@ -1466,6 +1466,43 @@
               "exit_code": 0,
               "evidence": "tests/modules/workspace-evidence.json",
               "command": "python tools/run_runtime_checks.py --task U1-01"
+            }
+          ],
+          "blocked_reason": null
+        }
+      }
+    },
+    "simple-config-v1": {
+      "plan_id": "simple-config-v1",
+      "implementation_started": true,
+      "runtime_acceptance_completed": [
+        "G01"
+      ],
+      "tasks": {
+        "U2-01": {
+          "status": "done",
+          "artifacts": [
+            "opencode/packages/gui-plugins/src/capabilities/settings-form.tsx",
+            "tests/modules/config-form-evidence.json"
+          ],
+          "verification": [
+            {
+              "task": "U2-01",
+              "plan_id": "simple-config-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 1,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "G01"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "evidence": "tests/modules/config-form-evidence.json",
+              "command": "python tools/run_runtime_checks.py --task U2-01"
             }
           ],
           "blocked_reason": null

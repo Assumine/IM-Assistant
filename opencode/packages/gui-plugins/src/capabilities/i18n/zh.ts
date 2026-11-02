@@ -1,6 +1,16 @@
 import en from "./en"
 
 export default {
+  "form.title": "简易配置",
+  "form.advanced": "高级 JSON 编辑",
+  "form.advancedHint": "嵌套配置按层级展示；新增条目、空列表和复杂结构可使用高级编辑。",
+  "form.enabled": "启用",
+  "form.name": "名称",
+  "form.model": "模型",
+  "form.maxConcurrent": "同时下载数量",
+  "form.speed": "限速（字节/秒）",
+  "form.reserve": "保留空间（字节）",
+  "form.dht": "DHT 节点发现",
   "workspace.title": "消息助手",
   "workspace.overview": "总览",
   "workspace.conversations": "会话与任务",

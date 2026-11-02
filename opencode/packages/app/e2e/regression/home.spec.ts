@@ -67,6 +67,7 @@ test("assistant workspace: daily tools open as full pages while configuration st
   expect(calls).toHaveLength(1)
   expect(calls[0].id).toBe("downloads")
   await page.getByRole("button", { name: "配置", exact: true }).click()
+  await page.getByRole("dialog").getByText("高级 JSON 编辑", { exact: true }).click()
   await expect(page.getByRole("dialog").getByRole("textbox", { name: "配置 JSON" })).toHaveValue("{}")
   await expectPath(page, "/page/capabilities/module-downloads")
   await page.keyboard.press("Escape")

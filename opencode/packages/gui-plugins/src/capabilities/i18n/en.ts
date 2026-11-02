@@ -1,4 +1,15 @@
 export default {
+  "form.title": "Simple settings",
+  "form.advanced": "Advanced JSON editor",
+  "form.advancedHint":
+    "Nested fields are grouped by path. Use advanced editing to add entries or edit empty collections.",
+  "form.enabled": "Enabled",
+  "form.name": "Name",
+  "form.model": "Model",
+  "form.maxConcurrent": "Concurrent downloads",
+  "form.speed": "Speed limit (bytes/s)",
+  "form.reserve": "Reserved free space (bytes)",
+  "form.dht": "DHT discovery",
   "workspace.title": "Assistant",
   "workspace.overview": "Overview",
   "workspace.conversations": "Conversations and tasks",

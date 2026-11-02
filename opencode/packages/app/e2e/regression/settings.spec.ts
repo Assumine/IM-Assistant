@@ -241,6 +241,74 @@ test("module controls: an unconfirmed operation keeps the same request and draft
   expect(calls[1].values).toBe(calls[0].values)
 })
 
+test("module settings form: typed controls preserve nested data and share advanced edits", async ({ page }) => {
+  let document: Capability.Settings = {
+    revision: "1".repeat(64),
+    appliesTo: "next-service-start",
+    text: JSON.stringify({
+      enabled: false,
+      name: "Original",
+      maxConcurrent: 3,
+      nested: { enabled: true, label: "Keep" },
+      accounts: [{ name: "Bot" }],
+      empty: [],
+      nullable: null,
+    }),
+  }
+
+  const saved: string[] = []
+
+  const { settings } = await openSettings(page, {
+    name: "SimpleConfiguration",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => [{ id: "example", title: "Form example", state: "disabled", metrics: false, settings: true }],
+      settings: () => document,
+      configure: (input) => {
+        expect(input.revision).toBe(document.revision)
+        saved.push(input.text)
+        document = { ...document, revision: "2".repeat(64), text: input.text }
+
+        return document
+      },
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
+  await settings.getByRole("article", { name: "Form example" }).getByRole("button", { name: "Configure" }).click()
+  const dialog = page.getByRole("dialog", { name: "Form example" })
+  await expect(dialog.getByRole("textbox", { name: "Configuration JSON", exact: true })).toHaveCount(0)
+  const name = dialog.getByRole("textbox", { name: "Name", exact: true })
+  await name.fill("First")
+  await name.pressSequentially(" edited")
+  await expect(name).toBeFocused()
+  await expect(name).toHaveValue("First edited")
+  await dialog.getByText("Enabled", { exact: true }).click()
+  await dialog.getByRole("spinbutton", { name: "Concurrent downloads" }).fill("5")
+  await dialog.getByRole("textbox", { name: "nested / label" }).fill("Updated")
+  await dialog.getByRole("textbox", { name: "accounts / 1 / Name" }).fill("Other bot")
+  await dialog.getByRole("button", { name: "Save configuration", exact: true }).click()
+  await expect(dialog.getByText("Saved for the next service start.", { exact: true })).toBeVisible()
+  expect(JSON.parse(saved[0])).toEqual({
+    enabled: true,
+    name: "First edited",
+    maxConcurrent: 5,
+    nested: { enabled: true, label: "Updated" },
+    accounts: [{ name: "Other bot" }],
+    empty: [],
+    nullable: null,
+  })
+  await dialog.getByText("Advanced JSON editor", { exact: true }).click()
+  await dialog
+    .getByRole("textbox", { name: "Configuration JSON", exact: true })
+    .fill(JSON.stringify({ enabled: false, name: "Advanced", maxConcurrent: 2 }))
+  await expect(name).toHaveValue("Advanced")
+  await expect(dialog.getByRole("switch", { name: "Enabled", exact: true })).not.toBeChecked()
+  await dialog.getByRole("spinbutton", { name: "Concurrent downloads" }).fill("")
+  await dialog.getByRole("button", { name: "Save configuration", exact: true }).click()
+  expect(saved).toHaveLength(1)
+})
+
 test("assistant appearance: native theme, font roles and reduced motion survive reload", async ({ page }) => {
   await openSession(page, { name: "AssistantAppearance", workspace: false })
   const settings = await showSettings(page)
@@ -370,6 +438,7 @@ test("capabilities: module-owned settings save by revision while its service sta
   await expect(module.getByText("Disabled", { exact: true })).toBeVisible()
   await module.getByRole("button", { name: "Configure", exact: true }).click()
   const dialog = page.getByRole("dialog", { name: "QQ chat companion", exact: true })
+  await dialog.getByText("Advanced JSON editor", { exact: true }).click()
   const editor = dialog.getByRole("textbox", { name: "Configuration JSON", exact: true })
   await expect(editor).toBeEditable()
   await expect(editor).toHaveValue(document.text)

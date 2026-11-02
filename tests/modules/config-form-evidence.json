@@ -1,0 +1,162 @@
+{
+  "plan_id": "simple-config-v1",
+  "task": "U2-01",
+  "status": "passed",
+  "acceptance_ids": [
+    "G01"
+  ],
+  "sources": {
+    "opencode/packages/app/e2e/regression/home.spec.ts": "cd32136c43c8b219a64828e31e284019bc8c6309201b6d127f152df39e3dcfb2",
+    "opencode/packages/app/e2e/regression/settings.spec.ts": "da198c94bc1c97f90f08df4a46a3ea2f2545fe21f30f1834c44114d41db6207b",
+    "opencode/packages/gui-plugins/src/capabilities/i18n/en.ts": "bd97cc557f5d12c817a1f31f43e1e719a3720ab371cef1afa248a8b8c5c9aa76",
+    "opencode/packages/gui-plugins/src/capabilities/i18n/zh.ts": "e107d1c9f321b73e77634d67b85bdf817a7c9a84a9ab88035281c57e1b411b4f",
+    "opencode/packages/gui-plugins/src/capabilities/settings-form.tsx": "6a275e9fc2657e20589f284e8589d5fa4fd220622802499b6afb6cd366b8b531",
+    "opencode/packages/gui-plugins/src/capabilities/settings.tsx": "ada14e461fcd9872952cbcbd1997a0aa714df68b786d929d9b150fd248d6b4db",
+    "tests/modules/test_config_form.py": "ed83a3fce9cbfe5a4840b3094fe7564255b5c4b6eff6e6a996721389a9820000",
+    "upstream/patches.json": "29e087fa7dd3985645437d2182b5cb87e15f7559e3a738f785148b411f19186a"
+  },
+  "steps": [
+    {
+      "args": [
+        "bun",
+        "run",
+        "test:e2e:built",
+        "--",
+        "e2e/regression/settings.spec.ts",
+        "e2e/regression/home.spec.ts",
+        "--grep",
+        "module settings form:|module-owned settings|assistant workspace: daily",
+        "--project",
+        "chromium",
+        "--workers=2",
+        "--retries=0",
+        "--max-failures=1"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 33.09,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-browser.log",
+      "native_tests_passed": 3,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "--conditions=solid",
+        "--isolate",
+        "--preload",
+        "../ui/test/solid-jsx.ts",
+        "--preload",
+        "./happydom.ts",
+        "./src/runtime/i18n/language.test.ts"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.7,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-catalogs.log",
+      "native_tests_passed": 22,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 12.67,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-check.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "typecheck:e2e"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 5.42,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-e2e-types.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "lint:changed",
+        "HEAD"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 5.7,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-changed-lint.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "oxlint",
+        "--deny-warnings",
+        "packages/app/e2e/regression/home.spec.ts",
+        "packages/app/e2e/regression/settings.spec.ts",
+        "packages/gui-plugins/src/capabilities/i18n/en.ts",
+        "packages/gui-plugins/src/capabilities/i18n/zh.ts",
+        "packages/gui-plugins/src/capabilities/settings-form.tsx",
+        "packages/gui-plugins/src/capabilities/settings.tsx"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.41,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-lint.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "electron-vite",
+        "build"
+      ],
+      "cwd": "opencode/packages/desktop",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 22.99,
+      "isolated_home": true,
+      "log": ".reports/native/config-form-desktop-build.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    }
+  ],
+  "browser_cases": 3,
+  "catalog_cases": 22,
+  "skipped": 0,
+  "private_data_migrated": false,
+  "production_switch": false
+}

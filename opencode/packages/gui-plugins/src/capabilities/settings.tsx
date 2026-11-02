@@ -5,6 +5,7 @@ import { Capability } from "@opencode/schema/capability"
 import { Button } from "@opencode/ui/button"
 import { Loader } from "@opencode/ui/loader"
 import type definition from "./index"
+import SettingsForm from "./settings-form"
 
 export default function Settings(props: { id: string; server: ServerRef | undefined }) {
   const ctx = usePlugin<typeof definition>()
@@ -65,7 +66,14 @@ export default function Settings(props: { id: string; server: ServerRef | undefi
   )
 
   return (
-    <div class="px-5 pb-5 flex flex-col gap-3">
+    <form
+      class="px-5 pb-5 flex flex-col gap-3 min-h-0 max-h-[75dvh] overflow-y-auto"
+      data-scrollable
+      onSubmit={(event) => {
+        event.preventDefault()
+        save()
+      }}
+    >
       <p class="text-13-regular text-v2-text-text-muted">{ctx.t("settingsDescription")}</p>
       <Show when={state.document?.description}>
         {(description) => <p class="text-13-regular text-v2-text-text-muted">{description()}</p>}
@@ -79,32 +87,47 @@ export default function Settings(props: { id: string; server: ServerRef | undefi
       <Show when={state.phase === "offline" || state.phase === "error"}>
         <p role="alert">{ctx.t(state.phase === "offline" ? "offline" : "settingsFailed")}</p>
       </Show>
-      <label class="flex flex-col gap-2 text-13-regular">
-        {ctx.t("settingsDocument")}
-        <textarea
-          aria-label={ctx.t("settingsDocument")}
-          class="w-full min-h-80 max-h-[55vh] overflow-y-auto resize-y rounded-md border border-v2-border-border-base bg-v2-surface-base p-3 font-mono text-13-regular"
-          data-scrollable
-          spellcheck={false}
-          value={state.text}
-          disabled={state.phase !== "ready" || state.saving}
-          onInput={(event) => setState({ text: event.currentTarget.value, saved: false })}
-        />
-      </label>
+      <Show when={state.phase === "ready"}>
+        <SettingsForm text={state.text} disabled={state.saving} change={(text) => setState({ text, saved: false })} />
+      </Show>
+      <details>
+        <summary class="cursor-pointer text-13-regular text-v2-text-text-muted">{ctx.t("form.advanced")}</summary>
+        <label class="mt-3 flex flex-col gap-2 text-13-regular">
+          {ctx.t("settingsDocument")}
+          <textarea
+            aria-label={ctx.t("settingsDocument")}
+            class="w-full min-h-80 max-h-[55vh] overflow-y-auto resize-y rounded-md border border-v2-border-border-base bg-v2-surface-base p-3 font-mono text-13-regular"
+            data-scrollable
+            spellcheck={false}
+            value={state.text}
+            disabled={state.phase !== "ready" || state.saving}
+            onInput={(event) => setState({ text: event.currentTarget.value, saved: false })}
+          />
+        </label>
+      </details>
       <Show when={state.failed}>
-        <p role="alert" class="text-13-regular">{ctx.t("settingsFailed")}</p>
+        <p role="alert" class="text-13-regular">
+          {ctx.t("settingsFailed")}
+        </p>
       </Show>
       <Show when={state.saved}>
-        <p role="status" class="text-13-regular">{ctx.t("settingsSaved")}</p>
+        <p role="status" class="text-13-regular">
+          {ctx.t("settingsSaved")}
+        </p>
       </Show>
       <div class="flex justify-end gap-2">
-        <Button variant="ghost" onClick={() => reload()} disabled={state.phase === "offline" || state.saving}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => reload()}
+          disabled={state.phase === "offline" || state.saving}
+        >
           {ctx.t("settingsReload")}
         </Button>
-        <Button onClick={() => save()} disabled={state.phase !== "ready" || state.saving || state.text === state.document?.text}>
+        <Button type="submit" disabled={state.phase !== "ready" || state.saving || state.text === state.document?.text}>
           {ctx.t(state.saving ? "settingsSaving" : "settingsSave")}
         </Button>
       </div>
-    </div>
+    </form>
   )
 }
