@@ -1,0 +1,11 @@
+{
+  "version": "1.37.0",
+  "repository": "https://github.com/aria2/aria2",
+  "release_url": "https://github.com/aria2/aria2/releases/tag/release-1.37.0",
+  "manual": "https://aria2.github.io/manual/en/html/aria2c.html#rpc-interface",
+  "asset": "aria2-1.37.0-win-64bit-build1.zip",
+  "url": "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip",
+  "archive_sha256": "67d015301eef0b612191212d564c5bb0a14b5b9c4796b76454276a4d28d9b288",
+  "runtime": "runtime/tools/aria2-1.37.0/aria2c.exe",
+  "license": "GPL-2.0-or-later; external unmodified engine, not uploaded into the source repository"
+}

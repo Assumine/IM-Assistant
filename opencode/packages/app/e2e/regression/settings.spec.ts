@@ -22,12 +22,14 @@ test("Simplified Chinese follows live language changes across native and plugin 
   const modules = capabilityRpc({
     list: () => [{ id: "translation-fixture", title: "示例模块", state: "disabled", metrics: false }],
   })
+
   const backends = backendRpc({
     list: () => [],
     status: () => {
       throw new Error("No backend account belongs to this translation scenario")
     },
   })
+
   const { settings } = await openSettings(page, {
     name: "Chinese settings",
     workspace: false,
@@ -59,6 +61,7 @@ test("Simplified Chinese follows live language changes across native and plugin 
       },
     }),
   })
+
   // Start in English, then load each plugin's lazy catalog through the real settings host.
   await expect(settings.getByRole("tab", { name: "Application modules", exact: true })).toBeVisible()
   await settings.locator('[data-action="settings-language"]').click()
@@ -85,11 +88,157 @@ test("Simplified Chinese follows live language changes across native and plugin 
   await reopened.locator('[data-action="settings-language"]').click()
   await page.getByRole("option", { name: "English", exact: true }).click()
   await expect(reopened.getByRole("tab", { name: "Application modules", exact: true })).toBeVisible()
-  await expect(page.getByRole("region", { name: /^Notifications / })).toHaveAttribute("aria-label", "Notifications alt+T")
+  await expect(page.getByRole("region", { name: /^Notifications / })).toHaveAttribute(
+    "aria-label",
+    "Notifications alt+T",
+  )
   await reopened.getByRole("tab", { name: "Application modules", exact: true }).click()
   await expect(
     reopened.getByRole("article", { name: "示例模块", exact: true }).getByText("Disabled", { exact: true }),
   ).toBeVisible()
+})
+
+test("module controls: Chinese forms retain drafts across live progress and stop reading when hidden or closed", async ({
+  page,
+}) => {
+  await page.clock.install()
+  const calls: Capability.Invocation[] = []
+
+  let reads = 0,
+    paused = false
+
+  const held = Promise.withResolvers<Capability.ActionResult>()
+
+  const { settings } = await openSettings(page, {
+    name: "ModuleControls",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => [{ id: "downloads", title: "Downloads", state: "active", metrics: false, view: true }],
+      view: () => {
+        reads++
+
+        return {
+          id: "downloads",
+          status: "ready",
+          document: {
+            title: "下载管理",
+            refreshAfterMs: paused ? undefined : 1000,
+            actions: [
+              {
+                id: "create",
+                label: "新增下载",
+                fields: [
+                  { name: "title", label: "任务名称", required: true },
+                  { name: "uri", label: "下载地址", required: true },
+                ],
+              },
+            ],
+            items: [
+              {
+                id: "existing",
+                title: "已有下载",
+                state: paused ? "waiting" : "running",
+                status: paused ? "已暂停" : "下载中",
+                progress: 25,
+                fields: [{ label: "进度", value: "25 / 100 MiB" }],
+                actions: [{ id: paused ? "resume" : "pause", label: paused ? "继续" : "暂停", target: "existing" }],
+              },
+            ],
+          },
+        }
+      },
+      invoke: async (input) => {
+        calls.push(input)
+
+        if (input.action === "create") return held.promise
+        paused = input.action === "pause"
+
+        return { state: "applied", message: "操作已生效" }
+      },
+    }),
+  })
+
+  await settings.locator('[data-action="settings-language"]').click()
+  await page.getByRole("option", { name: "简体中文", exact: true }).click()
+  await settings.getByRole("tab", { name: "模块管理", exact: true }).click()
+  const card = settings.getByRole("article", { name: "Downloads", exact: true })
+  await card.getByRole("button", { name: "查看执行情况", exact: true }).click()
+  await expect(card.getByRole("progressbar", { name: "已有下载", exact: true })).toHaveAttribute("aria-valuenow", "25")
+  await card.getByRole("button", { name: "新增下载", exact: true }).click()
+  const form = card.getByRole("form", { name: "新增下载", exact: true })
+  await form.getByLabel("任务名称", { exact: true }).fill("保持输入")
+  await form.getByLabel("下载地址", { exact: true }).fill("https://example.test/file.bin")
+  const before = reads
+  await page.clock.fastForward(1100)
+  await expect.poll(() => reads).toBeGreaterThan(before)
+  await expect(form.getByLabel("下载地址", { exact: true })).toBeFocused()
+  await expect(form.getByLabel("下载地址", { exact: true })).toHaveValue("https://example.test/file.bin")
+  await form.getByRole("button", { name: "新增下载", exact: true }).click()
+  await expect(form.getByRole("button", { name: "正在提交…", exact: true })).toBeDisabled()
+  expect(calls).toHaveLength(1)
+  expect(JSON.parse(calls[0].values)).toEqual({ title: "保持输入", uri: "https://example.test/file.bin" })
+  held.resolve({ state: "applied", message: "已接收下载" })
+  await expect(form.getByRole("button", { name: "新增下载", exact: true })).toBeEnabled()
+  await card.getByRole("button", { name: "暂停", exact: true }).click()
+  await expect(card.getByRole("button", { name: "继续", exact: true })).toBeEnabled()
+  expect(calls[1].target).toBe("existing")
+  await card.getByRole("button", { name: "继续", exact: true }).click()
+  await expect(card.getByRole("button", { name: "暂停", exact: true })).toBeEnabled()
+  await capabilityVisibility(page, true)
+  const hidden = reads
+  await page.clock.fastForward(5000)
+  expect(reads).toBe(hidden)
+  await capabilityVisibility(page, false)
+  await expect.poll(() => reads).toBeGreaterThan(hidden)
+  await card.getByRole("button", { name: "收起执行情况", exact: true }).click()
+  const closed = reads
+  await page.clock.fastForward(5000)
+  expect(reads).toBe(closed)
+})
+
+test("module controls: an unconfirmed operation keeps the same request and draft when checked again", async ({
+  page,
+}) => {
+  const calls: Capability.Invocation[] = []
+
+  const { settings } = await openSettings(page, {
+    name: "UnknownModuleControl",
+    workspace: false,
+    rpc: capabilityRpc({
+      list: () => [{ id: "downloads", title: "Downloads", state: "active", metrics: false, view: true }],
+      view: () => ({
+        id: "downloads",
+        status: "ready",
+        document: {
+          title: "Downloads",
+          items: [],
+          actions: [{ id: "create", label: "Add transfer", fields: [{ name: "uri", label: "URL", required: true }] }],
+        },
+      }),
+      invoke: async (input) => {
+        calls.push(input)
+
+        if (calls.length === 1) throw new Error("Synthetic unknown transport result")
+
+        return { state: "applied", message: "Original request reconciled" }
+      },
+    }),
+  })
+
+  await settings.getByRole("tab", { name: "Application modules", exact: true }).click()
+  const card = settings.getByRole("article", { name: "Downloads", exact: true })
+  await card.getByRole("button", { name: "View activity", exact: true }).click()
+  await card.getByRole("button", { name: "Add transfer", exact: true }).click()
+  const form = card.getByRole("form", { name: "Add transfer", exact: true })
+  await form.getByLabel("URL", { exact: true }).fill("https://example.test/file.bin")
+  await form.getByRole("button", { name: "Add transfer", exact: true }).click()
+  await expect(form.getByLabel("URL", { exact: true })).toBeDisabled()
+  await expect(form.getByLabel("URL", { exact: true })).toHaveValue("https://example.test/file.bin")
+  await form.getByRole("button", { name: "Retry or check operation", exact: true }).click()
+  await expect(card.getByText("Original request reconciled", { exact: true })).toBeVisible()
+  expect(calls).toHaveLength(2)
+  expect(calls[1].requestID).toBe(calls[0].requestID)
+  expect(calls[1].values).toBe(calls[0].values)
 })
 
 test("assistant appearance: native theme, font roles and reduced motion survive reload", async ({ page }) => {
@@ -182,11 +331,13 @@ test("capabilities: module-owned settings save by revision while its service sta
   const modules: Capability.Info[] = [
     { id: "qq-chatbot", title: "QQ chat companion", state: "disabled", metrics: false, settings: true },
   ]
+
   let document: Capability.Settings = {
     revision: "1".repeat(64),
     text: '{"version":1,"enabled":false,"accounts":[]}',
     appliesTo: "next-service-start",
   }
+
   const saved = Promise.withResolvers<Capability.Settings>()
   const calls: { id: string; revision: string; text: string }[] = []
   let lists = 0
@@ -264,9 +415,12 @@ test("capabilities: activity expands in place, refreshes from owned events and b
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-11-02T00:00:00Z") })
+
   let reads = 0,
     lists = 0
+
   const held = Promise.withResolvers<Capability.ViewResult>()
+
   const document: Capability.ViewResult = {
     id: "research",
     status: "ready",
@@ -298,21 +452,25 @@ test("capabilities: activity expands in place, refreshes from owned events and b
       ],
     },
   }
+
   const workspace = await openSession(page, {
     name: "ModuleActivity",
     workspace: false,
     rpc: capabilityRpc({
       list: () => {
         lists++
+
         return [{ id: "research", title: "Research scripts", state: "active", metrics: false, view: true }]
       },
       view: (input) => {
         expect(input.id).toBe("research")
         reads++
+
         return reads === 2 ? held.promise : document
       },
     }),
   })
+
   const settings = await showSettings(page)
   await settings.getByRole("tab", { name: "Appearance", exact: true }).click()
   await settings.locator('[data-action="settings-color-scheme"]').click()

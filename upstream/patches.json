@@ -381,7 +381,7 @@
         {
           "path": "packages/im-assistant/src/cli.ts",
           "action": "added",
-          "sha256": "0a89e8e400ec72f4f1f9ff1c13790174d9214e2db690b052c0fcdd8972d7fe8a"
+          "sha256": "219bafee215e1f4682803214687bb4c122aec5b162d074e8ae5db478f309e7eb"
         },
         {
           "path": "packages/im-assistant/src/providers.ts",
@@ -479,7 +479,7 @@
         {
           "path": "packages/app/e2e/regression/settings.spec.ts",
           "action": "modified",
-          "sha256": "888476b4df84989a263474a0d980489839f2a7b5223dc4e7c92ee35a9fe54f6f"
+          "sha256": "0ec4d08483a0cc43116f3a34cd94aaf98b2a4f6643ca3fc7b09ad2a412d3c697"
         },
         {
           "path": "packages/app/e2e/utils/mock-api.ts",
@@ -539,7 +539,7 @@
         {
           "path": "packages/server/src/middleware/runtime-policy.ts",
           "action": "added",
-          "sha256": "9908956c809497fe52787c6a13b57e887a7cd12da85d8bc46b82ad744fd7b8c5"
+          "sha256": "68f32a946fc0f6a49164d390e180db8f31c87b6c29ec50539d9dd609cc6a7560"
         },
         {
           "path": "packages/app/src/settings/providers/connection-form.tsx",
@@ -1307,7 +1307,7 @@
         {
           "path": "packages/plugin/src/promise/application.ts",
           "action": "added",
-          "sha256": "d63cc6dfdcf537dfe774bf168ac3acd6db09c7c5a15b92a137bda0b07c4d405d"
+          "sha256": "3289dc7e9f0e190210a4b34aa0c7f04c5c223c353c69bf9c4f5bd54db8d6d8cd"
         },
         {
           "path": "packages/plugin/src/promise/index.ts",
@@ -1327,12 +1327,12 @@
         {
           "path": "packages/server/src/application-modules.ts",
           "action": "added",
-          "sha256": "8bbd74caf839d4b87ae55ff9517f182a6622808447d866687800ff1e5ad27714"
+          "sha256": "89e5358fba63f8a0aeb5eb36f152eaca32cdb19617b4b50fd59f537d8fb0b300"
         },
         {
           "path": "packages/server/test/application-modules.test.ts",
           "action": "added",
-          "sha256": "622023090d9b06d7ca864515bf977815cf849672e516d8eac8693fd00e58ea28"
+          "sha256": "d6eec906108a464eaee934440ff402f926a82b4514adfa65bfc326d8ab292c84"
         }
       ]
     },
@@ -1460,7 +1460,7 @@
         {
           "path": "packages/core/src/capabilities.ts",
           "action": "added",
-          "sha256": "fd046b01c66b06c093a7db590f078a4961b52d6ea8318450d5400a1cad44a058"
+          "sha256": "860abb3a524eaae9f58d066a09d9eebe614c68fcb5ea5dc4521811ad51846df9"
         },
         {
           "path": "packages/core/src/capability-notifications.ts",
@@ -1470,7 +1470,7 @@
         {
           "path": "packages/im-assistant/src/capabilities.ts",
           "action": "added",
-          "sha256": "3de1f639573112c233b23e77a4857ba37b5f779d095573b0d707d9062da1371e"
+          "sha256": "3bc0eca09b21e4e8e67abfa8a0d43e563268e22ec26c08dece4edb0165610ccd"
         },
         {
           "path": "packages/im-assistant/src/notifications.ts",
@@ -1480,7 +1480,7 @@
         {
           "path": "packages/schema/src/capability.ts",
           "action": "added",
-          "sha256": "2337dcae258cf0361301fb068fd5852335a1f1496d329dbba0d7a7b78f1bbf60"
+          "sha256": "346cf38ce30785aeeb5f00f64a21c7659bb919c5bd6d611ecbd3aa7e4ba16b7a"
         }
       ]
     },
@@ -1496,7 +1496,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/en.ts",
           "action": "added",
-          "sha256": "746105cd67793ae40bc8d56ae720f4d07fa82fe038e4a1d3e5e65618e8a6463a"
+          "sha256": "b8bf746224790bb222486b762eca58963f5ebbcfc3f10e53b861d80962112f6d"
         },
         {
           "path": "packages/gui-plugins/src/capabilities/index.ts",
@@ -1537,7 +1537,7 @@
         {
           "path": "packages/app/e2e/utils/capabilities.ts",
           "action": "added",
-          "sha256": "ca69ee47416e1e3486d12b02dc8ebe2f873b552956714d164df34a31935a93eb"
+          "sha256": "9116495ff923424fdbbf1189d83e313bc0e078cea193dc6ce23b90323d4e72ee"
         }
       ]
     },
@@ -1860,7 +1860,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/view.tsx",
           "action": "added",
-          "sha256": "af30ba9c3d4cee4948b41f1c94b490134781130b8cd53e8409d3d14cd89af238"
+          "sha256": "99db064a3567a8754400a4ccf69e734d9342768226f6b142b8d371a16303b7c0"
         },
         {
           "path": "packages/im-assistant/src/research.ts",
@@ -1948,7 +1948,7 @@
         {
           "path": "packages/gui-plugins/src/capabilities/i18n/zh.ts",
           "action": "added",
-          "sha256": "2c914543db6079b3c79d6ae816c506c81dbfdb1fa21b61f6a42f70b4fee43197"
+          "sha256": "3aa9155d634b8a3a4781f258105748abab9b9e211a03490c55869451138c3be3"
         },
         {
           "path": "packages/gui-plugins/src/context/i18n/zh.ts",
@@ -2044,6 +2044,30 @@
           "path": "packages/ui/src/i18n/zh.ts",
           "action": "modified",
           "sha256": "dea7cae1f68d38a6b17684e138ac91321b608fb21b706d54490636d704b3a2de"
+        }
+      ]
+    },
+    {
+      "id": "W1-01-module-controls-and-downloads",
+      "reason": "通用模块原生 RPC 有界声明式操作、可见时进度读取与稳定表单身份；产品仅装配独立下载模块，不接管 Session/Inbox。",
+      "verification_commands": [
+        "python tools/run_runtime_checks.py --task W1-01"
+      ],
+      "files": [
+        {
+          "path": "packages/gui-plugins/src/capabilities/actions.tsx",
+          "action": "added",
+          "sha256": "e24f6ba5a0ebd0529937fc092eacf7ccd1b207561b9c37d127685a8876f6076f"
+        },
+        {
+          "path": "packages/im-assistant/src/downloads.ts",
+          "action": "added",
+          "sha256": "de82a3e145c2fb2ee1ac489180d9f7884bb5fff6c19e5d8f280005376b1ca7f3"
+        },
+        {
+          "path": "packages/server/script/downloads-smoke.ts",
+          "action": "added",
+          "sha256": "ed08c9a18469b3c80fdf723f0c79e7beb8fcb8b319b9a795eb35811b1cf8b3ba"
         }
       ]
     }

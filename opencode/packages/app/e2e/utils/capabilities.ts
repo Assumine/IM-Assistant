@@ -19,8 +19,13 @@ export function capabilityRpc(fixture: {
   stop?: (id: string) => Capability.Info | Promise<Capability.Info>
   metrics?: (id: string) => Capability.Metrics | Promise<Capability.Metrics>
   view?: (input: { id: string; locale?: string }) => Capability.ViewResult | Promise<Capability.ViewResult>
+  invoke?: (input: Capability.Invocation) => Capability.ActionResult | Promise<Capability.ActionResult>
   settings?: (id: string) => Capability.Settings | Promise<Capability.Settings>
-  configure?: (input: { id: string; revision: string; text: string }) => Capability.Settings | Promise<Capability.Settings>
+  configure?: (input: {
+    id: string
+    revision: string
+    text: string
+  }) => Capability.Settings | Promise<Capability.Settings>
 }): NonNullable<MockServerConfig["rpc"]> {
   return async ({ id, method, body }) => {
     if (id !== Capability.Api.id) throw new Error(`Unexpected RPC: ${id}.${method}`)
@@ -32,6 +37,9 @@ export function capabilityRpc(fixture: {
 
     if (method === "markRead" && fixture.markRead)
       return fixture.markRead(Schema.decodeUnknownSync(Capability.NoticeRef)(body))
+
+    if (method === "invoke" && fixture.invoke)
+      return fixture.invoke(Schema.decodeUnknownSync(Capability.Invocation)(body))
     const input = Schema.decodeUnknownSync(Schema.Struct({ id: Capability.ID }))(body)
 
     if (method === "stop" && fixture.stop) return fixture.stop(input.id)
@@ -39,13 +47,22 @@ export function capabilityRpc(fixture: {
     if (method === "metrics" && fixture.metrics) return fixture.metrics(input.id)
 
     if (method === "view" && fixture.view)
-      return fixture.view(Schema.decodeUnknownSync(Schema.Struct({ id: Capability.ID, locale: Schema.optional(Schema.String) }))(body))
+      return fixture.view(
+        Schema.decodeUnknownSync(Schema.Struct({ id: Capability.ID, locale: Schema.optional(Schema.String) }))(body),
+      )
 
     if (method === "settings" && fixture.settings) return fixture.settings(input.id)
 
     if (method === "configure" && fixture.configure)
-      return fixture.configure(Schema.decodeUnknownSync(Schema.Struct({ id: Capability.ID,
-        revision: Capability.Settings.fields.revision, text: Capability.Settings.fields.text }))(body))
+      return fixture.configure(
+        Schema.decodeUnknownSync(
+          Schema.Struct({
+            id: Capability.ID,
+            revision: Capability.Settings.fields.revision,
+            text: Capability.Settings.fields.text,
+          }),
+        )(body),
+      )
     throw new Error(`Unexpected capability operation: ${method}`)
   }
 }
@@ -61,5 +78,11 @@ export function capabilityEvent(directory: string): OpenCodeEvent {
 }
 
 export function capabilityViewEvent(directory: string, id: string): OpenCodeEvent {
-  return { id: "evt_module_view_" + id, created: Date.now(), type: "rpc.experimental.capability.viewChanged", location: { directory }, data: { id } }
+  return {
+    id: "evt_module_view_" + id,
+    created: Date.now(),
+    type: "rpc.experimental.capability.viewChanged",
+    location: { directory },
+    data: { id },
+  }
 }

@@ -5,10 +5,26 @@ import path from "node:path"
 
 process.env.IM_ASSISTANT_PROFILE = "personal"
 Storage.prepare()
-if (process.argv[2] === "research") {
+if (process.argv[2] === "downloads") {
+  const { Downloads } = await import("./downloads.js")
+  try {
+    console.log(JSON.stringify(await Downloads.command(process.argv.slice(3))))
+  } catch {
+    console.error(
+      "Download configuration failed; use downloads init|status|enable|disable. Settings apply on the next service start.",
+    )
+    process.exitCode = 1
+  }
+} else if (process.argv[2] === "research") {
   const { Research } = await import("./research.js")
-  try { console.log(JSON.stringify(await Research.command(process.argv.slice(3)))) }
-  catch { console.error("Research configuration failed; use research init|status|enable|disable or configure <absolute-json-file>. Changes apply on the next service start; native input bindings are required for MCP execution."); process.exitCode = 1 }
+  try {
+    console.log(JSON.stringify(await Research.command(process.argv.slice(3))))
+  } catch {
+    console.error(
+      "Research configuration failed; use research init|status|enable|disable or configure <absolute-json-file>. Changes apply on the next service start; native input bindings are required for MCP execution.",
+    )
+    process.exitCode = 1
+  }
 } else if (process.argv[2] === "backend") {
   const { Backends } = await import("./backends.js")
   try {

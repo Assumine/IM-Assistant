@@ -733,7 +733,7 @@
       "blocked_reason": null
     }
   },
-  "active_plan_id": "desktop-entry-cutover-v1",
+  "active_plan_id": "download-module-v1",
   "module_plan": {
     "plan_id": "qq-plugin-migration-v1",
     "implementation_started": true,
@@ -1378,6 +1378,52 @@
               "exit_code": 0,
               "evidence": "tests/deployment/localization-evidence.json",
               "command": "python tools/run_runtime_checks.py --task D1-02"
+            }
+          ],
+          "blocked_reason": null
+        }
+      }
+    },
+    "download-module-v1": {
+      "plan_id": "download-module-v1",
+      "implementation_started": true,
+      "runtime_acceptance_completed": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ],
+      "tasks": {
+        "W1-01": {
+          "status": "done",
+          "artifacts": [
+            "modules/downloads/src/module.ts",
+            "tests/modules/downloads-evidence.json",
+            "tests/modules/test_downloads.py"
+          ],
+          "verification": [
+            {
+              "task": "W1-01",
+              "plan_id": "download-module-v1",
+              "archived_reference": false,
+              "status": "passed",
+              "tests_run": 3,
+              "failures": 0,
+              "errors": 0,
+              "skipped": 0,
+              "acceptance_ids": [
+                "E01",
+                "E02",
+                "E03",
+                "E04",
+                "E05"
+              ],
+              "progress_updated": false,
+              "kind": "runtime",
+              "exit_code": 0,
+              "evidence": "tests/modules/downloads-evidence.json",
+              "command": "python tools/run_runtime_checks.py --task W1-01"
             }
           ],
           "blocked_reason": null

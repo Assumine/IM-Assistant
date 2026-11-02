@@ -1,0 +1,298 @@
+{
+  "schema_version": 1,
+  "plan_id": "download-module-v1",
+  "task": "W1-01",
+  "status": "passed",
+  "acceptance_ids": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05"
+  ],
+  "engine_tests": 8,
+  "host_tests": 12,
+  "policy_tests": 6,
+  "catalog_tests": 22,
+  "built_browser_cases": 11,
+  "workspace_checks": 36,
+  "skipped": 0,
+  "product": {
+    "status": "passed",
+    "checks": [
+      "real product composition defaults off and does not create transfers",
+      "only the enabled download module opens; engine remains lazy until an explicit operation",
+      "original authenticated RPC envelope and native KV drive actual aria2 bytes/checksum with no duplicate submission",
+      "completion notification persists separately while native conversations remain available without QQ",
+      "native SQLite restart retains completed records without replaying a transfer",
+      "stopped module rejects stale controls without disabling the native session"
+    ],
+    "count": 6,
+    "actual_engine": "aria2 1.37.0",
+    "external_source_requests": 0,
+    "loopback_source_requests": 1,
+    "model_requests": 0,
+    "real_qq_connections": 0,
+    "private_data_migrated": false,
+    "production_switch": false
+  },
+  "steps": [
+    {
+      "args": [
+        "bun",
+        "test",
+        "../modules/downloads/test/module.test.ts"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 49.84,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-module-tests.log",
+      "native_tests_passed": 8,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/application-modules.test.ts",
+        "test/capabilities.test.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 4.32,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-module-host-tests.log",
+      "native_tests_passed": 12,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "test/handler-policy.test.ts",
+        "test/conversation-policy.test.ts",
+        "test/integration-policy.test.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 2.84,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-host-policy-tests.log",
+      "native_tests_passed": 6,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "script/downloads-smoke.ts"
+      ],
+      "cwd": "opencode/packages/server",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 7.93,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-product-smoke.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "test",
+        "--conditions=solid",
+        "--isolate",
+        "--preload",
+        "../ui/test/solid-jsx.ts",
+        "--preload",
+        "./happydom.ts",
+        "./src/runtime/i18n/language.test.ts"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.93,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-catalog-tests.log",
+      "native_tests_passed": 22,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "test:e2e:built",
+        "--",
+        "e2e/regression/settings.spec.ts",
+        "--grep",
+        "module controls:|capabilities:|Simplified Chinese|assistant appearance|usage shows honest|usage ignores",
+        "--project",
+        "chromium",
+        "--workers=2",
+        "--retries=0"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 46.92,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-ui-tests.log",
+      "native_tests_passed": 11,
+      "native_tests_failed": 0,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 45.13,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-workspace-check.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "typecheck:e2e"
+      ],
+      "cwd": "opencode/packages/app",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 6.03,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-e2e-types.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "check",
+        "--no-script",
+        "-p",
+        "../modules/downloads/tsconfig.json"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 0.25,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-module-types.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "run",
+        "lint:changed",
+        "HEAD"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 5.94,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-changed-lint.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "oxlint",
+        "--deny-warnings",
+        "packages/gui-plugins/src/capabilities/actions.tsx",
+        "packages/gui-plugins/src/capabilities/view.tsx",
+        "packages/gui-plugins/src/capabilities/i18n/en.ts",
+        "packages/gui-plugins/src/capabilities/i18n/zh.ts",
+        "packages/app/e2e/regression/settings.spec.ts",
+        "packages/app/e2e/utils/capabilities.ts"
+      ],
+      "cwd": "opencode",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 1.36,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-changed-gui-lint.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    },
+    {
+      "args": [
+        "bun",
+        "x",
+        "electron-vite",
+        "build"
+      ],
+      "cwd": "opencode/packages/desktop",
+      "source_commit": "082ac6281fd395c2d0c17fd3c38214db2f89621f",
+      "exit_code": 0,
+      "duration_seconds": 23.62,
+      "isolated_home": true,
+      "log": ".reports/native/downloads-desktop-build.log",
+      "native_tests_passed": null,
+      "native_tests_failed": null,
+      "native_tests_skipped": 0
+    }
+  ],
+  "sources": {
+    "modules/downloads/README.md": "0508c3f6c7182d5c355a1bc09e5a810fe21ecf77cca7e436202044c81a05d573",
+    "modules/downloads/package.json": "2cec666eeb13ffc2296ace2c33ffa4298fe635c33ef92e905f66ba6825084d83",
+    "modules/downloads/src/configuration.ts": "d6c2da68db36dd928bfc24f9e6252717b227022105f2bc44b7c14740052d95bf",
+    "modules/downloads/src/engine.ts": "617e9c8b8a1b79fe67b6e6277ed3906addfe50fc6c195247e2c268596b56ad87",
+    "modules/downloads/src/module.ts": "3bdaa2ade26afec5829987f550c50669f9512ad6b64c996bbe5b9ac0070e9dad",
+    "modules/downloads/test/module.test.ts": "f6fdd438351e6cceb034df45847f741d308e5ac78d35e218d598135455f863a6",
+    "modules/downloads/tsconfig.json": "cdc31cb370ad80ad3de56bdf570965e6bc8529a79aa33bffd2614088e537a7e2",
+    "opencode/packages/app/e2e/regression/settings.spec.ts": "0ec4d08483a0cc43116f3a34cd94aaf98b2a4f6643ca3fc7b09ad2a412d3c697",
+    "opencode/packages/app/e2e/utils/capabilities.ts": "9116495ff923424fdbbf1189d83e313bc0e078cea193dc6ce23b90323d4e72ee",
+    "opencode/packages/core/src/capabilities.ts": "860abb3a524eaae9f58d066a09d9eebe614c68fcb5ea5dc4521811ad51846df9",
+    "opencode/packages/gui-plugins/src/capabilities/actions.tsx": "e24f6ba5a0ebd0529937fc092eacf7ccd1b207561b9c37d127685a8876f6076f",
+    "opencode/packages/gui-plugins/src/capabilities/i18n/en.ts": "b8bf746224790bb222486b762eca58963f5ebbcfc3f10e53b861d80962112f6d",
+    "opencode/packages/gui-plugins/src/capabilities/i18n/zh.ts": "3aa9155d634b8a3a4781f258105748abab9b9e211a03490c55869451138c3be3",
+    "opencode/packages/gui-plugins/src/capabilities/view.tsx": "99db064a3567a8754400a4ccf69e734d9342768226f6b142b8d371a16303b7c0",
+    "opencode/packages/im-assistant/src/capabilities.ts": "3bc0eca09b21e4e8e67abfa8a0d43e563268e22ec26c08dece4edb0165610ccd",
+    "opencode/packages/im-assistant/src/cli.ts": "219bafee215e1f4682803214687bb4c122aec5b162d074e8ae5db478f309e7eb",
+    "opencode/packages/im-assistant/src/downloads.ts": "de82a3e145c2fb2ee1ac489180d9f7884bb5fff6c19e5d8f280005376b1ca7f3",
+    "opencode/packages/plugin/src/promise/application.ts": "3289dc7e9f0e190210a4b34aa0c7f04c5c223c353c69bf9c4f5bd54db8d6d8cd",
+    "opencode/packages/schema/src/capability.ts": "346cf38ce30785aeeb5f00f64a21c7659bb919c5bd6d611ecbd3aa7e4ba16b7a",
+    "opencode/packages/server/script/downloads-smoke.ts": "ed08c9a18469b3c80fdf723f0c79e7beb8fcb8b319b9a795eb35811b1cf8b3ba",
+    "opencode/packages/server/src/application-modules.ts": "89e5358fba63f8a0aeb5eb36f152eaca32cdb19617b4b50fd59f537d8fb0b300",
+    "opencode/packages/server/src/middleware/runtime-policy.ts": "68f32a946fc0f6a49164d390e180db8f31c87b6c29ec50539d9dd609cc6a7560",
+    "opencode/packages/server/test/application-modules.test.ts": "d6eec906108a464eaee934440ff402f926a82b4514adfa65bfc326d8ab292c84",
+    "tests/modules/test_downloads.py": "1e7fecefd8c81a1e79df3ab270d1f87410dbf021a3214368e05ea6bf583fae34",
+    "tools/downloads_smoke.py": "6ec85fe58e704e8670e3c865f127ffe7ccc2cbda7889c6334135215dcbdce42d",
+    "tools/setup_download_dependencies.py": "4f4e376b477de7e5a6250bf42cf0e884a5aa5601c3e9383c2a716a1872d6db38",
+    "upstream/aria2.json": "8e20751eb66ba1cad30040076fb71534cdd8fdd0db8732d319097adf1146a71d",
+    "upstream/patches.json": "fb7b2c2f19201dbff0b594356d7735d9f55eac480baa06ac1ff4914a80e519dc"
+  },
+  "actual_engine": "aria2 1.37.0",
+  "actual_public_bt_completed": false,
+  "private_data_migrated": false,
+  "production_switch": false,
+  "desktop_input_automation": false,
+  "model_requests": 0,
+  "real_qq_connections": 0
+}

@@ -700,6 +700,50 @@
           "native_verification": "原生 Bun 字典契约、构建后的 Playwright settings keeper 和实际 Electron 窗口；不调用模型或真实 QQ。"
         }
       ]
+    },
+    "download-module-v1": {
+      "schema_version": 1,
+      "plan_id": "download-module-v1",
+      "foundation_plan_id": "opencode-app-base-v2",
+      "scope": "isolated_download_module",
+      "start_task": "W1-01",
+      "progress_file": "docs/handoff/progress.json",
+      "production_switch": false,
+      "private_data_migration": false,
+      "acceptance_document": "docs/architecture/下载模块接入验收.md",
+      "tasks": [
+        {
+          "id": "W1-01",
+          "phase": "W1",
+          "title": "独立 aria2 下载模块及原生操作界面",
+          "depends_on": [],
+          "outputs": [
+            "modules/downloads/src/module.ts",
+            "tests/modules/downloads-evidence.json"
+          ],
+          "test_files": [
+            "tests/modules/test_downloads.py"
+          ],
+          "acceptance_ids": [
+            "E01",
+            "E02",
+            "E03",
+            "E04",
+            "E05"
+          ],
+          "scope": "受控直链/磁力下载与手动管理；不接管旧任务，不复制影片搜索或另建 AI 队列。",
+          "done_when": [
+            "模块命令经公共原生入口且停止/未知结果边界有效。",
+            "固定 aria2 真实直链传输、校验、暂停/继续、磁力受理与恢复记录有证据。",
+            "中文原生界面表单可操作，按需进度刷新且关闭/隐藏停止，故障不阻塞会话。"
+          ],
+          "verification_commands": [
+            "python tools/validate_design.py",
+            "python tools/run_runtime_checks.py --task W1-01"
+          ],
+          "native_verification": "真实 aria2/本机 HTTP、原生模块 Scope/RPC/KV、构建 GUI keeper；无真实影片、账号迁移或额外外部消息。"
+        }
+      ]
     }
   }
 }

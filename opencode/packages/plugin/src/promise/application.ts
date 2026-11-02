@@ -8,7 +8,10 @@ export interface ApplicationModuleSettings {
   /** Return validated non-secret settings and their current revision; reject when they cannot be read safely. */
   readonly read: (signal: AbortSignal) => Promise<Capability.Settings>
   /** Validate and atomically replace the expected revision. Undefined means a concurrent change; never silently overwrite. */
-  readonly write: (input: { readonly revision: string; readonly text: string }, signal: AbortSignal) => Promise<Capability.Settings | undefined>
+  readonly write: (
+    input: { readonly revision: string; readonly text: string },
+    signal: AbortSignal,
+  ) => Promise<Capability.Settings | undefined>
 }
 
 /** Capabilities owned by one compiled application module. Notifications never change native tasks. */
@@ -44,6 +47,10 @@ export interface ApplicationModule {
     readonly metrics?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>
     /** Read module-owned presentation only when requested. Bound output stays data, never HTML or executable controls. */
     readonly view?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>
+    /** Explicit user controls from a declarative view. Own request idempotency; never dispatch AI work implicitly. */
+    readonly invoke?: (
+      input: Capability.Invocation & { readonly signal: AbortSignal },
+    ) => Promise<Capability.ActionResult>
   }
 }
 

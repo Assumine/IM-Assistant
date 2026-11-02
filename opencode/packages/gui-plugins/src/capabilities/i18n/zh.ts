@@ -1,6 +1,10 @@
 import en from "./en"
 
 export default {
+  "action.new": "已核对，开始新操作",
+  "action.pending": "正在提交…",
+  "action.check": "重试或核对操作",
+  "action.unknown": "尚未确认操作结果，请先核对模块状态，再开始其他操作。",
   modules: "模块管理",
   messages: "模块通知",
   description: "可选服务独立于会话运行。",

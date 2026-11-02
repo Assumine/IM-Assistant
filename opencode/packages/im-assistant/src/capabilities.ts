@@ -4,10 +4,20 @@ import type { ApplicationModuleEntry } from "@opencode/plugin/promise/applicatio
 import { Portals } from "./portals.js"
 import { Chatbots } from "./chatbots.js"
 import { Research } from "./research.js"
+import { Downloads } from "./downloads.js"
 
 /** Product composition only: metadata is visible even while optional configuration is disabled or failing. */
 export function load(): readonly ApplicationModuleEntry[] {
   return [
+    {
+      id: "downloads",
+      title: "Downloads",
+      settings: Downloads.settings(),
+      async load(signal) {
+        const module = await Downloads.load()
+        return signal.aborted ? undefined : module
+      },
+    },
     {
       id: "qq-portal",
       title: "QQ task forwarding",
@@ -26,8 +36,13 @@ export function load(): readonly ApplicationModuleEntry[] {
       },
     },
     {
-      id: "research", title: "Research", settings: Research.settings(),
-      async load(signal) { const module = await Research.load(); return signal.aborted ? undefined : module },
+      id: "research",
+      title: "Research",
+      settings: Research.settings(),
+      async load(signal) {
+        const module = await Research.load()
+        return signal.aborted ? undefined : module
+      },
     },
   ]
 }

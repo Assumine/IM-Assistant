@@ -1,0 +1,8 @@
+{
+  "name": "@im-assistant/downloads",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/module.ts" },
+  "scripts": { "test": "bun test" }
+}

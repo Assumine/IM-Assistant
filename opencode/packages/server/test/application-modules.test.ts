@@ -6,6 +6,7 @@ import { OpenCode } from "@opencode/client"
 import type { ApplicationModule } from "@opencode/plugin/promise/application"
 import { Effect, Exit, Scope } from "effect"
 import { ServerFetch } from "../src/fetch"
+import { Capability } from "@opencode/schema/capability"
 
 type ModuleContext = Parameters<ApplicationModule["open"]>[0]
 async function boot(modules: readonly ApplicationModule[]) {
@@ -27,7 +28,11 @@ async function boot(modules: readonly ApplicationModule[]) {
     const fetch = Object.assign((input: RequestInfo | URL, init?: RequestInit) => handler(new Request(input, init)), {
       preconnect: () => undefined,
     })
-    const client = OpenCode.make({ baseUrl: "http://opencode.test", fetch })
+    const client = OpenCode.make({
+      baseUrl: "http://opencode.test",
+      headers: { "x-opencode-directory": encodeURIComponent(directory) },
+      fetch,
+    })
     return {
       client,
       directory,
@@ -179,13 +184,90 @@ test("duplicate identities are not started twice and cleanup failure does not sk
 
 test("duplicate compiled business tools close their optional resource immediately without blocking native sessions", async () => {
   let closed = 0
-  const tool = { name: "same", description: "Duplicate compiled tool", input: {}, execute: async () => ({ content: "unused" }) }
-  const app = await boot([{ id: "invalid-tools", tools: [tool, tool],
-    open: () => ({ close: async () => { closed++ } }),
-  }])
+  const tool = {
+    name: "same",
+    description: "Duplicate compiled tool",
+    input: {},
+    execute: async () => ({ content: "unused" }),
+  }
+  const app = await boot([
+    {
+      id: "invalid-tools",
+      tools: [tool, tool],
+      open: () => ({
+        close: async () => {
+          closed++
+        },
+      }),
+    },
+  ])
   try {
-    expect((await app.client.session.create({ title: "Unrelated", location: { directory: app.directory } })).id).toStartWith("ses_")
+    expect(
+      (await app.client.session.create({ title: "Unrelated", location: { directory: app.directory } })).id,
+    ).toStartWith("ses_")
     expect(closed).toBe(1)
-  } finally { await app.close() }
+  } finally {
+    await app.close()
+  }
   expect(closed).toBe(1)
+}, 30000)
+
+test("module controls use original RPC and namespace, cancel on stop, and cannot execute through a stale document", async () => {
+  let called = 0
+  const entered = Promise.withResolvers<void>()
+  const aborted = Promise.withResolvers<void>()
+  const app = await boot([
+    {
+      id: "controlled",
+      open(context) {
+        return {
+          close: async () => {},
+          invoke: async (input) => {
+            called++
+            expect(input.id).toBe("controlled")
+            expect(input.action).toBe("store")
+            await context.storage.insert("request:" + input.requestID, input.values)
+            entered.resolve()
+            await new Promise<void>((resolve) =>
+              input.signal.addEventListener(
+                "abort",
+                () => {
+                  aborted.resolve()
+                  resolve()
+                },
+                { once: true },
+              ),
+            )
+            return { state: "applied", message: "This late result must be rejected after stop" }
+          },
+        }
+      },
+    },
+  ])
+  try {
+    const rpc = app.client.rpc(Capability.Api)
+    expect((await rpc.list({})).find((item) => item.id === "controlled")?.state).toBe("active")
+    const input = { id: "controlled", action: "store", requestID: "one", values: "{}" }
+    const pending = rpc.invoke(input).then(
+      () => "accepted",
+      () => "stopped",
+    )
+    await Promise.race([
+      entered.promise,
+      pending.then(() => {
+        throw new Error("Module call ended before entering its handler")
+      }),
+    ])
+    await rpc.stop({ id: "controlled" })
+    await aborted.promise
+    expect(await pending).toBe("stopped")
+    await expect(rpc.invoke({ ...input, requestID: "two" })).rejects.toThrow()
+    await expect(rpc.invoke({ ...input, id: "other-owner" })).rejects.toThrow()
+    expect(called).toBe(1)
+    expect(
+      (await app.client.session.create({ title: "Core remains available", location: { directory: app.directory } })).id,
+    ).toStartWith("ses_")
+  } finally {
+    await app.close()
+  }
 }, 30000)

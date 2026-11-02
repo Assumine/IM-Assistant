@@ -1,4 +1,8 @@
 export default {
+  "action.new": "Checked; start a new operation",
+  "action.pending": "Submitting…",
+  "action.check": "Retry or check operation",
+  "action.unknown": "The operation was not confirmed. Check the module before starting another operation.",
   modules: "Application modules",
   messages: "Module notifications",
   description: "Optional services run independently of conversations.",
@@ -6,13 +10,15 @@ export default {
   server: "Server",
   refresh: "Refresh",
   settings: "Configure",
-  settingsDescription: "Module-owned settings. Saving applies on the next service start; the current running state does not change.",
+  settingsDescription:
+    "Module-owned settings. Saving applies on the next service start; the current running state does not change.",
   settingsDocument: "Configuration JSON",
   settingsSave: "Save configuration",
   settingsSaving: "Saving",
   settingsReload: "Reload configuration",
   settingsSaved: "Saved for the next service start.",
-  settingsFailed: "Settings were not confirmed. Check the JSON and any context-reset requirements. If another editor changed these settings, reload before saving again.",
+  settingsFailed:
+    "Settings were not confirmed. Check the JSON and any context-reset requirements. If another editor changed these settings, reload before saving again.",
   loading: "Loading",
   offline: "This server is unavailable.",
   failed: "Could not load this view. Refresh to check the connection.",

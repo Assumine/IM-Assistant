@@ -13,8 +13,13 @@ export interface Registration {
   readonly state: (value: Capability.Info["state"]) => void
   readonly inspect: (read?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>) => void
   readonly expose: (tools: readonly Tool.Info[]) => void
-  readonly present: (read?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>) => void
+  readonly present: (
+    read?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>,
+  ) => void
   readonly invalidate: () => void
+  readonly act: (
+    invoke?: (input: Capability.Invocation & { readonly signal: AbortSignal }) => Promise<Capability.ActionResult>,
+  ) => void
   readonly notify: (value: Capability.NoticeInput) => Effect.Effect<void, Error>
   readonly resolve: (id: string) => Effect.Effect<void, Error>
 }
@@ -27,7 +32,10 @@ export interface Interface {
     readonly stop: () => Promise<void>
     readonly settings?: {
       readonly read: (signal: AbortSignal) => Promise<Capability.Settings>
-      readonly write: (input: { readonly revision: string; readonly text: string }, signal: AbortSignal) => Promise<Capability.Settings | undefined>
+      readonly write: (
+        input: { readonly revision: string; readonly text: string },
+        signal: AbortSignal,
+      ) => Promise<Capability.Settings | undefined>
     }
   }) => Effect.Effect<Registration, Error>
   readonly bind: (rpc: Rpc.Interface) => Effect.Effect<void, unknown, Scope.Scope>
@@ -43,6 +51,7 @@ interface Entry {
   metrics?: (signal: AbortSignal) => Promise<readonly Capability.Metric[]>
   sample?: { readonly at: number; readonly value: Promise<Capability.Metrics>; pending: boolean }
   view?: (input: { readonly locale?: string; readonly signal: AbortSignal }) => Promise<Capability.View>
+  invoke?: (input: Capability.Invocation & { readonly signal: AbortSignal }) => Promise<Capability.ActionResult>
 }
 
 const layer = Layer.effect(
@@ -52,7 +61,9 @@ const layer = Layer.effect(
     const entries = new Map<string, Entry>()
     const listeners = new Set<() => void>()
     const viewListeners = new Set<(id: string) => void>()
-    const viewChanged = (id: string) => { for (const listener of viewListeners) listener(id) }
+    const viewChanged = (id: string) => {
+      for (const listener of viewListeners) listener(id)
+    }
     const changed = () => {
       for (const listener of listeners) listener()
     }
@@ -95,7 +106,7 @@ const layer = Layer.effect(
       }).pipe(Effect.orDie)
     })
     return Service.of({
-      tools: () => Array.from(entries.values()).flatMap((entry) => entry.info.state === "active" ? entry.tools : []),
+      tools: () => Array.from(entries.values()).flatMap((entry) => (entry.info.state === "active" ? entry.tools : [])),
       register: Effect.fn("Capabilities.register")(function* (input: Parameters<Interface["register"]>[0]) {
         const id = yield* Schema.decodeUnknownEffect(Capability.ID)(input.id).pipe(Effect.orDie)
         if (entries.has(id)) return yield* Effect.fail(new Error("Capability is already registered"))
@@ -106,7 +117,13 @@ const layer = Layer.effect(
           metrics: false,
           ...(input.settings ? { settings: true } : {}),
         }).pipe(Effect.orDie)
-        const entry: Entry = { info, stop: input.stop, controller: new AbortController(), settings: input.settings, tools: [] }
+        const entry: Entry = {
+          info,
+          stop: input.stop,
+          controller: new AbortController(),
+          settings: input.settings,
+          tools: [],
+        }
         entries.set(id, entry)
         changed()
         return {
@@ -124,7 +141,11 @@ const layer = Layer.effect(
               entry.info = { ...entry.info, metrics: false, health: undefined }
               entry.tools = []
               entry.view = undefined
-              if (entry.info.view) { entry.info = { ...entry.info, view: false }; viewChanged(id) }
+              entry.invoke = undefined
+              if (entry.info.view) {
+                entry.info = { ...entry.info, view: false }
+                viewChanged(id)
+              }
             }
             changed()
           },
@@ -137,8 +158,13 @@ const layer = Layer.effect(
           expose(tools: readonly Tool.Info[]) {
             if (!live(entry)) throw new Error("Capability is closed")
             const names = tools.map(effectiveName)
-            if (new Set(names).size !== names.length || names.some((name) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) ||
-              Array.from(entries.values()).some((other) => other !== entry && other.tools.some((tool) => names.includes(effectiveName(tool)))))
+            if (
+              new Set(names).size !== names.length ||
+              names.some((name) => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) ||
+              Array.from(entries.values()).some(
+                (other) => other !== entry && other.tools.some((tool) => names.includes(effectiveName(tool))),
+              )
+            )
               throw new Error("Invalid or duplicate application tool")
             for (const tool of tools) definition(tool)
             entry.tools = [...tools]
@@ -149,7 +175,13 @@ const layer = Layer.effect(
             if (read || entry.info.view) entry.info = { ...entry.info, view: !!read }
             changed()
           },
-          invalidate() { if (live(entry) && entry.view) viewChanged(id) },
+          invalidate() {
+            if (live(entry) && entry.view) viewChanged(id)
+          },
+          act(invoke) {
+            if (!live(entry)) throw new Error("Capability is closed")
+            entry.invoke = invoke
+          },
           notify: (value: Capability.NoticeInput) =>
             Effect.suspend(() =>
               live(entry)
@@ -193,42 +225,73 @@ const layer = Layer.effect(
               return snapshot(entry)
             }),
           metrics: (input) => metrics(input.id),
-          view: (input) => Effect.gen(function* () {
-            const entry = entries.get(input.id)
-            if (!entry || entry.info.state !== "active") return { id: input.id, status: "unavailable" as const }
-            const read = entry.view
-            if (!read) return { id: input.id, status: "unsupported" as const }
-            return yield* Effect.tryPromise({
-              try: async (signal): Promise<Capability.ViewResult> => {
-                const document = await read({ ...(input.locale ? { locale: input.locale } : {}), signal: AbortSignal.any([signal, entry.controller.signal]) })
-                if (!live(entry)) return { id: input.id, status: "unavailable" }
-                return { id: input.id, status: "ready", document: Schema.decodeUnknownSync(Capability.View)(document) }
-              },
-              catch: () => new Error("Module view unavailable"),
-            }).pipe(Effect.catchCause(() => Effect.succeed({ id: input.id, status: "failed" as const })))
-          }),
-          settings: (input, ctx) => Effect.gen(function* () {
-            const settings = entries.get(input.id)?.settings
-            if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
-            return yield* Effect.tryPromise({
-              try: async (signal) => Schema.decodeUnknownSync(Capability.Settings)(await settings.read(signal)),
-              catch: () => ctx.error("failed", "Module settings could not be read safely"),
-            })
-          }),
-          configure: (input, ctx) => Effect.gen(function* () {
-            const settings = entries.get(input.id)?.settings
-            if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
-            const result = yield* Effect.tryPromise({
-              try: async (signal) => {
-                const value = await settings.write({ revision: input.revision, text: input.text }, signal)
-                return value === undefined ? undefined : Schema.decodeUnknownSync(Capability.Settings)(value)
-              },
-              catch: () => ctx.error("failed", "Settings were not confirmed. Check the configuration and explicit context-reset requirements"),
-            })
-            if (!result) return yield* Effect.fail(ctx.error("conflict", "Settings changed. Reload before saving again"))
-            changed()
-            return result
-          }),
+          view: (input) =>
+            Effect.gen(function* () {
+              const entry = entries.get(input.id)
+              if (!entry || entry.info.state !== "active") return { id: input.id, status: "unavailable" as const }
+              const read = entry.view
+              if (!read) return { id: input.id, status: "unsupported" as const }
+              return yield* Effect.tryPromise({
+                try: async (signal): Promise<Capability.ViewResult> => {
+                  const document = await read({
+                    ...(input.locale ? { locale: input.locale } : {}),
+                    signal: AbortSignal.any([signal, entry.controller.signal]),
+                  })
+                  if (!live(entry)) return { id: input.id, status: "unavailable" }
+                  return {
+                    id: input.id,
+                    status: "ready",
+                    document: Schema.decodeUnknownSync(Capability.View)(document),
+                  }
+                },
+                catch: () => new Error("Module view unavailable"),
+              }).pipe(Effect.catchCause(() => Effect.succeed({ id: input.id, status: "failed" as const })))
+            }),
+          invoke: (input, ctx) =>
+            Effect.gen(function* () {
+              const entry = entries.get(input.id)
+              const invoke = entry?.info.state === "active" ? entry.invoke : undefined
+              if (!entry || !invoke)
+                return yield* Effect.fail(ctx.error("unavailable", "Module controls are unavailable"))
+              return yield* Effect.tryPromise({
+                try: async (signal) => {
+                  const combined = AbortSignal.any([signal, entry.controller.signal])
+                  const result = await invoke({ ...input, signal: combined })
+                  if (combined.aborted || !live(entry)) throw new Error("Module was stopped")
+                  return Schema.decodeUnknownSync(Capability.ActionResult)(result)
+                },
+                catch: () => ctx.error("failed", "Operation was not confirmed; inspect the module before retrying"),
+              })
+            }),
+          settings: (input, ctx) =>
+            Effect.gen(function* () {
+              const settings = entries.get(input.id)?.settings
+              if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
+              return yield* Effect.tryPromise({
+                try: async (signal) => Schema.decodeUnknownSync(Capability.Settings)(await settings.read(signal)),
+                catch: () => ctx.error("failed", "Module settings could not be read safely"),
+              })
+            }),
+          configure: (input, ctx) =>
+            Effect.gen(function* () {
+              const settings = entries.get(input.id)?.settings
+              if (!settings) return yield* Effect.fail(ctx.error("unavailable", "Module settings are unavailable"))
+              const result = yield* Effect.tryPromise({
+                try: async (signal) => {
+                  const value = await settings.write({ revision: input.revision, text: input.text }, signal)
+                  return value === undefined ? undefined : Schema.decodeUnknownSync(Capability.Settings)(value)
+                },
+                catch: () =>
+                  ctx.error(
+                    "failed",
+                    "Settings were not confirmed. Check the configuration and explicit context-reset requirements",
+                  ),
+              })
+              if (!result)
+                return yield* Effect.fail(ctx.error("conflict", "Settings changed. Reload before saving again"))
+              changed()
+              return result
+            }),
           notifications: (input, ctx) =>
             notices
               .list(input)
@@ -250,13 +313,18 @@ const layer = Layer.effect(
           )
         }
         const viewListener = (id: string) => {
-          Effect.runForkWith(context)(registration.events.emit("viewChanged", { id }).pipe(Effect.catchCause(() => Effect.void)))
+          Effect.runForkWith(context)(
+            registration.events.emit("viewChanged", { id }).pipe(Effect.catchCause(() => Effect.void)),
+          )
         }
         yield* Effect.acquireRelease(
           Effect.sync(() => listeners.add(listener)),
           () => Effect.sync(() => listeners.delete(listener)),
         )
-        yield* Effect.acquireRelease(Effect.sync(() => viewListeners.add(viewListener)), () => Effect.sync(() => viewListeners.delete(viewListener)))
+        yield* Effect.acquireRelease(
+          Effect.sync(() => viewListeners.add(viewListener)),
+          () => Effect.sync(() => viewListeners.delete(viewListener)),
+        )
       }),
     })
   }),

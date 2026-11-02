@@ -51,7 +51,39 @@ export const Metrics = Schema.Struct({
 })
 export type Metrics = typeof Metrics.Type
 
-/** Module-owned read-only content. It cannot carry executable HTML, controls or native task mutations. */
+/** Bounded module text and declarative controls; never HTML, callbacks or native task mutations. */
+/** Declarative module controls. Execution stays in the trusted module, never in document content. */
+export const ViewAction = Schema.Struct({
+  id: LocalID,
+  label: Label,
+  target: optional(LocalID),
+  fields: optional(
+    Schema.Array(
+      Schema.Struct({
+        name: Schema.String.check(Schema.isPattern(/^(?!constructor$|prototype$)[A-Za-z][A-Za-z0-9_]{0,39}$/)),
+        label: Label,
+        placeholder: optional(Schema.String.check(Schema.isMaxLength(300))),
+        required: optional(Schema.Boolean),
+      }),
+    ).check(Schema.isMaxLength(8)),
+  ),
+})
+export type ViewAction = typeof ViewAction.Type
+export const Invocation = Schema.Struct({
+  id: ID,
+  action: LocalID,
+  requestID: LocalID,
+  target: optional(LocalID),
+  values: Schema.String.check(Schema.isMaxLength(65536)),
+  locale: optional(Schema.String.check(Schema.isMaxLength(40))),
+})
+export type Invocation = typeof Invocation.Type
+export const ActionResult = Schema.Struct({
+  state: Schema.Literals(["applied", "rejected", "uncertain"]),
+  message: Schema.String.check(Schema.isMaxLength(2000)),
+})
+export type ActionResult = typeof ActionResult.Type
+
 export interface ViewItem extends Schema.Schema.Type<typeof ViewItem> {}
 export const ViewItem = Schema.Struct({
   id: LocalID,
@@ -59,8 +91,12 @@ export const ViewItem = Schema.Struct({
   subtitle: optional(Schema.String.check(Schema.isMaxLength(300))),
   state: Schema.Literals(["running", "waiting", "success", "attention", "error", "unknown"]),
   status: Label,
-  fields: Schema.Array(Schema.Struct({ label: Label, value: Schema.String.check(Schema.isMaxLength(4000)) })).check(Schema.isMaxLength(16)),
+  fields: Schema.Array(Schema.Struct({ label: Label, value: Schema.String.check(Schema.isMaxLength(4000)) })).check(
+    Schema.isMaxLength(16),
+  ),
   technical: optional(Schema.String.check(Schema.isMaxLength(32000))),
+  actions: optional(Schema.Array(ViewAction).check(Schema.isMaxLength(6))),
+  progress: optional(Schema.Finite.check(Schema.isBetween({ minimum: 0, maximum: 100 }))),
 }).annotate({ identifier: "Capability.ViewItem" })
 
 export interface View extends Schema.Schema.Type<typeof View> {}
@@ -69,6 +105,8 @@ export const View = Schema.Struct({
   description: optional(Schema.String.check(Schema.isMaxLength(1000))),
   empty: optional(Schema.String.check(Schema.isMaxLength(1000))),
   items: Schema.Array(ViewItem).check(Schema.isMaxLength(30)),
+  actions: optional(Schema.Array(ViewAction).check(Schema.isMaxLength(8))),
+  refreshAfterMs: optional(Schema.Int.check(Schema.isBetween({ minimum: 1000, maximum: 60000 }))),
 }).annotate({ identifier: "Capability.View" })
 
 export interface ViewResult extends Schema.Schema.Type<typeof ViewResult> {}
@@ -137,8 +175,15 @@ export const Api = Rpc.define({
       errors,
     },
     view: {
-      input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID, locale: optional(Schema.String.check(Schema.isMaxLength(40))) })),
+      input: Schema.toStandardSchemaV1(
+        Schema.Struct({ id: ID, locale: optional(Schema.String.check(Schema.isMaxLength(40))) }),
+      ),
       output: Schema.toStandardSchemaV1(ViewResult),
+      errors,
+    },
+    invoke: {
+      input: Schema.toStandardSchemaV1(Invocation),
+      output: Schema.toStandardSchemaV1(ActionResult),
       errors,
     },
     settings: {
@@ -147,7 +192,9 @@ export const Api = Rpc.define({
       errors,
     },
     configure: {
-      input: Schema.toStandardSchemaV1(Schema.Struct({ id: ID, revision: Settings.fields.revision, text: Settings.fields.text })),
+      input: Schema.toStandardSchemaV1(
+        Schema.Struct({ id: ID, revision: Settings.fields.revision, text: Settings.fields.text }),
+      ),
       output: Schema.toStandardSchemaV1(Settings),
       errors,
     },

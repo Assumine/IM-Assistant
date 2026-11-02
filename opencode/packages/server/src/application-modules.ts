@@ -85,25 +85,38 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
         scan: (options) =>
           closed ? Promise.reject(new Error("Application module is closed")) : run(original.scan(options)),
       }
-      const expose = () => capability.expose((loaded.tools ?? []).map((tool) => ({
-        ...tool,
-        name: module.id.replaceAll("-", "_") + "_" + tool.name,
-        options: { codemode: false },
-        execute: (input, context) => Effect.tryPromise({
-          try: (signal) => {
-            if (closed) throw new Error("Application module is closed")
-            return tool.execute(input, { ...context, signal, progress: (update) => run(context.progress(update)) })
-          },
-          catch: () => new Tool.Error({ message: "Application tool could not complete; inspect its recorded status before retrying" }),
-        }),
-      })))
+      const expose = () =>
+        capability.expose(
+          (loaded.tools ?? []).map((tool) => ({
+            ...tool,
+            name: module.id.replaceAll("-", "_") + "_" + tool.name,
+            options: { codemode: false },
+            execute: (input, context) =>
+              Effect.tryPromise({
+                try: (signal) => {
+                  if (closed) throw new Error("Application module is closed")
+                  return tool.execute(input, {
+                    ...context,
+                    signal,
+                    progress: (update) => run(context.progress(update)),
+                  })
+                },
+                catch: () =>
+                  new Tool.Error({
+                    message: "Application tool could not complete; inspect its recorded status before retrying",
+                  }),
+              }),
+          })),
+        )
       const resource = yield* Effect.acquireRelease(
         Effect.sync(() =>
           loaded.open({
             client,
             storage: owned,
             capability: {
-              invalidate: () => { if (!closed) capability.invalidate() },
+              invalidate: () => {
+                if (!closed) capability.invalidate()
+              },
               report: (value) => {
                 if (closed) throw new Error("Application module is closed")
                 capability.report(value)
@@ -114,9 +127,13 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
                 closed ? Promise.reject(new Error("Application module is closed")) : run(capability.resolve(id)),
             },
           }),
-        ).pipe(Effect.tap((resource) => Effect.try(expose).pipe(
-          Effect.onError(() => Effect.tryPromise(() => resource.close()).pipe(Effect.ignore)),
-        ))),
+        ).pipe(
+          Effect.tap((resource) =>
+            Effect.try(expose).pipe(
+              Effect.onError(() => Effect.tryPromise(() => resource.close()).pipe(Effect.ignore)),
+            ),
+          ),
+        ),
         (resource) =>
           Effect.tryPromise(() => resource.close()).pipe(
             Effect.catchCause(() => {
@@ -140,6 +157,7 @@ export const install = Effect.fn("ApplicationModules.install")(function* (
       )
       capability.inspect(resource.metrics)
       capability.present(resource.view)
+      capability.act(resource.invoke)
       capability.state("active")
     }).pipe(
       Effect.provideService(Scope.Scope, owner),
